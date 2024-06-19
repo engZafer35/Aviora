@@ -40,7 +40,7 @@ static S32 gs_gsmDbusID;
 static GsmDataBusPacket gs_dataBusPck;
 
 
-static S32 *gs_timerId;
+static S32 gs_timerId;
 
 /***************************** STATIC FUNCTIONS  ******************************/
 RETURN_STATUS modemSendAtCommand(NetInterface *interface, const char *command, char *response, U32 size)
@@ -288,7 +288,7 @@ void gsmTimerCb (void)
     DBUS_PACKET dbPacket;
     GsmMsg gsmMsg;
 
-    DEBUG_INFO("Publishing Gsm Data");
+    DEBUG_INFO("Periodically Publishing Gsm Data");
 
     gsmMsg.modemStat   = gs_dataBusPck.modemState;
     gsmMsg.signalLevel = gs_dataBusPck.gsmSignalLevel;
@@ -308,15 +308,7 @@ RETURN_STATUS appGsmMngInit(void)
 {
     RETURN_STATUS retVal = SUCCESS;
     NetInterface *interface;
-
     PppSettings pppSettings;
-
-    DEBUG_INFO("**********************************");
-    DEBUG_INFO("*** CycloneTCP FTP Client Demo ***");
-    DEBUG_INFO("**********************************");
-    DEBUG_INFO("Copyright: 2010-2024 Oryx Embedded SARL");
-    DEBUG_INFO("Compiled: %s %s", __DATE__, __TIME__);
-    DEBUG_INFO("Target: Linux-Ubuntu");
 
     //TCP/IP stack initialization
     if(NO_ERROR != netInit())
@@ -369,10 +361,9 @@ RETURN_STATUS appGsmMngInit(void)
         if(SUCCESS == modemInit(interface))
         {
             netAttachLinkChangeCallback(&netInterface[0], pppLinkStatusCb, NULL);
-            retVal = appDBusRegister(EN_DBUS_TOPIC_DEVICE, &gs_gsmDbusID);
-//            middEventTimerRegister(&gs_timerId,  gsmTimerCb, WAIT_10_MIN , TRUE);
+            retVal  = appDBusRegister(EN_DBUS_TOPIC_DEVICE, &gs_gsmDbusID);
+            retVal |= middEventTimerRegister(&gs_timerId, gsmTimerCb, WAIT_10_MIN , TRUE);
             gs_gsmModemReady = TRUE;
-            retVal = SUCCESS;
         }
     }
 

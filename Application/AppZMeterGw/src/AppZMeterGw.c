@@ -145,9 +145,9 @@ static RETURN_STATUS initSWUnit(void)
     NtpServerConf ntpConf;
 
     sysLoggerInterface.writeFunc = myWriteLog;
-    sysLoggerInterface.readFunc = myReadLog;
-    sysLoggerInterface.fileSize = 100;
-    sysLoggerInterface.logPath = "./";
+    sysLoggerInterface.readFunc  = myReadLog;
+    sysLoggerInterface.fileSize  = 100;
+    sysLoggerInterface.logPath   = "./";
     sysLoggerInterface.totalLogSize = 1000;
 
     /** !< Firstly initialize common used midd layer */
@@ -156,10 +156,12 @@ static RETURN_STATUS initSWUnit(void)
 //    retVal |= middSerialCommInit();
     if (SUCCESS == retVal)
     {
-        appGlobalVarInit();
-        //TODO: initialize OS and start scheduler, freeRtos
-        appGsmMngInit();
-        appGsmMngOpenPPP();
+        /* initialize configurations after file system */
+        if (FAILURE == appConfInit("***"))
+        {
+            DEBUG_ERROR("->[E] Display init ERROR");
+            return FAILURE;
+        }
 
         if (SUCCESS != middEventTimerInit()) /** After OS init, call middEventTimerInit, it uses OS timer */
         {
@@ -167,24 +169,19 @@ static RETURN_STATUS initSWUnit(void)
             return FAILURE;
         }
 
-        if (FAILURE == appTskMngInit())
+        if (FAILURE == appGlobalVarInit())
         {
-            DEBUG_ERROR("->[E] appTskMngInit init Error");
+            DEBUG_ERROR("->[E] appGlobalVarInit init Error");
             return FAILURE;
         }
 
-        retVal = appDBusInit();
-        if (FAILURE == retVal)
-        {
-            return retVal;
-        }
-
         //TODO: init file system before log recorder
+        zosInitKernel();
+        zosStartKernel();
 
-        /* initialize configurations after file system */
-        if (FAILURE == appConfInit("***"))
+        if (FAILURE == appTskMngInit())
         {
-            DEBUG_ERROR("->[E] Display init ERROR");
+            DEBUG_ERROR("->[E] appTskMngInit init Error");
             return FAILURE;
         }
 
@@ -194,19 +191,36 @@ static RETURN_STATUS initSWUnit(void)
             DEBUG_ERROR("->[E] Log Recorder Init ERROR ");
             return FAILURE;
         }
+
         if (FAILURE == appLogRecRegister(&sysLoggerInterface, "sysLogger", &g_sysLoggerID))
         {
             DEBUG_ERROR("->[E] Log Reg for sysLogger ERROR ");
             return FAILURE;
         }
 
+        if (FAILURE == appDBusInit())
+        {
+            DEBUG_ERROR("->[E] appDBusInit ERROR ");
+            return FAILURE;
+        }
+
+        if (FAILURE == appGsmMngInit())
+        {
+            DEBUG_ERROR("->[E] appGsmMngInit ERROR ");
+            return FAILURE;
+        }
+        if (FAILURE == appGsmMngOpenPPP())
+        {
+            DEBUG_ERROR("->[E] appGsmMngOpenPPP ERROR ");
+            return FAILURE;
+        }
+
         /* initialize time service after log recorder */
-        retVal = appTimeServiceInit(&ntpConf);
-        if (FAILURE == retVal)
+        if (FAILURE == appTimeServiceInit(&ntpConf))
         {
             DEBUG_ERROR("->[E] TimeSrv init Error");
             appLogRec(g_sysLoggerID, "TimeSrv init Error");
-            return retVal;
+            return FAILURE;
         }
 
         /* initialize display after time service */

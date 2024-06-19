@@ -34,14 +34,14 @@
 #define SHOW_PAGE_DBG_MSG (1)//(0)
 #endif
 
-#if (ENABLE == SHOW_PAGE_DBG_MSG)
-//DEBUG output redirection
+//#if (ENABLE == SHOW_PAGE_DBG_MSG)
+////DEBUG output redirection
 #define DEBUG_PRINTF(format, args...)   fprintf(stdout, "-> %s():%d: ", __FUNCTION__, __LINE__), \
                                         fprintf(stdout, format , ##args), \
                                         fprintf(stdout, "\r\n")
-#else
-#define DEBUG_PRINTF(format, args...)
-#endif
+//#else
+//#define DEBUG_PRINTF(format, args...)
+//#endif
 
 
 
