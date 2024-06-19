@@ -288,7 +288,7 @@ void gsmTimerCb (void)
     DBUS_PACKET dbPacket;
     GsmMsg gsmMsg;
 
-    DEBUG_INFO("Publising Gsm Data");
+    DEBUG_INFO("Publishing Gsm Data");
 
     gsmMsg.modemStat   = gs_dataBusPck.modemState;
     gsmMsg.signalLevel = gs_dataBusPck.gsmSignalLevel;
