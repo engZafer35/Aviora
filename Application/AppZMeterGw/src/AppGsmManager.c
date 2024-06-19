@@ -362,7 +362,7 @@ RETURN_STATUS appGsmMngInit(void)
         {
             netAttachLinkChangeCallback(&netInterface[0], pppLinkStatusCb, NULL);
             retVal  = appDBusRegister(EN_DBUS_TOPIC_DEVICE, &gs_gsmDbusID);
-            retVal |= middEventTimerRegister(&gs_timerId,  gsmTimerCb, WAIT_10_MIN , TRUE);
+            retVal |= middEventTimerRegister(&gs_timerId, gsmTimerCb, WAIT_10_MIN , TRUE);
             gs_gsmModemReady = TRUE;
         }
     }

@@ -128,7 +128,7 @@ RETURN_STATUS middEventTimerRegister(S32 *timerId,  VoidCallback callback, U32 t
 
     *timerId = -1; //firstly load invalid id
 
-    if (IS_SAFELY_PTR(callback))
+    if (IS_NULL_PTR(callback))
     {
         return retVal;
     }
@@ -151,6 +151,7 @@ RETURN_STATUS middEventTimerRegister(S32 *timerId,  VoidCallback callback, U32 t
 
             *timerId = i;
             retVal = SUCCESS;
+            break;
         }
     }
     return retVal;
