@@ -28,9 +28,25 @@
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
 
+/**
+ * @brief   Init Gsm Modem
+ * @return  if everything is OK, return EN_SUCCES
+ *          otherwise return FAILURE
+ **/
 RETURN_STATUS appGsmMngInit(void);
 
+/**
+ * @brief   Open a PPP session
+ * @return  if everything is OK, return EN_SUCCES
+ *          otherwise return FAILURE
+ **/
 RETURN_STATUS appGsmMngOpenPPP(void);
+
+/**
+ * @brief   Close a PPP session
+ * @return  if everything is OK, return EN_SUCCES
+ *          otherwise return FAILURE
+ **/
 RETURN_STATUS appGsmMngClosePPP(void);
 
 void appGsmResetModem(void);

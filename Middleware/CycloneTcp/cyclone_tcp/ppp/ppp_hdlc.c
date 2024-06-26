@@ -41,7 +41,8 @@
 //Check TCP/IP stack configuration
 #if (PPP_SUPPORT == ENABLED)
 
-
+static gs_isPPPTxBusy;
+static gs_isPPPRxBusy;
 /**
  * @brief PPP HDLC driver
  **/
@@ -193,6 +194,8 @@ error_t pppHdlcDriverSendPacket(NetInterface *interface,
    uint32_t accm;
    PppContext *context;
 
+   gs_isPPPTxBusy = 1;
+
    //Point to the PPP context
    context = interface->pppContext;
 
@@ -278,6 +281,9 @@ error_t pppHdlcDriverSendPacket(NetInterface *interface,
    {
       //The transmitter can accept another packet
       osSetEvent(&interface->nicTxEvent);
+
+      gs_isPPPTxBusy = 0;
+      //Zafer burası da tx ready
    }
 
    //Data successfully written
@@ -308,14 +314,12 @@ error_t pppHdlcDriverReceivePacket(NetInterface *interface)
    n = 0;
    //This flag tells whether the next character is escaped
    escFlag = FALSE;
-   int count = 0;
+
    //The receiver must reverse the octet stuffing procedure
    while(n < PPP_MAX_FRAME_SIZE && context->rxBufferLen > 0)
    {
       //Read a single character
       c = pppHdlcDriverReadRxQueue(context);
-
-//      printf("%d--%x-\n",count++, c);
 
       if(c < PPP_MASK_CHAR)
       {
@@ -362,11 +366,18 @@ error_t pppHdlcDriverReceivePacket(NetInterface *interface)
       TRACE_DEBUG("PPP frame received (%" PRIuSIZE " bytes)...\r\n", n);
       TRACE_DEBUG_ARRAY("  ", context->frame, n);
 
+      gs_isPPPRxBusy = 1;
+      //zafer burası olabilir
+
+
+
       //Additional options can be passed to the stack along with the packet
       ancillary = NET_DEFAULT_RX_ANCILLARY;
 
       //Pass the packet to the upper layer
       nicProcessPacket(interface, context->frame, n, &ancillary);
+
+      gs_isPPPRxBusy = 0;
    }
 
    //Successful read operation
@@ -724,6 +735,11 @@ bool_t pppHdlcDriverWriteRxQueue(NetInterface *interface, uint8_t c)
 
    //The return value tells whether a context switch is required
    return flag;
+}
+
+bool_t isPPPWatingRxTxData(void)
+{
+    return gs_isPPPRxBusy | gs_isPPPTxBusy; //return True if rx or tx is busy
 }
 
 #endif

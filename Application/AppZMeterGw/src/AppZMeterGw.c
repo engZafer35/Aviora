@@ -244,23 +244,8 @@ static void zmgTask(void * pvParameters)
     appTskMngImOK(gs_zmgTaskID);
     zosDelayTask(1000); //wait once before starting
 
-    IpAddr ip;
-    ip.length = sizeof(Ipv4Addr);
-    ip.ipv4Addr  = IPV4_ADDR(88,255,75,10);
-    error_t err = ERROR_FAILURE;
-    char buff[16] = "";
-
-    ipv4AddrToString(ip.ipv4Addr, buff);
-    int c = 0;
     while(1)
     {
-        err = ping(&netInterface[0], &ip, 32, 0xFF, 2000000, NULL);
-        if(!err)
-            printf("%d- Ping send to %s \n",c++, buff);
-        else
-            printf("Ping Error - %d !! \n", err);
-
-
         if (FALSE != g_localEvents.events)
         {
             if (TRUE == g_localEvents.inAC)

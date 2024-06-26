@@ -40,7 +40,7 @@ static volatile TimerStr timerCallBackList[EN_TIMER_MAX_NUM] = {{0},};
 static void timerEventCallback(int x)
 {
     static USS i;
-return;
+
     for (i = 0; i < EN_TIMER_MAX_NUM; i++)
     {
         if (timerCallBackList[i].timeout > 0)
