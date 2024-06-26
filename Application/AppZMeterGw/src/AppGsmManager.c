@@ -362,7 +362,8 @@ RETURN_STATUS appGsmMngInit(void)
         {
             netAttachLinkChangeCallback(&netInterface[0], pppLinkStatusCb, NULL);
             retVal  = appDBusRegister(EN_DBUS_TOPIC_DEVICE, &gs_gsmDbusID);
-            retVal |= middEventTimerRegister(&gs_timerId, gsmTimerCb, WAIT_10_MIN , TRUE);
+            retVal |= middEventTimerRegister(&gs_timerId, gsmTimerCb, WAIT_10_SEC , TRUE);
+            middEventTimerStart(gs_timerId);
             gs_gsmModemReady = TRUE;
         }
     }
@@ -384,14 +385,17 @@ RETURN_STATUS appGsmMngOpenPPP(void)
 
 RETURN_STATUS appGsmMngClosePPP(void)
 {
-   RETURN_STATUS retVal = SUCCESS;
+   RETURN_STATUS retVal = FAILURE;
 
-   DEBUG_INFO("Closing PPP connection...");
-   if (NO_ERROR != pppClose(&netInterface[0]))
+   if (FALSE == isPPPWatingRxTxData())
    {
-       retVal = FAILURE;
-   }
+       DEBUG_INFO("Closing PPP connection...");
 
+       if (NO_ERROR == pppClose(&netInterface[0]))
+       {
+           retVal = SUCCESS;
+       }
+   }
    return retVal;
 }
 
@@ -399,12 +403,5 @@ RETURN_STATUS appGsmMngGetNetworkStatus(void)
 {
     return SUCCESS;
 }
-
-/**
- * @brief Close a PPP session
- * @param[in] interface Underlying network interface
- * @return Error code
- **/
-
 
 /******************************** End Of File *********************************/

@@ -254,11 +254,11 @@ static void zmgTask(void * pvParameters)
     int c = 0;
     while(1)
     {
-        err = ping(&netInterface[0], &ip, 32, 0xFF, 2000000, NULL);
-        if(!err)
-            printf("%d- Ping send to %s \n",c++, buff);
-        else
-            printf("Ping Error - %d !! \n", err);
+//        err = ping(&netInterface[0], &ip, 32, 0xFF, 2000000, NULL);
+//        if(!err)
+//            printf("%d- Ping send to %s \n",c++, buff);
+//        else
+//            printf("Ping Error - %d !! \n", err);
 
 
         if (FALSE != g_localEvents.events)
