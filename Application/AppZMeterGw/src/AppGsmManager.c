@@ -399,9 +399,9 @@ RETURN_STATUS appGsmMngClosePPP(void)
    return retVal;
 }
 
-RETURN_STATUS appGsmMngGetNetworkStatus(void)
+BOOL appGsmMngIsNetworkReady(void)
 {
-    return SUCCESS;
+    return gs_dataBusPck.pppLinkState;
 }
 
 /******************************** End Of File *********************************/

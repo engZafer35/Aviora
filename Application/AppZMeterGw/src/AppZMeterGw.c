@@ -176,6 +176,7 @@ static RETURN_STATUS initSWUnit(void)
         }
 
         //TODO: init file system before log recorder
+
         zosInitKernel();
         zosStartKernel();
 

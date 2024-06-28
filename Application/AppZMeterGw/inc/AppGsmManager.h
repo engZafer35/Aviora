@@ -53,7 +53,7 @@ void appGsmResetModem(void);
 void appGsmPowerDownModem(void);
 void appGsmPowerUpModem(void);
 
-RETURN_STATUS appGsmMngGetNetworkStatus(void);
+BOOL appGsmMngIsNetworkReady(void);
 
 #endif /* __APP_GSM_MANAGER_H__ */
 
