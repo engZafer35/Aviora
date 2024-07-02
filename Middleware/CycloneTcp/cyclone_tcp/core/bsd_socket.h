@@ -279,7 +279,7 @@ extern "C" {
  * @brief Length type
  **/
 
-typedef int_t socklen_t;
+typedef int_t c_socklen_t;
 
 
 /**
@@ -409,7 +409,7 @@ struct iovec
 typedef struct msghdr
 {
    void *msg_name;
-   socklen_t msg_namelen;
+   c_socklen_t msg_namelen;
    struct iovec *msg_iov;
    int_t msg_iovlen;
    void *msg_control;
@@ -485,7 +485,7 @@ typedef struct addrinfo
    int_t ai_family;
    int_t ai_socktype;
    int_t ai_protocol;
-   socklen_t ai_addrlen;
+   c_socklen_t ai_addrlen;
    struct sockaddr *ai_addr;
    char_t *ai_canonname;
    struct addrinfo *ai_next;
@@ -537,32 +537,32 @@ extern const struct in6_addr in6addr_loopback;
 
 //BSD socket related functions
 int_t c_socket(int_t family, int_t type, int_t protocol);
-int_t c_bind(int_t s, const struct sockaddr *addr, socklen_t addrlen);
-int_t c_connect(int_t s, const struct sockaddr *addr, socklen_t addrlen);
+int_t c_bind(int_t s, const struct sockaddr *addr, c_socklen_t addrlen);
+int_t c_connect(int_t s, const struct sockaddr *addr, c_socklen_t addrlen);
 int_t c_listen(int_t s, int_t backlog);
-int_t c_accept(int_t s, struct sockaddr *addr, socklen_t *addrlen);
+int_t c_accept(int_t s, struct sockaddr *addr, c_socklen_t *addrlen);
 int_t c_send(int_t s, const void *data, size_t length, int_t flags);
 
 int_t c_sendto(int_t s, const void *data, size_t length, int_t flags,
-   const struct sockaddr *addr, socklen_t addrlen);
+   const struct sockaddr *addr, c_socklen_t addrlen);
 
 int_t c_sendmsg(int_t s, struct msghdr *msg, int_t flags);
 
 int_t c_recv(int_t s, void *data, size_t size, int_t flags);
 
 int_t c_recvfrom(int_t s, void *data, size_t size, int_t flags,
-   struct sockaddr *addr, socklen_t *addrlen);
+   struct sockaddr *addr, c_socklen_t *addrlen);
 
 int_t c_recvmsg(int_t s, struct msghdr *msg, int_t flags);
 
-int_t c_getsockname(int_t s, struct sockaddr *addr, socklen_t *addrlen);
-int_t c_getpeername(int_t s, struct sockaddr *addr, socklen_t *addrlen);
+int_t c_getsockname(int_t s, struct sockaddr *addr, c_socklen_t *addrlen);
+int_t c_getpeername(int_t s, struct sockaddr *addr, c_socklen_t *addrlen);
 
 int_t c_setsockopt(int_t s, int_t level, int_t optname, const void *optval,
-   socklen_t optlen);
+   c_socklen_t optlen);
 
 int_t c_getsockopt(int_t s, int_t level, int_t optname, void *optval,
-   socklen_t *optlen);
+   c_socklen_t *optlen);
 
 int_t c_ioctlsocket(int_t s, uint32_t cmd, void *arg);
 int_t c_fcntl(int_t s, int_t cmd, int_t arg);
@@ -584,17 +584,17 @@ int_t c_getaddrinfo(const char_t *node, const char_t *service,
 
 void c_freeaddrinfo(struct addrinfo *res);
 
-int_t c_getnameinfo(const struct sockaddr *addr, socklen_t addrlen,
+int_t c_getnameinfo(const struct sockaddr *addr, c_socklen_t addrlen,
    char_t *host, size_t hostlen, char_t *serv, size_t servlen, int flags);
 
 in_addr_t c_inet_addr(const char_t *cp);
 
 int_t c_inet_aton(const char_t *cp, struct in_addr *inp);
 const char_t *c_inet_ntoa(struct in_addr in);
-const char_t *c_inet_ntoa_r(struct in_addr in, char_t *buf, socklen_t buflen);
+const char_t *c_inet_ntoa_r(struct in_addr in, char_t *buf, c_socklen_t buflen);
 
 int_t c_inet_pton(int_t af, const char_t *src, void *dst);
-const char_t *c_inet_ntop(int_t af, const void *src, char_t *dst, socklen_t size);
+const char_t *c_inet_ntop(int_t af, const void *src, char_t *dst, c_socklen_t size);
 
 //C++ guard
 #ifdef __cplusplus

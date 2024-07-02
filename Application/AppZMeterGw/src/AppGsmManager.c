@@ -300,7 +300,7 @@ void gsmTimerCb (void)
     dbPacket.topic      = EN_DBUS_TOPIC_GSM;
 
     appIntMsgCreateGsmMsg(&gsmMsg, dbPacket.payload.data, &dbPacket.payload.dataLeng);
-    appDBusPublish(gs_gsmDbusID, &dbPacket);
+//    appDBusPublish(gs_gsmDbusID, &dbPacket);
 }
 
 /***************************** PUBLIC FUNCTIONS  ******************************/

@@ -244,7 +244,7 @@ void func(void)
     int server_fd, new_socket;
     struct sockaddr_in address;
     int opt = 1;
-    socklen_t addrlen = sizeof(address);
+    c_socklen_t addrlen = sizeof(address);
     char buffer[1024] = { 0 };
 
     sleep(1);
