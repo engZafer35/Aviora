@@ -18,9 +18,6 @@
 
 #define APP_TIME_SERVICE_NTP    (ENABLE) //Todo: ntp could be enabled or disabled with this macro.
 
-
-
-
 /*******************************TYPE DEFINITIONS ******************************/
 typedef struct
 {
@@ -46,16 +43,20 @@ typedef struct
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
 
-RETURN_STATUS appTimeServiceInit(NtpServerConf *ntp); //Todo: get configuration for ntp and other things
+RETURN_STATUS appTimeServiceInit(const char *ntpServer, U32 ntpPort); //Todo: get configuration for ntp and other things
 
 RETURN_STATUS appTimeServiceGetTime(TS_Time *tm);
 
+/*
+ * When ntp is enabled, The time service doesn't need to be updated manually
+ */
+#if (APP_TIME_SERVICE_NTP == DISABLE)
 RETURN_STATUS appTimeServiceSetTime(const TS_Time *tm);
 
 RETURN_STATUS appTimeServiceSetTimerDate(S32 *timerID, const TS_Time *tm, VoidCallback cb);
 
 RETURN_STATUS appTimeServiceStopTimerDate(S32 timerID);
-
+#endif
 #endif /* __APPLICATION_APPZMETERGW_INC_APPTIMESERVICE_H__ */
 
 /********************************* End Of File ********************************/

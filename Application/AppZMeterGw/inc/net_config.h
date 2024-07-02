@@ -196,6 +196,7 @@
 #define inet_ntoa_r     c_inet_ntoa_r
 #define inet_pton       c_inet_pton
 #define inet_ntop       c_inet_ntop
+#define socklen_t       c_socklen_t
 #else
 #define SOCKET           socket
 #define BIND             bind
@@ -229,6 +230,7 @@
 #define inet_ntoa_r      inet_ntoa_r
 #define inet_pton        inet_pton
 #define inet_ntop        inet_ntop
+#define socklen_t        socklen_t
 #endif
 
 #endif

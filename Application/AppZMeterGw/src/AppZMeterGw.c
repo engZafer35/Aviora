@@ -217,7 +217,7 @@ static RETURN_STATUS initSWUnit(void)
         }
 
         /* initialize time service after log recorder */
-        if (FAILURE == appTimeServiceInit(&ntpConf))
+        if (FAILURE == appTimeServiceInit("us.pool.ntp.org", 123))
         {
             DEBUG_ERROR("->[E] TimeSrv init Error");
             appLogRec(g_sysLoggerID, "TimeSrv init Error");

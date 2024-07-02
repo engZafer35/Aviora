@@ -11,25 +11,144 @@
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
 #include "AppTimeService.h"
+
+#include "core/bsd_socket.h"
+#include "core/net.h"
+
 #include "AppGlobalVariables.h"
 #include "AppLogRecorder.h"
 
 #include "MiddEventTimer.h"
 /****************************** MACRO DEFINITIONS *****************************/
+// Difference between Jan 1, 1900 and Jan 1, 1970
+#define UNIX_OFFSET 2208988800L
 
+#define NTP_DEFAULT_PORT "123"
+
+// Flags 00|100|011 for li=0, vn=4, mode=3
+#define NTP_FLAGS 0x23
 /******************************* TYPE DEFINITIONS *****************************/
+  typedef struct
+  {
 
+    U8 li_vn_mode;      // Eight bits. li, vn, and mode.
+                             // li.   Two bits.   Leap indicator.
+                             // vn.   Three bits. Version number of the protocol.
+                             // mode. Three bits. Client will pick mode 3 for client.
+
+    U8 stratum;         // Eight bits. Stratum level of the local clock.
+    U8 poll;            // Eight bits. Maximum interval between successive messages.
+    U8 precision;       // Eight bits. Precision of the local clock.
+
+    U32 rootDelay;      // 32 bits. Total round trip delay time.
+    U32 rootDispersion; // 32 bits. Max error aloud from primary clock source.
+    U32 refId;          // 32 bits. Reference clock identifier.
+
+    U32 refTm_s;        // 32 bits. Reference time-stamp seconds.
+    U32 refTm_f;        // 32 bits. Reference time-stamp fraction of a second.
+
+    U32 origTm_s;       // 32 bits. Originate time-stamp seconds.
+    U32 origTm_f;       // 32 bits. Originate time-stamp fraction of a second.
+
+    U32 rxTm_s;         // 32 bits. Received time-stamp seconds.
+    U32 rxTm_f;         // 32 bits. Received time-stamp fraction of a second.
+
+    U32 txTm_s;         // 32 bits and the most important field the client cares about. Transmit time-stamp seconds.
+    U32 txTm_f;         // 32 bits. Transmit time-stamp fraction of a second.
+
+  } ntp_packet;              // Total: 384 bits or 48 bytes.
 /********************************** VARIABLES *********************************/
-
+static int gs_sockfd;
 /***************************** STATIC FUNCTIONS  ******************************/
 #if (APP_TIME_SERVICE_NTP == ENABLE)
-static RETURN_STATUS initNTP(void)
+
+#define NTP_TIMESTAMP_DELTA 2208988800ull
+
+#define LI(packet)   (uint8_t) ((packet.li_vn_mode & 0xC0) >> 6) // (li   & 11 000 000) >> 6
+#define VN(packet)   (uint8_t) ((packet.li_vn_mode & 0x38) >> 3) // (vn   & 00 111 000) >> 3
+#define MODE(packet) (uint8_t) ((packet.li_vn_mode & 0x07) >> 0) // (mode & 00 000 111) >> 0
+
+static RETURN_STATUS initNTP(const char *ntpServer, U32 ntpPort)
 {
+    RETURN_STATUS retVal = SUCCESS;
+
+    SOCKADDR_IN serv_addr; // Server address data structure.
+    struct hostent *server;      // Server data structure.
+
+    gs_sockfd = SOCKET(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+
+    if (gs_sockfd < 0)
+    {
+      perror( "ERROR opening socket" );
+    }
+    server = GETHOSTBYNAME((const char*)ntpServer); // Convert URL to IP.
+
+    if (server == NULL )
+        perror( "ERROR, no such host" );
+
+    // Zero out the server address structure.
+
+    bzero( ( char* ) &serv_addr, sizeof( serv_addr ) );
+
+    serv_addr.sin_family = AF_INET;
+
+    // Copy the server's IP address to the server address structure.
+
+    bcopy( ( char* )server->h_addr, ( char* ) &serv_addr.sin_addr.s_addr, server->h_length );
+
+    // Convert the port number integer to network big-endian style and save it to the server address structure.
+
+    serv_addr.sin_port = htons(ntpPort);
+
+    // Call up the server using its IP address and port number.
+
+    if (CONNECT( gs_sockfd, ( SOCKADDR * ) &serv_addr, sizeof( serv_addr) ) < 0 )
+    {
+        perror( "ERROR connecting" );
+    }
+
     return SUCCESS;
 }
 
 static RETURN_STATUS getTimeFromNTP(U32 *epochTime)
 {
+    ntp_packet packet;
+
+    memset(&packet, 0, sizeof(ntp_packet));
+
+    *( ( char * ) &packet + 0 ) = 0x1b; // Represents 27 in base 10 or 00011011 in base 2.
+    int n; // Socket file descriptor and the n return result from writing/reading from the socket.
+    // Send it the NTP packet it wants. If n == -1, it failed.
+
+    n = SEND( gs_sockfd, (char*)&packet, sizeof( ntp_packet ), 0);
+
+    if ( n < 0 )
+      error( "ERROR writing to socket" );
+
+    // Wait and receive the packet back from the server. If n == -1, it failed.
+
+    n = RECV(gs_sockfd, (char*)&packet, sizeof( ntp_packet ), 0);
+
+    if ( n < 0 )
+      error( "ERROR reading from socket" );
+
+    // These two fields contain the time-stamp seconds as the packet left the NTP server.
+    // The number of seconds correspond to the seconds passed since 1900.
+    // ntohl() converts the bit/byte order from the network's to host's "endianness".
+
+    packet.txTm_s = ntohl( packet.txTm_s ); // Time-stamp seconds.
+    packet.txTm_f = ntohl( packet.txTm_f ); // Time-stamp fraction of a second.
+
+    // Extract the 32 bits that represent the time-stamp seconds (since NTP epoch) from when the packet left the server.
+    // Subtract 70 years worth of seconds from the seconds since 1900.
+    // This leaves the seconds since the UNIX epoch of 1970.
+    // (1900)------------------(1970)**************************************(Time Packet Left the Server)
+
+    time_t txTm = ( time_t ) ( packet.txTm_s - NTP_TIMESTAMP_DELTA );
+
+    // Print the time we got from the server, accounting for local timezone and conversion from UTC time.
+
+    printf("Time: %s\n", ctime( ( const time_t* ) &txTm ) );
     return SUCCESS;
 }
 
@@ -50,24 +169,31 @@ static RETURN_STATUS getRTCTime(TS_Time *time)
 
 #endif
 
-
+static void tsTimerCb (void)
+{
+    getTimeFromNTP(NULL);
+}
 /***************************** PUBLIC FUNCTIONS  ******************************/
-RETURN_STATUS appTimeServiceInit(NtpServerConf *ntp)
+RETURN_STATUS appTimeServiceInit(const char *ntpServer, U32 ntpPort)
 {
     RETURN_STATUS retVal;
-    //TODO: init rtc, set sntp conf.
 
-    /**
-     * if ntp could not be initialized, we can just report it.
-     * Don't need to restart the system. We can report this situation to server at least.
-     * Also Hw rtc timer can be used until ntp problem solved.
-     */
-    if (FAILURE == initNTP())
+#if (APP_TIME_SERVICE_NTP == ENABLE)
+
+    if (FAILURE == initNTP(ntpServer, ntpPort))
     {
         DEBUG_ERROR("->[E] NTP init ERROR");
         appLogRec(g_sysLoggerID, "Error: NTP could not be initialized");
         //TODO: send this error over data bus
     }
+
+
+    S32 timerID;
+    middEventTimerRegister(&timerID, tsTimerCb, WAIT_2_SEC , TRUE);
+    middEventTimerStart(timerID);
+
+#endif
+
 
     retVal = initRTC();
     if (FAILURE == retVal)
@@ -85,6 +211,8 @@ RETURN_STATUS appTimeServiceGetTime(TS_Time *tm)
     return SUCCESS;
 }
 
+#if (APP_TIME_SERVICE_NTP == DISABLE)
+
 RETURN_STATUS appTimeServiceSetTime(const TS_Time *tm)
 {
     return SUCCESS;
@@ -99,5 +227,5 @@ RETURN_STATUS appTimeServiceStopTimerDate(S32 timerID)
 {
     return SUCCESS;
 }
-
+#endif
 /******************************** End Of File *********************************/

@@ -55,12 +55,12 @@
  **/
 
 int_t socketSetSoReuseAddrOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Get exclusive access
       osAcquireMutex(&netMutex);
@@ -105,12 +105,12 @@ int_t socketSetSoReuseAddrOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetSoBroadcastOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option specifies whether transmission and receipt of broadcast
       //messages are allowed
@@ -142,12 +142,12 @@ int_t socketSetSoBroadcastOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetSoSndTimeoOption(Socket *socket, const struct timeval *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(struct timeval))
+   if(optlen >= (c_socklen_t) sizeof(struct timeval))
    {
       //If the specified value is of zero, I/O operations shall not time out
       if(optval->tv_sec == 0 && optval->tv_usec == 0)
@@ -185,12 +185,12 @@ int_t socketSetSoSndTimeoOption(Socket *socket, const struct timeval *optval,
  **/
 
 int_t socketSetSoRcvTimeoOption(Socket *socket, const struct timeval *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(struct timeval))
+   if(optlen >= (c_socklen_t) sizeof(struct timeval))
    {
       //If the specified value is of zero, I/O operations shall not time out
       if(optval->tv_sec == 0 && optval->tv_usec == 0)
@@ -228,13 +228,13 @@ int_t socketSetSoRcvTimeoOption(Socket *socket, const struct timeval *optval,
  **/
 
 int_t socketSetSoSndBufOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED)
 //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Adjust the size of the send buffer
       socketSetTxBufferSize(socket, *optval);
@@ -269,13 +269,13 @@ int_t socketSetSoSndBufOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetSoRcvBufOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Adjust the size of the receive buffer
       socketSetRxBufferSize(socket, *optval);
@@ -310,13 +310,13 @@ int_t socketSetSoRcvBufOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetSoKeepAliveOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED && TCP_KEEP_ALIVE_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option specifies whether TCP keep-alive is enabled
       socketEnableKeepAlive(socket, *optval);
@@ -351,13 +351,13 @@ int_t socketSetSoKeepAliveOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpTosOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Save ToS value
       socket->tos = *optval & 0xFF;
@@ -392,13 +392,13 @@ int_t socketSetIpTosOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpTtlOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option specifies the TTL value associated with an IPv4 socket
       //for unicast traffic
@@ -435,13 +435,13 @@ int_t socketSetIpTtlOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpMulticastIfOption(Socket *socket,
-   const struct in_addr *optval, socklen_t optlen)
+   const struct in_addr *optval, c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(struct in_addr))
+   if(optlen >= (c_socklen_t) sizeof(struct in_addr))
    {
       //Successful processing
       ret = SOCKET_SUCCESS;
@@ -474,13 +474,13 @@ int_t socketSetIpMulticastIfOption(Socket *socket,
  **/
 
 int_t socketSetIpMulticastTtlOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option specifies the TTL value associated with an IPv4 socket
       //for multicast traffic
@@ -517,13 +517,13 @@ int_t socketSetIpMulticastTtlOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpMulticastLoopOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Get exclusive access
       osAcquireMutex(&netMutex);
@@ -574,13 +574,13 @@ int_t socketSetIpMulticastLoopOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpAddMembershipOption(Socket *socket,
-   const struct ip_mreq *optval, socklen_t optlen)
+   const struct ip_mreq *optval, c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(struct ip_mreq))
+   if(optlen >= (c_socklen_t) sizeof(struct ip_mreq))
    {
       error_t error;
       IpAddr groupAddr;
@@ -633,13 +633,13 @@ int_t socketSetIpAddMembershipOption(Socket *socket,
  **/
 
 int_t socketSetIpDropMembershipOption(Socket *socket,
-   const struct ip_mreq *optval, socklen_t optlen)
+   const struct ip_mreq *optval, c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(struct ip_mreq))
+   if(optlen >= (c_socklen_t) sizeof(struct ip_mreq))
    {
       IpAddr groupAddr;
 
@@ -681,13 +681,13 @@ int_t socketSetIpDropMembershipOption(Socket *socket,
  **/
 
 int_t socketSetIpDontFragOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Get exclusive access
       osAcquireMutex(&netMutex);
@@ -736,13 +736,13 @@ int_t socketSetIpDontFragOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpPktInfoOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Get exclusive access
       osAcquireMutex(&netMutex);
@@ -792,13 +792,13 @@ int_t socketSetIpPktInfoOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpRecvTosOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Get exclusive access
       osAcquireMutex(&netMutex);
@@ -848,13 +848,13 @@ int_t socketSetIpRecvTosOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpRecvTtlOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Get exclusive access
       osAcquireMutex(&netMutex);
@@ -904,13 +904,13 @@ int_t socketSetIpRecvTtlOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpv6TrafficClassOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Save Traffic Class value
       socket->tos = *optval & 0xFF;
@@ -945,13 +945,13 @@ int_t socketSetIpv6TrafficClassOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpv6UnicastHopsOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option specifies the TTL value associated with an IPv6 socket
       //for unicast traffic
@@ -988,13 +988,13 @@ int_t socketSetIpv6UnicastHopsOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpv6MulticastIfOption(Socket *socket,
-   const struct in_addr *optval, socklen_t optlen)
+   const struct in_addr *optval, c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(struct in_addr))
+   if(optlen >= (c_socklen_t) sizeof(struct in_addr))
    {
       //Successful processing
       ret = SOCKET_SUCCESS;
@@ -1027,13 +1027,13 @@ int_t socketSetIpv6MulticastIfOption(Socket *socket,
  **/
 
 int_t socketSetIpv6MulticastHopsOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option specifies the TTL value associated with an IPv6 socket
       //for multicast traffic
@@ -1070,13 +1070,13 @@ int_t socketSetIpv6MulticastHopsOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpv6MulticastLoopOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Get exclusive access
       osAcquireMutex(&netMutex);
@@ -1127,13 +1127,13 @@ int_t socketSetIpv6MulticastLoopOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpv6AddMembershipOption(Socket *socket,
-   const struct ipv6_mreq *optval, socklen_t optlen)
+   const struct ipv6_mreq *optval, c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(struct ipv6_mreq))
+   if(optlen >= (c_socklen_t) sizeof(struct ipv6_mreq))
    {
       error_t error;
       IpAddr groupAddr;
@@ -1186,13 +1186,13 @@ int_t socketSetIpv6AddMembershipOption(Socket *socket,
  **/
 
 int_t socketSetIpv6DropMembershipOption(Socket *socket,
-   const struct ipv6_mreq *optval, socklen_t optlen)
+   const struct ipv6_mreq *optval, c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(struct ipv6_mreq))
+   if(optlen >= (c_socklen_t) sizeof(struct ipv6_mreq))
    {
       IpAddr groupAddr;
 
@@ -1234,13 +1234,13 @@ int_t socketSetIpv6DropMembershipOption(Socket *socket,
  **/
 
 int_t socketSetIpv6OnlyOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Get exclusive access
       osAcquireMutex(&netMutex);
@@ -1290,13 +1290,13 @@ int_t socketSetIpv6OnlyOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpv6DontFragOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option defines a mechanism to turn off the automatic inserting
       //of a fragment header for UDP and raw sockets (refer to RFC 3542,
@@ -1338,13 +1338,13 @@ int_t socketSetIpv6DontFragOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpv6PktInfoOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Get exclusive access
       osAcquireMutex(&netMutex);
@@ -1394,13 +1394,13 @@ int_t socketSetIpv6PktInfoOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpv6RecvTrafficClassOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Get exclusive access
       osAcquireMutex(&netMutex);
@@ -1450,13 +1450,13 @@ int_t socketSetIpv6RecvTrafficClassOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetIpv6RecvHopLimitOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Get exclusive access
       osAcquireMutex(&netMutex);
@@ -1506,13 +1506,13 @@ int_t socketSetIpv6RecvHopLimitOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetTcpNoDelayOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Get exclusive access
       osAcquireMutex(&netMutex);
@@ -1561,13 +1561,13 @@ int_t socketSetTcpNoDelayOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetTcpMaxSegOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Set the maximum segment size for outgoing TCP packets. If this option
       //is set before connection establishment, it also change the MSS value
@@ -1605,13 +1605,13 @@ int_t socketSetTcpMaxSegOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetTcpKeepIdleOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED && TCP_KEEP_ALIVE_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Convert the time interval to milliseconds
       socket->keepAliveIdle = *optval * 1000;
@@ -1646,13 +1646,13 @@ int_t socketSetTcpKeepIdleOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetTcpKeepIntvlOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED && TCP_KEEP_ALIVE_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Convert the time interval to milliseconds
       socket->keepAliveInterval = *optval * 1000;
@@ -1687,13 +1687,13 @@ int_t socketSetTcpKeepIntvlOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketSetTcpKeepCntOption(Socket *socket, const int_t *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED && TCP_KEEP_ALIVE_SUPPORT == ENABLED)
    //Check the length of the option
-   if(optlen >= (socklen_t) sizeof(int_t))
+   if(optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Save parameter value
       socket->keepAliveMaxProbes = *optval;
@@ -1728,12 +1728,12 @@ int_t socketSetTcpKeepCntOption(Socket *socket, const int_t *optval,
  **/
 
 int_t socketGetSoReuseAddrOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option specifies whether the socket can be bound to an address
       //which is already in use
@@ -1775,12 +1775,12 @@ int_t socketGetSoReuseAddrOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetSoBroadcastOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option specifies whether transmission and receipt of broadcast
       //messages are allowed
@@ -1822,12 +1822,12 @@ int_t socketGetSoBroadcastOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetSoSndTimeoOption(Socket *socket, struct timeval *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(struct timeval))
+   if(*optlen >= (c_socklen_t) sizeof(struct timeval))
    {
       //Return the timeout value
       if(socket->timeout == INFINITE_DELAY)
@@ -1869,12 +1869,12 @@ int_t socketGetSoSndTimeoOption(Socket *socket, struct timeval *optval,
  **/
 
 int_t socketGetSoRcvTimeoOption(Socket *socket, struct timeval *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(struct timeval))
+   if(*optlen >= (c_socklen_t) sizeof(struct timeval))
    {
       //Return the timeout value
       if(socket->timeout == INFINITE_DELAY)
@@ -1916,13 +1916,13 @@ int_t socketGetSoRcvTimeoOption(Socket *socket, struct timeval *optval,
  **/
 
 int_t socketGetSoSndBufOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Return the size of the send buffer
       *optval = socket->txBufferSize;
@@ -1959,13 +1959,13 @@ int_t socketGetSoSndBufOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetSoRcvBufOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Return the size of the receive buffer
       *optval = socket->rxBufferSize;
@@ -2002,13 +2002,13 @@ int_t socketGetSoRcvBufOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetSoKeepAliveOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED && TCP_KEEP_ALIVE_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option specifies whether TCP keep-alive is enabled
       *optval = socket->keepAliveEnabled;
@@ -2043,12 +2043,12 @@ int_t socketGetSoKeepAliveOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetSoTypeOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Return the type of the socket
       if(socket->type == SOCKET_TYPE_STREAM)
@@ -2093,12 +2093,12 @@ int_t socketGetSoTypeOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetSoErrorOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Return the error code
       *optval = socket->errnoCode;
@@ -2134,13 +2134,13 @@ int_t socketGetSoErrorOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpTosOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Return ToS value
       *optval = socket->tos;
@@ -2178,13 +2178,13 @@ int_t socketGetIpTosOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpTtlOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Return TTL value
       *optval = socket->ttl;
@@ -2222,13 +2222,13 @@ int_t socketGetIpTtlOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpMulticastTtlOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Return TTL value for multicast packets
       *optval = socket->multicastTtl;
@@ -2266,13 +2266,13 @@ int_t socketGetIpMulticastTtlOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpMulticastLoopOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //For a socket that has joined one or more multicast groups, this option
       //controls whether it will receive a copy of outgoing packets sent to
@@ -2320,13 +2320,13 @@ int_t socketGetIpMulticastLoopOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpDontFragOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option can be used to set the "don't fragment" flag on IP packets
       if((socket->options & SOCKET_OPTION_IPV4_DONT_FRAG) != 0)
@@ -2372,13 +2372,13 @@ int_t socketGetIpDontFragOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpPktInfoOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option allows an application to enable or disable the return of
       //packet information
@@ -2425,13 +2425,13 @@ int_t socketGetIpPktInfoOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpRecvTosOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option allows an application to enable or disable the return of
       //ToS header field on received datagrams
@@ -2478,13 +2478,13 @@ int_t socketGetIpRecvTosOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpRecvTtlOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV4_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option allows an application to enable or disable the return of
       //TTL header field on received datagrams
@@ -2531,13 +2531,13 @@ int_t socketGetIpRecvTtlOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpv6TrafficClassOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Return Traffic Class value
       *optval = socket->tos;
@@ -2575,13 +2575,13 @@ int_t socketGetIpv6TrafficClassOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpv6UnicastHopsOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option specifies the TTL value associated with an IPv6 socket
       //for unicast traffic
@@ -2621,13 +2621,13 @@ int_t socketGetIpv6UnicastHopsOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpv6MulticastHopsOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option specifies the TTL value associated with an IPv6 socket
       //for multicast traffic
@@ -2667,13 +2667,13 @@ int_t socketGetIpv6MulticastHopsOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpv6MulticastLoopOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //For a socket that has joined one or more multicast groups, this option
       //controls whether it will receive a copy of outgoing packets sent to
@@ -2720,13 +2720,13 @@ int_t socketGetIpv6MulticastLoopOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpv6OnlyOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option indicates if a socket created for the AF_INET6 address
       //family is restricted to IPv6 communications only
@@ -2773,13 +2773,13 @@ int_t socketGetIpv6OnlyOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpv6DontFragOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option defines a mechanism to turn off the automatic inserting
       //of a fragment header for UDP and raw sockets (refer to RFC 3542,
@@ -2827,13 +2827,13 @@ int_t socketGetIpv6DontFragOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpv6PktInfoOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option allows an application to enable or disable the return of
       //packet information
@@ -2880,13 +2880,13 @@ int_t socketGetIpv6PktInfoOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpv6RecvTrafficClassOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option allows an application to enable or disable the return of
       //Traffic Class header field on received datagrams
@@ -2933,13 +2933,13 @@ int_t socketGetIpv6RecvTrafficClassOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetIpv6RecvHopLimitOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (IPV6_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //This option allows an application to enable or disable the return of
       //Hop Limit header field on received datagrams
@@ -2986,13 +2986,13 @@ int_t socketGetIpv6RecvHopLimitOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetTcpNoDelayOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //The option enables or disables the Nagle algorithm for TCP sockets
       if((socket->options & SOCKET_OPTION_TCP_NO_DELAY) != 0)
@@ -3038,13 +3038,13 @@ int_t socketGetTcpNoDelayOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetTcpMaxSegOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Get exclusive access
       osAcquireMutex(&netMutex);
@@ -3094,13 +3094,13 @@ int_t socketGetTcpMaxSegOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetTcpKeepIdleOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED && TCP_KEEP_ALIVE_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Convert the time interval to seconds
       *optval = socket->keepAliveIdle / 1000;
@@ -3135,13 +3135,13 @@ int_t socketGetTcpKeepIdleOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetTcpKeepIntvlOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED && TCP_KEEP_ALIVE_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Convert the time interval to seconds
       *optval = socket->keepAliveInterval / 1000;
@@ -3177,13 +3177,13 @@ int_t socketGetTcpKeepIntvlOption(Socket *socket, int_t *optval,
  **/
 
 int_t socketGetTcpKeepCntOption(Socket *socket, int_t *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
 
 #if (TCP_SUPPORT == ENABLED && TCP_KEEP_ALIVE_SUPPORT == ENABLED)
    //Check the length of the option
-   if(*optlen >= (socklen_t) sizeof(int_t))
+   if(*optlen >= (c_socklen_t) sizeof(int_t))
    {
       //Return parameter value
       *optval = socket->keepAliveMaxProbes;

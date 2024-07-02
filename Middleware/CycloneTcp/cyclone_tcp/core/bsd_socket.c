@@ -104,7 +104,7 @@ int_t c_socket(int_t family, int_t type, int_t protocol)
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t c_bind(int_t s, const struct sockaddr *addr, socklen_t addrlen)
+int_t c_bind(int_t s, const struct sockaddr *addr, c_socklen_t addrlen)
 {
    error_t error;
    uint16_t port;
@@ -121,7 +121,7 @@ int_t c_bind(int_t s, const struct sockaddr *addr, socklen_t addrlen)
    sock = &socketTable[s];
 
    //Check the length of the address
-   if(addrlen < (socklen_t) sizeof(SOCKADDR))
+   if(addrlen < (c_socklen_t) sizeof(SOCKADDR))
    {
       //Report an error
       socketSetErrnoCode(sock, EINVAL);
@@ -131,7 +131,7 @@ int_t c_bind(int_t s, const struct sockaddr *addr, socklen_t addrlen)
 #if (IPV4_SUPPORT == ENABLED)
    //IPv4 address?
    if(addr->sa_family == AF_INET &&
-      addrlen >= (socklen_t) sizeof(SOCKADDR_IN))
+      addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN))
    {
       //Point to the IPv4 address information
       SOCKADDR_IN *sa = (SOCKADDR_IN *) addr;
@@ -148,7 +148,7 @@ int_t c_bind(int_t s, const struct sockaddr *addr, socklen_t addrlen)
 #if (IPV6_SUPPORT == ENABLED)
    //IPv6 address?
    if(addr->sa_family == AF_INET6 &&
-      addrlen >= (socklen_t) sizeof(SOCKADDR_IN6))
+      addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN6))
    {
       //Point to the IPv6 address information
       SOCKADDR_IN6 *sa = (SOCKADDR_IN6 *) addr;
@@ -201,7 +201,7 @@ int_t c_bind(int_t s, const struct sockaddr *addr, socklen_t addrlen)
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t c_connect(int_t s, const struct sockaddr *addr, socklen_t addrlen)
+int_t c_connect(int_t s, const struct sockaddr *addr, c_socklen_t addrlen)
 {
    error_t error;
    uint16_t port;
@@ -218,7 +218,7 @@ int_t c_connect(int_t s, const struct sockaddr *addr, socklen_t addrlen)
    sock = &socketTable[s];
 
    //Check the length of the address
-   if(addrlen < (socklen_t) sizeof(SOCKADDR))
+   if(addrlen < (c_socklen_t) sizeof(SOCKADDR))
    {
       socketSetErrnoCode(sock, EINVAL);
       return SOCKET_ERROR;
@@ -227,7 +227,7 @@ int_t c_connect(int_t s, const struct sockaddr *addr, socklen_t addrlen)
 #if (IPV4_SUPPORT == ENABLED)
    //IPv4 address?
    if(addr->sa_family == AF_INET &&
-      addrlen >= (socklen_t) sizeof(SOCKADDR_IN))
+      addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN))
    {
       //Point to the IPv4 address information
       SOCKADDR_IN *sa = (SOCKADDR_IN *) addr;
@@ -244,7 +244,7 @@ int_t c_connect(int_t s, const struct sockaddr *addr, socklen_t addrlen)
 #if (IPV6_SUPPORT == ENABLED)
    //IPv6 address?
    if(addr->sa_family == AF_INET6 &&
-      addrlen >= (socklen_t) sizeof(SOCKADDR_IN6))
+      addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN6))
    {
       //Point to the IPv6 address information
       SOCKADDR_IN6 *sa = (SOCKADDR_IN6 *) addr;
@@ -357,7 +357,7 @@ int_t c_listen(int_t s, int_t backlog)
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t c_accept(int_t s, struct sockaddr *addr, socklen_t *addrlen)
+int_t c_accept(int_t s, struct sockaddr *addr, c_socklen_t *addrlen)
 {
    uint16_t port;
    IpAddr ipAddr;
@@ -390,7 +390,7 @@ int_t c_accept(int_t s, struct sockaddr *addr, socklen_t *addrlen)
 #if (IPV4_SUPPORT == ENABLED)
       //IPv4 address?
       if(ipAddr.length == sizeof(Ipv4Addr) &&
-         *addrlen >= (socklen_t) sizeof(SOCKADDR_IN))
+         *addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN))
       {
          //Point to the IPv4 address information
          SOCKADDR_IN *sa = (SOCKADDR_IN *) addr;
@@ -410,7 +410,7 @@ int_t c_accept(int_t s, struct sockaddr *addr, socklen_t *addrlen)
 #if (IPV6_SUPPORT == ENABLED)
       //IPv6 address?
       if(ipAddr.length == sizeof(Ipv6Addr) &&
-         *addrlen >= (socklen_t) sizeof(SOCKADDR_IN6))
+         *addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN6))
       {
          //Point to the IPv6 address information
          SOCKADDR_IN6 *sa = (SOCKADDR_IN6 *) addr;
@@ -533,7 +533,7 @@ int_t c_send(int_t s, const void *data, size_t length, int_t flags)
  **/
 
 int_t c_sendto(int_t s, const void *data, size_t length, int_t flags,
-   const struct sockaddr *addr, socklen_t addrlen)
+   const struct sockaddr *addr, c_socklen_t addrlen)
 {
    error_t error;
    size_t written;
@@ -568,7 +568,7 @@ int_t c_sendto(int_t s, const void *data, size_t length, int_t flags,
    }
 
    //Check the length of the address
-   if(addrlen < (socklen_t) sizeof(SOCKADDR))
+   if(addrlen < (c_socklen_t) sizeof(SOCKADDR))
    {
       //Report an error
       socketSetErrnoCode(sock, EINVAL);
@@ -578,7 +578,7 @@ int_t c_sendto(int_t s, const void *data, size_t length, int_t flags,
 #if (IPV4_SUPPORT == ENABLED)
    //IPv4 address?
    if(addr->sa_family == AF_INET &&
-      addrlen >= (socklen_t) sizeof(SOCKADDR_IN))
+      addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN))
    {
       //Point to the IPv4 address information
       SOCKADDR_IN *sa = (SOCKADDR_IN *) addr;
@@ -595,7 +595,7 @@ int_t c_sendto(int_t s, const void *data, size_t length, int_t flags,
 #if (IPV6_SUPPORT == ENABLED)
    //IPv6 address?
    if(addr->sa_family == AF_INET6 &&
-      addrlen >= (socklen_t) sizeof(SOCKADDR_IN6))
+      addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN6))
    {
       //Point to the IPv6 address information
       SOCKADDR_IN6 *sa = (SOCKADDR_IN6 *) addr;
@@ -688,7 +688,7 @@ int_t c_sendmsg(int_t s, struct msghdr *msg, int_t flags)
    message.length = msg->msg_iov[0].iov_len;
 
    //Check the length of the address
-   if(msg->msg_namelen < (socklen_t) sizeof(SOCKADDR))
+   if(msg->msg_namelen < (c_socklen_t) sizeof(SOCKADDR))
    {
       //Report an error
       socketSetErrnoCode(sock, EINVAL);
@@ -701,7 +701,7 @@ int_t c_sendmsg(int_t s, struct msghdr *msg, int_t flags)
 #if (IPV4_SUPPORT == ENABLED)
    //IPv4 address?
    if(addr->sa_family == AF_INET &&
-      msg->msg_namelen >= (socklen_t) sizeof(SOCKADDR_IN))
+      msg->msg_namelen >= (c_socklen_t) sizeof(SOCKADDR_IN))
    {
       //Point to the IPv4 address information
       SOCKADDR_IN *sa = (SOCKADDR_IN *) addr;
@@ -718,7 +718,7 @@ int_t c_sendmsg(int_t s, struct msghdr *msg, int_t flags)
 #if (IPV6_SUPPORT == ENABLED)
    //IPv6 address?
    if(addr->sa_family == AF_INET6 &&
-      msg->msg_namelen >= (socklen_t) sizeof(SOCKADDR_IN6))
+      msg->msg_namelen >= (c_socklen_t) sizeof(SOCKADDR_IN6))
    {
       //Point to the IPv6 address information
       SOCKADDR_IN6 *sa = (SOCKADDR_IN6 *) addr;
@@ -987,7 +987,7 @@ int_t c_recv(int_t s, void *data, size_t size, int_t flags)
  **/
 
 int_t c_recvfrom(int_t s, void *data, size_t size, int_t flags,
-   struct sockaddr *addr, socklen_t *addrlen)
+   struct sockaddr *addr, c_socklen_t *addrlen)
 {
    error_t error;
    size_t received;
@@ -1051,7 +1051,7 @@ int_t c_recvfrom(int_t s, void *data, size_t size, int_t flags,
 #if (IPV4_SUPPORT == ENABLED)
       //IPv4 address?
       if(ipAddr.length == sizeof(Ipv4Addr) &&
-         *addrlen >= (socklen_t) sizeof(SOCKADDR_IN))
+         *addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN))
       {
          //Point to the IPv4 address information
          SOCKADDR_IN *sa = (SOCKADDR_IN *) addr;
@@ -1071,7 +1071,7 @@ int_t c_recvfrom(int_t s, void *data, size_t size, int_t flags,
 #if (IPV6_SUPPORT == ENABLED)
       //IPv6 address?
       if(ipAddr.length == sizeof(Ipv6Addr) &&
-         *addrlen >= (socklen_t) sizeof(SOCKADDR_IN6))
+         *addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN6))
       {
          //Point to the IPv6 address information
          SOCKADDR_IN6 *sa = (SOCKADDR_IN6 *) addr;
@@ -1180,7 +1180,7 @@ int_t c_recvmsg(int_t s, struct msghdr *msg, int_t flags)
 #if (IPV4_SUPPORT == ENABLED)
       //IPv4 address?
       if(message.srcIpAddr.length == sizeof(Ipv4Addr) &&
-         msg->msg_namelen >= (socklen_t) sizeof(SOCKADDR_IN))
+         msg->msg_namelen >= (c_socklen_t) sizeof(SOCKADDR_IN))
       {
          //Point to the IPv4 address information
          SOCKADDR_IN *sa = (SOCKADDR_IN *) msg->msg_name;
@@ -1200,7 +1200,7 @@ int_t c_recvmsg(int_t s, struct msghdr *msg, int_t flags)
 #if (IPV6_SUPPORT == ENABLED)
       //IPv6 address?
       if(message.srcIpAddr.length == sizeof(Ipv6Addr) &&
-         msg->msg_namelen >= (socklen_t) sizeof(SOCKADDR_IN6))
+         msg->msg_namelen >= (c_socklen_t) sizeof(SOCKADDR_IN6))
       {
          //Point to the IPv6 address information
          SOCKADDR_IN6 *sa = (SOCKADDR_IN6 *) msg->msg_name;
@@ -1473,7 +1473,7 @@ int_t c_recvmsg(int_t s, struct msghdr *msg, int_t flags)
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t c_getsockname(int_t s, struct sockaddr *addr, socklen_t *addrlen)
+int_t c_getsockname(int_t s, struct sockaddr *addr, c_socklen_t *addrlen)
 {
    int_t ret;
    Socket *sock;
@@ -1496,7 +1496,7 @@ int_t c_getsockname(int_t s, struct sockaddr *addr, socklen_t *addrlen)
 #if (IPV4_SUPPORT == ENABLED)
       //IPv4 address?
       if(sock->localIpAddr.length == sizeof(Ipv4Addr) &&
-         *addrlen >= (socklen_t) sizeof(SOCKADDR_IN))
+         *addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN))
       {
          //Point to the IPv4 address information
          SOCKADDR_IN *sa = (SOCKADDR_IN *) addr;
@@ -1518,7 +1518,7 @@ int_t c_getsockname(int_t s, struct sockaddr *addr, socklen_t *addrlen)
 #if (IPV6_SUPPORT == ENABLED)
       //IPv6 address?
       if(sock->localIpAddr.length == sizeof(Ipv6Addr) &&
-         *addrlen >= (socklen_t) sizeof(SOCKADDR_IN6))
+         *addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN6))
       {
          //Point to the IPv6 address information
          SOCKADDR_IN6 *sa = (SOCKADDR_IN6 *) addr;
@@ -1569,7 +1569,7 @@ int_t c_getsockname(int_t s, struct sockaddr *addr, socklen_t *addrlen)
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t c_getpeername(int_t s, struct sockaddr *addr, socklen_t *addrlen)
+int_t c_getpeername(int_t s, struct sockaddr *addr, c_socklen_t *addrlen)
 {
    int_t ret;
    Socket *sock;
@@ -1592,7 +1592,7 @@ int_t c_getpeername(int_t s, struct sockaddr *addr, socklen_t *addrlen)
 #if (IPV4_SUPPORT == ENABLED)
       //IPv4 address?
       if(sock->remoteIpAddr.length == sizeof(Ipv4Addr) &&
-         *addrlen >= (socklen_t) sizeof(SOCKADDR_IN))
+         *addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN))
       {
          //Point to the IPv4 address information
          SOCKADDR_IN *sa = (SOCKADDR_IN *) addr;
@@ -1614,7 +1614,7 @@ int_t c_getpeername(int_t s, struct sockaddr *addr, socklen_t *addrlen)
 #if (IPV6_SUPPORT == ENABLED)
       //IPv6 address?
       if(sock->remoteIpAddr.length == sizeof(Ipv6Addr) &&
-         *addrlen >= (socklen_t) sizeof(SOCKADDR_IN6))
+         *addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN6))
       {
          //Point to the IPv6 address information
          SOCKADDR_IN6 *sa = (SOCKADDR_IN6 *) addr;
@@ -1670,7 +1670,7 @@ int_t c_getpeername(int_t s, struct sockaddr *addr, socklen_t *addrlen)
  **/
 
 int_t c_setsockopt(int_t s, int_t level, int_t optname, const void *optval,
-   socklen_t optlen)
+   c_socklen_t optlen)
 {
    int_t ret;
    Socket *sock;
@@ -1937,7 +1937,7 @@ int_t c_setsockopt(int_t s, int_t level, int_t optname, const void *optval,
  **/
 
 int_t c_getsockopt(int_t s, int_t level, int_t optname, void *optval,
-   socklen_t *optlen)
+   c_socklen_t *optlen)
 {
    int_t ret;
    Socket *sock;
@@ -3009,7 +3009,7 @@ void c_freeaddrinfo(struct addrinfo *res)
  * @return On success, zero is returned. On error, a non-zero value is returned
  **/
 
-int_t c_getnameinfo(const struct sockaddr *addr, socklen_t addrlen,
+int_t c_getnameinfo(const struct sockaddr *addr, c_socklen_t addrlen,
    char_t *host, size_t hostlen, char_t *serv, size_t servlen, int flags)
 {
    uint16_t port;
@@ -3021,7 +3021,7 @@ int_t c_getnameinfo(const struct sockaddr *addr, socklen_t addrlen,
 #if (IPV4_SUPPORT == ENABLED)
    //IPv4 address?
    if(addr->sa_family == AF_INET &&
-      addrlen >= (socklen_t) sizeof(SOCKADDR_IN))
+      addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN))
    {
       SOCKADDR_IN *sa;
       Ipv4Addr ipv4Addr;
@@ -3050,7 +3050,7 @@ int_t c_getnameinfo(const struct sockaddr *addr, socklen_t addrlen,
 #if (IPV6_SUPPORT == ENABLED)
    //IPv6 address?
    if(addr->sa_family == AF_INET6 &&
-      addrlen >= (socklen_t) sizeof(SOCKADDR_IN6))
+      addrlen >= (c_socklen_t) sizeof(SOCKADDR_IN6))
    {
       SOCKADDR_IN6 *sa;
       Ipv6Addr ipv6Addr;
@@ -3191,7 +3191,7 @@ const char_t *c_inet_ntoa(struct in_addr in)
  * @return Pointer to the formatted string
  **/
 
-const char_t *c_inet_ntoa_r(struct in_addr in, char_t *buf, socklen_t buflen)
+const char_t *c_inet_ntoa_r(struct in_addr in, char_t *buf, c_socklen_t buflen)
 {
    //Properly terminate the string
    buf[0] = '\0';
@@ -3291,7 +3291,7 @@ int_t c_inet_pton(int_t af, const char_t *src, void *dst)
  *   NULL is returned if there was an error
  **/
 
-const char_t *c_inet_ntop(int_t af, const void *src, char_t *dst, socklen_t size)
+const char_t *c_inet_ntop(int_t af, const void *src, char_t *dst, c_socklen_t size)
 {
 #if (IPV4_SUPPORT == ENABLED)
    //IPv4 address?
