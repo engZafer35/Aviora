@@ -13,26 +13,12 @@
 #define __APPLICATION_APPZMETERGW_INC_APPTIMESERVICE_H__
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
-
+#include <time.h>
 /******************************MACRO DEFINITIONS*******************************/
 
 #define APP_TIME_SERVICE_NTP    (ENABLE) //Todo: ntp could be enabled or disabled with this macro.
 
 /*******************************TYPE DEFINITIONS ******************************/
-typedef struct
-{
-    int tm_sec;
-    int tm_min;
-    int tm_hour;
-    int tm_mday;
-    int tm_mon;
-    int tm_year;
-    int tm_wday;
-    int tm_yday;
-    int tm_isdst;
-}TS_Time;
-
-
 typedef struct
 {
     S32 *ntpServer;
@@ -45,7 +31,7 @@ typedef struct
 
 RETURN_STATUS appTimeServiceInit(const char *ntpServer, U32 ntpPort); //Todo: get configuration for ntp and other things
 
-RETURN_STATUS appTimeServiceGetTime(TS_Time *tm);
+void appTimeServiceGetTime(struct tm *tm);
 
 /*
  * When ntp is enabled, The time service doesn't need to be updated manually
