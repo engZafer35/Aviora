@@ -70,8 +70,6 @@ static int gs_sockfd;
 
 static RETURN_STATUS initNTP(const char *ntpServer, U32 ntpPort)
 {
-    RETURN_STATUS retVal = SUCCESS;
-
     SOCKADDR_IN serv_addr; // Server address data structure.
     struct hostent *server;      // Server data structure.
 
@@ -79,58 +77,56 @@ static RETURN_STATUS initNTP(const char *ntpServer, U32 ntpPort)
 
     if (gs_sockfd < 0)
     {
-      perror( "ERROR opening socket" );
+        DEBUG_ERROR("->[E] ERROR opening socket" );
+        return  FAILURE;
     }
+
     server = GETHOSTBYNAME((const char*)ntpServer); // Convert URL to IP.
-
     if (server == NULL )
-        perror( "ERROR, no such host" );
-
-    // Zero out the server address structure.
+    {
+        DEBUG_ERROR("->[E] ERROR, no such host");
+        return  FAILURE;
+    }
 
     bzero( ( char* ) &serv_addr, sizeof( serv_addr ) );
 
     serv_addr.sin_family = AF_INET;
 
     // Copy the server's IP address to the server address structure.
-
     bcopy( ( char* )server->h_addr, ( char* ) &serv_addr.sin_addr.s_addr, server->h_length );
 
     // Convert the port number integer to network big-endian style and save it to the server address structure.
-
     serv_addr.sin_port = htons(ntpPort);
 
     // Call up the server using its IP address and port number.
-
     if (CONNECT( gs_sockfd, ( SOCKADDR * ) &serv_addr, sizeof( serv_addr) ) < 0 )
     {
-        perror( "ERROR connecting" );
+        DEBUG_ERROR("->[E] ERROR connecting" );
+        return  FAILURE;
     }
 
     return SUCCESS;
 }
 
-static RETURN_STATUS getTimeFromNTP(U32 *epochTime)
+static RETURN_STATUS getTimeFromNTP(struct tm *timeStr)
 {
     ntp_packet packet;
 
     memset(&packet, 0, sizeof(ntp_packet));
 
-    *( ( char * ) &packet + 0 ) = 0x1b; // Represents 27 in base 10 or 00011011 in base 2.
-    int n; // Socket file descriptor and the n return result from writing/reading from the socket.
-    // Send it the NTP packet it wants. If n == -1, it failed.
+    packet.li_vn_mode = 0x1b; // Represents 27 in base 10 or 00011011 in base 2.
 
-    n = SEND( gs_sockfd, (char*)&packet, sizeof( ntp_packet ), 0);
+    if (0 > SEND( gs_sockfd, (char*)&packet, sizeof( ntp_packet ), 0))
+    {
+        DEBUG_ERROR("->[E] ERROR writing to socket" );
+        return FAILURE;
+    }
 
-    if ( n < 0 )
-      error( "ERROR writing to socket" );
-
-    // Wait and receive the packet back from the server. If n == -1, it failed.
-
-    n = RECV(gs_sockfd, (char*)&packet, sizeof( ntp_packet ), 0);
-
-    if ( n < 0 )
-      error( "ERROR reading from socket" );
+    if (0 >= RECV(gs_sockfd, (char*)&packet, sizeof( ntp_packet ), 0))
+    {
+        DEBUG_ERROR("->[E] ERROR reading from socket");
+        return FAILURE;
+    }
 
     // These two fields contain the time-stamp seconds as the packet left the NTP server.
     // The number of seconds correspond to the seconds passed since 1900.
@@ -145,10 +141,9 @@ static RETURN_STATUS getTimeFromNTP(U32 *epochTime)
     // (1900)------------------(1970)**************************************(Time Packet Left the Server)
 
     time_t txTm = ( time_t ) ( packet.txTm_s - NTP_TIMESTAMP_DELTA );
+    *timeStr = *localtime(&txTm);
 
-    // Print the time we got from the server, accounting for local timezone and conversion from UTC time.
-
-    printf("Time: %s\n", ctime( ( const time_t* ) &txTm ) );
+    printf(" %d: %d :%d - %d \n", timeStr->tm_mday, timeStr->tm_mon+1, timeStr->tm_year+1900, timeStr->tm_wday);
     return SUCCESS;
 }
 
@@ -157,21 +152,39 @@ static RETURN_STATUS initRTC(void)
     return SUCCESS;
 }
 
-static RETURN_STATUS setRTCTime(const TS_Time *time)
+static RETURN_STATUS setRTCTime(const struct tm *time)
 {
     return SUCCESS;
 }
 
-static RETURN_STATUS getRTCTime(TS_Time *time)
+static void getRTCTime(struct tm *timeStr)
 {
-    return SUCCESS;
+    /*todo:
+     * get time from internal rtc register. If the chip doesn't have internal
+     * rtc chip set 1 sec. timer to update time value. Just read rtc chip in 5 min period
+     * to sync/check time.
+     */
+
+    time_t     now;
+
+    // Get current time
+    time(&now);
+
+    // Format time, "ddd yyyy-mm-dd hh:mm:ss zzz"
+    *timeStr = *localtime(&now);
 }
 
 #endif
 
 static void tsTimerCb (void)
 {
-    getTimeFromNTP(NULL);
+    struct tm tmpTime;
+    printf(" -------<<Tcb>>> \n");
+
+    if (SUCCESS == getTimeFromNTP(&tmpTime))
+    {
+        setRTCTime(&tmpTime);
+    }
 }
 /***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS appTimeServiceInit(const char *ntpServer, U32 ntpPort)
@@ -184,31 +197,33 @@ RETURN_STATUS appTimeServiceInit(const char *ntpServer, U32 ntpPort)
     {
         DEBUG_ERROR("->[E] NTP init ERROR");
         appLogRec(g_sysLoggerID, "Error: NTP could not be initialized");
-        //TODO: send this error over data bus
+        retVal = FAILURE;
     }
-
-
-    S32 timerID;
-    middEventTimerRegister(&timerID, tsTimerCb, WAIT_2_SEC , TRUE);
-    middEventTimerStart(timerID);
+    else
+    {
+        S32 timerID;
+        middEventTimerRegister(&timerID, tsTimerCb, WAIT_2_SEC , TRUE);
+        middEventTimerStart(timerID);
+    }
 
 #endif
 
-
-    retVal = initRTC();
-    if (FAILURE == retVal)
+    if (FAILURE == initRTC())
     {
         DEBUG_ERROR("->[E] RTC init ERROR");
         appLogRec(g_sysLoggerID, "Error: RTC could not be initialized");
-        //TODO: send this error over data bus
+        retVal |= FAILURE; //keep ntp initialize return value.
     }
 
     return SUCCESS;
 }
 
-RETURN_STATUS appTimeServiceGetTime(TS_Time *tm)
+void appTimeServiceGetTime(struct tm *tm)
 {
-    return SUCCESS;
+    if (IS_SAFELY_PTR(tm))
+    {
+        getRTCTime(tm);
+    }
 }
 
 #if (APP_TIME_SERVICE_NTP == DISABLE)
