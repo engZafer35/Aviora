@@ -379,15 +379,13 @@ RETURN_STATUS appDisplayInit(void)
     if (OS_INVALID_TASK_ID != gs_dpTaskID)
     {
         zosSuspendTask(gs_dpTaskID);
-        retVal = appDBusRegister(EN_DBUS_TOPIC_TIME | EN_DBUS_TOPIC_GSM | EN_DBUS_TOPIC_NETWORK | EN_DBUS_TOPIC_DEVICE, &gs_dbusID);
+        retVal = appDBusRegister(EN_DBUS_TOPIC_GSM | EN_DBUS_TOPIC_NETWORK | EN_DBUS_TOPIC_DEVICE, &gs_dbusID);
     }
-#if (ENABLE == SHOW_PAGE_DBG_MSG)
     else
     {
         DEBUG_ERROR("->[E] Display Task could not be created");
-        //appLogRec(g_sysLoggerID, "Display: Task could not be created");
+        appLogRec(g_sysLoggerID, "Display: Task could not be created");
     }
-#endif
 
     return retVal;
 }
