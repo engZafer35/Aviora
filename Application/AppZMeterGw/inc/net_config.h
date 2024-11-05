@@ -31,6 +31,13 @@
 #ifndef _NET_CONFIG_H
 #define _NET_CONFIG_H
 
+#define USE_CYCLONE_LIB  ENABLED
+
+#if USE_CYCLONE_LIB == ENABLED
+
+#include "core/bsd_socket.h"
+#include "core/net.h"
+
 //Trace level for TCP/IP stack debugging
 #define MEM_TRACE_LEVEL          4
 #define NIC_TRACE_LEVEL          4
@@ -158,7 +165,6 @@
 #define PPP_SUPPORT             ENABLED
 #define PING_SUPPORT            ENABLED
 
-#if BSD_SOCKET_SUPPORT==ENABLED
 /*
  * Use the following macro in linux OS, you can separate Cyclone bsd-func and linux bsd-func
  * Wiht this way, we can use both linux-bsd and Cyclone-bsd together
@@ -177,6 +183,7 @@
 #define RECVMSG         c_recvmsg
 #define getsockname     c_getsockname
 #define getpeername     c_getpeername
+#define GETPEERNAME     c_getpeername
 #define SETSOCKOPT      c_setsockopt
 #define GETSOCKOPT      c_getsockopt
 #define IOCTLSOCKET     c_ioctlsocket

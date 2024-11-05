@@ -12,8 +12,7 @@
 /********************************* INCLUDES ***********************************/
 #include "AppTimeService.h"
 
-#include "core/bsd_socket.h"
-#include "core/net.h"
+#include "net_config.h"
 
 #include "AppGlobalVariables.h"
 #include "AppLogRecorder.h"
