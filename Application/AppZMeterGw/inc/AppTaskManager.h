@@ -13,7 +13,6 @@
 #define __APP_TASK_MANAGER_H__
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
-
 #include "Midd_OSPort.h"
 /******************************MACRO DEFINITIONS*******************************/
 #define MANAGE_MAX_TASK_NUMBER  (10) /** number of threads which will be tracked by this module */

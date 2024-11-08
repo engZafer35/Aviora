@@ -234,14 +234,25 @@ static void mainWind(void)
         }
 
         if (gs_dspData.workingMode != devMsg.wMode)
-            gs_dspData.workingMode = devMsg.wMode;
         {
-            if (EN_WORKING_MODE_FAILURE == gs_dspData.workingMode)          { setCurrentWindFunc(EN_DISPLAY_WINDOW_FAILURE); }
-            else if (EN_WORKING_MODE_SW_UPDATING == gs_dspData.workingMode) { setCurrentWindFunc(EN_DISPLAY_WINDOW_SW_UPDATING);}
-            /** when device switch to power down mode, display doesn't need to change window, stay in main window */
+            gs_dspData.workingMode = devMsg.wMode;
         }
 
-        osDelayTask(1000); //refresh the screen in 1 min
+        if (EN_WORKING_MODE_FAILURE == gs_dspData.workingMode)
+        {
+            setCurrentWindFunc(EN_DISPLAY_WINDOW_FAILURE);
+        }
+        else if (EN_WORKING_MODE_SW_UPDATING == gs_dspData.workingMode)
+        {
+            setCurrentWindFunc(EN_DISPLAY_WINDOW_SW_UPDATING);
+        }
+
+        /**
+         *  Note: when device switch to power down mode, display doesn't need to change window, stay in main window
+         *  That is, there is not a special window for power down mode
+         */
+
+        zosDelayTask(1000); //refresh the screen in 1 min
 
         if (mainWind != currWind)
         {
@@ -285,7 +296,7 @@ static void swUpdatingWind(void)
             else if (EN_WORKING_MODE_MAIN == gs_dspData.workingMode)     { setCurrentWindFunc(EN_DISPLAY_WINDOW_MAIN);    }
         }
 
-        osDelayTask(1000); //refresh the screen in 1 min
+        zosDelayTask(1000); //refresh the screen in 1 min
 
         if (swUpdatingWind != currWind)
         {
@@ -332,7 +343,7 @@ static void failureWind(void)
             else if (EN_WORKING_MODE_MAIN == gs_dspData.workingMode)     { setCurrentWindFunc(EN_DISPLAY_WINDOW_MAIN);       }
         }
 
-        osDelayTask(1000); //refresh the screen in 1 min
+        zosDelayTask(1000); //refresh the screen in 1 min
 
         if (failureWind != currWind)
         {
@@ -355,7 +366,7 @@ static void setCurrentWindFunc(EN_DISPLAY_WINDOW nextWind)
 
 static void displayTask(void * pvParameters)
 {
-    osDelayTask(1000); //wait once before starting
+    zosDelayTask(1000); //wait once before starting
     while (1)
     {
         currWind(); //run current window function

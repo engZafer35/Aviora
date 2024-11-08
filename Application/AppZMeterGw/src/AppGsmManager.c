@@ -38,7 +38,6 @@ static U32 gs_gsmModemReady = FALSE;
 static S32 gs_gsmDbusID;
 static GsmDataBusPacket gs_dataBusPck;
 
-
 static S32 gs_timerId;
 
 /***************************** STATIC FUNCTIONS  ******************************/

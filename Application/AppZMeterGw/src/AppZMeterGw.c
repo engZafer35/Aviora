@@ -142,7 +142,6 @@ static RETURN_STATUS initSWUnit(void)
 {
     RETURN_STATUS retVal = SUCCESS;
     LogRecInterface sysLoggerInterface; //TODO: change this structure with file system w/r operation
-    NtpServerConf ntpConf;
 
     sysLoggerInterface.writeFunc = myWriteLog;
     sysLoggerInterface.readFunc  = myReadLog;
