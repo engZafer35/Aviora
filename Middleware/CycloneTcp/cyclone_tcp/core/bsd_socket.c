@@ -2681,7 +2681,7 @@ struct hostent *c_gethostbyname_r(const char_t *name, struct hostent *result,
    }
 
    //Resolve host address
-   error = gethostbyname(NULL, name, &ipAddr, 0);
+   error = gethostbyname_cylone(NULL, name, &ipAddr, 0);
    //Address resolution failed?
    if(error)
    {
@@ -2815,7 +2815,7 @@ int_t c_getaddrinfo(const char_t *node, const char_t *service,
       else
       {
          //Resolve host address
-         error = gethostbyname(NULL, node, &ipAddr, flags);
+         error = gethostbyname_cylone(NULL, node, &ipAddr, flags);
       }
 
       //Check status code

@@ -484,7 +484,7 @@ void socketClose(Socket *socket);
 error_t socketPoll(SocketEventDesc *eventDesc, uint_t size, OsEvent *extEvent,
    systime_t timeout);
 
-error_t gethostbyname(NetInterface *interface, const char_t *name,
+error_t gethostbyname_cylone(NetInterface *interface, const char_t *name,
    IpAddr *ipAddr, uint_t flags);
 
 //C++ guard

@@ -10,6 +10,8 @@
 *******************************************************************************/
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
+#include "net_config.h"
+#if USE_CYCLONE_LIB == 1
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -286,4 +288,5 @@ void uartStartTx(void)
 {
     pthread_cond_signal(&cond);
 }
+#endif
 /******************************** End Of File *********************************/

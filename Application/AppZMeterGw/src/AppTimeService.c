@@ -11,11 +11,10 @@
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
 #include "AppTimeService.h"
-
-#include "net_config.h"
-
 #include "AppGlobalVariables.h"
 #include "AppLogRecorder.h"
+
+#include "net_config.h"
 
 #include "MiddEventTimer.h"
 /****************************** MACRO DEFINITIONS *****************************/
@@ -69,7 +68,7 @@ static int gs_sockfd;
 
 static RETURN_STATUS initNTP(const char *ntpServer, U32 ntpPort)
 {
-    SOCKADDR_IN serv_addr; // Server address data structure.
+    struct sockaddr_in serv_addr; //SOCKADDR_IN serv_addr; // TODO: SOCKADDR_IN is not compatible with posix Server address data structure.
     struct hostent *server;      // Server data structure.
 
     gs_sockfd = SOCKET(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -80,7 +79,7 @@ static RETURN_STATUS initNTP(const char *ntpServer, U32 ntpPort)
         return  FAILURE;
     }
 
-    server = GETHOSTBYNAME((const char*)ntpServer); // Convert URL to IP.
+    server = gethostbyname((const char*)ntpServer); // Convert URL to IP.
     if (server == NULL )
     {
         DEBUG_ERROR("->[E] ERROR, no such host");
@@ -98,7 +97,7 @@ static RETURN_STATUS initNTP(const char *ntpServer, U32 ntpPort)
     serv_addr.sin_port = htons(ntpPort);
 
     // Call up the server using its IP address and port number.
-    if (CONNECT( gs_sockfd, ( SOCKADDR * ) &serv_addr, sizeof( serv_addr) ) < 0 )
+    if (CONNECT( gs_sockfd, /*( SOCKADDR * ) todo:*/(struct sockaddr *)&serv_addr, sizeof( serv_addr) ) < 0 )
     {
         DEBUG_ERROR("->[E] ERROR connecting" );
         return  FAILURE;
@@ -201,7 +200,7 @@ RETURN_STATUS appTimeServiceInit(const char *ntpServer, U32 ntpPort)
     else
     {
         S32 timerID;
-        middEventTimerRegister(&timerID, tsTimerCb, WAIT_2_SEC , TRUE);
+        middEventTimerRegister(&timerID, tsTimerCb, WAIT_10_SEC, TRUE);
         middEventTimerStart(timerID);
     }
 

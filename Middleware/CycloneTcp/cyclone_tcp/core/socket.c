@@ -1714,7 +1714,7 @@ error_t socketPoll(SocketEventDesc *eventDesc, uint_t size, OsEvent *extEvent,
  * @return Error code
  **/
 
-error_t gethostbyname(NetInterface *interface, const char_t *name,
+error_t gethostbyname_cylone(NetInterface *interface, const char_t *name,
    IpAddr *ipAddr, uint_t flags)
 {
    error_t error;

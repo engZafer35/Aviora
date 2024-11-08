@@ -31,9 +31,13 @@
 #ifndef _NET_CONFIG_H
 #define _NET_CONFIG_H
 
-#define USE_CYCLONE_LIB  ENABLED
+/**
+ * In order to use Cyclone lib, set USE_CYCLONE_LIB to ENABLE
+ * Otherwise, Posix socket lib will be used.
+ */
+#define USE_CYCLONE_LIB  0
 
-#if USE_CYCLONE_LIB == ENABLED
+#if USE_CYCLONE_LIB == 1
 
 #include "core/bsd_socket.h"
 #include "core/net.h"
@@ -192,7 +196,8 @@
 #define CLOSESOCKET     c_closesocket
 #define SELECT          c_select
 #define GETHOSTNAME     c_gethostname
-#define GETHOSTBYNAME   c_gethostbyname
+//#define GETHOSTBYNAME   c_gethostbyname
+#define gethostbyname   c_gethostbyname
 #define gethostbyname_r c_gethostbyname_r
 #define getaddrinfo     c_getaddrinfo
 #define freeaddrinfo    c_freeaddrinfo
@@ -203,8 +208,19 @@
 #define inet_ntoa_r     c_inet_ntoa_r
 #define inet_pton       c_inet_pton
 #define inet_ntop       c_inet_ntop
-#define socklen_t       c_socklen_t
+#define SOCKLEN_t       c_socklen_t
 #else
+
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/select.h>
+#include <netdb.h>
+#include <sys/socket.h>
+
 #define SOCKET           socket
 #define BIND             bind
 #define CONNECT          connect
@@ -226,7 +242,7 @@
 #define CLOSESOCKET      closesocket
 #define SELECT           select
 #define GETHOSTNAME      gethostname
-#define GETHOSTBYNAME    gethostbyname
+#define gethostbyname    gethostbyname
 #define gethostbyname_r  gethostbyname_r
 #define getaddrinfo      getaddrinfo
 #define freeaddrinfo     freeaddrinfo
@@ -237,7 +253,7 @@
 #define inet_ntoa_r      inet_ntoa_r
 #define inet_pton        inet_pton
 #define inet_ntop        inet_ntop
-#define socklen_t        socklen_t
+#define SOCKLEN_t        socklen_t
 #endif
 
 #endif

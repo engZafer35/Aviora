@@ -466,7 +466,7 @@ error_t icecastClientConnect(IcecastClientContext *context)
          context->settings.serverPort);
 
       //The specified proxy server can be either an IP or a host name
-      error = c_gethostbyname(interface, interface->proxyName, &serverIpAddr, 0);
+      error = gethostbyname_cylone(interface, interface->proxyName, &serverIpAddr, 0);
       //Unable to resolve server name?
       if(error)
          return error;
@@ -490,7 +490,7 @@ error_t icecastClientConnect(IcecastClientContext *context)
          context->settings.resource, context->settings.serverName);
 
       //The specified Icecast server can be either an IP or a host name
-      error = c_gethostbyname(interface, context->settings.serverName, &serverIpAddr, 0);
+      error = gethostbyname_cylone(interface, context->settings.serverName, &serverIpAddr, 0);
       //Unable to resolve server name?
       if(error)
          return error;

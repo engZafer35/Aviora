@@ -213,7 +213,7 @@ typedef void (*InterruptCallback)(_EN_INTERRUPT_LIST intList);
 #define _INPUT_SCAP_PIN                2 // The value doesn't matter for linux board
 
 #define _GPIO_AC_INT_CHNL              EN_EXTI0_IRQ
-#define _GPIO_SCAP_INT_CHNL            EN_EXTI4_IRQ
+#define _GPIO_SCAP_INT_CHNL            EN_EXTI0_IRQ
 
 #define _IS_INPUT_AC_PIN(x)            (_INPUT_AC_PIN == x)
 #define _IS_INPUT_SCAP_PIN(x)          (_INPUT_SCAP_PIN == x)

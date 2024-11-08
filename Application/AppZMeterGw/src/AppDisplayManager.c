@@ -243,7 +243,7 @@ static void mainWind(void)
 
         osDelayTask(1000); //refresh the screen in 1 min
 
-        if (startingWind != currWind)
+        if (mainWind != currWind)
         {
             break;
         }
@@ -287,7 +287,7 @@ static void swUpdatingWind(void)
 
         osDelayTask(1000); //refresh the screen in 1 min
 
-        if (startingWind != currWind)
+        if (swUpdatingWind != currWind)
         {
             break;
         }
@@ -334,7 +334,7 @@ static void failureWind(void)
 
         osDelayTask(1000); //refresh the screen in 1 min
 
-        if (startingWind != currWind)
+        if (failureWind != currWind)
         {
             break;
         }
