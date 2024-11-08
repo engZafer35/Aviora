@@ -22,6 +22,7 @@
 /***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS appIntMsgParseDevMsg(const U8 *rawMsg, U32 rawMsgLeng, DevInfoMsg *msg)
 {
+    memcpy(msg, rawMsg, rawMsgLeng);
     return SUCCESS;
 }
 
@@ -36,6 +37,7 @@ void appIntMsgCreateDevMsg(const DevInfoMsg *dev, U8 *buff, U32 *leng)
 
 RETURN_STATUS appIntMsgParseGsmMsg(const U8 *rawMsg, U32 rawMsgLeng, GsmMsg *msg)
 {
+    memcpy(msg, rawMsg, rawMsgLeng);
     return SUCCESS;
 }
 

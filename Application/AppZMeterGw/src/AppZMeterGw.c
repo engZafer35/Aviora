@@ -302,7 +302,7 @@ static void zmgTask(void * pvParameters)
         }
 
         appTskMngImOK(gs_zmgTaskID);
-        zosDelayTask(1000);
+        zosDelayTask(100);
     }
 }
 

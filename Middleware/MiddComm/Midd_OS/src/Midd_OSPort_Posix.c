@@ -579,18 +579,23 @@ void zosFreeMem(void *p)
 #include <mqueue.h>
 OsQueue zosMsgQueueCreate(const char *name, unsigned int queLeng, unsigned int itemSize)
 {
+//#define QUEUE_PERMS ((int)(0777))
+//#define QUEUE_MAXMSG  5 /* Maximum number of messages. */
+//#define QUEUE_MSGSIZE 1024 /* Length of message. */
+//#define QUEUE_ATTR_INITIALIZER ((struct mq_attr){0, QUEUE_MAXMSG, QUEUE_MSGSIZE, 0, {0}})
+
     static int nameUniq = 0;
     char nameTemp[32] = "";
     struct mq_attr attr;
-    attr.mq_maxmsg = queLeng;
+    attr.mq_maxmsg = 2;
     attr.mq_msgsize = itemSize;
     attr.mq_flags = O_RDWR | O_CREAT;
-//return -1;
+
     sprintf(nameTemp, "/%s-%d", name, nameUniq++); //create unique name. So app level dont need to handle this case
-    return (OsQueue) mq_open(nameTemp, O_RDWR | O_CREAT, S_IRUSR | S_IWUSR, NULL);
+    return (OsQueue) mq_open(nameTemp, O_RDWR | O_CREAT, 0777, &attr);
 }
 
-int zosMsgQueueSend(OsQueue queue, const char * const msg, size_t msgLeng,  unsigned int timeOut)
+int zosMsgQueueSend(OsQueue queue, const char * msg, size_t msgLeng,  unsigned int timeOut)
 {
     (void)timeOut;
     return mq_send(queue, msg, msgLeng, 0); //0 -> priority, doesn't matter
@@ -598,11 +603,15 @@ int zosMsgQueueSend(OsQueue queue, const char * const msg, size_t msgLeng,  unsi
 
 int zosMsgQueueReceive(OsQueue queue, char * msg, size_t msgLeng, unsigned int timeOutSec)
 {
-    struct timespec tm;
-    tm.tv_sec  = 0;
-    tm.tv_nsec = timeOutSec*1000000;
+    unsigned int prio;
 
-    return mq_timedreceive(queue, msg, msgLeng, NULL, &tm);
+    return mq_receive(queue, msg, msgLeng, &prio);
+
+    //struct timespec tm;
+    //tm.tv_sec  = 0;
+    //tm.tv_nsec = timeOutSec*1000000;
+
+    //return mq_timedreceive(queue, msg, msgLeng, NULL, &tm);
 }
 
 int zosMsgQueueClose(OsQueue queue)

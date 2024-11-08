@@ -12,10 +12,9 @@
 /********************************* INCLUDES ***********************************/
 #include "AppGsmManager.h"
 
-#include "core/net.h"
-#include "ppp/ppp.h"
+
+#include "net_config.h"
 #include "uart_driver.h"
-#include "debug.h"
 
 #include "AppInternalMsgFrame.h"
 #include "AppDataBus.h"
@@ -43,6 +42,28 @@ static GsmDataBusPacket gs_dataBusPck;
 static S32 gs_timerId;
 
 /***************************** STATIC FUNCTIONS  ******************************/
+static void gsmTimerCb (void)
+{
+    DBUS_PACKET dbPacket;
+    GsmMsg gsmMsg;
+
+    DEBUG_INFO("Published Gsm Data");
+
+    gsmMsg.modemStat   = gs_dataBusPck.modemState = 1;
+    gsmMsg.signalLevel = gs_dataBusPck.gsmSignalLevel = 80;
+    gsmMsg.pppStat     = gs_dataBusPck.pppLinkState = 1;
+
+    dbPacket.packetID   = 0;
+    dbPacket.pri        = EN_PRIORITY_MED;
+    dbPacket.retainFlag = TRUE;
+    dbPacket.topic      = EN_DBUS_TOPIC_GSM;
+
+    appIntMsgCreateGsmMsg(&gsmMsg, dbPacket.payload.data, &dbPacket.payload.dataLeng);
+    appDBusPublish(gs_gsmDbusID, &dbPacket);
+}
+
+#if USE_CYCLONE_LIB == 1
+
 RETURN_STATUS modemSendAtCommand(NetInterface *interface, const char *command, char *response, U32 size)
 {
     RETURN_STATUS retVal = FAILURE;
@@ -283,26 +304,6 @@ static void pppLinkStatusCb(NetInterface *interface, int linkState, void *param)
 static PppContext pppContext;
 #define APP_IF_NAME "PPP0"
 
-void gsmTimerCb (void)
-{
-    DBUS_PACKET dbPacket;
-    GsmMsg gsmMsg;
-
-    DEBUG_INFO("Periodically Publishing Gsm Data");
-
-    gsmMsg.modemStat   = gs_dataBusPck.modemState;
-    gsmMsg.signalLevel = gs_dataBusPck.gsmSignalLevel;
-    gsmMsg.pppStat     = gs_dataBusPck.pppLinkState;
-
-    dbPacket.packetID   = 0;
-    dbPacket.pri        = EN_PRIORITY_MED;
-    dbPacket.retainFlag = TRUE;
-    dbPacket.topic      = EN_DBUS_TOPIC_GSM;
-
-    appIntMsgCreateGsmMsg(&gsmMsg, dbPacket.payload.data, &dbPacket.payload.dataLeng);
-    appDBusPublish(gs_gsmDbusID, &dbPacket);
-}
-
 /***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS appGsmMngInit(void)
 {
@@ -403,5 +404,40 @@ BOOL appGsmMngIsNetworkReady(void)
 {
     return gs_dataBusPck.pppLinkState;
 }
+
+
+#else
+
+
+RETURN_STATUS appGsmMngInit(void)
+{
+    RETURN_STATUS retVal = SUCCESS;
+
+    retVal  = appDBusRegister(EN_DBUS_TOPIC_DEVICE, &gs_gsmDbusID);
+    retVal |= middEventTimerRegister(&gs_timerId, gsmTimerCb, WAIT_5_SEC , TRUE);
+    middEventTimerStart(gs_timerId);
+    gs_gsmModemReady = TRUE;
+
+    return retVal;
+}
+
+RETURN_STATUS appGsmMngOpenPPP(void)
+{
+    return SUCCESS;
+}
+
+RETURN_STATUS appGsmMngClosePPP(void)
+{
+   return SUCCESS;
+}
+
+BOOL appGsmMngIsNetworkReady(void)
+{
+    return gs_dataBusPck.pppLinkState;
+}
+
+
+#endif
+
 
 /******************************** End Of File *********************************/

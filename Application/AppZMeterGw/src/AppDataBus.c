@@ -122,7 +122,7 @@ RETURN_STATUS appDBusReceive(S32 clientID, DBUS_PACKET *packet, U32 timeOut)
     RETURN_STATUS retVal = FAILURE;
     if (clientID < MAX_CLIENT_NUMBER)
     {
-        if (QUEUE_SUCCESS == zosMsgQueueReceive(g_clients[clientID].bus, (char *)packet, sizeof(DBUS_PACKET), timeOut))
+        if (0 < zosMsgQueueReceive(g_clients[clientID].bus, (char *)packet, sizeof(DBUS_PACKET), timeOut))
         {
             retVal = SUCCESS;
         }

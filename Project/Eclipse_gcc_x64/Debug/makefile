@@ -10,20 +10,10 @@ RM := rm -rf
 -include sources.mk
 -include Middleware/MiddZModem/src/subdir.mk
 -include Middleware/MiddComm/Midd_OS/src/subdir.mk
--include Middleware/CycloneTcp/cyclone_tcp/ppp/subdir.mk
--include Middleware/CycloneTcp/cyclone_tcp/llmnr/subdir.mk
--include Middleware/CycloneTcp/cyclone_tcp/ipv4/subdir.mk
--include Middleware/CycloneTcp/cyclone_tcp/ftp/subdir.mk
--include Middleware/CycloneTcp/cyclone_tcp/echo/subdir.mk
--include Middleware/CycloneTcp/cyclone_tcp/drivers/loopback/subdir.mk
--include Middleware/CycloneTcp/cyclone_tcp/drivers/eth/subdir.mk
--include Middleware/CycloneTcp/cyclone_tcp/dns_sd/subdir.mk
--include Middleware/CycloneTcp/cyclone_tcp/dns/subdir.mk
--include Middleware/CycloneTcp/cyclone_tcp/dhcp/subdir.mk
--include Middleware/CycloneTcp/cyclone_tcp/core/subdir.mk
 -include Middleware/CycloneTcp/common/subdir.mk
 -include Driver/McuCoreDrivers/src/subdir.mk
 -include Application/AppZMeterGw/src/subdir.mk
+-include Application/AppZMeterGw/Communication/src/subdir.mk
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(strip $(C_DEPS)),)
 -include $(C_DEPS)
