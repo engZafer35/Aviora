@@ -200,8 +200,8 @@ typedef void (*InterruptCallback)(_EN_INTERRUPT_LIST intList);
 #define _TOGGLE_GSM_LEVEL_LED_4()      //(printf("GSM PWR LED 4 Toggled\n"))
 #define _TOGGLE_GSM_LEVEL_LED_5()      //(printf("GSM PWR LED 5 Toggled\n"))
 
-#define _TOGGLE_GSM_CONN()             //(printf("GSM CONN LED Toggled\n"))
-#define _TOGGLE_GSM_INTERNET()         //(printf("GSM INTERNET LED Toggled\n"))
+#define _TOGGLE_GSM_CONN()             (printf("GSM CONN LED Toggled\n"))
+#define _TOGGLE_GSM_INTERNET()         (printf("GSM INTERNET LED Toggled\n"))
 
 #define _TOGGLE_GSM_PWR_LED()          //(printf("GSM PWR LED Toggled \n"))
 #define _TOGGLE_GSM_SCOM_PWR_LED()     //(printf("GSM SCOM PWR LED Toggled\n"))

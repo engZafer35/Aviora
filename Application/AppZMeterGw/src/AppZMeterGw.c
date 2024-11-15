@@ -142,7 +142,6 @@ static RETURN_STATUS initSWUnit(void)
 {
     RETURN_STATUS retVal = SUCCESS;
     LogRecInterface sysLoggerInterface; //TODO: change this structure with file system w/r operation
-    NtpServerConf ntpConf;
 
     sysLoggerInterface.writeFunc = myWriteLog;
     sysLoggerInterface.readFunc  = myReadLog;
@@ -301,6 +300,45 @@ static void zmgTask(void * pvParameters)
             }
         }
 
+        if (SUCCESS == appDBusReceive(gs_zmgDbusID, &dbPacket, WAIT_10_MS))
+        {
+            GsmMsg gsmMsg;
+            U32 newMsg = FALSE;
+            if (dbPacket.topic & EN_DBUS_TOPIC_GSM)
+            {
+                appIntMsgParseGsmMsg(dbPacket.payload.data, dbPacket.payload.dataLeng, &gsmMsg);
+
+                if (FALSE == gsmMsg.connStat)
+                {
+                    if (EN_WORKING_MODE_NO_GSM_CONNECTION != gs_devVar.wMode)
+                    {
+                        gs_devVar.wMode = EN_WORKING_MODE_NO_GSM_CONNECTION;
+                        newMsg = TRUE;
+                    }
+                }
+                else
+                {
+                    if (EN_WORKING_MODE_NO_GSM_CONNECTION == gs_devVar.wMode)
+                    {
+                        gs_devVar.wMode = EN_WORKING_MODE_MAIN;
+                        newMsg = TRUE;
+                    }
+                }
+
+                if (TRUE == newMsg) /* publish the message, if there is a new info */
+                {
+                    dbPacket.packetID   = gs_devMsgSN++;
+                    dbPacket.topic      = EN_DBUS_TOPIC_DEVICE;
+                    dbPacket.pri        = EN_PRIORITY_HIG;
+                    dbPacket.retainFlag = TRUE;
+
+                    appIntMsgCreateDevMsg(&gs_devVar, dbPacket.payload.data, &dbPacket.payload.dataLeng);
+                    appDBusPublish(gs_zmgDbusID, &dbPacket);
+                }
+            }
+
+        }
+
         appTskMngImOK(gs_zmgTaskID);
         zosDelayTask(100);
     }
@@ -326,7 +364,7 @@ RETURN_STATUS appZMGwInit(void)
 
     if (SUCCESS == retVal)
     {
-        retVal = appDBusRegister(EN_DBUS_TOPIC_NO, &gs_zmgDbusID); //EN_DBUS_TOPIC_NO, This module just publishes data
+        retVal = appDBusRegister(EN_DBUS_TOPIC_GSM | EN_DBUS_TOPIC_NETWORK | EN_DBUS_TOPIC_TASK_MNG, &gs_zmgDbusID);
     }
 
     if (SUCCESS == retVal)

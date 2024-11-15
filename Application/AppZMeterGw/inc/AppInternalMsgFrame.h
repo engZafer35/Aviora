@@ -24,7 +24,7 @@ typedef enum
     EN_WORKING_MODE_MAIN,       /** AC input and SCap is ready */
     EN_WORKING_MODE_POWER_DOWN, /** AC input off */
 //    EN_WORKING_MODE_SUSPEND,
-//    EN_WORKING_MODE_NO_GSM_CONNECTION,
+    EN_WORKING_MODE_NO_GSM_CONNECTION,
 //    EN_WORKING_MODE_GSM_CONNECTION_OK,
     EN_WORKING_MODE_SW_UPDATING,
     EN_WORKING_MODE_FAILURE,
@@ -35,8 +35,8 @@ typedef enum
 typedef struct
 {
     U32   signalLevel;
-    BOOL  modemStat;  /** connection status */
-    BOOL  pppStat;    /** ppp connection status, 1: ppp OK, 0: ppp not OK */
+    BOOL  modemStat;    /** gsm modem registration status */
+    BOOL  connStat;     /** ppp connection status, 1: ppp OK, 0: ppp not OK */
 }GsmMsg;
 
 typedef struct

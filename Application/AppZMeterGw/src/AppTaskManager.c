@@ -14,7 +14,6 @@
 #include "AppGlobalVariables.h"
 #include "AppLogRecorder.h"
 
-#include "Midd_OSPort.h"
 /****************************** MACRO DEFINITIONS *****************************/
 
 /******************************* TYPE DEFINITIONS *****************************/
@@ -42,7 +41,7 @@ static void tmTask(void * param)
     while(1)
     {
         feedWDT();
-        osDelayTask(1000);
+        zosDelayTask(1000);
 
         for (i = 0; i < MANAGE_MAX_TASK_NUMBER; i++)
         {
@@ -84,7 +83,7 @@ static void tmTask(void * param)
         }
 
         feedWDT();
-        osDelayTask(5000);
+        zosDelayTask(5000);
     }
 }
 
@@ -156,7 +155,7 @@ RETURN_STATUS appTskMngDelete(OsTaskId tid)
     RETURN_STATUS retVal = FAILURE;
     U32 i;
 
-    osDeleteTask(tid);
+    zosDelayTask(tid);
 
     for (i = 0; i < MANAGE_MAX_TASK_NUMBER; i++)
     {
@@ -201,7 +200,7 @@ RETURN_STATUS appTskMngSuspendAll(void)
     RETURN_STATUS retVal = FAILURE;
     U32 i;
 
-    osSuspendAllTasks();
+    zosSuspendAllTasks();
 
     for (i = 0; i < MANAGE_MAX_TASK_NUMBER; i++)
     {
@@ -223,7 +222,7 @@ RETURN_STATUS appTskMngResumeAll(void)
     RETURN_STATUS retVal = FAILURE;
     U32 i;
 
-    osResumeAllTasks();
+    zosResumeAllTasks();
 
     for (i = 0; i < MANAGE_MAX_TASK_NUMBER; i++)
     {

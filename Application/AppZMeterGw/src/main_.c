@@ -48,6 +48,15 @@ static void keyboardInput(void *arg)
                 hwGpioExtInt(INPUT_SCAP_PIN);
                 break;
             }
+            case 'c':
+            case 'C':
+            {
+                int s = appGsmMngIsNetworkReady();
+                s = !s; //invert current status
+                printf("Pressed Connection Button, Conn stat will be set to %s\n", s ? "ENABLE" : "DISABLE");
+                appGsmMngSetConnStat(s);
+                break;
+            }
         }
     }
 
