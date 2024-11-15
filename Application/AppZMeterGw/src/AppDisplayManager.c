@@ -40,7 +40,7 @@ typedef struct
 {
     int  gsmSigLevel;
     BOOL gsmModemStat;
-    BOOL internet;
+    BOOL connStat;
 
     int relayStat;
 
@@ -49,7 +49,7 @@ typedef struct
 /********************************** VARIABLES *********************************/
 static DisplayDataStr gs_dspData;
 
-static WindFunc currWind = NULL;
+static WindFunc gs_currWind = NULL;
 
 static S32 gs_dbusID;
 
@@ -152,21 +152,15 @@ static void startingWind(void)
                 {
                     if (SUCCESS == appIntMsgParseDevMsg(busMsg.payload.data, busMsg.payload.dataLeng, &devMsg))
                     {
-                        DEBUG_INFO("->[I] Display: Dbus DevMsg w.Mode: %d", devMsg.wMode);
-                        gs_dspData.workingMode = devMsg.wMode;
-                        if (EN_WORKING_MODE_MAIN == devMsg.wMode)
+                        if (gs_dspData.workingMode != devMsg.wMode)
                         {
-                            setCurrentWindFunc(EN_DISPLAY_WINDOW_MAIN);
-                            break;
-                        }
-                        else if (EN_WORKING_MODE_FAILURE == devMsg.wMode)
-                        {
-                            setCurrentWindFunc(EN_DISPLAY_WINDOW_FAILURE);
-                            break;
-                        }
-                        else if (EN_WORKING_MODE_SW_UPDATING == devMsg.wMode)
-                        {
-                            setCurrentWindFunc(EN_DISPLAY_WINDOW_SW_UPDATING);
+                            DEBUG_INFO("->[I] Display: Dbus DevMsg w.Mode: %d", devMsg.wMode);
+                            gs_dspData.workingMode = devMsg.wMode;
+                            if (EN_WORKING_MODE_FAILURE == gs_dspData.workingMode)                { setCurrentWindFunc(EN_DISPLAY_WINDOW_FAILURE); }
+                            else if (EN_WORKING_MODE_NO_GSM_CONNECTION == gs_dspData.workingMode) { setCurrentWindFunc(EN_WORKING_MODE_NO_GSM_CONNECTION); }
+                            else if (EN_WORKING_MODE_SW_UPDATING == gs_dspData.workingMode)       { setCurrentWindFunc(EN_DISPLAY_WINDOW_SW_UPDATING); }
+                            else if (EN_WORKING_MODE_MAIN == gs_dspData.workingMode)              { setCurrentWindFunc(EN_DISPLAY_WINDOW_MAIN); }
+                            /* else if (EN_WORKING_MODE_POWER_DOWN == gs_dspData.workingMode)  !< not need to handle power down mode. keep to working as is */
                             break;
                         }
                     }
@@ -177,7 +171,7 @@ static void startingWind(void)
                     {
                         gs_dspData.gsmSigLevel  = gsmMsg.signalLevel;
                         gs_dspData.gsmModemStat = gsmMsg.modemStat;
-                        gs_dspData.internet     = gsmMsg.pppStat;
+                        gs_dspData.connStat     = gsmMsg.connStat;
                     }
                 }
             }
@@ -189,7 +183,7 @@ static void startingWind(void)
             appTskMngImOK(gs_dpTaskID);
         }
 
-        if (startingWind != currWind)
+        if (startingWind != gs_currWind)
         {
             break;
         }
@@ -208,7 +202,7 @@ static void mainWind(void)
     clearDisplay();
     showGsmLevel(gs_dspData.gsmSigLevel);
     showGsmConnStat(gs_dspData.gsmModemStat);
-    showGsmInternetConn(gs_dspData.internet);
+    showGsmInternetConn(gs_dspData.connStat);
 
     while(1)
     {
@@ -216,7 +210,18 @@ static void mainWind(void)
         {
             if (busMsg.topic & EN_DBUS_TOPIC_DEVICE)
             {
-                appIntMsgParseDevMsg(busMsg.payload.data, busMsg.payload.dataLeng, &devMsg);
+                if (SUCCESS == appIntMsgParseDevMsg(busMsg.payload.data, busMsg.payload.dataLeng, &devMsg))
+                {
+                    if (gs_dspData.workingMode != devMsg.wMode)
+                    {
+                        gs_dspData.workingMode = devMsg.wMode;
+                        if (EN_WORKING_MODE_FAILURE == gs_dspData.workingMode)                { setCurrentWindFunc(EN_DISPLAY_WINDOW_FAILURE); }
+                        else if (EN_WORKING_MODE_NO_GSM_CONNECTION == gs_dspData.workingMode) { setCurrentWindFunc(EN_WORKING_MODE_NO_GSM_CONNECTION); }
+                        else if (EN_WORKING_MODE_SW_UPDATING == gs_dspData.workingMode)       { setCurrentWindFunc(EN_DISPLAY_WINDOW_SW_UPDATING); }
+                        else if (EN_WORKING_MODE_STARTING == gs_dspData.workingMode)          { setCurrentWindFunc(EN_DISPLAY_WINDOW_STARTING); }
+                        /* else if (EN_WORKING_MODE_POWER_DOWN == gs_dspData.workingMode)  !< not need to handle power down mode. keep to working as is */
+                    }
+                }
             }
             else if (busMsg.topic & EN_DBUS_TOPIC_GSM)
             {
@@ -228,23 +233,9 @@ static void mainWind(void)
                 gs_dspData.gsmModemStat = gsmMsg.modemStat;
                 showGsmConnStat(gs_dspData.gsmModemStat);
 
-                gs_dspData.internet = gsmMsg.pppStat;
-                showGsmInternetConn(gs_dspData.internet);
+                gs_dspData.connStat = gsmMsg.connStat;
+                showGsmInternetConn(gs_dspData.connStat);
             }
-        }
-
-        if (gs_dspData.workingMode != devMsg.wMode)
-        {
-            gs_dspData.workingMode = devMsg.wMode;
-        }
-
-        if (EN_WORKING_MODE_FAILURE == gs_dspData.workingMode)
-        {
-            setCurrentWindFunc(EN_DISPLAY_WINDOW_FAILURE);
-        }
-        else if (EN_WORKING_MODE_SW_UPDATING == gs_dspData.workingMode)
-        {
-            setCurrentWindFunc(EN_DISPLAY_WINDOW_SW_UPDATING);
         }
 
         /**
@@ -254,7 +245,7 @@ static void mainWind(void)
 
         zosDelayTask(1000); //refresh the screen in 1 min
 
-        if (mainWind != currWind)
+        if (mainWind != gs_currWind)
         {
             break;
         }
@@ -277,7 +268,18 @@ static void swUpdatingWind(void)
         {
             if (busMsg.topic & EN_DBUS_TOPIC_DEVICE) //just handle device message
             {
-                appIntMsgParseDevMsg(busMsg.payload.data, busMsg.payload.dataLeng, &devMsg);
+                if (SUCCESS == appIntMsgParseDevMsg(busMsg.payload.data, busMsg.payload.dataLeng, &devMsg))
+                {
+                    if (gs_dspData.workingMode != devMsg.wMode)
+                    {
+                        gs_dspData.workingMode = devMsg.wMode;
+                        if (EN_WORKING_MODE_FAILURE == gs_dspData.workingMode)                { setCurrentWindFunc(EN_DISPLAY_WINDOW_FAILURE); }
+                        else if (EN_WORKING_MODE_NO_GSM_CONNECTION == gs_dspData.workingMode) { setCurrentWindFunc(EN_WORKING_MODE_NO_GSM_CONNECTION);}
+                        else if (EN_WORKING_MODE_MAIN == gs_dspData.workingMode)              { setCurrentWindFunc(EN_DISPLAY_WINDOW_MAIN); }
+                        else if (EN_WORKING_MODE_STARTING == gs_dspData.workingMode)          { setCurrentWindFunc(EN_DISPLAY_WINDOW_STARTING);}
+                        /* else if (EN_WORKING_MODE_POWER_DOWN == gs_dspData.workingMode)  !< not need to handle power down mode. keep to working as is */
+                    }
+                }
             }
         }
 
@@ -288,17 +290,9 @@ static void swUpdatingWind(void)
         middIOCtrlToggleLed(EN_OUT_GSM_LED_4);
         middIOCtrlToggleLed(EN_OUT_GSM_LED_5);
 
-        if (gs_dspData.workingMode != devMsg.wMode)
-        {
-            gs_dspData.workingMode = devMsg.wMode;
-            if (EN_WORKING_MODE_FAILURE == gs_dspData.workingMode)       { setCurrentWindFunc(EN_DISPLAY_WINDOW_FAILURE); }
-            else if (EN_WORKING_MODE_STARTING == gs_dspData.workingMode) { setCurrentWindFunc(EN_DISPLAY_WINDOW_STARTING);}
-            else if (EN_WORKING_MODE_MAIN == gs_dspData.workingMode)     { setCurrentWindFunc(EN_DISPLAY_WINDOW_MAIN);    }
-        }
-
         zosDelayTask(1000); //refresh the screen in 1 min
 
-        if (swUpdatingWind != currWind)
+        if (swUpdatingWind != gs_currWind)
         {
             break;
         }
@@ -307,7 +301,44 @@ static void swUpdatingWind(void)
 
 static void noGsmConnWind(void)
 {
+    DBUS_PACKET busMsg;
+    DevInfoMsg devMsg;
 
+    DEBUG_INFO("->[I] Display: No Connection Window");
+    appLogRec(g_sysLoggerID, "Display:No Connection Window");
+
+    clearDisplay();
+
+    while(1)
+    {
+        if (SUCCESS == appDBusReceive(gs_dbusID, &busMsg, WAIT_10_MS))
+        {
+            if (busMsg.topic & EN_DBUS_TOPIC_DEVICE) //just handle device message
+            {
+                if (SUCCESS == appIntMsgParseDevMsg(busMsg.payload.data, busMsg.payload.dataLeng, &devMsg))
+                {
+                    if (gs_dspData.workingMode != devMsg.wMode)
+                    {
+                        gs_dspData.workingMode = devMsg.wMode;
+                        if (EN_WORKING_MODE_SW_UPDATING == gs_dspData.workingMode)   { setCurrentWindFunc(EN_DISPLAY_WINDOW_SW_UPDATING);}
+                        else if (EN_WORKING_MODE_STARTING == gs_dspData.workingMode) { setCurrentWindFunc(EN_DISPLAY_WINDOW_STARTING);   }
+                        else if (EN_WORKING_MODE_MAIN == gs_dspData.workingMode)     { setCurrentWindFunc(EN_DISPLAY_WINDOW_MAIN);       }
+                    }
+                }
+            }
+        }
+
+        /** Toggle leds in no connection mode */
+        middIOCtrlToggleLed(EN_OUT_GSM_CONN_LED);
+        middIOCtrlToggleLed(EN_OUT_GSM_INTERNET_LED);
+
+        zosDelayTask(100); //refresh the screen in 1 sec
+
+        if (noGsmConnWind != gs_currWind)
+        {
+            break;
+        }
+    }
 }
 
 static void failureWind(void)
@@ -326,7 +357,14 @@ static void failureWind(void)
         {
             if (busMsg.topic & EN_DBUS_TOPIC_DEVICE) //just handle device message
             {
-                appIntMsgParseDevMsg(busMsg.payload.data, busMsg.payload.dataLeng, &devMsg);
+                if (SUCCESS == appIntMsgParseDevMsg(busMsg.payload.data, busMsg.payload.dataLeng, &devMsg))
+                {
+                    if (gs_dspData.workingMode != devMsg.wMode)
+                    {
+                        gs_dspData.workingMode = devMsg.wMode;
+                        setCurrentWindFunc(gs_dspData.workingMode);
+                    }
+                }
             }
         }
 
@@ -335,17 +373,9 @@ static void failureWind(void)
         middIOCtrlToggleLed(EN_OUT_GSM_CONN_LED);
         middIOCtrlToggleLed(EN_OUT_GSM_INTERNET_LED);
 
-        if (gs_dspData.workingMode != devMsg.wMode)
-        {
-            gs_dspData.workingMode = devMsg.wMode;
-            if (EN_WORKING_MODE_SW_UPDATING == gs_dspData.workingMode)   { setCurrentWindFunc(EN_DISPLAY_WINDOW_SW_UPDATING);}
-            else if (EN_WORKING_MODE_STARTING == gs_dspData.workingMode) { setCurrentWindFunc(EN_DISPLAY_WINDOW_STARTING);   }
-            else if (EN_WORKING_MODE_MAIN == gs_dspData.workingMode)     { setCurrentWindFunc(EN_DISPLAY_WINDOW_MAIN);       }
-        }
-
         zosDelayTask(1000); //refresh the screen in 1 min
 
-        if (failureWind != currWind)
+        if (failureWind != gs_currWind)
         {
             break;
         }
@@ -356,11 +386,11 @@ static void setCurrentWindFunc(EN_DISPLAY_WINDOW nextWind)
 {
     switch(nextWind)
     {
-        case EN_DISPLAY_WINDOW_STARTING:    currWind = startingWind;    break;
-        case EN_DISPLAY_WINDOW_MAIN:        currWind = mainWind;        break;
-        case EN_DISPLAY_WINDOW_SW_UPDATING: currWind = swUpdatingWind;  break;
-        case EN_DISPLAY_WINDOW_NO_GSM_CONN: currWind = noGsmConnWind;   break;
-        case EN_DISPLAY_WINDOW_FAILURE:     currWind = failureWind;     break;
+        case EN_DISPLAY_WINDOW_STARTING:    gs_currWind = startingWind;    break;
+        case EN_DISPLAY_WINDOW_MAIN:        gs_currWind = mainWind;        break;
+        case EN_DISPLAY_WINDOW_SW_UPDATING: gs_currWind = swUpdatingWind;  break;
+        case EN_DISPLAY_WINDOW_NO_GSM_CONN: gs_currWind = noGsmConnWind;   break;
+        case EN_DISPLAY_WINDOW_FAILURE:     gs_currWind = failureWind;     break;
     }
 }
 
@@ -369,7 +399,7 @@ static void displayTask(void * pvParameters)
     zosDelayTask(1000); //wait once before starting
     while (1)
     {
-        currWind(); //run current window function
+        gs_currWind(); //run current window function
 
         appTskMngImOK(gs_dpTaskID);
     }
@@ -379,7 +409,7 @@ static void displayTask(void * pvParameters)
 RETURN_STATUS appDisplayInit(void)
 {
     RETURN_STATUS retVal = FAILURE;
-    currWind = startingWind;
+    gs_currWind = startingWind;
     ZOsTaskParameters tempParam;
 
     tempParam.priority  = ZOS_TASK_PRIORITY_LOW;

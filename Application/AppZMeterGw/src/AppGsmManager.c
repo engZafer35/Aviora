@@ -34,10 +34,8 @@ typedef union
 
 }GsmDataBusPacket;
 /********************************** VARIABLES *********************************/
-static U32 gs_gsmModemReady = FALSE;
 static S32 gs_gsmDbusID;
 static GsmDataBusPacket gs_dataBusPck;
-
 static S32 gs_timerId;
 
 /***************************** STATIC FUNCTIONS  ******************************/
@@ -48,9 +46,9 @@ static void gsmTimerCb (void)
 
     DEBUG_INFO("Published Gsm Data");
 
-    gsmMsg.modemStat   = gs_dataBusPck.modemState = 1;
-    gsmMsg.signalLevel = gs_dataBusPck.gsmSignalLevel = 80;
-    gsmMsg.pppStat     = gs_dataBusPck.pppLinkState = 1;
+    gsmMsg.modemStat   = gs_dataBusPck.modemState;
+    gsmMsg.signalLevel = gs_dataBusPck.gsmSignalLevel;
+    gsmMsg.connStat    = gs_dataBusPck.pppLinkState;
 
     dbPacket.packetID   = 0;
     dbPacket.pri        = EN_PRIORITY_MED;
@@ -288,7 +286,7 @@ static void pppLinkStatusCb(NetInterface *interface, int linkState, void *param)
 
     gsmMsg.modemStat    = gs_dataBusPck.modemState;
     gsmMsg.signalLevel  = gs_dataBusPck.gsmSignalLevel;
-    gsmMsg.pppStat      = gs_dataBusPck.pppLinkState;
+    gsmMsg.connStat     = gs_dataBusPck.pppLinkState;
 
     dbPacket.packetID   = 0;
     dbPacket.pri        = EN_PRIORITY_MED;
@@ -364,7 +362,8 @@ RETURN_STATUS appGsmMngInit(void)
             retVal  = appDBusRegister(EN_DBUS_TOPIC_DEVICE, &gs_gsmDbusID);
             retVal |= middEventTimerRegister(&gs_timerId, gsmTimerCb, WAIT_10_SEC , TRUE);
             middEventTimerStart(gs_timerId);
-            gs_gsmModemReady = TRUE;
+
+            gs_dataBusPck.modemState = TRUE;
         }
     }
 
@@ -378,6 +377,7 @@ RETURN_STATUS appGsmMngOpenPPP(void)
     if (SUCCESS == modemConnect(&netInterface[0]))
     {
         retVal = SUCCESS;
+        gs_dataBusPck.pppLinkState = TRUE;
     }
 
     return retVal;
@@ -394,6 +394,7 @@ RETURN_STATUS appGsmMngClosePPP(void)
        if (NO_ERROR == pppClose(&netInterface[0]))
        {
            retVal = SUCCESS;
+           gs_dataBusPck.pppLinkState = FALSE;
        }
    }
    return retVal;
@@ -407,7 +408,6 @@ BOOL appGsmMngIsNetworkReady(void)
 
 #else
 
-
 RETURN_STATUS appGsmMngInit(void)
 {
     RETURN_STATUS retVal = SUCCESS;
@@ -415,19 +415,25 @@ RETURN_STATUS appGsmMngInit(void)
     retVal  = appDBusRegister(EN_DBUS_TOPIC_DEVICE, &gs_gsmDbusID);
     retVal |= middEventTimerRegister(&gs_timerId, gsmTimerCb, WAIT_5_SEC , TRUE);
     middEventTimerStart(gs_timerId);
-    gs_gsmModemReady = TRUE;
+
+    gs_dataBusPck.modemState = TRUE;
+    gs_dataBusPck.gsmSignalLevel = 80; //it is updated jus for test, it does not matter in PC
 
     return retVal;
 }
 
 RETURN_STATUS appGsmMngOpenPPP(void)
 {
+    /* This info will be shared over DBus by timerCB*/
+    gs_dataBusPck.pppLinkState = TRUE; // In PC, eth connection is ready every time.
     return SUCCESS;
 }
 
 RETURN_STATUS appGsmMngClosePPP(void)
 {
-   return SUCCESS;
+    /* This info will be shared over DBus by timerCB*/
+    gs_dataBusPck.pppLinkState = FALSE;
+    return SUCCESS;
 }
 
 BOOL appGsmMngIsNetworkReady(void)
@@ -435,6 +441,23 @@ BOOL appGsmMngIsNetworkReady(void)
     return gs_dataBusPck.pppLinkState;
 }
 
+/* This function will be used just test purpose, manually break connection */
+void appGsmMngSetConnStat(BOOL stat)
+{
+    gs_dataBusPck.pppLinkState = stat;
+    if (stat)
+    {
+        gs_dataBusPck.modemState     = TRUE;
+        gs_dataBusPck.gsmSignalLevel = 75;
+        gs_dataBusPck.pppLinkState   = TRUE;
+    }
+    else
+    {
+        gs_dataBusPck.modemState     = FALSE;
+        gs_dataBusPck.gsmSignalLevel = 0;
+        gs_dataBusPck.pppLinkState   = FALSE;;
+    }
+}
 
 #endif
 
