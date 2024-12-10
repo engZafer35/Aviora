@@ -13,6 +13,7 @@ RM := rm -rf
 -include Middleware/CycloneTcp/common/subdir.mk
 -include Driver/McuCoreDrivers/src/subdir.mk
 -include Application/AppZMeterGw/src/subdir.mk
+-include Application/AppZMeterGw/Server_Comm/src/subdir.mk
 -include Application/AppZMeterGw/Communication/src/subdir.mk
 ifneq ($(MAKECMDGOALS),clean)
 ifneq ($(strip $(C_DEPS)),)

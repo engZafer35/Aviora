@@ -275,9 +275,12 @@ typedef void (*InterruptCallback)(_EN_INTERRUPT_LIST intList);
 #define _UART_DEBUG_INIT()
 #define _UART_COMM_INIT()
 #define _UART_LIN_INIT()
-
-#define _UART_DEBUG_LINE                            ((void*)0)
-#define _UART_COMM_LINE                             ((void*)0)
+static int unused;
+#define _UART_LINE_OBJ_TYPE                         void
+#define _UART_COMM_LINE_1                           (unused)
+#define _UART_COMM_LINE_2                           (unused)
+#define _UART_COMM_LINE_3                           (unused)
+#define _UART_DEBUG_LINE                            (unused)
 
 #define _LINE_DBG_RX_IT_ID                          (EN_USART1_IRQ)
 #define _LINE_COMM_RX_IT_ID                         (EN_USART2_IRQ)
@@ -307,10 +310,7 @@ typedef void (*InterruptCallback)(_EN_INTERRUPT_LIST intList);
 #define _UART_K_LINE_SEND(buff, leng, timeout)      (EN_DRV_RET_OK)
 #define _UART_K_LINE_CLR_RCV_IT()
 
-//#define _UART_RESERVE_RX_IT_ENABLE()                _UART_RX_IT_ENABLE(1)
-//#define _UART_RESERVE_RCV_IT(pBuff, leng)           _UART_RCV_IT(1, pBuff, leng)
-//#define _UART_RESERVE_SEND(buff, leng, timeout)     (EN_DRV_RET_OK)
-//#define _UART_RESERVE_CLR_RCV_IT()
+#define _UART_RX_IT_DISABLE(line)
 
 /***************** BOARD INTERNAL RTC CONTROL **************/
 typedef struct _L_RTC_TimeTypeDef

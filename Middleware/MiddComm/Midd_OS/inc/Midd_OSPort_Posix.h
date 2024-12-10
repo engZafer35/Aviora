@@ -188,7 +188,7 @@ typedef mqd_t OsQueue;
 #define QUEUE_SUCCESS   (0)
 #define QUEUE_FAILURE   (-1)
 
-#define BUS_NAME(x)     x
+#define QUEUE_NAME(x)     x
 /*
  * @brief  Open posix queque
  * @param  Queue name,
