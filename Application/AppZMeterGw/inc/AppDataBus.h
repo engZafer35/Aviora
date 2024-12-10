@@ -14,7 +14,6 @@
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
 
-#include "Midd_OSPort.h"
 /******************************MACRO DEFINITIONS*******************************/
 
 #define MAX_CLIENT_NUMBER   (10)

@@ -24,6 +24,7 @@
 #include "AppInternalMsgFrame.h"
 #include "AppTaskManager.h"
 #include "AppGsmManager.h"
+#include "AppServerMessageHandler.h"
 
 #include "MiddDigitalIOControl.h"
 #include "MiddStorage.h" //TODO: it could be moved to file system manager
@@ -231,6 +232,15 @@ static RETURN_STATUS initSWUnit(void)
             return FAILURE;
         }
         appDisplayStart();
+
+        if (FAILURE == appMsgHandlerInit())
+        {
+            DEBUG_ERROR("->[E] Message Handler Init ERROR");
+            appLogRec(g_sysLoggerID, "Message Handler Init Error");
+            return FAILURE;
+            //todo: conf kısmından bakılarak protokoller yüklensin ve hangi protokoller aktif ise o protokoller kendisi addhandler çağırsın.
+
+        }
     }
 
     DEBUG_INFO("->[I] initSwUnits return %d", retVal);

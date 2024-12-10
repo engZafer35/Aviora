@@ -56,7 +56,7 @@ RETURN_STATUS appDBusRegister(DBUS_TOPICS listenTopic, S32 *clientID)
     {
         if (INVALID_CLIENT_ID == g_clients[i].id)
         {
-            g_clients[i].bus = zosMsgQueueCreate(BUS_NAME("DBUS"), MAX_PACKET_NUMBER,  sizeof(DBUS_PACKET));
+            g_clients[i].bus = zosMsgQueueCreate(QUEUE_NAME("DBUS"), MAX_PACKET_NUMBER,  sizeof(DBUS_PACKET));
             if (OS_INVALID_QUEUE != g_clients[i].bus)
             {
                 g_clients[i].id = i;
