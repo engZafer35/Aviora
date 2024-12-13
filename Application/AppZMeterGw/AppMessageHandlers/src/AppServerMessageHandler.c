@@ -12,7 +12,8 @@
 /********************************* INCLUDES ***********************************/
 #include "AppServerMessageHandler.h"
 #include "AppTaskManager.h"
-
+#include "AppLogRecorder.h"
+#include "AppGlobalVariables.h"
 /****************************** MACRO DEFINITIONS *****************************/
 #define MAX_MSG_BUFFER_NUM          (3)
 
@@ -51,8 +52,6 @@ static struct
     char name[16];
     MsgHandler_t msgHandler;
 }gs_msgHandlerList[MAX_MSG_HANDLER_LIST_NUM];
-
-//tatic MsgHandler_t gs_msgHandlerList[MAX_MSG_HANDLER_LIST_NUM];
 
 static OsQueue gs_rcvMsgQue;
 static OsTaskId gs_msgHandTaskID;
@@ -154,7 +153,9 @@ RETURN_STATUS appMsgHandlerAddHandler(const char *name, MsgHandler_t msgHnd)
             strcpy(gs_msgHandlerList[i].name, name);
             retVal = SUCCESS;
             DEBUG_DEBUG("->[I] Added message handler: %s", name);
-            appLogRec(g_sysLoggerID, "Added message handler: %s", name);
+            char temp[128] = "";
+            sprintf(temp, "Removed message handler: %s", name);
+            appLogRec(g_sysLoggerID, temp);
             break;
         }
     }
@@ -175,7 +176,9 @@ RETURN_STATUS appMsgHandlerRemoveHandler(const char *name)
             memset(gs_msgHandlerList[i].name, '\0', sizeof(gs_msgHandlerList[i].name));
             retVal = SUCCESS;
             DEBUG_DEBUG("->[I] Removed message handler: %s", name);
-            appLogRec(g_sysLoggerID, "Removed message handler: %s", name);
+            char temp[128] = "";
+            sprintf(temp, "Removed message handler: %s", name);
+            appLogRec(g_sysLoggerID, temp);
             break;
         }
     }

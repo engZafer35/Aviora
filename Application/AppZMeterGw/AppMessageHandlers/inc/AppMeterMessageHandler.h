@@ -14,9 +14,9 @@
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
 
-#include "AppServerMessageHandler.h"
+#include "../../AppMessageHandlers/inc/AppServerMessageHandler.h"
 /******************************MACRO DEFINITIONS*******************************/
-
+#define METER_HANDLER_NAME "Z_ELECTRICITY_METER_HANDLER"
 /*******************************TYPE DEFINITIONS ******************************/
 typedef struct
 {
@@ -43,10 +43,17 @@ typedef enum MeterTypes
 }MeterTypes_t;
 
 
+typedef enum E_METER_COMMAND_LIST
+{
+    EN_E_METER_CMD_GET_ID,
+    EN_E_METER_CMD_READ_OBIS,
+    EN_E_METER_CMD_READOUT,
+}E_METER_COMMAND_LIST_t;
+
 /************************* GLOBAL VARIBALE REFERENCES *************************/
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
-RETURN_STATUS appMeterMsgHandlerSetSerialInterface(MeterSerialInterface meterInt);
+RETURN_STATUS appMeterMsgHandlerSetSerialInterface(MeterSerialInterface *meterInt);
 
 RETURN_STATUS appMeterAddMeter(MeterTypes_t type, MeterBrands_t brand, int meterSerialNum);
 

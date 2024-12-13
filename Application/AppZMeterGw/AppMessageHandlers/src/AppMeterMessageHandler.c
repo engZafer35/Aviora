@@ -10,7 +10,7 @@
 *******************************************************************************/
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
-#include "AppMeterMessageHandler.h"
+#include "../../AppMessageHandlers/inc/AppMeterMessageHandler.h"
 /****************************** MACRO DEFINITIONS *****************************/
 
 /******************************* TYPE DEFINITIONS *****************************/
@@ -20,7 +20,7 @@
 /***************************** STATIC FUNCTIONS  ******************************/
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
-RETURN_STATUS appMeterMsgHandlerSetSerialInterface(MeterSerialInterface meterInt)
+RETURN_STATUS appMeterMsgHandlerSetSerialInterface(MeterSerialInterface *meterInt)
 {
     return SUCCESS;
 }

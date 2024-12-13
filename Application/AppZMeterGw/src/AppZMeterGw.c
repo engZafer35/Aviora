@@ -24,7 +24,8 @@
 #include "AppInternalMsgFrame.h"
 #include "AppTaskManager.h"
 #include "AppGsmManager.h"
-#include "AppServerMessageHandler.h"
+#include "../AppMessageHandlers/inc/AppServerMessageHandler.h"
+#include "../AppMessageHandlers/inc/AppMeterMessageHandler.h"
 
 #include "MiddDigitalIOControl.h"
 #include "MiddStorage.h" //TODO: it could be moved to file system manager
@@ -239,7 +240,26 @@ static RETURN_STATUS initSWUnit(void)
             appLogRec(g_sysLoggerID, "Message Handler Init Error");
             return FAILURE;
             //todo: conf kısmından bakılarak protokoller yüklensin ve hangi protokoller aktif ise o protokoller kendisi addhandler çağırsın.
+        }
 
+        appMsgHandlerStop(); //stop until all handlers are intalled
+
+        MeterSerialInterface electricityMeterLine; //TODO: fill this buffer according to meter line
+        if (SUCCESS != appMeterMsgHandlerSetSerialInterface(&electricityMeterLine))
+        {
+            DEBUG_ERROR("->[E] Meter Serial Interface Error");
+            appLogRec(g_sysLoggerID, "Meter Serial Interface Error");
+            return FAILURE;
+        }
+
+        if (0 == g_meterHandlerList) //electricity meter handler
+        {
+            appMsgHandlerAddHandler(METER_HANDLER_NAME, appMeterMsgHandler);
+        }
+
+        if (0 == g_protocol) //viko
+        {
+            //todo: set viko message handler
         }
     }
 
