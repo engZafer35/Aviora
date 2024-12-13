@@ -2,7 +2,7 @@
 * #Author       : Zafer Satilmis
 * #Revision     : 1.0
 * #Date         : Nov 18, 2024 - 11:42:13 AM
-* #File Name    : AppServerMessageHandler.c
+* #File Name    : AppMessageHandlerManager.c
 *******************************************************************************/
 /******************************************************************************
 *
@@ -10,7 +10,7 @@
 *******************************************************************************/
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
-#include "AppServerMessageHandler.h"
+#include <AppMessageHandlerManager.h>
 #include "AppTaskManager.h"
 #include "AppLogRecorder.h"
 #include "AppGlobalVariables.h"

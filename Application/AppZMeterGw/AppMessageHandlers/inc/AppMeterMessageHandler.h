@@ -12,9 +12,9 @@
 #ifndef __APP_METER_MESSAGE_HANDLER_H__
 #define __APP_METER_MESSAGE_HANDLER_H__
 /*********************************INCLUDES*************************************/
+#include <AppMessageHandlerManager.h>
 #include "Project_Conf.h"
 
-#include "../../AppMessageHandlers/inc/AppServerMessageHandler.h"
 /******************************MACRO DEFINITIONS*******************************/
 #define METER_HANDLER_NAME "Z_ELECTRICITY_METER_HANDLER"
 /*******************************TYPE DEFINITIONS ******************************/

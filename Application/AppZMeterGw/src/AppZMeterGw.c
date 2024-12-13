@@ -24,8 +24,8 @@
 #include "AppInternalMsgFrame.h"
 #include "AppTaskManager.h"
 #include "AppGsmManager.h"
-#include "../AppMessageHandlers/inc/AppServerMessageHandler.h"
-#include "../AppMessageHandlers/inc/AppMeterMessageHandler.h"
+#include "AppMessageHandlerManager.h"
+#include "AppMeterMessageHandler.h"
 
 #include "MiddDigitalIOControl.h"
 #include "MiddStorage.h" //TODO: it could be moved to file system manager
