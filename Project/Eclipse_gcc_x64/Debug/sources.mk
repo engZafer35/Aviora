@@ -14,8 +14,9 @@ OBJS :=
 
 # Every subdirectory with source files must be described here
 SUBDIRS := \
+Application/AppComm/src \
 Application/AppZMeterGw/AppMessageHandlers/src \
-Application/AppZMeterGw/Communication/src \
+Application/AppZMeterGw/Protocols/src \
 Application/AppZMeterGw/src \
 Driver/McuCoreDrivers/src \
 Middleware/CycloneTcp/common \

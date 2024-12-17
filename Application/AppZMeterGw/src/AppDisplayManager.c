@@ -206,7 +206,7 @@ static void mainWind(void)
 
     while(1)
     {
-        if (SUCCESS == appDBusReceive(gs_dbusID, &busMsg, WAIT_10_MS))
+        if (SUCCESS == 9 /*appDBusReceive(gs_dbusID, &busMsg, WAIT_10_MS)*/)
         {
             if (busMsg.topic & EN_DBUS_TOPIC_DEVICE)
             {

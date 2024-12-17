@@ -10,12 +10,12 @@
 *******************************************************************************/
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
-#include <AppMessageHandlerManager.h>
+#include "AppMessageHandlerManager.h"
 #include "AppTaskManager.h"
 #include "AppLogRecorder.h"
 #include "AppGlobalVariables.h"
 /****************************** MACRO DEFINITIONS *****************************/
-#define MAX_MSG_BUFFER_NUM          (3)
+#define MAX_MSG_BUFFER_NUM          (10)
 
 #define MAX_CLIENT_CIRCULAR_SIZE    (5)
 #define MAX_CLIENT_REPLY_BUFF_SIZE  (512)  //byte
@@ -39,8 +39,10 @@ typedef struct Client
     Msg_Handler_Message message[MAX_MSG_BUFFER_NUM];
     U32 rcvMsgHead;
     U32 rcvMsgTail;
+    OsTaskId msgHndTask;
     char name[MAX_CLIENT_NAME_LENG];
-    OsQueue que;
+    OsQueue queSend;
+    OsQueue queRcv;
     struct clientReplyCircularBuffer reply;
     struct Client *next;
 }Client_t;
@@ -53,8 +55,6 @@ static struct
     MsgHandler_t msgHandler;
 }gs_msgHandlerList[MAX_MSG_HANDLER_LIST_NUM];
 
-static OsQueue gs_rcvMsgQue;
-static OsTaskId gs_msgHandTaskID;
 /***************************** STATIC FUNCTIONS  ******************************/
 static RETURN_STATUS sendReplyMessage(Client_t *client, const U8 *msg, U32 msgLeng)
 {
@@ -62,7 +62,7 @@ static RETURN_STATUS sendReplyMessage(Client_t *client, const U8 *msg, U32 msgLe
 
     memcpy(client->reply.buffer[client->reply.currIndex], msg, msgLeng);
 
-    if (QUEUE_SUCCESS == zosMsgQueueSend(client->que, (const char *)client->reply.buffer[client->reply.currIndex], msgLeng, TIME_OUT_10MS))
+    if (QUEUE_SUCCESS == zosMsgQueueSend(client->queSend, (const char *)client->reply.buffer[client->reply.currIndex], msgLeng, TIME_OUT_10MS))
     {
         retVal = SUCCESS;
     }
@@ -88,12 +88,20 @@ static RETURN_STATUS handleMsg(Client_t *cli)
     {
         if (IS_SAFELY_PTR(gs_msgHandlerList[i].msgHandler))
         {
-            retVal = gs_msgHandlerList[i].msgHandler(&cli->message[cli->rcvMsgTail], replyMsg, &rBufLeng);
+            retVal = (*(gs_msgHandlerList[i].msgHandler))(&cli->message[cli->rcvMsgTail], replyMsg, &rBufLeng);
+
             if ((SUCCESS == retVal) && (rBufLeng > 0))
             {
                 retVal = sendReplyMessage(cli, replyMsg, rBufLeng);
+                break;
             }
         }
+    }
+
+    cli->rcvMsgTail++;
+    if (cli->rcvMsgTail >= MAX_MSG_BUFFER_NUM) //check tail index, circler buffer
+    {
+        cli->rcvMsgTail = 0;
     }
 
     return retVal;
@@ -101,41 +109,27 @@ static RETURN_STATUS handleMsg(Client_t *cli)
 static void messageHandlerTask(void * pvParameters)
 {
     zosDelayTask(1000); //wait once before starting
-    Client_t *client = NULL;
+    Client_t *client = (Client_t *)pvParameters;
+    Client_t *msgClie;
 
     while (1)
     {
-        if (0 < zosMsgQueueReceive(gs_rcvMsgQue, (char *)client, sizeof(Client_t *), WAIT_10_MS))
+        if (0 < zosMsgQueueReceive(client->queRcv, &msgClie, sizeof(Client_t *), WAIT_10_MS))
         {
             handleMsg(client);
         }
 
-        appTskMngImOK(gs_msgHandTaskID);
+        zosDelayTask(1000);
+
+//        appTskMngImOK(gs_msgHandTaskID);
     }
 }
 /***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS appMsgHandlerInit(void)
 {
     RETURN_STATUS retVal = FAILURE;
-    ZOsTaskParameters tempParam;
 
-    /*
-     * Received msg from gueue will not be handled directly. The messages will add the Message Handler
-     * internal queue and they will be handled in order. With this way client will not be blocked.
-     */
-    gs_rcvMsgQue = zosMsgQueueCreate(QUEUE_NAME("AppMsgHandler"), sizeof(Client_t *),  MAX_MSG_BUFFER_NUM*MAX_CLINT_NUMBER);
-    if (OS_INVALID_QUEUE != gs_rcvMsgQue)
-    {
-        tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
-        tempParam.stackSize = ZOS_MIN_STACK_SIZE;
-
-        gs_msgHandTaskID = appTskMngCreate("MSG_HND", messageHandlerTask, NULL, &tempParam, TRUE);
-        if (OS_INVALID_TASK_ID != gs_msgHandTaskID)
-        {
-            zosSuspendTask(gs_msgHandTaskID);
-            retVal = SUCCESS;
-        }
-    }
+    retVal = SUCCESS;
 
     return retVal;
 }
@@ -154,7 +148,7 @@ RETURN_STATUS appMsgHandlerAddHandler(const char *name, MsgHandler_t msgHnd)
             retVal = SUCCESS;
             DEBUG_DEBUG("->[I] Added message handler: %s", name);
             char temp[128] = "";
-            sprintf(temp, "Removed message handler: %s", name);
+            sprintf(temp, "Added message handler: %s", name);
             appLogRec(g_sysLoggerID, temp);
             break;
         }
@@ -191,7 +185,7 @@ RETURN_STATUS appMsgHandlerHandleMsg(const char *cliName, Msg_Handler_Message *m
     RETURN_STATUS retVal = FAILURE;
     Client_t *client;
 
-    if (IS_NULL_PTR(msg))
+    if (IS_NULL_PTR(cliName) || IS_NULL_PTR(msg))
     {
         return retVal;
     }
@@ -209,11 +203,16 @@ RETURN_STATUS appMsgHandlerHandleMsg(const char *cliName, Msg_Handler_Message *m
         /* Get copy of received msg, but be careful message structure has data pointer,
          * so sender cannot free this pointer until message handling completed.
          */
-        memcpy(&client->message[client->rcvMsgHead], msg, sizeof(Msg_Handler_Message));
+        memcpy(&client->message[client->rcvMsgHead++], msg, sizeof(Msg_Handler_Message));
 
-        if (QUEUE_SUCCESS == zosMsgQueueSend(gs_rcvMsgQue, (const char *)client, sizeof(Client_t *), TIME_OUT_10MS))
+        if (QUEUE_SUCCESS == zosMsgQueueSend(client->queRcv, "zafe", 5/*(const char *)&client, sizeof(Client_t *)*/, TIME_OUT_10MS))
         {
             retVal = SUCCESS;
+        }
+
+        if (client->rcvMsgHead >= MAX_MSG_BUFFER_NUM) //check head index, circler buffer
+        {
+            client->rcvMsgHead = 0;
         }
     }
 
@@ -222,8 +221,9 @@ RETURN_STATUS appMsgHandlerHandleMsg(const char *cliName, Msg_Handler_Message *m
 
 OsQueue appMsgHandlerAddClient(const char *cliName)
 {
+    RETURN_STATUS inret = FAILURE;  //check internal return value
     OsQueue retQueNum = OS_INVALID_QUEUE;
-    Client_t *client;
+    Client_t **client = &gs_Clients;
     Client_t *newClient;
 
     if (IS_NULL_PTR(cliName))
@@ -236,30 +236,53 @@ OsQueue appMsgHandlerAddClient(const char *cliName)
     {
         newClient->next = NULL;
 
-        if (gs_Clients == NULL)
+        if (*client == NULL)
         {
-            gs_Clients = newClient;
+            *client = newClient;
         }
         else
         {
-            while(client->next != NULL)
+            while((*client)->next != NULL)
             {
-                client = client->next; /* find end of the list to add the new client */
+                *client = (*client)->next; /* find end of the list to add the new client */
+            }
+
+            (*client)->next = newClient;
+        }
+
+        newClient->queSend = zosMsgQueueCreate(QUEUE_NAME(cliName), MAX_CLIENT_CIRCULAR_SIZE,  29);
+        if (OS_INVALID_QUEUE != newClient->queSend)
+        {
+            strncpy(newClient->name, cliName, MAX_CLIENT_NAME_LENG);
+            retQueNum = newClient->queSend ;
+
+            char rcvQueName[16] = "";
+            sprintf(rcvQueName, "%sRCV", cliName);
+
+            //create client receive queue
+            newClient->queRcv = zosMsgQueueCreate(QUEUE_NAME(rcvQueName), MAX_MSG_BUFFER_NUM,  5/*sizeof(Client_t *)*/);
+            if (OS_INVALID_QUEUE != newClient->queRcv)
+            {
+                ZOsTaskParameters tempParam;
+                tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
+                tempParam.stackSize = ZOS_MIN_STACK_SIZE;
+
+                //create client message handler
+                newClient->msgHndTask = appTskMngCreate(newClient->name, messageHandlerTask, newClient, &tempParam, FALSE);
+                if (OS_INVALID_TASK_ID != newClient->msgHndTask)
+                {
+                    inret = SUCCESS;
+                }
             }
         }
 
-        client = newClient;
+        if (FAILURE == inret)
+        {
+            zosFreeMem(newClient);
+            if (OS_INVALID_QUEUE != newClient->queSend)  zosMsgQueueClose(newClient->queSend); //destroy the queue
+            if (OS_INVALID_QUEUE != newClient->queRcv)   zosMsgQueueClose(newClient->queRcv); //destroy the queue
 
-        client->que = zosMsgQueueCreate(QUEUE_NAME(cliName), MAX_CLIENT_CIRCULAR_SIZE,  MAX_CLIENT_REPLY_BUFF_SIZE);
-        if (OS_INVALID_QUEUE != client->que)
-        {
-            strncpy(client->name, cliName, MAX_CLIENT_NAME_LENG);
-            retQueNum = client->que ;
-        }
-        else
-        {
-            zosFreeMem(client);
-            client = NULL;
+            (*client)->next = NULL;
         }
     }
 
@@ -295,9 +318,11 @@ RETURN_STATUS appMsgHandlerRemoveClient(const char *cliName)
     //If the node to be deleted is not found
     if (temp == NULL)
     {
-        //todo: add sys log and debug log
         return FAILURE;
     }
+
+    appTskMngDelete(temp->msgHndTask);
+    zosMsgQueueClose(temp->queSend);
 
     //Unlink the node from the linked list
     prev->next = temp->next;
@@ -320,6 +345,5 @@ RETURN_STATUS appMsgHandlerStop(void)
 {
     return SUCCESS;
 }
-
 
 /******************************** End Of File *********************************/

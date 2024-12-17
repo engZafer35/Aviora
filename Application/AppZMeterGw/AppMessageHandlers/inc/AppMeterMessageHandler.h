@@ -12,11 +12,11 @@
 #ifndef __APP_METER_MESSAGE_HANDLER_H__
 #define __APP_METER_MESSAGE_HANDLER_H__
 /*********************************INCLUDES*************************************/
-#include <AppMessageHandlerManager.h>
 #include "Project_Conf.h"
+#include "AppMessageHandlerManager.h"
 
 /******************************MACRO DEFINITIONS*******************************/
-#define METER_HANDLER_NAME "Z_ELECTRICITY_METER_HANDLER"
+#define METER_HANDLER_NAME "E_METER"
 /*******************************TYPE DEFINITIONS ******************************/
 typedef struct
 {
@@ -28,18 +28,18 @@ typedef struct
 
 typedef enum MeterBrands
 {
-    METER_BRAND_LUNA,
-    METER_BRAND_BAYLAN,
-    METER_BRAND_KOHLER,
-    METER_BRAND_MAKEL,
+    EN_METER_BRAND_LUNA,
+    EN_METER_BRAND_BAYLAN,
+    EN_METER_BRAND_KOHLER,
+    EN_METER_BRAND_MAKEL,
 }MeterBrands_t;
 
 typedef enum MeterTypes
 {
-    METER_TYPE_ELECTIRICTY,
-    METER_TYPE_WATER,
-    METER_TYPE_POWER,
-    METER_TYPE_OTHER,
+    EN_METER_TYPE_ELECTIRICTY,
+    EN_METER_TYPE_WATER,
+    EN_METER_TYPE_POWER,
+    EN_METER_TYPE_OTHER,
 }MeterTypes_t;
 
 
@@ -57,7 +57,7 @@ RETURN_STATUS appMeterMsgHandlerSetSerialInterface(MeterSerialInterface *meterIn
 
 RETURN_STATUS appMeterAddMeter(MeterTypes_t type, MeterBrands_t brand, int meterSerialNum);
 
-RETURN_STATUS appMeterMsgHandler(Msg_Handler_Message* message, U8 *replyMsg, U32 *replyMsgLeng);
+RETURN_STATUS appMeterMsgHandler(const Msg_Handler_Message *message, U8 *replyMsg, U32 *replyMsgLeng);
 
 
 

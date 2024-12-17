@@ -587,7 +587,7 @@ OsQueue zosMsgQueueCreate(const char *name, unsigned int queLeng, unsigned int i
     static int nameUniq = 0;
     char nameTemp[32] = "";
     struct mq_attr attr;
-    attr.mq_maxmsg = 2;
+    attr.mq_maxmsg = queLeng;
     attr.mq_msgsize = itemSize;
     attr.mq_flags = O_RDWR | O_CREAT;
 

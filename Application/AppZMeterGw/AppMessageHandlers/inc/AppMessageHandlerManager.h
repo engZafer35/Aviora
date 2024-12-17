@@ -2,7 +2,7 @@
 * #Author       : Zafer Satılmış
 * #Revision     : 1.0
 * #Date         : Nov 16, 2024 - 12:02:13 AM
-* #File Name    : AppServerMessageHandler.h
+* #File Name    : AppMessageHandlerManager.h
 *******************************************************************************/
 
 /******************************************************************************
@@ -20,14 +20,22 @@
 #define MAX_CLINT_NUMBER  (3)
 
 /*******************************TYPE DEFINITIONS ******************************/
+typedef enum MESSAGE_TYPE
+{
+    EN_MSG_TYPE_VIKO,
+    EN_MSG_TYPE_GRIDBOX,
+    EN_MSG_TYPE_MASS,
+    EN_MSG_TYPE_ZDSON,
+}MESSAGE_TYPE_T;
+
 typedef struct
 {
-    char*  data;
-    size_t length;
-    int    messageType;  // This can help decide which handler to use (e.g., data from meter, internal info)
+    char*               data;
+    size_t              length;
+    MESSAGE_TYPE_T      msgType;  // This can help decide which handler to use (e.g., data from meter, internal info)
 } Msg_Handler_Message;
 
-typedef RETURN_STATUS (*MsgHandler_t)(Msg_Handler_Message* message, U8 *replyMsg, U32 *replyMsgLeng);
+typedef RETURN_STATUS (*MsgHandler_t)(const Msg_Handler_Message *message, U8 *replyMsg, U32 *replyMsgLeng);
 
 /************************* GLOBAL VARIBALE REFERENCES *************************/
 

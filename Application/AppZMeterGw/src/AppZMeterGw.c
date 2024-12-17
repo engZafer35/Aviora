@@ -26,6 +26,7 @@
 #include "AppGsmManager.h"
 #include "AppMessageHandlerManager.h"
 #include "AppMeterMessageHandler.h"
+#include "AppVikoProtocol.h"
 
 #include "MiddDigitalIOControl.h"
 #include "MiddStorage.h" //TODO: it could be moved to file system manager
@@ -244,6 +245,7 @@ static RETURN_STATUS initSWUnit(void)
 
         appMsgHandlerStop(); //stop until all handlers are intalled
 
+        //todo: all message handler and protocol handler shoul be loaded by conf menager according to conf file
         MeterSerialInterface electricityMeterLine; //TODO: fill this buffer according to meter line
         if (SUCCESS != appMeterMsgHandlerSetSerialInterface(&electricityMeterLine))
         {
@@ -252,14 +254,15 @@ static RETURN_STATUS initSWUnit(void)
             return FAILURE;
         }
 
+        if (0 == g_protocol) //viko
+        {
+            appMsgHandlerAddHandler(MIKO_MSG_HANDLER_NAME, appVikoMessageHandler);
+            //todo: set viko message handler
+        }
+
         if (0 == g_meterHandlerList) //electricity meter handler
         {
             appMsgHandlerAddHandler(METER_HANDLER_NAME, appMeterMsgHandler);
-        }
-
-        if (0 == g_protocol) //viko
-        {
-            //todo: set viko message handler
         }
     }
 

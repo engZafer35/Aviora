@@ -1,8 +1,8 @@
 /******************************************************************************
 * #Author       : Zafer Satilmis
 * #Revision     : 1.0
-* #Date         : Dec 6, 2024 - 1:42:21 PM
-* #File Name    : AppMeterMessageHandler.c
+* #Date         : Dec 16, 2024 - 8:43:17 AM
+* #File Name    : ZDebug.c
 *******************************************************************************/
 /******************************************************************************
 *
@@ -10,7 +10,7 @@
 *******************************************************************************/
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
-#include "AppMeterMessageHandler.h"
+#include "ZDebug.h"
 /****************************** MACRO DEFINITIONS *****************************/
 
 /******************************* TYPE DEFINITIONS *****************************/
@@ -20,29 +20,22 @@
 /***************************** STATIC FUNCTIONS  ******************************/
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
-RETURN_STATUS appMeterMsgHandlerSetSerialInterface(MeterSerialInterface *meterInt)
+void debugArray(const char *prepend, const void *data, unsigned int length)
 {
-    return SUCCESS;
+   unsigned int i;
+
+   fprintf(stdout, "%s\n", prepend);
+
+   for(i = 0; i < length; i++)
+   {
+      //Display current data byte
+      fprintf(stdout, "%02X " , *((const unsigned char *) data + i));
+
+      //End of current line?
+      if((i % 16) == 15 || i == (length - 1))
+      {
+          fprintf(stdout, "\r\n");
+      }
+   }
 }
-
-RETURN_STATUS appMeterAddMeter(MeterTypes_t type, MeterBrands_t brand, int meterSerialNum)
-{
-    DEBUG_INFO("->[I] Meter Type: %d ", type);
-    DEBUG_INFO("->[I] Meter Brand %d ", brand);
-
-
-    return SUCCESS;
-}
-
-RETURN_STATUS appMeterMsgHandler(const Msg_Handler_Message *message, U8 *replyMsg, U32 *replyMsgLeng)
-{
-    DEBUG_INFO("->[I] meter message handler ");
-
-    strcpy(replyMsg, "Meter Message Handler");
-    *replyMsgLeng = strlen("Meter Message Handler") +1;
-
-    return SUCCESS;
-}
-
-
 /******************************** End Of File *********************************/
