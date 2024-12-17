@@ -46,12 +46,12 @@ static void keyboardInput(void *arg)
             scanf("%c", &in);
         }
 
-        if ((testQueue != OS_INVALID_QUEUE) && (0 < zosMsgQueueReceive(testQueue, buff, 29, WAIT_10_MS)))
+        if ((testQueue != OS_INVALID_QUEUE) && (0 < zosMsgQueueReceive(testQueue, buff, 512, WAIT_10_MS)))
         {
             printf("%s \n\r", buff);
         }
 
-        if ((testQueue != OS_INVALID_QUEUE) && (0 < zosMsgQueueReceive(testQueue2, buff, 29, WAIT_10_MS)))
+        if ((testQueue != OS_INVALID_QUEUE) && (0 < zosMsgQueueReceive(testQueue2, buff, 512, WAIT_10_MS)))
         {
             printf("%s \n\r", buff);
         }
@@ -86,7 +86,7 @@ static void keyboardInput(void *arg)
             {
                 if (OS_INVALID_QUEUE == testQueue) {
                     testQueue = appMsgHandlerAddClient("TEST");
-                    testQueue2 = appMsgHandlerAddClient("TESTZ");
+                    testQueue2 = appMsgHandlerAddClient("GBOX");
                 }
                 else
                 {
@@ -100,7 +100,7 @@ static void keyboardInput(void *arg)
                     msg2.msgType = EN_MSG_TYPE_GRIDBOX;
                     msg2.data = "gridbox";
                     msg2.length = 8;
-                    appMsgHandlerHandleMsg("TESTZ", &msg2);
+                    appMsgHandlerHandleMsg("GBOX", &msg2);
                 }
                 break;
             }
@@ -118,10 +118,10 @@ static void keyboardInput(void *arg)
                 msg.length = 12;
                 appMsgHandlerHandleMsg("TEST", &msg);
 
-                msg2.msgType = EN_MSG_TYPE_VIKO;
+                msg2.msgType = EN_MSG_TYPE_GRIDBOX;
                 msg2.data = "gridbox";
                 msg2.length = 8;
-                appMsgHandlerHandleMsg("TEST", &msg2);
+                appMsgHandlerHandleMsg("GBOX", &msg2);
             }
         }
 

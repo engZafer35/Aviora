@@ -205,7 +205,7 @@ RETURN_STATUS appMsgHandlerHandleMsg(const char *cliName, Msg_Handler_Message *m
          */
         memcpy(&client->message[client->rcvMsgHead++], msg, sizeof(Msg_Handler_Message));
 
-        if (QUEUE_SUCCESS == zosMsgQueueSend(client->queRcv, "zafe", 5/*(const char *)&client, sizeof(Client_t *)*/, TIME_OUT_10MS))
+        if (QUEUE_SUCCESS == zosMsgQueueSend(client->queRcv, (const char *)&client, sizeof(Client_t *), TIME_OUT_10MS))
         {
             retVal = SUCCESS;
         }
@@ -250,7 +250,7 @@ OsQueue appMsgHandlerAddClient(const char *cliName)
             (*client)->next = newClient;
         }
 
-        newClient->queSend = zosMsgQueueCreate(QUEUE_NAME(cliName), MAX_CLIENT_CIRCULAR_SIZE,  29);
+        newClient->queSend = zosMsgQueueCreate(QUEUE_NAME(cliName), MAX_CLIENT_CIRCULAR_SIZE,  MAX_CLIENT_REPLY_BUFF_SIZE);
         if (OS_INVALID_QUEUE != newClient->queSend)
         {
             strncpy(newClient->name, cliName, MAX_CLIENT_NAME_LENG);
@@ -260,7 +260,7 @@ OsQueue appMsgHandlerAddClient(const char *cliName)
             sprintf(rcvQueName, "%sRCV", cliName);
 
             //create client receive queue
-            newClient->queRcv = zosMsgQueueCreate(QUEUE_NAME(rcvQueName), MAX_MSG_BUFFER_NUM,  5/*sizeof(Client_t *)*/);
+            newClient->queRcv = zosMsgQueueCreate(QUEUE_NAME(rcvQueName), MAX_MSG_BUFFER_NUM, sizeof(Client_t *));
             if (OS_INVALID_QUEUE != newClient->queRcv)
             {
                 ZOsTaskParameters tempParam;
