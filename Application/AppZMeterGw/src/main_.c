@@ -25,12 +25,36 @@
 
 static void keyboardInput(void *arg)
 {
+#include "Midd_OSPort.h"
+#include <poll.h>
+#include <stdio.h>
+#include "AppMessageHandlerManager.h"
+
     printf("\n\n ------------ Keboard Input is Ready !!! \n\n\n");
     char in;
+    OsQueue testQueue = OS_INVALID_QUEUE;
+    OsQueue testQueue2 = OS_INVALID_QUEUE;
+
+    struct pollfd mypoll = { STDIN_FILENO, POLLIN|POLLPRI };
+    char buff[256];
 
     while (1)
     {
-        scanf("%c", &in);
+
+        if( poll(&mypoll, 1, 1000) )
+        {
+            scanf("%c", &in);
+        }
+
+        if ((testQueue != OS_INVALID_QUEUE) && (0 < zosMsgQueueReceive(testQueue, buff, 29, WAIT_10_MS)))
+        {
+            printf("%s \n\r", buff);
+        }
+
+        if ((testQueue != OS_INVALID_QUEUE) && (0 < zosMsgQueueReceive(testQueue2, buff, 29, WAIT_10_MS)))
+        {
+            printf("%s \n\r", buff);
+        }
 
         switch (in)
         {
@@ -57,7 +81,51 @@ static void keyboardInput(void *arg)
                 appGsmMngSetConnStat(s);
                 break;
             }
+            case 'm':
+            case 'M':
+            {
+                if (OS_INVALID_QUEUE == testQueue) {
+                    testQueue = appMsgHandlerAddClient("TEST");
+                    testQueue2 = appMsgHandlerAddClient("TESTZ");
+                }
+                else
+                {
+                    Msg_Handler_Message msg, msg2;
+
+                    msg.msgType = EN_MSG_TYPE_VIKO;
+                    msg.data = "viko message";
+                    msg.length = 5;
+                    appMsgHandlerHandleMsg("TEST", &msg);
+
+                    msg2.msgType = EN_MSG_TYPE_GRIDBOX;
+                    msg2.data = "gridbox";
+                    msg2.length = 8;
+                    appMsgHandlerHandleMsg("TESTZ", &msg2);
+                }
+                break;
+            }
+            case 'n':
+            case 'N':
+            {
+                Msg_Handler_Message msg, msg2;
+
+                static int c = 0;
+                static char buff[128] = "";
+                sprintf(buff, "Viko msg %d", c++);
+
+                msg.msgType = EN_MSG_TYPE_VIKO;
+                msg.data = buff;
+                msg.length = 12;
+                appMsgHandlerHandleMsg("TEST", &msg);
+
+                msg2.msgType = EN_MSG_TYPE_VIKO;
+                msg2.data = "gridbox";
+                msg2.length = 8;
+                appMsgHandlerHandleMsg("TEST", &msg2);
+            }
         }
+
+        in = '\0';
     }
 
 }

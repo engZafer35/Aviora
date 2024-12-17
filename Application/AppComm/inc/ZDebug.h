@@ -45,9 +45,9 @@
 
 
 
-//#ifndef DEBUG_ARRAY
-//   #define DEBUG_ARRAY(p, a, n)  debugDisplayArray(stderr, p, a, n), osResumeAllTasks()
-//#endif
+#ifndef DEBUG_ARRAY
+   #define DEBUG_ARRAY(p, a, n)  debugArray(p, a, n)
+#endif
 //
 //#ifndef DEBUG_MPI
 //   #define DEBUG_MPI(p, a) osSuspendAllTasks(), mpiDump(stderr, p, a), osResumeAllTasks()
@@ -125,6 +125,8 @@
 /************************* GLOBAL VARIBALE REFERENCES ************************/
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
+/***************************** PUBLIC FUNCTIONS  ******************************/
+void debugArray(const char *prepend, const void *data, unsigned int length);
 
 #endif /* APPCOMM_INC_ZDEBUG_H_ */
 

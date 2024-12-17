@@ -10,7 +10,7 @@
 *******************************************************************************/
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
-#include "AppVikoProtocol.h"
+#include "AppVikoProtocol_.h"
 #include "AppDataBus.h"
 #include "AppLogRecorder.h"
 #include "AppGlobalVariables.h"
@@ -206,7 +206,6 @@ RETURN_STATUS appVikoInit(const char *servIP, int port)
     gs_vikoTaskID = appTskMngCreate("DISPLAY_TASK", displayTask, NULL, &tempParam, TRUE);
 
     return retVal;
-
 }
 
 void appVikoTaskStart(void)

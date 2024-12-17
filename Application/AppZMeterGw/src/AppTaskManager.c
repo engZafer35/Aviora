@@ -127,7 +127,7 @@ OsTaskId appTskMngCreate(const char *name, OsTaskCode taskCode, void *arg, const
     OsTaskId tid;
     U32 i;
 
-    tid = zosCreateTask(name, taskCode, NULL, params);
+    tid = zosCreateTask(name, taskCode, arg, params);
 
     if (TRUE == restart)
     {

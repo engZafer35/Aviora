@@ -1,8 +1,8 @@
 /******************************************************************************
 * #Author       : Zafer Satilmis
 * #Revision     : 1.0
-* #Date         : Dec 6, 2024 - 1:42:21 PM
-* #File Name    : AppMeterMessageHandler.c
+* #Date         : Dec 13, 2024 - 3:42:39 PM
+* #File Name    : AppVikoProtocol.c
 *******************************************************************************/
 /******************************************************************************
 *
@@ -10,6 +10,7 @@
 *******************************************************************************/
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
+#include "AppVikoProtocol.h"
 #include "AppMeterMessageHandler.h"
 /****************************** MACRO DEFINITIONS *****************************/
 
@@ -20,29 +21,34 @@
 /***************************** STATIC FUNCTIONS  ******************************/
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
-RETURN_STATUS appMeterMsgHandlerSetSerialInterface(MeterSerialInterface *meterInt)
+RETURN_STATUS appVikoCreateMessage(VIKO_MESSAGES_t type, U8 *buff, U32 *size)
 {
-    return SUCCESS;
+    RETURN_STATUS retVal = SUCCESS;
+
+    return retVal;
 }
 
-RETURN_STATUS appMeterAddMeter(MeterTypes_t type, MeterBrands_t brand, int meterSerialNum)
+RETURN_STATUS appVikoMessageHandler(const Msg_Handler_Message *message, U8 *replyMsg, U32 *replyMsgLeng)
 {
-    DEBUG_INFO("->[I] Meter Type: %d ", type);
-    DEBUG_INFO("->[I] Meter Brand %d ", brand);
+    RETURN_STATUS retVal = FAILURE;
 
+    if (EN_MSG_TYPE_VIKO == message->msgType)
+    {
+        DEBUG_DEBUG("->[I] Viko Message Received");
+        DEBUG_DEBUG_ARRAY("Viko Rcv:", message->data, message->length);
+//        appLogRec(g_sysLoggerID, message->data);todo log hex buffer should be supported
 
-    return SUCCESS;
+        printf("rcv: %s \n", message->data);
+        sleep(5);
+
+        strcpy(replyMsg, "Viko automatic reply message");
+        *replyMsgLeng = strlen("Viko automatic reply message") +1;
+
+        //todo: record too long reply message to file. And return the file path
+
+        retVal = SUCCESS;
+    }
+
+    return retVal;
 }
-
-RETURN_STATUS appMeterMsgHandler(const Msg_Handler_Message *message, U8 *replyMsg, U32 *replyMsgLeng)
-{
-    DEBUG_INFO("->[I] meter message handler ");
-
-    strcpy(replyMsg, "Meter Message Handler");
-    *replyMsgLeng = strlen("Meter Message Handler") +1;
-
-    return SUCCESS;
-}
-
-
 /******************************** End Of File *********************************/
