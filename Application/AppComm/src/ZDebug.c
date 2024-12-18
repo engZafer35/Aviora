@@ -34,7 +34,7 @@ void debugArray(const char *prepend, const void *data, unsigned int length)
       //End of current line?
       if((i % 16) == 15 || i == (length - 1))
       {
-          fprintf(stdout, "\r\n");
+          fprintf(stdout, "\n");
       }
    }
 }

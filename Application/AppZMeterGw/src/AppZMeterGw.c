@@ -27,6 +27,7 @@
 #include "AppMessageHandlerManager.h"
 #include "AppMeterMessageHandler.h"
 #include "AppVikoProtocol.h"
+#include "AppGridboxProtocol.h"
 
 #include "MiddDigitalIOControl.h"
 #include "MiddStorage.h" //TODO: it could be moved to file system manager
@@ -260,9 +261,10 @@ static RETURN_STATUS initSWUnit(void)
             //todo: set viko message handler
         }
 
-        if (0 == g_meterHandlerList) //electricity meter handler
+        if (0 == g_protocol) //gridbox
         {
-            appMsgHandlerAddHandler(METER_HANDLER_NAME, appMeterMsgHandler);
+            appMsgHandlerAddHandler(GRIDBOX_MSG_HANDLER_NAME, appGridboxMessageHandler);
+            //todo: set viko message handler
         }
     }
 

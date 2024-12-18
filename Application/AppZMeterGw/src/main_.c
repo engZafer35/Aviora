@@ -46,14 +46,14 @@ static void keyboardInput(void *arg)
             scanf("%c", &in);
         }
 
-        if ((testQueue != OS_INVALID_QUEUE) && (0 < zosMsgQueueReceive(testQueue, buff, 29, WAIT_10_MS)))
+        if ((testQueue != OS_INVALID_QUEUE) && (0 < zosMsgQueueReceive(testQueue, buff, 2048, WAIT_10_MS)))
         {
-            printf("%s \n\r", buff);
+            printf("Viko Reply: %s \n\r", buff);
         }
 
-        if ((testQueue != OS_INVALID_QUEUE) && (0 < zosMsgQueueReceive(testQueue2, buff, 29, WAIT_10_MS)))
+        if ((testQueue != OS_INVALID_QUEUE) && (0 < zosMsgQueueReceive(testQueue2, buff, 2048, WAIT_10_MS)))
         {
-            printf("%s \n\r", buff);
+            printf("GBox Reply: %s \n\r", buff);
         }
 
         switch (in)
@@ -86,49 +86,42 @@ static void keyboardInput(void *arg)
             {
                 if (OS_INVALID_QUEUE == testQueue) {
                     testQueue = appMsgHandlerAddClient("TEST");
-                    testQueue2 = appMsgHandlerAddClient("TESTZ");
+                    testQueue2 = appMsgHandlerAddClient("GBOX");
                 }
                 else
                 {
                     Msg_Handler_Message msg, msg2;
 
+                    static int c = 0;
+                    static char buff[128] = "";
+                    sprintf(buff, "#02000000000010262790050$ %d", c++);
+
                     msg.msgType = EN_MSG_TYPE_VIKO;
-                    msg.data = "viko message";
-                    msg.length = 5;
+                    msg.data = buff;
+                    msg.length = strlen(buff);
                     appMsgHandlerHandleMsg("TEST", &msg);
 
                     msg2.msgType = EN_MSG_TYPE_GRIDBOX;
-                    msg2.data = "gridbox";
-                    msg2.length = 8;
-                    appMsgHandlerHandleMsg("TESTZ", &msg2);
+                    msg2.data = "#FC|ZADA|123456|123456789012345|ZMET|1.0.3.4|20241114135613|26|+905301234567|1.03|ZADA";
+                    msg2.length = strlen("#FC|ZADA|123456|123456789012345|ZMET|1.0.3.4|20241114135613|26|+905301234567|1.03|ZADA");
+                    appMsgHandlerHandleMsg("GBOX", &msg2);
                 }
                 break;
             }
-            case 'n':
-            case 'N':
+            case 'd':
             {
-                Msg_Handler_Message msg, msg2;
+                appMsgHandlerRemoveClient("TEST");
+                appMsgHandlerRemoveClient("GBOX");
 
-                static int c = 0;
-                static char buff[128] = "";
-                sprintf(buff, "Viko msg %d", c++);
-
-                msg.msgType = EN_MSG_TYPE_VIKO;
-                msg.data = buff;
-                msg.length = 12;
-                appMsgHandlerHandleMsg("TEST", &msg);
-
-                msg2.msgType = EN_MSG_TYPE_VIKO;
-                msg2.data = "gridbox";
-                msg2.length = 8;
-                appMsgHandlerHandleMsg("TEST", &msg2);
+                testQueue = OS_INVALID_QUEUE;
+                testQueue2 = OS_INVALID_QUEUE;
             }
         }
 
         in = '\0';
     }
-
 }
+
 /***************************** PUBLIC FUNCTIONS  ******************************/
 int main (void)
 {
