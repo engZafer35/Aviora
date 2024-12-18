@@ -41,8 +41,8 @@ RETURN_STATUS appGridboxMessageHandler(const Msg_Handler_Message *message, U8 *r
         printf("rcv: %s \n", message->data);
         sleep(5);
 
-        strcpy(replyMsg, "Gridbox automatic reply message");
-        *replyMsgLeng = strlen("Gridbox automatic reply message") +1;
+        strcpy(replyMsg, "#OK$");
+        *replyMsgLeng = strlen(replyMsg) +1;
 
         //todo: record too long reply message to file. And return the file path
 

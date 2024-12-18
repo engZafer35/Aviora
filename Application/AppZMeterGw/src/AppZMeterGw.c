@@ -266,11 +266,6 @@ static RETURN_STATUS initSWUnit(void)
             appMsgHandlerAddHandler(GRIDBOX_MSG_HANDLER_NAME, appGridboxMessageHandler);
             //todo: set viko message handler
         }
-
-        if (0 == g_meterHandlerList) //electricity meter handler
-        {
-            appMsgHandlerAddHandler(METER_HANDLER_NAME, appMeterMsgHandler);
-        }
     }
 
     DEBUG_INFO("->[I] initSwUnits return %d", retVal);

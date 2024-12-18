@@ -18,7 +18,7 @@
 #define MAX_MSG_BUFFER_NUM          (10)
 
 #define MAX_CLIENT_CIRCULAR_SIZE    (5)
-#define MAX_CLIENT_REPLY_BUFF_SIZE  (512)  //byte
+#define MAX_CLIENT_REPLY_BUFF_SIZE  (2048)  //byte
 
 #define MAX_CLIENT_NAME_LENG        (16)  //byte
 
@@ -291,6 +291,7 @@ OsQueue appMsgHandlerAddClient(const char *cliName)
 
 RETURN_STATUS appMsgHandlerRemoveClient(const char *cliName)
 {
+    RETURN_STATUS retVal = FAILURE;
     //If the list is empty
     if (gs_Clients == NULL)
     {
@@ -299,36 +300,46 @@ RETURN_STATUS appMsgHandlerRemoveClient(const char *cliName)
 
     Client_t *temp = gs_Clients;
 
+    //TODO: !!! check if there is a data waiting in the receive or send buffer, dont remove client, wait and then remove the client
+
     // If the node to be deleted is the head node
     if (temp != NULL && (0 == strcmp(temp->name, cliName)))
     {
         gs_Clients = temp->next;  // Move head to the next node
-        zosFreeMem(temp);  // Free the memory of the old head
-        return SUCCESS;
+        //osFreeMem(temp);  // Free the memory of the old head
+        retVal = SUCCESS;
     }
 
-    //Search for the node to be deleted (not the head)
-    Client_t *prev = NULL;
-    while (temp != NULL && (0 != strcmp(temp->name, cliName)))
+    if (FAILURE == retVal) //node already found and deleted above
     {
-        prev = temp;
-        temp = temp->next;
+        //Search for the node to be deleted (not the head)
+        Client_t *prev = NULL;
+        while (temp != NULL && (0 != strcmp(temp->name, cliName)))
+        {
+            prev = temp;
+            temp = temp->next;
+        }
+
+        //If the node to be deleted is not found
+        if (temp != NULL)
+        {
+            //Unlink the node from the linked list
+            prev->next = temp->next;
+            retVal = SUCCESS;
+        }
     }
 
-    //If the node to be deleted is not found
-    if (temp == NULL)
+    if (SUCCESS == retVal)
     {
-        return FAILURE;
+    /* < !! firstly delete the task, if the queue is closed firstly, task could try to read queue deleted >*/
+        appTskMngDelete(temp->msgHndTask);
+        zosMsgQueueClose(temp->queSend);
+        zosMsgQueueClose(temp->queRcv);
+
+        zosFreeMem(temp);
     }
 
-    appTskMngDelete(temp->msgHndTask);
-    zosMsgQueueClose(temp->queSend);
-
-    //Unlink the node from the linked list
-    prev->next = temp->next;
-    zosFreeMem(temp);
-
-    return SUCCESS;
+    return retVal;
 }
 
 RETURN_STATUS appMsgHandlerStart(void)
