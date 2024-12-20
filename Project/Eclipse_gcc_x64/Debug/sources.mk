@@ -16,6 +16,7 @@ OBJS :=
 SUBDIRS := \
 Application/AppComm/src \
 Application/AppZMeterGw/AppMessageHandlers/src \
+Application/AppZMeterGw/Headend/src \
 Application/AppZMeterGw/Protocols/src \
 Application/AppZMeterGw/src \
 Driver/McuCoreDrivers/src \

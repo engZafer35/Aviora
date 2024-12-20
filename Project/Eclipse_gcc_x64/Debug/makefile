@@ -14,6 +14,7 @@ RM := rm -rf
 -include Driver/McuCoreDrivers/src/subdir.mk
 -include Application/AppZMeterGw/src/subdir.mk
 -include Application/AppZMeterGw/Protocols/src/subdir.mk
+-include Application/AppZMeterGw/Headend/src/subdir.mk
 -include Application/AppZMeterGw/AppMessageHandlers/src/subdir.mk
 -include Application/AppComm/src/subdir.mk
 ifneq ($(MAKECMDGOALS),clean)

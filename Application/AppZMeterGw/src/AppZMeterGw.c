@@ -266,6 +266,10 @@ static RETURN_STATUS initSWUnit(void)
             appMsgHandlerAddHandler(GRIDBOX_MSG_HANDLER_NAME, appGridboxMessageHandler);
             //todo: set viko message handler
         }
+#include "AppHEndTcpConn.h"
+        appHEndTcpOpenServer("TEST", "192.168.1.110", 5555, 3, NULL, EN_MSG_TYPE_VIKO);
+        appHEndTcpOpenServer("GBOX", "192.168.1.110", 5566, 3, NULL, EN_MSG_TYPE_GRIDBOX);
+
     }
 
     DEBUG_INFO("->[I] initSwUnits return %d", retVal);
