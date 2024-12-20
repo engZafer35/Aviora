@@ -23,17 +23,21 @@
 #include <semaphore.h>
 #include <mqueue.h>
 
-static void keyboardInput(void *arg)
-{
+
 #include "Midd_OSPort.h"
 #include <poll.h>
 #include <stdio.h>
 #include "AppMessageHandlerManager.h"
+OsQueue testQueue = OS_INVALID_QUEUE;
+OsQueue testQueue2 = OS_INVALID_QUEUE;
+
+static void keyboardInput(void *arg)
+{
+
 
     printf("\n\n ------------ Keboard Input is Ready !!! \n\n\n");
     char in;
-    OsQueue testQueue = OS_INVALID_QUEUE;
-    OsQueue testQueue2 = OS_INVALID_QUEUE;
+
 
     struct pollfd mypoll = { STDIN_FILENO, POLLIN|POLLPRI };
     char buff[256];
@@ -46,15 +50,15 @@ static void keyboardInput(void *arg)
             scanf("%c", &in);
         }
 
-        if ((testQueue != OS_INVALID_QUEUE) && (0 < zosMsgQueueReceive(testQueue, buff, 2048, WAIT_10_MS)))
-        {
-            printf("Viko Reply: %s \n\r", buff);
-        }
-
-        if ((testQueue != OS_INVALID_QUEUE) && (0 < zosMsgQueueReceive(testQueue2, buff, 2048, WAIT_10_MS)))
-        {
-            printf("GBox Reply: %s \n\r", buff);
-        }
+//        if ((testQueue != OS_INVALID_QUEUE) && (0 < zosMsgQueueReceive(testQueue, buff, 2048, WAIT_10_MS)))
+//        {
+//            printf("Viko Reply: %s \n\r", buff);
+//        }
+//
+//        if ((testQueue != OS_INVALID_QUEUE) && (0 < zosMsgQueueReceive(testQueue2, buff, 2048, WAIT_10_MS)))
+//        {
+//            printf("GBox Reply: %s \n\r", buff);
+//        }
 
         switch (in)
         {

@@ -233,13 +233,13 @@
 #define RECVFROM         recvfrom
 #define RECVMSG          recvmsg
 #define getsockname      getsockname
-#define getpeername      getpeername
+#define GETPEERNAME      getpeername
 #define SETSOCKOPT       setsockopt
 #define GETSOCKOPT       getsockopt
 #define IOCTLSOCKET      ioctlsocket
 #define FCNTL            fcntl
 #define SHUTDOWN         shutdown
-#define CLOSESOCKET      closesocket
+#define CLOSESOCKET      close
 #define SELECT           select
 #define GETHOSTNAME      gethostname
 #define gethostbyname    gethostbyname
