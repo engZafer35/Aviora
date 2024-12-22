@@ -155,7 +155,7 @@ RETURN_STATUS appTskMngDelete(OsTaskId tid)
     RETURN_STATUS retVal = FAILURE;
     U32 i;
 
-    zosDelayTask(tid);
+//    zosDelayTask(tid);
 
     for (i = 0; i < MANAGE_MAX_TASK_NUMBER; i++)
     {
