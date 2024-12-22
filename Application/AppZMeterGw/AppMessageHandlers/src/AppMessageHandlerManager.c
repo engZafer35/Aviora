@@ -223,7 +223,7 @@ OsQueue appMsgHandlerAddClient(const char *cliName)
 {
     RETURN_STATUS inret = FAILURE;  //check internal return value
     OsQueue retQueNum = OS_INVALID_QUEUE;
-    Client_t **client = &gs_Clients;
+    Client_t *client;
     Client_t *newClient;
 
     if (IS_NULL_PTR(cliName))
@@ -236,19 +236,23 @@ OsQueue appMsgHandlerAddClient(const char *cliName)
     {
         newClient->next = NULL;
 
-        if (*client == NULL)
+        if (gs_Clients == NULL)
         {
-            *client = newClient;
+            gs_Clients = newClient;
+            client = gs_Clients;
         }
         else
         {
-            while((*client)->next != NULL)
+            client = gs_Clients;
+            while((*client).next != NULL)
             {
-                *client = (*client)->next; /* find end of the list to add the new client */
+                client = (*client).next; /* find end of the list to add the new client */
             }
 
-            (*client)->next = newClient;
+            (*client).next = newClient;
         }
+
+        newClient->queRcv = OS_INVALID_QUEUE; //set
 
         newClient->queSend = zosMsgQueueCreate(QUEUE_NAME(cliName), MAX_CLIENT_CIRCULAR_SIZE,  MAX_CLIENT_REPLY_BUFF_SIZE);
         if (OS_INVALID_QUEUE != newClient->queSend)
@@ -275,14 +279,22 @@ OsQueue appMsgHandlerAddClient(const char *cliName)
                 }
             }
         }
+        else
+        {
+            inret = FAILURE;
+        }
 
         if (FAILURE == inret)
         {
-            zosFreeMem(newClient);
             if (OS_INVALID_QUEUE != newClient->queSend)  zosMsgQueueClose(newClient->queSend); //destroy the queue
             if (OS_INVALID_QUEUE != newClient->queRcv)   zosMsgQueueClose(newClient->queRcv); //destroy the queue
 
-            (*client)->next = NULL;
+            zosFreeMem(newClient);
+            if (gs_Clients != client)
+            {
+                //if it is ot first node.
+                (*client).next = NULL;
+            }
         }
     }
 

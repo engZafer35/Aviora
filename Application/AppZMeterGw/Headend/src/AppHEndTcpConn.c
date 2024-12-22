@@ -23,19 +23,50 @@
 /******************************* TYPE DEFINITIONS *****************************/
 
 /********************************** VARIABLES *********************************/
+struct client
+{
+    char     cliName[16];
+    int      cliSock;
+    OsQueue  cliSndQue;
+//    Msg_Handler_Message msg;
+};
+
 static struct stcServer
 {
     char name[16];
+    struct client cli[3];
     int masterSocket;
-    int clientSock[3];
     int maxClient;
     int activeClientNum;
 
     void *msgHandler;
     OsTaskId task;
+    OsTaskId taskSender;
     MESSAGE_TYPE_T msgType;
 }gs_tcpServer[MAX_SERVER_NUM];
 /***************************** STATIC FUNCTIONS  ******************************/
+static void serverSenderTask(void *pvParameters)
+{
+    struct stcServer *server = (struct stcServer *)pvParameters;
+    U32 z;
+    S32 rLen; //received data length
+    char buff[1024];
+
+    while(1)
+    {
+        for (z = 0; z < server->maxClient; z++)
+        {
+            if ((OS_INVALID_QUEUE != server->cli[z].cliSndQue) && (0 < (rLen = zosMsgQueueReceive(server->cli[z].cliSndQue, buff, 2048, WAIT_10_MS))))
+            {
+                SEND(server->cli[z].cliSock, buff, rLen , 0 );
+                printf("Viko Reply: RLen: %d - %s \n\r", rLen, buff);
+            }
+        }
+
+        sleep(1);
+    }
+
+}
 
 static void serverTask(void * pvParameters)
 {
@@ -65,11 +96,11 @@ static void serverTask(void * pvParameters)
         for (i = 0 ; i < server->maxClient ; i++)
         {
             //socket descriptor
-            sd = server->clientSock[i];
+            sd = server->cli[i].cliSock;
 
             //if valid socket descriptor then add to read list
             if(sd > 0)
-                FD_SET( sd , &readfds);
+                FD_SET(sd , &readfds);
 
             //highest file descriptor number, need it for the select function
             if(sd > max_sd)
@@ -94,10 +125,8 @@ static void serverTask(void * pvParameters)
                 continue;
             }
 
-
-            DEBUG_DEBUG("->[I] New connection , socket fd is %d , ip is : %s , port : %d \n" , newSocket , inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
-
-            printf(" active :%d -- max :%d \n", server->activeClientNum, server->maxClient);
+            DEBUG_DEBUG("->[I] Server Name: %s", server->name);
+            DEBUG_DEBUG("->[I] New connection , socket fd is %d , ip is : %s , port : %d" , newSocket , inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
 
             if (server->activeClientNum == server->maxClient)
             {
@@ -112,10 +141,12 @@ static void serverTask(void * pvParameters)
             for (i = 0; i < server->maxClient; i++)
             {
                 //if position is empty
-                if (server->clientSock[i] == 0 )
+                if (server->cli[i].cliSock == 0 )
                 {
-                    server->clientSock[i] = newSocket;
                     DEBUG_INFO("->[I]Adding to list of sockets as %d\n" , i);
+                    server->cli[i].cliSock = newSocket;
+                    sprintf(server->cli[i].cliName, "CLI%d", newSocket);  //client socket number is used also client name
+                    server->cli[i].cliSndQue = appMsgHandlerAddClient(server->cli[i].cliName);
 
                     break;
                 }
@@ -125,54 +156,36 @@ static void serverTask(void * pvParameters)
         //else its some IO operation on some other socket :)
         for (i = 0; i < server->maxClient; i++)
         {
-            sd = server->clientSock[i];
+            sd = server->cli[i].cliSock;
 
             if (FD_ISSET(sd , &readfds))
             {
                 //Check if it was for closing , and also read the incoming message
                 if ((rcvSize = RECV(sd , buffer, 1024, 0)) == 0)
                 {
-                    //Somebody disconnected , get his details and print
+                    //Somebody disconnected
                     int addrlen = sizeof(struct sockaddr_in);
                     GETPEERNAME(sd, (struct sockaddr*)&address , (socklen_t*)&addrlen);
                     DEBUG_WARNING("->[W] Host disconnected , ip %s , port %d \n" , inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
 
+                    //delete client from mesage handler list
+                    appMsgHandlerRemoveClient(server->cli[i].cliName);
+                    server->cli[i].cliSndQue = OS_INVALID_QUEUE;
+
                     //Close the socket and mark as 0 in list for reuse
                     CLOSESOCKET(sd);
-                    server->clientSock[i] = 0;
+                    server->cli[i].cliSock = 0;
                     server->activeClientNum--;
+                    memset(server->cli[i].cliName, 0, sizeof(server->cli[i].cliName));
                 }
                 //Echo back the message that came in
                 else
                 {
-                    Msg_Handler_Message msg;
-
+                    Msg_Handler_Message msg; //handleMsg will copy buffer, so msg could be local variable.
                     msg.msgType = server->msgType;
-                    msg.data = buffer;
-                    msg.length = rcvSize;
-                    appMsgHandlerHandleMsg(server->name, &msg);
-                    //set the string terminating NULL byte on the end of the data read
-                    char buff[1024];
-                    int rlen;
-                    extern OsQueue testQueue ;
-                    extern OsQueue testQueue2 ;
-
-                    OsQueue *queue = NULL;
-
-                    if (EN_MSG_TYPE_VIKO == server->msgType)         queue = &testQueue;
-                    else if (EN_MSG_TYPE_GRIDBOX == server->msgType) queue = &testQueue2;
-
-                    sleep(2);
-                    while(1)
-                    {
-                        if ((*queue != OS_INVALID_QUEUE) && (0 < (rlen = zosMsgQueueReceive(*queue, buff, 2048, WAIT_10_MS))))
-                        {
-                            SEND(sd, buff, rlen , 0 );
-                            printf("Viko Reply: RLen: %d - %s \n\r", rlen, buff);
-                            break;
-                        }
-                    }
-
+                    msg.data    = buffer;
+                    msg.length  = rcvSize;
+                    appMsgHandlerHandleMsg(server->cli[i].cliName, &msg);
                 }
             }
         }
@@ -240,9 +253,14 @@ RETURN_STATUS appHEndTcpOpenServer(const char *hEndName, const char *ip, U32 por
 
         //every thing is ok so far, set values.
         strcpy(server->name, hEndName);
-        server->maxClient = maxClient;
+        server->maxClient  = maxClient;
         server->msgHandler = packetHandlerFunc;
-        server->msgType = msgType;
+        server->msgType    = msgType;
+
+        //the following lines could be invoked in for loop
+        server->cli[0].cliSndQue = OS_INVALID_QUEUE;
+        server->cli[1].cliSndQue = OS_INVALID_QUEUE;
+        server->cli[2].cliSndQue = OS_INVALID_QUEUE;
 
         retVal = SUCCESS;
 
@@ -251,6 +269,18 @@ RETURN_STATUS appHEndTcpOpenServer(const char *hEndName, const char *ip, U32 por
         {
             CLOSESOCKET(server->masterSocket);
             retVal = FAILURE;
+        }
+        else
+        {
+            char tname[16] = "";
+            sprintf(tname, "%s%s", hEndName, "S"); //create a name for sender task, added just S end of the string
+            server->taskSender = appTskMngCreate(tname, serverSenderTask, server, &tempParam, FALSE);
+            if (OS_INVALID_TASK_ID == server->taskSender)
+            {
+                appTskMngDelete(server->task);
+                CLOSESOCKET(server->masterSocket);
+                retVal = FAILURE;
+            }
         }
 
         if (FAILURE == retVal)
