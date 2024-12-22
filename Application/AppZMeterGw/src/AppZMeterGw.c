@@ -267,8 +267,8 @@ static RETURN_STATUS initSWUnit(void)
             //todo: set viko message handler
         }
 #include "AppHEndTcpConn.h"
-        appHEndTcpOpenServer("TEST", "192.168.1.110", 5555, 3, NULL, EN_MSG_TYPE_VIKO);
-        appHEndTcpOpenServer("GBOX", "192.168.1.110", 5566, 3, NULL, EN_MSG_TYPE_GRIDBOX);
+        appHEndTcpOpenServer("TEST-MIKO", "192.168.1.110", 5555, 3, NULL, EN_MSG_TYPE_VIKO);
+        appHEndTcpOpenServer("TEST-GIRBIX", "192.168.1.110", 5566, 3, NULL, EN_MSG_TYPE_GRIDBOX);
 
     }
 

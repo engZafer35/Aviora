@@ -89,8 +89,8 @@ static void keyboardInput(void *arg)
             case 'M':
             {
                 if (OS_INVALID_QUEUE == testQueue) {
-                    testQueue = appMsgHandlerAddClient("TEST");
-                    testQueue2 = appMsgHandlerAddClient("GBOX");
+                    testQueue = appMsgHandlerAddClient("TESTV");
+                    testQueue2 = appMsgHandlerAddClient("TESTG");
                 }
                 else
                 {
@@ -103,19 +103,19 @@ static void keyboardInput(void *arg)
                     msg.msgType = EN_MSG_TYPE_VIKO;
                     msg.data = buff;
                     msg.length = strlen(buff);
-                    appMsgHandlerHandleMsg("TEST", &msg);
+                    appMsgHandlerHandleMsg("TESTV", &msg);
 
                     msg2.msgType = EN_MSG_TYPE_GRIDBOX;
                     msg2.data = "#FC|ZADA|123456|123456789012345|ZMET|1.0.3.4|20241114135613|26|+905301234567|1.03|ZADA";
                     msg2.length = strlen("#FC|ZADA|123456|123456789012345|ZMET|1.0.3.4|20241114135613|26|+905301234567|1.03|ZADA");
-                    appMsgHandlerHandleMsg("GBOX", &msg2);
+                    appMsgHandlerHandleMsg("TESTG", &msg2);
                 }
                 break;
             }
             case 'd':
             {
-                appMsgHandlerRemoveClient("TEST");
-                appMsgHandlerRemoveClient("GBOX");
+                appMsgHandlerRemoveClient("TESTV");
+                appMsgHandlerRemoveClient("GBOXV");
 
                 testQueue = OS_INVALID_QUEUE;
                 testQueue2 = OS_INVALID_QUEUE;

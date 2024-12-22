@@ -115,6 +115,7 @@ static void serverTask(void * pvParameters)
             DEBUG_ERROR("SELECT ERROR %s", server->name);
         }
 
+        DEBUG_DEBUG("->[I] Server Name: %s", server->name); //This log will describe the following logs, user can understand which server it belongs to
         //If something happened on the master socket , then its an incoming connection
         if (FD_ISSET(server->masterSocket, &readfds))
         {
@@ -125,7 +126,6 @@ static void serverTask(void * pvParameters)
                 continue;
             }
 
-            DEBUG_DEBUG("->[I] Server Name: %s", server->name);
             DEBUG_DEBUG("->[I] New connection , socket fd is %d , ip is : %s , port : %d" , newSocket , inet_ntoa(address.sin_addr) , ntohs(address.sin_port));
 
             if (server->activeClientNum == server->maxClient)
