@@ -143,7 +143,7 @@ static void serverTask(void * pvParameters)
                 //if position is empty
                 if (server->cli[i].cliSock == 0 )
                 {
-                    DEBUG_INFO("->[I]Adding to list of sockets as %d\n" , i);
+                    DEBUG_INFO("->[I] Adding to list of sockets as %d\n" , i);
                     server->cli[i].cliSock = newSocket;
                     sprintf(server->cli[i].cliName, "CLI%d", newSocket);  //client socket number is used also client name
                     server->cli[i].cliSndQue = appMsgHandlerAddClient(server->cli[i].cliName);
