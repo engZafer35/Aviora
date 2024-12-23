@@ -36,6 +36,7 @@ struct clientReplyCircularBuffer
 
 typedef struct Client
 {
+    struct clientReplyCircularBuffer reply;
     Msg_Handler_Message message[MAX_MSG_BUFFER_NUM];
     U32 rcvMsgHead;
     U32 rcvMsgTail;
@@ -43,7 +44,7 @@ typedef struct Client
     char name[MAX_CLIENT_NAME_LENG];
     OsQueue queSend;
     OsQueue queRcv;
-    struct clientReplyCircularBuffer reply;
+
     struct Client *next;
 }Client_t;
 
@@ -312,11 +313,15 @@ RETURN_STATUS appMsgHandlerRemoveClient(const char *cliName)
 
     Client_t *temp = gs_Clients;
 
-    //TODO: !!! check if there is a data waiting in the receive or send buffer, dont remove client, wait and then remove the client
-
     // If the node to be deleted is the head node
     if (temp != NULL && (0 == strcmp(temp->name, cliName)))
     {
+        //wait until all data is handled
+        while (temp->rcvMsgHead != temp->rcvMsgTail)
+        {
+            zosDelayTask(100);
+        }
+
         gs_Clients = temp->next;  // Move head to the next node
         //osFreeMem(temp);  // Free the memory of the old head
         retVal = SUCCESS;
@@ -335,6 +340,12 @@ RETURN_STATUS appMsgHandlerRemoveClient(const char *cliName)
         //If the node to be deleted is not found
         if (temp != NULL)
         {
+            //wait until all data is handled
+            while (temp->rcvMsgHead != temp->rcvMsgTail)
+            {
+                zosDelayTask(100);
+            }
+
             //Unlink the node from the linked list
             prev->next = temp->next;
             retVal = SUCCESS;
