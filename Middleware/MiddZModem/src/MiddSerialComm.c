@@ -35,6 +35,9 @@ static struct _LineBuffers
     U32 hFilterLeng;
     BOOL isInformed;
     VoidCallback cb;
+    DMA_Callback rcvDmaCb;
+    DMA_Callback txDmaHCb;
+    DMA_Callback txDmaFCb;
     U16 counter;
     U8  chr;
 
@@ -168,11 +171,71 @@ void tcb(void)
 {
     timeUP = TRUE;
 }
+
+
+#if (LINE_1_RX)
+void line_1_Tx_halfCompleted(int x)
+{
+    if (NULL != gLineBuffers[EN_SERIAL_LINE_1].txDmaHCb) //0 first channel index
+    {
+        gLineBuffers[EN_SERIAL_LINE_1].txDmaHCb(1); //1 means half completed
+        //cbLine(EN_SERIAL_LINE_1, &UART_HW_LINE_1); //number starting from 1,
+    }
+}
+
+void line_1_Tx_FullCompleted(int x)
+{
+    if (NULL != gLineBuffers[EN_SERIAL_LINE_1].txDmaFCb) //0 first channel index
+    {
+        gLineBuffers[EN_SERIAL_LINE_1].txDmaFCb(2); //2 means full completed
+        //cbLine(EN_SERIAL_LINE_1, &UART_HW_LINE_1); //number starting from 1,
+    }
+}
+#endif
+
+UART_LINE_OBJ_TYPE* getLineInstance (SERIAL_COMM_LINE ln)
+{
+    UART_LINE_OBJ_TYPE* hwLine = NULL;
+
+    switch(ln)
+    {
+        #ifdef SERIAL_UART1
+          case EN_SERIAL_LINE_1: hwLine = &UART_HW_LINE_1; break;
+        #endif
+        #ifdef SERIAL_UART2
+          case EN_SERIAL_LINE_2: hwLine = &UART_HW_LINE_2; break;
+        #endif
+        #ifdef SERIAL_UART3
+          case EN_SERIAL_LINE_3: hwLine = &UART_HW_LINE_3; break;
+        #endif
+        #ifdef SERIAL_UART4
+          case EN_SERIAL_LINE_4: hwLine = &UART_HW_LINE_4; break;
+        #endif
+
+        #ifdef SERIAL_UART5
+          case EN_SERIAL_LINE_5: hwLine = &UART_HW_LINE_5; break;
+        #endif
+        #ifdef SERIAL_UART6
+          case EN_SERIAL_LINE_6: hwLine = &UART_HW_LINE_6; break;
+        #endif
+        #ifdef SERIAL_UART7
+          case EN_SERIAL_LINE_7: hwLine = &UART_HW_LINE_7; break;
+        #endif
+        #ifdef SERIAL_UART8
+          case EN_SERIAL_LINE_8: hwLine = &UART_HW_LINE_8; break;
+        #endif
+    }
+
+    return hwLine;
+}
 /***************************** PUBLIC FUNCTIONS  ******************************/
 
 RETURN_STATUS middSerialCommInit(void)
 {
     RETURN_STATUS retVal = SUCCESS;
+
+    retVal = drvIntRegister(line_1_Tx_halfCompleted, EN_DMA2_Stream0_IRQ); //register our interrupt map
+    retVal = drvIntRegister(line_1_Tx_FullCompleted, EN_DMA2_Stream1_IRQ); //register our interrupt map
 
     return retVal;
 }
@@ -458,6 +521,31 @@ U32 middSerialCommRcvData(SERIAL_COMM_LINE ln, void *buff, U32 rcvLeng, U32 time
 void middSerialCommClearBuffer(SERIAL_COMM_LINE ln)
 {
     LINE(ln).counter = 0;
+}
+
+
+
+RETURN_STATUS middSerialCommRcvDMA(SERIAL_COMM_LINE ln, void *buff, U32 size, DMA_Callback cb)
+{
+    RETURN_STATUS retVal = FAILURE;
+    UART_LINE_OBJ_TYPE* hwLine;
+
+}
+
+RETURN_STATUS middSerialCommSendDMA(SERIAL_COMM_LINE ln, void *buff, U32 size, DMA_Callback cb)
+{
+    RETURN_STATUS retVal = FAILURE;
+    UART_LINE_OBJ_TYPE* hwLine;
+
+    if (NULL != (hwLine = getLineInstance(ln)))
+    {
+        LINE(ln).txDmaHCb = cb;
+        LINE(ln).txDmaFCb = cb;
+        UART_SEND_DMA(hwLine, buff, size);
+        retVal = SUCCESS;
+    }
+
+    return retVal;
 }
 
 #endif

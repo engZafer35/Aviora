@@ -216,6 +216,7 @@ typedef void (*InterruptCallback)(_EN_INTERRUPT_LIST intList);
 #define _IS_COMM_2_UART_IT()                        (USART2 == huart->Instance)
 
 #define _UART_RCV_IT_FUNCTION                       void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+#define _UART_DMA_TX_HALF_COMPLETED                 void HAL_UART_TxHalfCpltCallback(UART_HandleTypeDef *huart)
 
 #define _UART_RX_IT_DISABLE(line)                   __HAL_UART_DISABLE_IT(line, UART_IT_RXNE)
 #define _UART_RX_IT_ENABLE(line)                    __HAL_UART_ENABLE_IT(line, UART_IT_RXNE)
