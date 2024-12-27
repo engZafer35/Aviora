@@ -65,6 +65,11 @@ UART_RCV_IT_FUNCTION
 //    }
 }
 
+UART_DMA_TX_HALF_COMPLETED
+{
+
+}
+
 CORE_EXT_IT_FUNCTION
 {
     if (IS_INPUT_AC_PIN(p_args))
@@ -84,8 +89,10 @@ COM_CAN_RX_IT_FUNC
 #elif CAN2
 	runCallback(EN_CAN2_RX0_IRQ, 0);
 #endif
-
 }
+
+
+
 /***************************** PUBLIC FUNCTIONS  ******************************/
 /**
  * @brief register for core interrupt

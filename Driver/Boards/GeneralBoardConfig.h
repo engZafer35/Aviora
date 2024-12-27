@@ -148,6 +148,8 @@ typedef _EN_INTERRUPT_LIST EN_INTERRUPT_LIST;
 
 #define UART_RCV_IT_FUNCTION                        _UART_RCV_IT_FUNCTION
 
+#define UART_DMA_TX_HALF_COMPLETED                  _UART_DMA_TX_HALF_COMPLETED
+
 #define IS_DBG_UART_IT()                            _IS_DBG_UART_IT()
 #define IS_COMM_1_UART_IT()                         _IS_COMM_1_UART_IT()
 #define IS_COMM_2_UART_IT()                         _IS_COMM_2_UART_IT()
@@ -186,6 +188,8 @@ typedef _EN_INTERRUPT_LIST EN_INTERRUPT_LIST;
 #define UART_RCV_IT(line, pBuff, leng)              _UART_RCV_IT(line, pBuff, leng)
 #define UART_CLR_IT_FLAG(line, flag)                _UART_CLR_IT_FLAG(line, flag)
 #define UART_SEND(line, buff, leng, timeout)        _UART_SEND(line, buff, leng, timeout)
+#define UART_SEND_DMA(line, buff, leng)             _UART_SEND_DMA(line, buff, leng)
+
 #define UART_CLR_RX_INT_FLAG(line)                  _UART_CLR_IT_FLAG(line, UART_IT_RXNE)
 
 /****************** BOARD SPI CONTROL *******************/

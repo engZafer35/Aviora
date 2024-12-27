@@ -128,8 +128,8 @@ typedef enum _EN_INTERRUPT_LIST
 //    EN_UART5_IRQ,
 //    EN_TIM6_DAC_IRQ,
     EN_TIM7_IRQ,
-//    EN_DMA2_Stream0_IRQ,
-//    EN_DMA2_Stream1_IRQ,
+    EN_DMA2_Stream0_IRQ,
+    EN_DMA2_Stream1_IRQ,
 //    EN_DMA2_Stream2_IRQ,
 //    EN_DMA2_Stream3_IRQ,
 //    EN_DMA2_Stream4_IRQ,
@@ -289,11 +289,13 @@ static int unused;
 #define _IS_COMM_UART_IT()                          (1)
 
 #define _UART_RCV_IT_FUNCTION                       void uartTI(void)
+#define _UART_DMA_TX_HALF_COMPLETED                 void uartTxDmaHalfCompleted(void *prm)
 
 #define _UART_RX_IT_ENABLE(line)
 #define _UART_SEND(line, buff, leng, timeout)       (EN_DRV_RET_OK)
 #define _UART_RCV_IT(line, pBuff, leng)             (EN_DRV_RET_OK)
 #define _UART_CLR_IT_FLAG(line, flag)
+#define _UART_SEND_DMA(line, buff, leng)            uartDrvSendDma(line, buff, leng)
 
 #define _UART_DBG_RX_IT_ENABLE()                    _UART_RX_IT_ENABLE(0)
 #define _UART_DBG_RCV_IT(pBuff, leng)               _UART_RCV_IT(0, pBuff, leng)

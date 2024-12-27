@@ -289,4 +289,9 @@ void uartStartTx(void)
     pthread_cond_signal(&cond);
 }
 #endif
+
+void uartDrvSendDma(int line, void *buff, int leng)
+{
+
+}
 /******************************** End Of File *********************************/

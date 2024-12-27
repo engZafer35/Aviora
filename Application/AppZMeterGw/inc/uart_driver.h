@@ -37,7 +37,7 @@ error_t uartInit(void);
 void uartEnableIrq(void);
 void uartDisableIrq(void);
 void uartStartTx(void);
-
+void uartDrvSendDma(int line, void *buff, int leng);
 //C++ guard
 #ifdef __cplusplus
 }

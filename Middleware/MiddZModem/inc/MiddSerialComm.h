@@ -108,6 +108,8 @@ typedef struct _SerialListener
     VoidCallback cb;
 }SerialListener;
 #endif
+
+typedef void (*DMA_Callback)(void *);
 /************************* GLOBAL VARIBALE REFERENCES *************************/
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
@@ -118,7 +120,6 @@ typedef struct _SerialListener
  */
 RETURN_STATUS middSerialCommInit(void);
 
-#if (LINE_1_RX || LINE_2_RX || LINE_3_RX || LINE_4_RX || LINE5_RX || LINE_6_RX || LINE_7_RX || LINE_8_RX)
 /**
  * @brief  send Data
  * @param  listener structure
@@ -132,7 +133,10 @@ RETURN_STATUS middSerialCommInit(void);
  * @return if everything is OK, return SUCCES, otherwise return FAILURE
  */
 RETURN_STATUS middSerialCommListener(const SerialListener *lis, BOOL stat);
-#endif
+
+RETURN_STATUS middSerialCommRcvDMA(SERIAL_COMM_LINE ln, void *buff, U32 size, DMA_Callback cb);
+
+RETURN_STATUS middSerialCommSendDMA(SERIAL_COMM_LINE ln, void *buff, U32 size, DMA_Callback cb);
 
 /**
  * @brief  send Data
@@ -144,7 +148,6 @@ RETURN_STATUS middSerialCommListener(const SerialListener *lis, BOOL stat);
  */
 RETURN_STATUS middSerialCommSendData(SERIAL_COMM_LINE ln, void *buff, U32 leng, U32 timeout);
 
-#if (LINE_1_RX || LINE_2_RX || LINE_3_RX || LINE_4_RX || LINE5_RX || LINE_6_RX || LINE_7_RX || LINE_8_RX)
 /**
  * @brief  receive Data
  * @param  line
@@ -161,8 +164,6 @@ U32 middSerialCommRcvData(SERIAL_COMM_LINE ln, void *buff, U32 rcvLeng, U32 time
  * @return void
  */
 void middSerialCommClearBuffer(SERIAL_COMM_LINE ln);
-
-#endif
 
 #endif /* __MIDD_SERIAL_COMM_H__ */
 
