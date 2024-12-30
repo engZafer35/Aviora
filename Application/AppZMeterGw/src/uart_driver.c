@@ -292,6 +292,8 @@ void uartStartTx(void)
 
 void uartDrvSendDma(int line, void *buff, int leng)
 {
+//    uart_writen(NULL, buff, leng);
 
+    uartTxDmaHalfCompleted();
 }
 /******************************** End Of File *********************************/

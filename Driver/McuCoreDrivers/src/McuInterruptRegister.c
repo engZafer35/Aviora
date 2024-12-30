@@ -67,7 +67,7 @@ UART_RCV_IT_FUNCTION
 
 UART_DMA_TX_HALF_COMPLETED
 {
-
+    gInterruptCallbackList[EN_DMA2_Stream0_IRQ](1);
 }
 
 CORE_EXT_IT_FUNCTION
