@@ -12,6 +12,7 @@ RM := rm -rf
 -include Middleware/MiddComm/Midd_OS/src/subdir.mk
 -include Middleware/CycloneTcp/common/subdir.mk
 -include Driver/McuCoreDrivers/src/subdir.mk
+-include Driver/LinuxPlatformDrivers/src/subdir.mk
 -include Application/AppZMeterGw/src/subdir.mk
 -include Application/AppZMeterGw/Protocols/src/subdir.mk
 -include Application/AppZMeterGw/Headend/src/subdir.mk

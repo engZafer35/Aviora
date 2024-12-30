@@ -530,6 +530,8 @@ RETURN_STATUS middSerialCommRcvDMA(SERIAL_COMM_LINE ln, void *buff, U32 size, DM
     RETURN_STATUS retVal = FAILURE;
     UART_LINE_OBJ_TYPE* hwLine;
 
+
+    return retVal;
 }
 
 RETURN_STATUS middSerialCommSendDMA(SERIAL_COMM_LINE ln, void *buff, U32 size, DMA_Callback cb)

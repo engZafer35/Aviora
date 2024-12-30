@@ -39,10 +39,9 @@ RETURN_STATUS appGridboxMessageHandler(const Msg_Handler_Message *message, U8 *r
 //        appLogRec(g_sysLoggerID, message->data);todo log hex buffer should be supported
 
         printf("rcv: %s \n", message->data);
-        sleep(5);
-
-        strcpy(replyMsg, "#OK$");
-        *replyMsgLeng = strlen(replyMsg) +1;
+        appMeterMsgHandler(NULL, replyMsg, replyMsgLeng);
+//        strcpy(replyMsg, "#OK$");
+//        *replyMsgLeng = strlen(replyMsg) +1;
 
         //todo: record too long reply message to file. And return the file path
 

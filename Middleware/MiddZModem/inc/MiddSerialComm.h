@@ -109,7 +109,7 @@ typedef struct _SerialListener
 }SerialListener;
 #endif
 
-typedef void (*DMA_Callback)(void *);
+typedef void (*DMA_Callback)(int x);
 /************************* GLOBAL VARIBALE REFERENCES *************************/
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/

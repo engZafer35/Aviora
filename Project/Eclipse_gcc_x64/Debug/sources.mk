@@ -19,6 +19,7 @@ Application/AppZMeterGw/AppMessageHandlers/src \
 Application/AppZMeterGw/Headend/src \
 Application/AppZMeterGw/Protocols/src \
 Application/AppZMeterGw/src \
+Driver/LinuxPlatformDrivers/src \
 Driver/McuCoreDrivers/src \
 Middleware/CycloneTcp/common \
 Middleware/MiddComm/Midd_OS/src \
