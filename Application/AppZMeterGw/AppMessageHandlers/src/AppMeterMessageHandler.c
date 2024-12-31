@@ -40,7 +40,7 @@ void txCmpletedCb(int indx)
 RETURN_STATUS appMeterMsgHandlerSetSerialInterface(MeterSerialInterface *meterInt)
 {
     RETURN_STATUS retVal = SUCCESS;
-    myUart.filename = "/dev/ttyUSB1";
+    myUart.filename = "/dev/ttyUSB0";
     myUart.rate = B300;
 
     if (0 != uart_start(&myUart, 0))
@@ -71,11 +71,6 @@ RETURN_STATUS appMeterMsgHandler(const Msg_Handler_Message *message, U8 *replyMs
     int rindex = 0;
 
     DEBUG_INFO("->[I] meter message handler ");
-//
-//    strcpy(replyMsg, "Meter Message Handler");
-//    *replyMsgLeng = strlen("Meter Message Handler") +1;
-//
-//    middSerialCommSendDMA(EN_SERIAL_LINE_1, meterReplyBuff, sizeof(meterReplyBuff), txCmpletedCb);
 
             int ret = uart_writen(&myUart, buff, sizeof(buff));
 
