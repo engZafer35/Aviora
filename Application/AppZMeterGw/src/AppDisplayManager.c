@@ -423,7 +423,7 @@ RETURN_STATUS appDisplayInit(void)
     tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
     tempParam.stackSize = ZOS_MIN_STACK_SIZE;
 
-    gs_dpTaskID = appTskMngCreate("DISPLAY_TASK", displayTask, NULL, &tempParam, TRUE);
+    gs_dpTaskID = appTskMngCreate("DISPLAY_TASK", displayTask, NULL, &tempParam);
 
     if (OS_INVALID_TASK_ID != gs_dpTaskID)
     {

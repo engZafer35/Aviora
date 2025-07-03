@@ -203,7 +203,7 @@ RETURN_STATUS appVikoInit(const char *servIP, int port)
     tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
     tempParam.stackSize = ZOS_MIN_STACK_SIZE;
 
-    gs_vikoTaskID = appTskMngCreate("DISPLAY_TASK", displayTask, NULL, &tempParam, TRUE);
+    gs_vikoTaskID = appTskMngCreate("DISPLAY_TASK", displayTask, NULL, &tempParam);
 
     return retVal;
 }

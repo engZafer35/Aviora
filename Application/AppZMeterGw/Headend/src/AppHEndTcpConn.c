@@ -264,7 +264,7 @@ RETURN_STATUS appHEndTcpOpenServer(const char *hEndName, const char *ip, U32 por
 
         retVal = SUCCESS;
 
-        server->task = appTskMngCreate(hEndName, serverTask, server, &tempParam, FALSE);
+        server->task = appTskMngCreate(hEndName, serverTask, server, &tempParam);
         if (OS_INVALID_TASK_ID == server->task)
         {
             CLOSESOCKET(server->masterSocket);
@@ -274,7 +274,7 @@ RETURN_STATUS appHEndTcpOpenServer(const char *hEndName, const char *ip, U32 por
         {
             char tname[16] = "";
             sprintf(tname, "%s%s", hEndName, "S"); //create a name for sender task, added just S end of the string
-            server->taskSender = appTskMngCreate(tname, serverSenderTask, server, &tempParam, FALSE);
+            server->taskSender = appTskMngCreate(tname, serverSenderTask, server, &tempParam);
             if (OS_INVALID_TASK_ID == server->taskSender)
             {
                 appTskMngDelete(server->task);

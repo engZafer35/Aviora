@@ -258,13 +258,11 @@ static RETURN_STATUS initSWUnit(void)
         if (0 == g_protocol) //viko
         {
             appMsgHandlerAddHandler(MIKO_MSG_HANDLER_NAME, appVikoMessageHandler);
-            //todo: set viko message handler
         }
 
-        if (0 == g_protocol) //gridbox
+        if (0 == g_protocol)
         {
             appMsgHandlerAddHandler(GRIDBOX_MSG_HANDLER_NAME, appGridboxMessageHandler);
-            //todo: set viko message handler
         }
 #include "AppHEndTcpConn.h"
         appHEndTcpOpenServer("TEST-MIKO", "192.168.1.110", 5555, 3, NULL, EN_MSG_TYPE_VIKO);
@@ -424,7 +422,7 @@ RETURN_STATUS appZMGwInit(void)
         middIOIntListen(EN_IN_DI_5, inputDigital_5);
         middIOIntListen(EN_IN_DI_6, inputDigital_6);
 
-        gs_zmgTaskID = appTskMngCreate("ZMG_TASK", zmgTask, NULL, &tempParam, TRUE);
+        gs_zmgTaskID = appTskMngCreate("ZMG_TASK", zmgTask, NULL, &tempParam);
         if (OS_INVALID_TASK_ID != gs_zmgTaskID)
         {
             zosSuspendTask(gs_zmgTaskID);

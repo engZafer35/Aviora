@@ -273,7 +273,7 @@ OsQueue appMsgHandlerAddClient(const char *cliName)
                 tempParam.stackSize = ZOS_MIN_STACK_SIZE;
 
                 //create client message handler
-                newClient->msgHndTask = appTskMngCreate(newClient->name, messageHandlerTask, newClient, &tempParam, FALSE);
+                newClient->msgHndTask = appTskMngCreate(newClient->name, messageHandlerTask, newClient, &tempParam);
                 if (OS_INVALID_TASK_ID != newClient->msgHndTask)
                 {
                     inret = SUCCESS;

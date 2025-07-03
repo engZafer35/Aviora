@@ -24,21 +24,17 @@
 
 RETURN_STATUS appTskMngInit(void);
 
-/**
- * @brief Start task management, call this function after all other task is ready
- *
- */
-void appTskMngStart(void);
-
-OsTaskId appTskMngCreate(const char *name, OsTaskCode taskCode, void *arg, const ZOsTaskParameters *params, BOOL restart);
+OsTaskId appTskMngCreate(const char *name, OsTaskCode taskCode, void *arg, const ZOsTaskParameters *params);
 
 RETURN_STATUS appTskMngDelete(OsTaskId tid);
 
 RETURN_STATUS appTskMngSuspend(OsTaskId tid);
 
-RETURN_STATUS appTskMngSuspendAll(void);
-
 RETURN_STATUS appTskMngResume(OsTaskId tid);
+
+void appTskMngSuspendAll(void);
+
+void appTskMngResumeAll(void);
 
 RETURN_STATUS appTskMngImOK(OsTaskId tid);
 
