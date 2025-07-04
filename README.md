@@ -1,6 +1,6 @@
 # 🛰️ Aviora
 
-# **Let Your Data Fly.**
+# ** Let Your Data Fly **
 
 **Aviora** is an intelligent, flexible, and secure IoT data collection device designed to gather data from local devices—such as utility meters, industrial sensors, and environmental monitors—and transmit it seamlessly to remote servers over GSM, Ethernet, Wi-Fi, or other communication methods.
 
