@@ -1,31 +1,42 @@
-# Allsendra
+# 🛰️ Aviora
 
-**Allsendra** is a powerful IoT data collection solution that gathers data from local devices such as meters and sensors, and transmits it securely and flexibly to servers via GSM, Ethernet, or other communication channels.
+# **Let Your Data Fly.**
 
----
-
-## Features
-
-- **Universal Data Collection:** Supports data gathering from various meters, sensors, and IoT devices.  
-- **Multiple Communication Protocols:** Compatible with GSM, Ethernet (ETH), Wi-Fi, and more.  
-- **Secure Data Transmission:** Ensures reliable and safe delivery of collected data to remote servers.  
-- **Flexible Integration:** Easily adaptable to different server architectures and data formats.  
-- **Modular Design:** Scalable and easy to maintain architecture suitable for diverse deployments.
+**Aviora** is an intelligent, flexible, and secure IoT data collection device designed to gather data from local devices—such as utility meters, industrial sensors, and environmental monitors—and transmit it seamlessly to remote servers over GSM, Ethernet, Wi-Fi, or other communication methods.
 
 ---
 
-## Use Cases
+## 🚀 Features
 
+- **Smart Data Acquisition**  
+  Supports a variety of devices, including water, gas, electricity meters, and digital/analog sensors.
+
+- **Multi-Protocol Communication**  
+  Compatible with GSM, Ethernet (ETH), Wi-Fi, MQTT, HTTPS, and more.
+
+- **Secure and Reliable Transmission**  
+  Built-in encryption and buffering mechanisms ensure data reaches its destination even during intermittent connectivity.
+
+- **Modular Architecture**  
+  Easily extendable to support different data formats, protocols, and server endpoints.
+
+- **Real-Time Monitoring & Configuration**  
+  Web-based or local interface for device setup, diagnostics, and live data preview.
+
+---
+
+## 📦 Use Cases
 - Smart city infrastructure  
-- Industrial data acquisition  
-- Energy and water meter monitoring  
-- Agricultural and environmental data collection  
-- Remote monitoring and control systems
+- Energy and water consumption tracking  
+- Industrial process monitoring  
+- Agricultural and environmental sensing  
+- Remote diagnostics and telemetry systems
 
 ---
 
-## Installation and Getting Started
+## 🛠️ Getting Started
 
-1. Clone the repository:  
+1. **Clone the Repository**
 ```bash
-git clone https://github.com/yourusername/allsendra.git
+git clone https://github.com/yourusername/aviora.git
+cd aviora
