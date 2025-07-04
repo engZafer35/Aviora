@@ -96,16 +96,8 @@ static void keyboardInput(void *arg)
                 {
                     Msg_Handler_Message msg, msg2;
 
-                    static int c = 0;
-                    static char buff[128] = "";
-                    sprintf(buff, "#02000000000010262790050$ %d", c++);
 
-                    msg.msgType = EN_MSG_TYPE_VIKO;
-                    msg.data = buff;
-                    msg.length = strlen(buff);
-                    appMsgHandlerHandleMsg("TESTV", &msg);
-
-                    msg2.msgType = EN_MSG_TYPE_GRIDBOX;
+                    msg2.msgType = EN_MSG_TYPE_PROTOCOL_2;
                     msg2.data = "#FC|ZADA|123456|123456789012345|ZMET|1.0.3.4|20241114135613|26|+905301234567|1.03|ZADA";
                     msg2.length = strlen("#FC|ZADA|123456|123456789012345|ZMET|1.0.3.4|20241114135613|26|+905301234567|1.03|ZADA");
                     appMsgHandlerHandleMsg("TESTG", &msg2);

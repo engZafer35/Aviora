@@ -22,10 +22,8 @@
 /*******************************TYPE DEFINITIONS ******************************/
 typedef enum MESSAGE_TYPE
 {
-    EN_MSG_TYPE_VIKO,
-    EN_MSG_TYPE_GRIDBOX,
-    EN_MSG_TYPE_MASS,
-    EN_MSG_TYPE_ZDSON,
+    EN_MSG_TYPE_PROTOCOL_2,
+    EN_MSG_TYPE_AVIORA,
 }MESSAGE_TYPE_T;
 
 typedef struct

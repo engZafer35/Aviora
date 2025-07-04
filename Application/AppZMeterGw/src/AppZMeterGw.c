@@ -26,8 +26,7 @@
 #include "AppGsmManager.h"
 #include "AppMessageHandlerManager.h"
 #include "AppMeterMessageHandler.h"
-#include "AppVikoProtocol.h"
-#include "AppGridboxProtocol.h"
+#include "AppProtocol_2.h"
 
 #include "MiddDigitalIOControl.h"
 #include "MiddStorage.h" //TODO: it could be moved to file system manager
@@ -255,18 +254,14 @@ static RETURN_STATUS initSWUnit(void)
             return FAILURE;
         }
 
-        if (0 == g_protocol) //viko
-        {
-            appMsgHandlerAddHandler(MIKO_MSG_HANDLER_NAME, appVikoMessageHandler);
-        }
 
         if (0 == g_protocol)
         {
-            appMsgHandlerAddHandler(GRIDBOX_MSG_HANDLER_NAME, appGridboxMessageHandler);
+            appMsgHandlerAddHandler(PROTOCOL2_MSG_HANDLER_NAME, appProtocol2MessageHandler);
         }
 #include "AppHEndTcpConn.h"
-        appHEndTcpOpenServer("TEST-MIKO", "192.168.1.110", 5555, 3, NULL, EN_MSG_TYPE_VIKO);
-        appHEndTcpOpenServer("TEST-GIRBIX", "192.168.1.110", 5566, 3, NULL, EN_MSG_TYPE_GRIDBOX);
+//        appHEndTcpOpenServer("TEST-MIKO", "192.168.1.110", 5555, 3, NULL, EN_MSG_TYPE_);
+        appHEndTcpOpenServer("TEST-GIRBIX", "192.168.1.110", 5566, 3, NULL, EN_MSG_TYPE_PROTOCOL_2);
 
     }
 
