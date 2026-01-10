@@ -1,4 +1,5 @@
-<img width="1024" height="585" alt="image" src="https://github.com/user-attachments/assets/04f2a4e3-cce0-47d8-a666-e31de9b3e8bd" />
+<img width="1031" height="585" alt="AvioraWhitee" src="https://github.com/user-attachments/assets/cbe8fd5c-f292-495a-9349-ce8da6053ab6" />
+
 
 
 
