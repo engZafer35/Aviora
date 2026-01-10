@@ -1,4 +1,5 @@
-<img width="1024" height="585" alt="image" src="https://github.com/user-attachments/assets/6c87dff0-e943-4485-9aac-b244260f1d41" />
+<img width="1024" height="585" alt="image" src="https://github.com/user-attachments/assets/04f2a4e3-cce0-47d8-a666-e31de9b3e8bd" />
+
 
 
 # 🛰️ Aviora
