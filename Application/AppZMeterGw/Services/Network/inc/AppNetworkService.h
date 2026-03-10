@@ -7,9 +7,11 @@
  * Created on: Mar 04, 2026
  */
 
-#ifndef APPLICATION_APPZMETERGW_SERVICES_NETWORK_INC_APPNETWORKSERVICE_H_
-#define APPLICATION_APPZMETERGW_SERVICES_NETWORK_INC_APPNETWORKSERVICE_H_
+#ifndef __APP_NETWORK_SERVICE_H__
+#define __APP_NETWORK_SERVICE_H__
 
+/*********************************INCLUDES*************************************/
+#include "Project_Conf.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -297,4 +299,4 @@ extern int32_t priv_DeinitializeInterfaces(void);
 }
 #endif
 
-#endif /* APPLICATION_APPZMETERGW_SERVICES_NETWORK_INC_APPNETWORKSERVICE_H_ */
+#endif /* __APP_NETWORK_SERVICE_H__ */

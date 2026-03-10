@@ -19,12 +19,23 @@
 /*==============================================================================
  * Global Network Service Configuration
  *============================================================================*/
+#include "Project_Conf.h"
 
+/* GSM Interface Implementation */
+#if defined(GSM_INTERFACE_ENABLED) || 1  /* Replace with: if enabled in config */
+#include "AppNetworkService_GSM.c"
+#endif
+
+/* Ethernet Interface Implementation */
+#if defined(ETH_INTERFACE_ENABLED) || 1  /* Replace with: if enabled in config */
+#include "AppNetworkService_ETH.c"
+#endif
 /**
  * Network Service Configuration
  * Auto-generated from JSON device configuration
  * Only enabled interfaces are included in this structure
  */
+
 const AppNetworkServiceConfig_t gAppNetworkServiceConfig = {
     .gsmConfig = {
         .enabled = true,
@@ -32,12 +43,20 @@ const AppNetworkServiceConfig_t gAppNetworkServiceConfig = {
         .usePPP = true,
         .connInterface = "huart1",
         .srcPath = "/g/uc2000_atP"
+        .initFunc = AppNetworkService_InitGsmInterface,
+        .connectFunc = AppNetworkService_ConnectGsm,
+        .disconnectFunc = AppNetworkService_DisconnectGsm,
+        .startConnecting = FALSE,
     },
     .ethConfig = {
         .enabled = true,
         .devName = "ENC28J60",
         .connInterface = "hspi2",
         .srcPath = "/e/ENC28J60"
+        .initFunc = AppNetworkService_InitEthInterface,
+        .connectFunc = AppNetworkService_ConnectEth,
+        .disconnectFunc = AppNetworkService_DisconnectEth,
+        .startConnecting = FALSE,
     },
     .interfaceCount = 2
 };
@@ -54,27 +73,27 @@ const AppNetworkServiceConfig_t gAppNetworkServiceConfig = {
  */
 int32_t priv_InitializeInterfaces(void)
 {
-    int32_t result = 0;
+    RETURN_STATUS retVal = SUCCESS;
 
     /* === GSM Interface Initialization === */
-    if (gAppNetworkServiceConfig.gsmConfig.enabled) {
-        result = AppNetworkService_InitGsmInterface(&gAppNetworkServiceConfig.gsmConfig);
-        if (result != 0) {
-            DEBUG_ERROR("->[E] AppNetworkService: InitGsmInterface failed");
-            /* Continue anyway - Ethernet may still be available */
-        }
+    //TODO: initialize all gsm interface listed in config
+    if (SUCCESS != AppNetworkService_InitGsmInterface(&gAppNetworkServiceConfig.gsmConfig)) 
+    {
+        retVal = FAILURE;
+        DEBUG_ERROR("->[E] AppNetworkService: InitGsmInterface failed");
+        /* Continue anyway - Another interface may still be available */
     }
-
+    
     /* === Ethernet Interface Initialization === */
-    if (gAppNetworkServiceConfig.ethConfig.enabled) {
-        result = AppNetworkService_InitEthInterface(&gAppNetworkServiceConfig.ethConfig);
-        if (result != 0) {
-            DEBUG_ERROR("->[E] AppNetworkService: InitEthInterface failed");
-            /* Continue anyway - GSM may still be available */
-        }
+    //TODO: initialize all eth interface listed in config
+    if (SUCCESS != AppNetworkService_InitEthInterface(&gAppNetworkServiceConfig.ethConfig)) 
+    {
+        retVal = FAILURE;
+        DEBUG_ERROR("->[E] AppNetworkService: InitEthInterface failed");
+        /* Continue anyway - Another interface may still be available */
     }
 
-    return 0;
+    return retVal;
 }
 
 /**
@@ -83,29 +102,33 @@ int32_t priv_InitializeInterfaces(void)
  * This function is called by AppNetworkService_Deinit() to disconnect
  * all enabled interfaces. Only connected interfaces are disconnected.
  */
-int32_t priv_DeinitializeInterfaces(void)
+static RETURN_STATUS priv_DeinitializeInterfaces(void)
 {
-    int32_t result = 0;
+    RETURN_STATUS retVAl = SUCCESS;
 
     /* === GSM Interface Disconnection === */
-    if (gAppNetworkServiceConfig.gsmConfig.enabled && gNetworkService_state.gsmState.connected) {
-        result = AppNetworkService_DisconnectGsm();
-        if (result != 0) {
+    if (gNetworkService_state.gsmState.connected) 
+    {
+        if (SUCCESS != AppNetworkService_DisconnectGsm()) 
+        {
+            retVAl = FAILURE;
             DEBUG_ERROR("->[E] AppNetworkService: DisconnectGsm failed");
             /* Continue anyway - need to disconnect other interfaces */
         }
     }
 
     /* === Ethernet Interface Disconnection === */
-    if (gAppNetworkServiceConfig.ethConfig.enabled && gNetworkService_state.ethState.connected) {
-        result = AppNetworkService_DisconnectEth();
-        if (result != 0) {
+    if (gNetworkService_state.ethState.connected) 
+    {
+        if (SUCCESS != AppNetworkService_DisconnectEth()) 
+        {
+            retVAl = FAILURE;
             DEBUG_ERROR("->[E] AppNetworkService: DisconnectEth failed");
             /* Continue anyway - other cleanup must proceed */
         }
     }
 
-    return 0;
+    return retVAl;
 }
 
 /*==============================================================================

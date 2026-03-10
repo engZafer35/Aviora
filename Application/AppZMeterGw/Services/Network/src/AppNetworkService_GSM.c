@@ -23,8 +23,9 @@ int32_t AppNetworkService_InitGsmInterface(const AppNetworkGsmConfig_t* config)
 
     /* Initialize GSM Manager (TCP/IP stack, driver, etc.) - one-time only */
     result = appGsmMngInit();
-    if (result != SUCCESS) {
-        DEBUG_ERROR("->[E] AppNetworkService: appGsmMngInit failed");
+    if (result != SUCCESS)
+    {
+        DEBUG_ERROR("->[E] appGsmMngInit failed");
         return -2;
     }
 
@@ -41,15 +42,26 @@ int32_t AppNetworkService_InitGsmInterface(const AppNetworkGsmConfig_t* config)
 int32_t AppNetworkService_ConnectGsm(void)
 {
     int32_t result = 0;
+    DBUS_PACKET dbPacket;
+
+    
 
     if (!gNetworkService_state.gsmState.initialized) {
         return -1;
     }
 
+    dbPacket.packetID   = 0;
+    dbPacket.pri        = EN_PRIORITY_MED;
+    dbPacket.retainFlag = TRUE;
+    dbPacket.topic      = EN_DBUS_TOPIC_GSM;
+
     /* Open PPP connection via AppGsmManager */
     result = appGsmMngOpenPPP();
-    if (result != SUCCESS) {
+    if (result != SUCCESS)
+    {
         DEBUG_ERROR("->[E] AppNetworkService: appGsmMngOpenPPP failed");
+
+        
         priv_PublishNetworkEvent(0x03, 0, result); /* GSM_ERROR */
         return -2;
     }

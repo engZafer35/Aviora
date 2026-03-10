@@ -15,6 +15,20 @@
 #include "AppDataBus.h"
 #include "AppGsmManager.h"
 
+#include "AppLogRecorder.h"
+#include "AppGlobalVariables.h"
+#include "AppInternalMsgFrame.h"
+
+
+/*==============================================================================
+ * Network Configuration and Interface Implementations
+ * Auto-generated interface loader included from AppNetworkService_InterfaceLoader.c
+ *============================================================================*/
+
+/* Include the interface loader which selectively includes configuration
+ * and active interface implementations based on the device configuration. */
+#include "AppNetworkService_Config.c"
+
 /*==============================================================================
  * Defines and Constants
  *============================================================================*/
@@ -27,13 +41,13 @@
  * Network event data published to DataBus
  */
 typedef enum {
-    NETWORK_EVENT_GSM_CONNECTED = 0x01,
-    NETWORK_EVENT_GSM_DISCONNECTED = 0x02,
-    NETWORK_EVENT_GSM_ERROR = 0x03,
-    NETWORK_EVENT_ETH_CONNECTED = 0x11,
-    NETWORK_EVENT_ETH_DISCONNECTED = 0x12,
-    NETWORK_EVENT_ETH_ERROR = 0x13,
-    NETWORK_EVENT_GSM_SIGNAL_LEVEL = 0x21,
+    NETWORK_EVENT_GSM_CONNECTED,
+    NETWORK_EVENT_GSM_DISCONNECTED,
+    NETWORK_EVENT_GSM_ERROR,
+    NETWORK_EVENT_ETH_CONNECTED,
+    NETWORK_EVENT_ETH_DISCONNECTED,
+    NETWORK_EVENT_ETH_ERROR,
+    NETWORK_EVENT_GSM_SIGNAL_LEVEL,
 } NetworkEventType_t;
 
 /*==============================================================================
@@ -73,43 +87,36 @@ static int32_t priv_PublishNetworkEvent(NetworkEventType_t eventType, uint8_t in
 /**
  * AppNetworkService_Init - Initialize the Network Service
  */
-int32_t AppNetworkService_Init(void)
+RETURN_STATUS AppNetworkService_Init(void)
 {
-    int32_t result = 0;
+    RETURN_STATUS retVal = FAILURE;
 
     /* Check if already initialized */
-    if (gNetworkService_state.serviceInitialized) {
-        return -2;
+    if (gNetworkService_state.serviceInitialized) 
+    {
+        return FAILURE;
     }
 
     /* Register with DataBus for EN_DBUS_TOPIC_NETWORK events */
-    result = appDBusRegister(EN_DBUS_TOPIC_NETWORK, &gNetworkService.dbusClientID);
-    if (result != 0) {
-        return -3;
-    }
-
-    /* Initialize network interfaces based on configuration */
-    result = priv_InitializeInterfaces();
-    if (result != 0) 
+    if (SUCCESS != appDBusRegister(EN_DBUS_TOPIC_DEVICE, &gNetworkService.dbusClientID)) 
     {
-        DEBUG_ERROR("->[E] AppNetworkService: priv_InitializeInterfaces returned error");
-        /* Continue anyway - some interfaces may still be initialized and available
-         * Task monitoring will identify which interfaces are working via DataBus */
+        DEBUG_ERROR("->[E] appDBusRegister returned error");
+        return FAILURE;
     }
 
-    /* Mark service as initialized */
     gNetworkService_state.serviceInitialized = true;
 
-    return 0;
+    return retVal;
 }
 
 /**
  * AppNetworkService_Deinit - Deinitialize the Network Service
  */
-int32_t AppNetworkService_Deinit(void)
+RETURN_STATUS AppNetworkService_Deinit(void)
 {
     /* Stop task if running */
-    if (gNetworkService_state.taskRunning) {
+    if (gNetworkService_state.taskRunning)
+    {
         AppNetworkService_StopTask();
     }
 
@@ -117,7 +124,8 @@ int32_t AppNetworkService_Deinit(void)
     priv_DeinitializeInterfaces();
 
     /* Unregister from DataBus */
-    if (gNetworkService.dbusClientID >= 0) {
+    if (gNetworkService.dbusClientID >= 0)
+    {
         appDBusUnregister(gNetworkService.dbusClientID);
         gNetworkService.dbusClientID = -1;
     }
@@ -126,7 +134,7 @@ int32_t AppNetworkService_Deinit(void)
     memset(&gNetworkService_state, 0, sizeof(AppNetworkServiceState_t));
     gNetworkService_state.serviceInitialized = false;
 
-    return 0;
+    return SUCCESS;
 }
 
 /**
@@ -137,12 +145,14 @@ int32_t AppNetworkService_StartTask(void)
     int32_t result = 0;
 
     /* Check if service is initialized */
-    if (!gNetworkService_state.serviceInitialized) {
+    if (!gNetworkService_state.serviceInitialized) 
+    {
         return -1;
     }
 
     /* Check if task already running */
-    if (gNetworkService_state.taskRunning) {
+    if (gNetworkService_state.taskRunning)
+    {
         return -2;
     }
 
@@ -161,11 +171,12 @@ int32_t AppNetworkService_StartTask(void)
 /**
  * AppNetworkService_StopTask - Stop the Network Service Task
  */
-int32_t AppNetworkService_StopTask(void)
+RETURN_STATUS AppNetworkService_StopTask(void)
 {
     /* Check if task is running */
-    if (!gNetworkService_state.taskRunning) {
-        return -1;
+    if (!gNetworkService_state.taskRunning) 
+    {
+        return FAILURE;
     }
 
     /* Signal task to stop */
@@ -211,7 +222,8 @@ int32_t AppNetworkService_StopTask(void)
 int32_t AppNetworkService_GetState(AppNetworkServiceState_t* state)
 {
     /* Validate input */
-    if (state == NULL) {
+    if (state == NULL)
+    {
         return -1;
     }
 
@@ -235,22 +247,71 @@ int32_t AppNetworkService_GetState(AppNetworkServiceState_t* state)
  * - Publish periodic status updates
  * - Update signal levels (GSM)
  */
-void AppNetworkService_Task(void* argument)
+staticvoid AppNetworkService_Task(void* argument)
 {
     (void)argument;
+    S32 i;
+    DBUS_PACKET busMsg;
+    DevInfoMsg devMsg;
 
-    /* Task loop */
-    while (gNetworkService.taskShouldRun) {
-        /* Update interface states */
-        priv_UpdateGsmState();
-        priv_UpdateEthState();
+    /* Initialize network interfaces based on configuration */
+    if (SUCCESS == priv_InitializeInterfaces()) 
+    {
+        retVal = SUCCESS;
+        gNetworkService_state.serviceInitialized = true;
+        DEBUG_ERROR("->[E] InitializeInterfaces returned error");
+        /* Continue anyway - some interfaces may still be initialized and available
+         * Task monitoring will identify which interfaces are working via DataBus */
+    }
 
-        /* Handle reconnection logic if needed */
-        priv_HandleReconnection();
+    for (i = 0; i < gAppNetworkServiceConfig.interfaceCount; i++) 
+    {
+        if (SUCCESS == gAppNetworkServiceConfig.interfaceList[i].initFunc(&gAppNetworkServiceConfig.interfaceList[i])) 
+        {
+            DEBUG_INFO("->[I] initialize interface %s", gAppNetworkServiceConfig.interfaceList[i].devName);
+            gAppNetworkServiceConfig.interfaceList[i].startConnect == TRUE;
+        }
 
-        /* Sleep for configured period (NETWORK_SERVICE_TASK_PERIOD_MS) */
-        /* This is platform-specific delay - implement based on actual OS */
-        /* os_delay_ms(NETWORK_SERVICE_TASK_PERIOD_MS); */
+        osDelayTask(250); // Small delay between interface initializations
+    }
+
+    while (gNetworkService.taskShouldRun) 
+    {
+        for (i = 0; i < gAppNetworkServiceConfig.interfaceCount; i++) 
+        {
+            if (TRUE == gAppNetworkServiceConfig.interfaceList[i].startConnect) 
+            {
+                if (SUCCESS == gAppNetworkServiceConfig.interfaceList[i].connectFunc()) 
+                {
+                    gAppNetworkServiceConfig.interfaceList[i].startConnect = FALSE; // Clear flag after successful connection
+                }
+                osDelayTask(250); // Small delay between connection attempts
+            }
+        }
+
+        if (SUCCESS == appDBusReceive(&gNetworkService.dbusClientID, &busMsg, WAIT_10_MS))
+        {
+            DEBUG_INFO("->[I] Newwork: Dbus raw msg pckID: %d, topic: %d ", busMsg.packetID, busMsg.topic);
+            if (busMsg.topic & EN_DBUS_TOPIC_DEVICE)
+            {
+                if (SUCCESS == appIntMsgParseDevMsg(busMsg.payload.data, busMsg.payload.dataLeng, &devMsg))
+                {
+                    if (EN_WORKING_MODE_NO_NETWORK == devMsg.wMode)
+                    {
+                        for (i = 0; i < gAppNetworkServiceConfig.interfaceCount; i++) 
+                        {
+                            if (SUCCESS == gAppNetworkServiceConfig.interfaceList[i].disconnectFunc()) 
+                            {
+                                gAppNetworkServiceConfig.interfaceList[i].startConnect = FALSE;
+                                DEBUG_INFO("->[I] disconnect interface %s", gAppNetworkServiceConfig.interfaceList[i].devName);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        osDelayTask(1000);
     }
 }
 
@@ -261,42 +322,18 @@ void AppNetworkService_Task(void* argument)
 /**
  * priv_PublishNetworkEvent - Publish Network Event to DataBus
  */
-static int32_t priv_PublishNetworkEvent(NetworkEventType_t eventType, uint8_t interfaceType, int32_t value)
+static RETURN_STATUS priv_PublishNetworkEvent(DBUS_PACKET *packet)
 {
-    DBUS_PACKET packet;
-    int32_t result = 0;
+    RETURN_STATUS retVal = FAILURE;
 
     /* Check if registered with DataBus */
-    if (gNetworkService.dbusClientID < 0) {
-        return -1;
+    if (gNetworkService.dbusClientID > 0) 
+    {
+        result = appDBusPublish(gNetworkService.dbusClientID, packet);
     }
-
-    /* Prepare packet */
-    memset(&packet, 0, sizeof(DBUS_PACKET));
-
-    packet.topic = EN_DBUS_TOPIC_NETWORK;
-    packet.pri = EN_PRIORITY_MED;
-    packet.retainFlag = 1;  /* Retain this packet for new subscribers */
-    packet.payload.dataLeng = 3;
-
-    /* Encode event data in payload */
-    packet.payload.data[0] = eventType;
-    packet.payload.data[1] = interfaceType;
-    packet.payload.data[2] = (uint8_t)(value & 0xFF);
-
-    /* Publish to DataBus */
-    result = appDBusPublish(gNetworkService.dbusClientID, &packet);
-
+    
     return result;
 }
 
-/*==============================================================================
- * Network Configuration and Interface Implementations
- * Auto-generated interface loader included from AppNetworkService_InterfaceLoader.c
- *============================================================================*/
-
-/* Include the interface loader which selectively includes configuration
- * and active interface implementations based on the device configuration. */
-#include "AppNetworkService_InterfaceLoader.c"
 
 /*** End Of File ***/
