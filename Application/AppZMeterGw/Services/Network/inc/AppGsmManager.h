@@ -1,7 +1,7 @@
 /******************************************************************************
 * #Author       : Zafer Satılmış
 * #Revision     : 1.0
-* #Date         : 23 Mar 2024 - 23:07:51
+* #Date         : 11 Mar 2026 - 14:21:51
 * #File Name    : AppGsmManager.h
 *******************************************************************************/
 
@@ -49,10 +49,10 @@ RETURN_STATUS appGsmMngOpenPPP(void);
  **/
 RETURN_STATUS appGsmMngClosePPP(void);
 
-void appGsmResetModem(void);
-void appGsmPowerDownModem(void);
-void appGsmPowerUpModem(void);
-
+/**
+ * @brief   Check if the network is ready
+ * @return  TRUE if the network is ready, FALSE otherwise
+ **/
 BOOL appGsmMngIsNetworkReady(void);
 
 #endif /* __APP_GSM_MANAGER_H__ */
