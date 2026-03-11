@@ -52,14 +52,14 @@ int32_t AppNetworkService_ConnectGsm(void)
 
     dbPacket.packetID   = 0;
     dbPacket.pri        = EN_PRIORITY_MED;
-    dbPacket.retainFlag = TRUE;
-    dbPacket.topic      = EN_DBUS_TOPIC_GSM;
+    dbPacket.retainFlag = FALSE;
+    dbPacket.topic      = EN_DBUS_TOPIC_NETWORK;
 
     /* Open PPP connection via AppGsmManager */
     result = appGsmMngOpenPPP();
     if (result != SUCCESS)
     {
-        DEBUG_ERROR("->[E] AppNetworkService: appGsmMngOpenPPP failed");
+        DEBUG_ERROR("->[E] appGsmMngOpenPPP failed");
 
         
         priv_PublishNetworkEvent(0x03, 0, result); /* GSM_ERROR */
