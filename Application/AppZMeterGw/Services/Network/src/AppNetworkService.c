@@ -85,6 +85,7 @@ static void networkServiceTask(void* argument)
 /***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS AppNetworkService_Start(void)
 {
+    RETURN_STATUS retVal = FAILURE;
     ZOsTaskParameters tempParam;
     OsTaskId networkTaskID;
 
@@ -95,6 +96,7 @@ RETURN_STATUS AppNetworkService_Start(void)
 
     if (OS_INVALID_TASK_ID != networkTaskID)
     {
+        retVal = SUCCESS;
         DEBUG_ERROR("->[E] Network Task created id: %d", networkTaskID);
         appLogRec(g_sysLoggerID, "Network: Task created successfully");
     }
@@ -104,7 +106,7 @@ RETURN_STATUS AppNetworkService_Start(void)
         appLogRec(g_sysLoggerID, "Network: Task could not be created");
     }
 
-    return SUCCESS;
+    return retVal;
 }
 
 /*** End Of File ***/

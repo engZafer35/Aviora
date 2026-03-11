@@ -1,7 +1,7 @@
 /******************************************************************************
 * #Author       : Zafer Satilmis
 * #Revision     : 1.0
-* #Date         : 26 Mar 2024 - 16:09:29
+* #Date         : 11 Mar 2026 - 14:21:51
 * #File Name    : AppGsmManager.c
 *******************************************************************************/
 /******************************************************************************
@@ -12,12 +12,12 @@
 /********************************* INCLUDES ***********************************/
 #include "AppGsmManager.h"
 
-
 #include "net_config.h"
 #include "uart_driver.h"
 
 #include "AppInternalMsgFrame.h"
 #include "AppDataBus.h"
+#include "AppLogRecorder.h"
 
 #include "MiddEventTimer.h"
 /****************************** MACRO DEFINITIONS *****************************/
@@ -33,10 +33,23 @@ typedef union
     };
 
 }GsmDataBusPacket;
+
+typedef enum 
+{
+    GSM_MODULE_STEP_PPP_CONNECTION,
+    GSM_MODULE_STEP_INIT_GSM_MODEM,
+    GSM_MODULE_STEP_CONNECT_PPP,    
+    GSM_MODULE_STEP_DISCONNECTED,
+    GSM_MODULE_STEP_COMPLETED,
+    GSM_MODULE_STEP_GET_UPDATE_INFO, //update date, gsm signal level, ip, etc. 
+} GsmModuleStep_t;
+
 /********************************** VARIABLES *********************************/
 static S32 gs_gsmDbusID;
 static GsmDataBusPacket gs_dataBusPck;
 static S32 gs_timerId;
+
+static GsmModuleStep_t gs_smInitStep = GSM_MODULE_STEP_PPP_CONNECTION;
 
 /***************************** STATIC FUNCTIONS  ******************************/
 static void gsmTimerCb (void)
@@ -57,6 +70,8 @@ static void gsmTimerCb (void)
 
     appIntMsgCreateGsmMsg(&gsmMsg, dbPacket.payload.data, &dbPacket.payload.dataLeng);
     appDBusPublish(gs_gsmDbusID, &dbPacket);
+
+    gs_smInitStep = GSM_MODULE_STEP_GET_UPDATE_INFO; // after publish gsm info, update gsm info in next timer period
 }
 
 #if USE_CYCLONE_LIB == 1
@@ -297,93 +312,7 @@ static void pppLinkStatusCb(NetInterface *interface, int linkState, void *param)
     appDBusPublish(gs_gsmDbusID, &dbPacket);
 }
 
-//static PppSettings pppSettings;
-static PppContext pppContext;
-#define APP_IF_NAME "PPP0"
-
-/***************************** PUBLIC FUNCTIONS  ******************************/
-RETURN_STATUS appGsmMngInit(void)
-{
-    RETURN_STATUS retVal = SUCCESS;
-    NetInterface *interface;
-    PppSettings pppSettings;
-
-    //TCP/IP stack initialization
-    if(NO_ERROR != netInit())
-    {
-        retVal = FAILURE;
-        DEBUG_ERROR("Failed to initialize TCP/IP stack!");
-    }
-
-    if (SUCCESS == retVal)
-    {
-        //Configure the first network interface
-        interface = &netInterface[0];
-
-        //Get default PPP settings
-        pppGetDefaultSettings(&pppSettings);
-        //Select the underlying interface
-        pppSettings.interface = interface;
-        //Default async control character map
-        pppSettings.accm = 0x00000000;
-        //Allowed authentication protocols
-        pppSettings.authProtocol = PPP_AUTH_PROTOCOL_PAP | PPP_AUTH_PROTOCOL_CHAP_MD5;
-
-        //Initialize PPP
-        if(NO_ERROR != pppInit(&pppContext, &pppSettings))
-        {
-            retVal = FAILURE;
-            DEBUG_ERROR("Failed to initialize PPP!");
-        }
-
-        if (SUCCESS == retVal)
-        {
-            //Set interface name
-            netSetInterfaceName(interface, APP_IF_NAME);
-            //Select the relevant UART driver
-            netSetUartDriver(interface, &uartDriver);
-
-            //Initialize network interface
-            if(NO_ERROR != netConfigInterface(interface))
-            {
-                retVal = FAILURE;
-                DEBUG_ERROR("Failed to configure interface %s!", interface->name);
-            }
-        }
-    }
-
-    if (SUCCESS == retVal)
-    {
-        retVal = FAILURE;
-        //Modem initialization
-        if(SUCCESS == modemInit(interface))
-        {
-            netAttachLinkChangeCallback(&netInterface[0], pppLinkStatusCb, NULL);
-            retVal  = appDBusRegister(EN_DBUS_TOPIC_DEVICE, &gs_gsmDbusID);
-            retVal |= middEventTimerRegister(&gs_timerId, gsmTimerCb, WAIT_10_SEC , TRUE);
-            middEventTimerStart(gs_timerId);
-
-            gs_dataBusPck.modemState = TRUE;
-        }
-    }
-
-    return retVal;
-}
-
-RETURN_STATUS appGsmMngOpenPPP(void)
-{
-    RETURN_STATUS retVal;
-
-    if (SUCCESS == modemConnect(&netInterface[0]))
-    {
-        retVal = SUCCESS;
-        gs_dataBusPck.pppLinkState = TRUE;
-    }
-
-    return retVal;
-}
-
-RETURN_STATUS appGsmMngClosePPP(void)
+static RETURN_STATUS closePPP(void)
 {
    RETURN_STATUS retVal = FAILURE;
 
@@ -400,66 +329,282 @@ RETURN_STATUS appGsmMngClosePPP(void)
    return retVal;
 }
 
-BOOL appGsmMngIsNetworkReady(void)
+static void updateGsmModemInfo(void)
 {
-    return gs_dataBusPck.pppLinkState;
+    static int signalLevel = 50; //TODO: for test purpose, need to get real signal level from modem
+    signalLevel += 3;
+    if (signalLevel > 100)
+    {
+        signalLevel = 50;
+    }
+
+    gs_dataBusPck.gsmSignalLevel = signalLevel;
 }
 
+//static PppSettings pppSettings;
+static PppContext pppContext;
+#define APP_IF_NAME "PPP0"
+
+static gsmConnManagerTask(void* argument)
+{    
+    NetInterface *interface;
+    PppSettings pppSettings;
+
+    (void)argument;
+    osDelayTask(1000);
+
+    while(666)
+    { 
+        switch (gs_smInitStep)
+        {
+            case GSM_MODULE_STEP_PPP_CONNECTION:
+            {
+                //Configure the first network interface
+                interface = &netInterface[0];
+
+                //Get default PPP settings
+                pppGetDefaultSettings(&pppSettings);
+                //Select the underlying interface
+                pppSettings.interface = interface;
+                //Default async control character map
+                pppSettings.accm = 0x00000000;
+                //Allowed authentication protocols
+                pppSettings.authProtocol = PPP_AUTH_PROTOCOL_PAP | PPP_AUTH_PROTOCOL_CHAP_MD5;
+
+                //Initialize PPP
+                if(NO_ERROR != pppInit(&pppContext, &pppSettings))
+                {
+                    retVal = FAILURE;
+                    DEBUG_ERROR("Failed to initialize PPP!");
+                    appLogRec(g_sysLoggerID, "Failed to initialize PPP!");
+                }
+
+                if (SUCCESS == retVal)
+                {
+                    //Set interface name
+                    netSetInterfaceName(interface, APP_IF_NAME);
+                    //Select the relevant UART driver
+                    netSetUartDriver(interface, &uartDriver);
+
+                    //Initialize network interface
+                    if(NO_ERROR != netConfigInterface(interface))
+                    {
+                        retVal = FAILURE;
+                        DEBUG_ERROR("Failed to configure interface %s!", interface->name);
+                        appLogRec(g_sysLoggerID, "Failed to configure interface Gsm!");
+                    }
+                }
+                
+                if (SUCCESS == retVal)
+                {
+                    gs_smInitStep = GSM_MODULE_STEP_INIT_GSM_MODEM;
+                    DEBUG_INFO("PPP interface initialized successfully!");
+                    appLogRec(g_sysLoggerID, "PPP interface initialized successfully!");
+                }
+                break;      
+            }
+            
+            case GSM_MODULE_STEP_INIT_GSM_MODEM:
+            {
+                if(SUCCESS == modemInit(interface))
+                {
+                    gs_smInitStep = GSM_MODULE_STEP_CONNECT_PPP;
+                    gs_dataBusPck.modemState = TRUE;
+                    netAttachLinkChangeCallback(&netInterface[0], pppLinkStatusCb, NULL);
+
+                    DEBUG_INFO("GSM modem initialized successfully!");
+                    appLogRec(g_sysLoggerID, "GSM modem initialized successfully!");-                    
+                }
+
+                break;
+            }
+
+            case GSM_MODULE_STEP_CONNECT_PPP:
+            {         
+                if (SUCCESS == modemConnect(&netInterface[0]))
+                {
+                    gs_smInitStep = GSM_MODULE_STEP_COMPLETED;
+                    DEBUG_INFO("PPP connection established successfully!");
+                    appLogRec(g_sysLoggerID, "PPP connection established successfully!");
+                    gs_dataBusPck.pppLinkState = TRUE;
+
+                    gs_dataBusPck.gsmSignalLevel = 80; //TODO: for test purpose
+
+                    gsmTimerCb(); // publish the initial state immediately after connection
+                }             
+                break;
+            }
+            
+            case GSM_MODULE_STEP_DISCONNECTED:
+            {
+                if (SUCCESS == closePPP())
+                {
+                    DEBUG_INFO("PPP connection closed successfully!");
+                    appLogRec(g_sysLoggerID, "PPP connection closed successfully!");
+
+                    gs_smInitStep = GSM_MODULE_STEP_COMPLETED;
+                }
+                break;
+            }
+
+            case GSM_MODULE_STEP_GET_UPDATE_INFO:
+            {
+                updateGsmModemInfo();
+                gs_smInitStep = GSM_MODULE_STEP_COMPLETED;
+                break;
+            }
+
+            default:
+                break;
+        }
+        
+        osDelayTask(1000);
+    }
+
+}
 
 #else
-
-RETURN_STATUS appGsmMngInit(void)
+static void updateGsmModemInfo(void)
 {
-    RETURN_STATUS retVal = SUCCESS;
-
-    retVal  = appDBusRegister(EN_DBUS_TOPIC_DEVICE, &gs_gsmDbusID);
-    retVal |= middEventTimerRegister(&gs_timerId, gsmTimerCb, WAIT_5_SEC , TRUE);
-    middEventTimerStart(gs_timerId);
-
-    gs_dataBusPck.modemState = TRUE;
-    gs_dataBusPck.gsmSignalLevel = 80; //it is updated jus for test, it does not matter in PC
-
-    return retVal;
-}
-
-RETURN_STATUS appGsmMngOpenPPP(void)
-{
-    /* This info will be shared over DBus by timerCB*/
-    gs_dataBusPck.pppLinkState = TRUE; // In PC, eth connection is ready every time.
-    return SUCCESS;
-}
-
-RETURN_STATUS appGsmMngClosePPP(void)
-{
-    /* This info will be shared over DBus by timerCB*/
-    gs_dataBusPck.pppLinkState = FALSE;
-    return SUCCESS;
-}
-
-BOOL appGsmMngIsNetworkReady(void)
-{
-    return gs_dataBusPck.pppLinkState;
-}
-
-/* This function will be used just test purpose, manually break connection */
-void appGsmMngSetConnStat(BOOL stat)
-{
-    gs_dataBusPck.pppLinkState = stat;
-    if (stat)
+    static int signalLevel = 50; //TODO: for test purpose, need to get real signal level from modem
+    signalLevel += 3;
+    if (signalLevel > 100)
     {
-        gs_dataBusPck.modemState     = TRUE;
-        gs_dataBusPck.gsmSignalLevel = 75;
-        gs_dataBusPck.pppLinkState   = TRUE;
+        signalLevel = 50;
     }
-    else
-    {
-        gs_dataBusPck.modemState     = FALSE;
-        gs_dataBusPck.gsmSignalLevel = 0;
-        gs_dataBusPck.pppLinkState   = FALSE;;
+
+    gs_dataBusPck.gsmSignalLevel = signalLevel;
+}
+
+static gsmConnManagerTask(void* argument)
+{    
+    NetInterface *interface;
+    PppSettings pppSettings;
+
+    (void)argument;
+    osDelayTask(1000);
+
+    while(666)
+    { 
+        switch (gs_smInitStep)
+        {
+            case GSM_MODULE_STEP_PPP_CONNECTION:
+            {                
+                gs_smInitStep = GSM_MODULE_STEP_INIT_GSM_MODEM;
+                DEBUG_INFO("PPP interface initialized successfully!");
+                appLogRec(g_sysLoggerID, "PPP interface initialized successfully!");
+            
+                break;      
+            }
+            
+            case GSM_MODULE_STEP_INIT_GSM_MODEM:
+            {
+                gs_smInitStep = GSM_MODULE_STEP_CONNECT_PPP;
+                gs_dataBusPck.modemState = TRUE;
+
+                DEBUG_INFO("GSM modem initialized successfully!");
+                appLogRec(g_sysLoggerID, "GSM modem initialized successfully!");-                    
+            
+                break;
+            }
+
+            case GSM_MODULE_STEP_CONNECT_PPP:
+            {         
+                gs_smInitStep = GSM_MODULE_STEP_COMPLETED;
+                DEBUG_INFO("PPP connection established successfully!");
+                appLogRec(g_sysLoggerID, "PPP connection established successfully!");
+                gs_dataBusPck.pppLinkState = TRUE;
+
+                gs_dataBusPck.gsmSignalLevel = 80; //TODO: for test purpose
+
+                gsmTimerCb(); // publish the initial state immediately after connection
+                    
+                break;
+            }
+            
+            case GSM_MODULE_STEP_DISCONNECTED:
+            {
+                DEBUG_INFO("PPP connection closed successfully!");
+                appLogRec(g_sysLoggerID, "PPP connection closed successfully!");
+
+                gs_smInitStep = GSM_MODULE_STEP_COMPLETED;
+                
+                break;
+            }
+
+            case GSM_MODULE_STEP_GET_UPDATE_INFO:
+            {
+                updateGsmModemInfo();
+                gs_smInitStep = GSM_MODULE_STEP_COMPLETED;
+                break;
+            }
+
+            default:
+                break;
+        }
+        
+        osDelayTask(1000);
     }
 }
 
 #endif
+/***************************** PUBLIC FUNCTIONS  ******************************/
+RETURN_STATUS appGsmMngInit(void)
+{
+    RETURN_STATUS retVal = SUCCESS;
+    ZOsTaskParameters tempParam;
+    OsTaskId gsmTaskID;
 
+    tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
+    tempParam.stackSize = ZOS_MIN_STACK_SIZE;
+
+    retVal = appDBusRegister(EN_DBUS_TOPIC_DEVICE, &gs_gsmDbusID);
+    if (SUCCESS != retVal)
+    {
+        DEBUG_ERROR("Failed to register GSM manager to DBus!");
+        appLogRec(g_sysLoggerID, "Failed to register GSM manager to DBus!");
+        return FAILURE;
+    }
+
+    //return value of timer is not critical, so we do not check it
+    middEventTimerRegister(&gs_timerId, gsmTimerCb, WAIT_10_SEC , TRUE);
+    middEventTimerStart(gs_timerId);
+
+    if (SUCCESS == retVal)
+    {
+        gsmTaskID = appTskMngCreate("GSM_TASK", gsmConnManagerTask, NULL, &tempParam);
+
+        if (OS_INVALID_TASK_ID != gsmTaskID)
+        {
+            DEBUG_ERROR("->[E] GSM Task created id: %d", gsmTaskID);
+            appLogRec(g_sysLoggerID, "GSM: Task created successfully");
+        }
+        else
+        {
+            DEBUG_ERROR("->[E] GSM Task could not be created");
+            appLogRec(g_sysLoggerID, "GSM: Task could not be created");
+            retVal = FAILURE;
+        }
+    }
+
+    return retVal;
+}
+
+RETURN_STATUS appGsmMngCloseConn(void)
+{    
+    gs_smInitStep = GSM_MODULE_STEP_DISCONNECTED;
+    return SUCCESS;
+}
+
+RETURN_STATUS appGsmMngReconnect(void)
+{    
+    gs_smInitStep = GSM_MODULE_STEP_INIT_GSM_MODEM;
+    return SUCCESS;
+}
+
+BOOL appGsmMngIsNetworkReady(void)
+{
+    return gs_dataBusPck.pppLinkState;
+}
 
 /******************************** End Of File *********************************/

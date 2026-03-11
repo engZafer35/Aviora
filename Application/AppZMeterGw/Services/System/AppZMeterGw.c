@@ -207,14 +207,9 @@ static RETURN_STATUS initSWUnit(void)
             return FAILURE;
         }
 
-        if (FAILURE == appGsmMngInit())
+        if (FAILURE == AppNetworkService_Start())
         {
-            DEBUG_ERROR("->[E] appGsmMngInit ERROR ");
-            return FAILURE;
-        }
-        if (FAILURE == appGsmMngOpenPPP())
-        {
-            DEBUG_ERROR("->[E] appGsmMngOpenPPP ERROR ");
+            DEBUG_ERROR("->[E] AppNetworkService_Start ERROR ");
             return FAILURE;
         }
 
