@@ -20,6 +20,7 @@
  * Global Network Service Configuration
  *============================================================================*/
 #include "Project_Conf.h"
+#include "net_config.h"
 
 /* GSM Interface Implementation */
 #if defined(GSM_INTERFACE_ENABLED) || 1  /* Replace with: if enabled in config */
@@ -61,6 +62,24 @@ const AppNetworkServiceConfig_t gAppNetworkServiceConfig = {
     .interfaceCount = 2
 };
 
+/**
+ * priv_InitTCPIPStack - if any tcp/ip stack is used in the project, it should be initialized
+ * but if no stack is used, this function can be left empty and return SUCCESS.
+ */
+static RETURN_STATUS priv_InitTCPIPStack(void)
+{
+    RETURN_STATUS retVal = SUCCESS;
+
+    //TCP/IP stack initialization
+    if(NO_ERROR != netInit())
+    {
+        retVal = FAILURE;
+        DEBUG_ERROR("Failed to initialize TCP/IP stack!");
+    }
+
+    return retVal;
+}
+
 /*==============================================================================
  * Interface Initialization and Deinitialization Coordinators
  *============================================================================*/
@@ -71,7 +90,7 @@ const AppNetworkServiceConfig_t gAppNetworkServiceConfig = {
  * This function is called by AppNetworkService_Init() to initialize
  * all enabled interfaces. It gracefully handles per-interface failures.
  */
-int32_t priv_InitializeInterfaces(void)
+static int32_t priv_StartInterfaces(void)
 {
     RETURN_STATUS retVal = SUCCESS;
 
@@ -80,7 +99,7 @@ int32_t priv_InitializeInterfaces(void)
     if (SUCCESS != AppNetworkService_InitGsmInterface(&gAppNetworkServiceConfig.gsmConfig)) 
     {
         retVal = FAILURE;
-        DEBUG_ERROR("->[E] AppNetworkService: InitGsmInterface failed");
+        DEBUG_ERROR("->[E] InitGsmInterface failed");
         /* Continue anyway - Another interface may still be available */
     }
     
@@ -89,7 +108,7 @@ int32_t priv_InitializeInterfaces(void)
     if (SUCCESS != AppNetworkService_InitEthInterface(&gAppNetworkServiceConfig.ethConfig)) 
     {
         retVal = FAILURE;
-        DEBUG_ERROR("->[E] AppNetworkService: InitEthInterface failed");
+        DEBUG_ERROR("->[E] InitEthInterface failed");
         /* Continue anyway - Another interface may still be available */
     }
 
