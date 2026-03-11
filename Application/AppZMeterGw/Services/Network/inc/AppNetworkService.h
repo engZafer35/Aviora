@@ -1,32 +1,25 @@
-/*
- * AppNetworkService.h
- *
- * Network Service - Handles network interface initialization and management
- * Supports GSM and Ethernet interfaces based on device configuration
- *
- * Created on: Mar 04, 2026
- */
-
+/******************************************************************************
+* #Author       : Zafer Satılmış
+* #Revision     : 1.0
+* #Date         : 2Mar 04, 2026 - 1:43:59 PM
+* #File Name    : AppNetworkService.h
+*******************************************************************************/
+#ifdef __cplusplus
+extern "C" {
+#endif
+/******************************************************************************
+* 
+******************************************************************************/
+/****************************** IFNDEF & DEFINE ******************************/
 #ifndef __APP_NETWORK_SERVICE_H__
 #define __APP_NETWORK_SERVICE_H__
 
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
-#include <stdint.h>
-#include <stdbool.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+/****************************** MACRO DEFINITIONS *****************************/
 
-/*==============================================================================
- * Configuration Structures - Generated from JSON by external Python parser
- *============================================================================*/
-
-/**
- * GSM Interface Configuration
- * Generated from JSON GSM configuration block
- */
+/******************************* TYPE DEFINITIONS *****************************/
 typedef struct {
     bool enabled;                   /**< GSM interface enabled flag */
     const char* devName;            /**< Device name (e.g., "quectelUC2000") */
@@ -45,59 +38,16 @@ typedef struct {
     const char* connInterface;      /**< Connection interface (e.g., "hspi2") */
     const char* srcPath;            /**< Resource path (e.g., "/e/ENC28J60") */
 } AppNetworkEthConfig_t;
+/************************* GLOBAL VARIBALE REFERENCES *************************/
+
+/************************* GLOBAL FUNCTION DEFINITIONS ************************/
 
 /**
- * Complete Network Service Configuration
- * Contains configuration for all available network interfaces
+ * @brief   Initialize and start all network interfaces
+ * @return  if everything is OK, return EN_SUCCES
+ *          otherwise return FAILURE
  */
-typedef struct {
-    AppNetworkGsmConfig_t gsmConfig;        /**< GSM interface configuration */
-    AppNetworkEthConfig_t ethConfig;        /**< Ethernet interface configuration */
-    uint8_t interfaceCount;                 /**< Total number of enabled interfaces */
-} AppNetworkServiceConfig_t;
-
-/*==============================================================================
- * Service State Structures
- *============================================================================*/
-
-/**
- * GSM Interface State
- */
-typedef struct {
-    bool initialized;               /**< Initialization status */
-    bool connected;                 /**< Connection status */
-    const void* gsmManagerHandle;   /**< Handle to AppGsmManager instance */
-} AppNetworkGsmState_t;
-
-/**
- * Ethernet Interface State
- */
-typedef struct {
-    bool initialized;               /**< Initialization status */
-    bool connected;                 /**< Connection status */
-    const void* ethManagerHandle;   /**< Handle to Ethernet manager instance */
-} AppNetworkEthState_t;
-
-
-
-/*==============================================================================
- * Service Lifecycle Functions
- *============================================================================*/
-
-/**
- * Initialize the Network Service
- *
- * Sets up the network service with the provided configuration.
- * Creates and starts the network management task.
- *
- * @param config    Pointer to network service configuration
- * @return          0 on success, negative value on error
- */
-int32_t AppNetworkService_Init(void);
-
-
-
-
+RETURN_STATUS AppNetworkService_Start(void);
 
 #ifdef __cplusplus
 }

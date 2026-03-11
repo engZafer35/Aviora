@@ -83,7 +83,7 @@ static void networkServiceTask(void* argument)
 }
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
-RETURN_STATUS AppNetworkService_Init(void)
+RETURN_STATUS AppNetworkService_Start(void)
 {
     ZOsTaskParameters tempParam;
     OsTaskId networkTaskID;
