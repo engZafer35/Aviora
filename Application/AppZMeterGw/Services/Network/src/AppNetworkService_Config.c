@@ -44,20 +44,14 @@ const AppNetworkServiceConfig_t gAppNetworkServiceConfig = {
         .usePPP = true,
         .connInterface = "huart1",
         .srcPath = "/g/uc2000_atP"
-        .initFunc = AppNetworkService_InitGsmInterface,
-        .connectFunc = AppNetworkService_ConnectGsm,
-        .disconnectFunc = AppNetworkService_DisconnectGsm,
-        .startConnecting = FALSE,
+
     },
     .ethConfig = {
         .enabled = true,
         .devName = "ENC28J60",
         .connInterface = "hspi2",
         .srcPath = "/e/ENC28J60"
-        .initFunc = AppNetworkService_InitEthInterface,
-        .connectFunc = AppNetworkService_ConnectEth,
-        .disconnectFunc = AppNetworkService_DisconnectEth,
-        .startConnecting = FALSE,
+
     },
     .interfaceCount = 2
 };
