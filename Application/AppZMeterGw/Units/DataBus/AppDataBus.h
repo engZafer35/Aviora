@@ -32,7 +32,7 @@ typedef enum
 {
     EN_DBUS_TOPIC_NO        = 0X00, /* just in listener mode, */
     EN_DBUS_TOPIC_GSM       = 0X01,
-    EN_DBUS_TOPIC_NETWORK   = 0X02,
+    EN_DBUS_TOPIC_ETH       = 0X02,
     EN_DBUS_TOPIC_DISPLAY   = 0X04,
     EN_DBUS_TOPIC_DEVICE    = 0X08,
     EN_DBUS_TOPIC_TASK_MNG  = 0X10, /* Task MANAGER, it decides to reboot, So before reboot it informs everyone */
