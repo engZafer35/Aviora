@@ -24,12 +24,12 @@
 
 /* GSM Interface Implementation */
 #if defined(GSM_INTERFACE_ENABLED) || 1  /* Replace with: if enabled in config */
-#include "AppNetworkService_GSM.c"
+#include "GsmConn_Comm.h"
 #endif
 
 /* Ethernet Interface Implementation */
 #if defined(ETH_INTERFACE_ENABLED) || 1  /* Replace with: if enabled in config */
-#include "AppNetworkService_ETH.c"
+#include "EthConn_ENC28j60.h"
 #endif
 /**
  * Network Service Configuration
@@ -90,7 +90,7 @@ static RETURN_STATUS priv_StartInterfaces(void)
 
     /* === GSM Interface Initialization === */
     //TODO: initialize all gsm interface listed in config
-    if (SUCCESS != appGsmMngInit()) 
+    if (SUCCESS != GsmConnInit()) 
     {
         retVal = FAILURE;
         DEBUG_ERROR("->[E] InitGsmInterface failed");
@@ -99,7 +99,7 @@ static RETURN_STATUS priv_StartInterfaces(void)
     
     /* === Ethernet Interface Initialization === */
     //TODO: initialize all eth interface listed in config
-    if (SUCCESS != AppNetworkService_InitEthInterface(&gAppNetworkServiceConfig.ethConfig)) 
+    if (SUCCESS != EthConn_Enc28J60_Init()) 
     {
         retVal = FAILURE;
         DEBUG_ERROR("->[E] InitEthInterface failed");

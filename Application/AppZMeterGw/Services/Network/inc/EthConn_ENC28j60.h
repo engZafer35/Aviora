@@ -2,59 +2,48 @@
 * #Author       : Zafer Satılmış
 * #Revision     : 1.0
 * #Date         : 11 Mar 2026 - 14:21:51
-* #File Name    : AppGsmManager.h
+* #File Name    : EthConn_ENC28j60.h
 *******************************************************************************/
 
 /******************************************************************************
 * 
 ******************************************************************************/
 /******************************IFNDEF & DEFINE********************************/
-#ifndef __APP_GSM_MANAGER_H__
-#define __APP_GSM_MANAGER_H__
+#ifndef __ETH_CONN_ENC28J60_H__
+#define __ETH_CONN_ENC28J60_H__
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
 
 /******************************MACRO DEFINITIONS*******************************/
-//Application configuration
-//#define APP_PPP_PIN_CODE "0000"
-#define APP_PPP_APN             "zd.iot"
-#define APP_PPP_PHONE_NUMBER    "*99#"
-#define APP_PPP_PRIMARY_DNS     "8.8.8.8"
-#define APP_PPP_SECONDARY_DNS   "8.8.4.4"
-#define APP_PPP_TIMEOUT         10000
+
 /*******************************TYPE DEFINITIONS ******************************/
 
 /************************* GLOBAL VARIBALE REFERENCES *************************/
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
+/**
+ * @brief   Initialize and start the Ethernet connection
+ * @return  if everything is OK, return EN_SUCCESS
+ */
+RETURN_STATUS EthConn_Enc28J60_Init(void);
 
 /**
- * @brief   Init Gsm Modem
- * @return  if everything is OK, return EN_SUCCES
- *          otherwise return FAILURE
- **/
-RETURN_STATUS appGsmMngInit(void);
+ * @brief   Close the Ethernet connection
+ * @return  if everything is OK, return EN_SUCCESS
+ */
+RETURN_STATUS EthConn_Enc28J60_CloseConn(void);
 
 /**
- * @brief   Open a PPP session
- * @return  if everything is OK, return EN_SUCCES
- *          otherwise return FAILURE
- **/
-RETURN_STATUS appGsmMngOpenPPP(void);
-
-/**
- * @brief   Close a PPP session
- * @return  if everything is OK, return EN_SUCCES
- *          otherwise return FAILURE
- **/
-RETURN_STATUS appGsmMngClosePPP(void);
+ * @brief   Reconnect to the network
+ * @return  if everything is OK, return EN_SUCCESS
+ */
+RETURN_STATUS EthConn_Enc28J60_Reconnect(void);
 
 /**
  * @brief   Check if the network is ready
  * @return  TRUE if the network is ready, FALSE otherwise
- **/
-BOOL appGsmMngIsNetworkReady(void);
-
-#endif /* __APP_GSM_MANAGER_H__ */
+ */
+BOOL EthConn_Enc28J60IsNetworkReady(void);
+#endif /* __ETH_CONN_ENC28J60_H__ */
 
 /********************************* End Of File ********************************/

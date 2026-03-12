@@ -2,7 +2,7 @@
 * #Author       : Zafer Satilmis
 * #Revision     : 1.0
 * #Date         : 11 Mar 2026 - 14:21:51
-* #File Name    : AppGsmManager.c
+* #File Name    : GsmConn_Comm.c
 *******************************************************************************/
 /******************************************************************************
 *
@@ -10,11 +10,14 @@
 *******************************************************************************/
 #define DEBUG_LEVEL  (DEBUG_LEVEL_DEBUG)
 /********************************* INCLUDES ***********************************/
-#include "AppGsmManager.h"
+#include "GsmConn_Comm.h"
 
+#include "AppNetworkService_Config.h"
 #include "net_config.h"
 #include "uart_driver.h"
 
+#include "AppGlobalVariables.h"
+#include "AppTaskManager.h"
 #include "AppInternalMsgFrame.h"
 #include "AppDataBus.h"
 #include "AppLogRecorder.h"
@@ -320,7 +323,7 @@ static RETURN_STATUS closePPP(void)
    {
        DEBUG_INFO("Closing PPP connection...");
 
-       if (NO_ERROR == pppClose(&netInterface[0]))
+       if (NO_ERROR == pppClose(&netInterface[GSM_INTERFACE_NUMBER]))
        {
            retVal = SUCCESS;
            gs_dataBusPck.pppLinkState = FALSE;
@@ -353,15 +356,15 @@ static gsmConnManagerTask(void* argument)
     (void)argument;
     osDelayTask(1000);
 
+    //Configure the first network interface  
+    interface = &netInterface[GSM_INTERFACE_NUMBER];
+
     while(666)
     { 
         switch (gs_smInitStep)
         {
             case GSM_MODULE_STEP_PPP_CONNECTION:
-            {
-                //Configure the first network interface
-                interface = &netInterface[0];
-
+            {                              
                 //Get default PPP settings
                 pppGetDefaultSettings(&pppSettings);
                 //Select the underlying interface
@@ -410,7 +413,7 @@ static gsmConnManagerTask(void* argument)
                 {
                     gs_smInitStep = GSM_MODULE_STEP_CONNECT_PPP;
                     gs_dataBusPck.modemState = TRUE;
-                    netAttachLinkChangeCallback(&netInterface[0], pppLinkStatusCb, NULL);
+                    netAttachLinkChangeCallback(interface, pppLinkStatusCb, NULL);
 
                     DEBUG_INFO("GSM modem initialized successfully!");
                     appLogRec(g_sysLoggerID, "GSM modem initialized successfully!");-                    
@@ -421,7 +424,7 @@ static gsmConnManagerTask(void* argument)
 
             case GSM_MODULE_STEP_CONNECT_PPP:
             {         
-                if (SUCCESS == modemConnect(&netInterface[0]))
+                if (SUCCESS == modemConnect(interface))
                 {
                     gs_smInitStep = GSM_MODULE_STEP_COMPLETED;
                     DEBUG_INFO("PPP connection established successfully!");
@@ -478,9 +481,6 @@ static void updateGsmModemInfo(void)
 
 static gsmConnManagerTask(void* argument)
 {    
-    NetInterface *interface;
-    PppSettings pppSettings;
-
     (void)argument;
     osDelayTask(1000);
 
@@ -549,7 +549,7 @@ static gsmConnManagerTask(void* argument)
 
 #endif
 /***************************** PUBLIC FUNCTIONS  ******************************/
-RETURN_STATUS appGsmMngInit(void)
+RETURN_STATUS GsmConnInit(void)
 {
     RETURN_STATUS retVal = SUCCESS;
     ZOsTaskParameters tempParam;
@@ -581,28 +581,30 @@ RETURN_STATUS appGsmMngInit(void)
         }
         else
         {
+            appDBusUnregister(gs_gsmDbusID);
+            retVal = FAILURE;
+
             DEBUG_ERROR("->[E] GSM Task could not be created");
             appLogRec(g_sysLoggerID, "GSM: Task could not be created");
-            retVal = FAILURE;
         }
     }
 
     return retVal;
 }
 
-RETURN_STATUS appGsmMngCloseConn(void)
+RETURN_STATUS GsmConnClosePPP(void)
 {    
     gs_smInitStep = GSM_MODULE_STEP_DISCONNECTED;
     return SUCCESS;
 }
 
-RETURN_STATUS appGsmMngReconnect(void)
+RETURN_STATUS GsmConnReconnect(void)
 {    
     gs_smInitStep = GSM_MODULE_STEP_INIT_GSM_MODEM;
     return SUCCESS;
 }
 
-BOOL appGsmMngIsNetworkReady(void)
+BOOL GsmConnIsNetworkReady(void)
 {
     return gs_dataBusPck.pppLinkState;
 }
