@@ -35,7 +35,7 @@
  * In order to use Cyclone lib, set USE_CYCLONE_LIB to ENABLE
  * Otherwise, Posix socket lib will be used.
  */
-#define USE_CYCLONE_LIB  0
+#define USE_CYCLONE_LIB  1
 
 #if USE_CYCLONE_LIB == 1
 
@@ -82,7 +82,7 @@
 #define PPP_TRACE_LEVEL          2
 
 //Number of network adapters
-#define NET_INTERFACE_COUNT 1
+#define NET_INTERFACE_COUNT 2 //TOTAL_INTERFACE_NUMBER
 
 //Size of the MAC address filter
 #define MAC_ADDR_FILTER_SIZE 12

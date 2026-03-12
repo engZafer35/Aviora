@@ -1,16 +1,16 @@
 /******************************************************************************
 * #Author       : Zafer Satılmış
 * #Revision     : 1.0
-* #Date         : 23 Mar 2024 - 23:07:51
-* #File Name    : AppGsmManager.h
+* #Date         : 11 Mar 2026 - 14:21:51
+* #File Name    : GsmConn_Comm.h
 *******************************************************************************/
 
 /******************************************************************************
 * 
 ******************************************************************************/
 /******************************IFNDEF & DEFINE********************************/
-#ifndef __APP_GSM_MANAGER_H__
-#define __APP_GSM_MANAGER_H__
+#ifndef __GSM_CONN_COMM_H__
+#define __GSM_CONN_COMM_H__
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
 
@@ -33,28 +33,28 @@
  * @return  if everything is OK, return EN_SUCCES
  *          otherwise return FAILURE
  **/
-RETURN_STATUS appGsmMngInit(void);
+RETURN_STATUS GsmConnInit(void);
 
 /**
  * @brief   Open a PPP session
  * @return  if everything is OK, return EN_SUCCES
  *          otherwise return FAILURE
  **/
-RETURN_STATUS appGsmMngOpenPPP(void);
+RETURN_STATUS GsmConnReconnect(void);
 
 /**
  * @brief   Close a PPP session
  * @return  if everything is OK, return EN_SUCCES
  *          otherwise return FAILURE
  **/
-RETURN_STATUS appGsmMngClosePPP(void);
+RETURN_STATUS GsmConnClosePPP(void);
 
-void appGsmResetModem(void);
-void appGsmPowerDownModem(void);
-void appGsmPowerUpModem(void);
+/**
+ * @brief   Check if the network is ready
+ * @return  TRUE if the network is ready, FALSE otherwise
+ **/
+BOOL GsmConnIsNetworkReady(void);
 
-BOOL appGsmMngIsNetworkReady(void);
-
-#endif /* __APP_GSM_MANAGER_H__ */
+#endif /* __GSM_CONN_COMM_H__ */
 
 /********************************* End Of File ********************************/

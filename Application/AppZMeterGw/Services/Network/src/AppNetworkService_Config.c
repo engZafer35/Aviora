@@ -6,13 +6,13 @@
  *
  * This file contains:
  * - Global configuration structure (gAppNetworkServiceConfig)
- * - Interface initialization coordinator (priv_InitializeInterfaces)
+ * - Interface initialization coordinator (priv_StartInterfaces)
  *
  * Individual interface implementations are in separate files:
  * - AppNetworkService_GSM.c (GSM/PPP interface)
  * - AppNetworkService_ETH.c (Ethernet interface)
  *
- * This file is #include'd by AppNetworkService_InterfaceLoader.c
+ * This file is #include'd by AppNetworkService.c
  * DO NOT compile separately.
  */
 
@@ -24,12 +24,12 @@
 
 /* GSM Interface Implementation */
 #if defined(GSM_INTERFACE_ENABLED) || 1  /* Replace with: if enabled in config */
-#include "AppNetworkService_GSM.c"
+#include "GsmConn_Comm.h"
 #endif
 
 /* Ethernet Interface Implementation */
 #if defined(ETH_INTERFACE_ENABLED) || 1  /* Replace with: if enabled in config */
-#include "AppNetworkService_ETH.c"
+#include "EthConn_ENC28j60.h"
 #endif
 /**
  * Network Service Configuration
@@ -80,23 +80,17 @@ static RETURN_STATUS priv_InitTCPIPStack(void)
     return retVal;
 }
 
-/*==============================================================================
- * Interface Initialization and Deinitialization Coordinators
- *============================================================================*/
-
 /**
- * priv_InitializeInterfaces - Initialize Active Network Interfaces
- *
- * This function is called by AppNetworkService_Init() to initialize
- * all enabled interfaces. It gracefully handles per-interface failures.
+ * @brief   Start Network Interfaces
+ * @return  if everything is OK, return EN_SUCCESS
  */
-static int32_t priv_StartInterfaces(void)
+static RETURN_STATUS priv_StartInterfaces(void)
 {
     RETURN_STATUS retVal = SUCCESS;
 
     /* === GSM Interface Initialization === */
     //TODO: initialize all gsm interface listed in config
-    if (SUCCESS != AppNetworkService_InitGsmInterface(&gAppNetworkServiceConfig.gsmConfig)) 
+    if (SUCCESS != GsmConnInit()) 
     {
         retVal = FAILURE;
         DEBUG_ERROR("->[E] InitGsmInterface failed");
@@ -105,7 +99,7 @@ static int32_t priv_StartInterfaces(void)
     
     /* === Ethernet Interface Initialization === */
     //TODO: initialize all eth interface listed in config
-    if (SUCCESS != AppNetworkService_InitEthInterface(&gAppNetworkServiceConfig.ethConfig)) 
+    if (SUCCESS != EthConn_Enc28J60_Init()) 
     {
         retVal = FAILURE;
         DEBUG_ERROR("->[E] InitEthInterface failed");
@@ -116,47 +110,8 @@ static int32_t priv_StartInterfaces(void)
 }
 
 /**
- * priv_DeinitializeInterfaces - Disconnect and Deinitialize Active Interfaces
- *
- * This function is called by AppNetworkService_Deinit() to disconnect
- * all enabled interfaces. Only connected interfaces are disconnected.
- */
-static RETURN_STATUS priv_DeinitializeInterfaces(void)
-{
-    RETURN_STATUS retVAl = SUCCESS;
-
-    /* === GSM Interface Disconnection === */
-    if (gNetworkService_state.gsmState.connected) 
-    {
-        if (SUCCESS != AppNetworkService_DisconnectGsm()) 
-        {
-            retVAl = FAILURE;
-            DEBUG_ERROR("->[E] AppNetworkService: DisconnectGsm failed");
-            /* Continue anyway - need to disconnect other interfaces */
-        }
-    }
-
-    /* === Ethernet Interface Disconnection === */
-    if (gNetworkService_state.ethState.connected) 
-    {
-        if (SUCCESS != AppNetworkService_DisconnectEth()) 
-        {
-            retVAl = FAILURE;
-            DEBUG_ERROR("->[E] AppNetworkService: DisconnectEth failed");
-            /* Continue anyway - other cleanup must proceed */
-        }
-    }
-
-    return retVAl;
-}
-
-/*==============================================================================
- * Interface Status Query Helper
- *============================================================================*/
-
-/**
- * AppNetworkService_GetActiveInterfaceCount - Get Active Interface Count
- * Returns the number of currently initialized network interfaces
+ * @brief   Get Active Interface Count
+ * @return  Number of currently initialized network interfaces
  */
 int32_t AppNetworkService_GetActiveInterfaceCount(void)
 {
