@@ -1,0 +1,9 @@
+{
+  "displayConfig": {
+    "devName": "display",
+    "type": "led",
+    "customerPath": "./Customers/ZD_0101/Display/",
+    "customFileName": "DisplayCustom_LCD.c",
+    "autoGenFileName": "AppDisplayManager_Autogen.c"
+  }
+}
