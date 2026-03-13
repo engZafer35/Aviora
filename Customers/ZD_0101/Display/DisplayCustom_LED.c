@@ -149,7 +149,7 @@ static void startingWind(void)
                             DEBUG_INFO("->[I] Display: Dbus DevMsg w.Mode: %d", devMsg.wMode);
                             gs_dspData.workingMode = devMsg.wMode;
                             if (EN_WORKING_MODE_FAILURE == gs_dspData.workingMode)                { setCurrentWindFunc(EN_DISPLAY_WINDOW_FAILURE); }
-                            else if (EN_WORKING_MODE_NO_GSM_CONNECTION == gs_dspData.workingMode) { setCurrentWindFunc(EN_WORKING_MODE_NO_GSM_CONNECTION); }
+                            else if (EN_WORKING_MODE_NO_NETWORK == gs_dspData.workingMode) { setCurrentWindFunc(EN_DISPLAY_WINDOW_NO_GSM_CONN); }
                             else if (EN_WORKING_MODE_SW_UPDATING == gs_dspData.workingMode)       { setCurrentWindFunc(EN_DISPLAY_WINDOW_SW_UPDATING); }
                             else if (EN_WORKING_MODE_MAIN == gs_dspData.workingMode)              { setCurrentWindFunc(EN_DISPLAY_WINDOW_MAIN); }
                             /* else if (EN_WORKING_MODE_POWER_DOWN == gs_dspData.workingMode)  !< not need to handle power down mode. keep to working as is */
@@ -208,7 +208,7 @@ static void mainWind(void)
                     {
                         gs_dspData.workingMode = devMsg.wMode;
                         if (EN_WORKING_MODE_FAILURE == gs_dspData.workingMode)                { setCurrentWindFunc(EN_DISPLAY_WINDOW_FAILURE); }
-                        else if (EN_WORKING_MODE_NO_GSM_CONNECTION == gs_dspData.workingMode) { setCurrentWindFunc(EN_WORKING_MODE_NO_GSM_CONNECTION); }
+                        else if (EN_WORKING_MODE_NO_NETWORK == gs_dspData.workingMode)        { setCurrentWindFunc(EN_DISPLAY_WINDOW_NO_GSM_CONN); }
                         else if (EN_WORKING_MODE_SW_UPDATING == gs_dspData.workingMode)       { setCurrentWindFunc(EN_DISPLAY_WINDOW_SW_UPDATING); }
                         else if (EN_WORKING_MODE_STARTING == gs_dspData.workingMode)          { setCurrentWindFunc(EN_DISPLAY_WINDOW_STARTING); }
                         /* else if (EN_WORKING_MODE_POWER_DOWN == gs_dspData.workingMode)  !< not need to handle power down mode. keep to working as is */
@@ -266,7 +266,7 @@ static void swUpdatingWind(void)
                     {
                         gs_dspData.workingMode = devMsg.wMode;
                         if (EN_WORKING_MODE_FAILURE == gs_dspData.workingMode)                { setCurrentWindFunc(EN_DISPLAY_WINDOW_FAILURE); }
-                        else if (EN_WORKING_MODE_NO_GSM_CONNECTION == gs_dspData.workingMode) { setCurrentWindFunc(EN_WORKING_MODE_NO_GSM_CONNECTION);}
+                        else if (EN_WORKING_MODE_NO_NETWORK == gs_dspData.workingMode) { setCurrentWindFunc(EN_DISPLAY_WINDOW_NO_GSM_CONN);}
                         else if (EN_WORKING_MODE_MAIN == gs_dspData.workingMode)              { setCurrentWindFunc(EN_DISPLAY_WINDOW_MAIN); }
                         else if (EN_WORKING_MODE_STARTING == gs_dspData.workingMode)          { setCurrentWindFunc(EN_DISPLAY_WINDOW_STARTING);}
                         /* else if (EN_WORKING_MODE_POWER_DOWN == gs_dspData.workingMode)  !< not need to handle power down mode. keep to working as is */
@@ -313,7 +313,7 @@ static void noGsmConnWind(void)
                     {
                         gs_dspData.workingMode = devMsg.wMode;
                         if (EN_WORKING_MODE_FAILURE == gs_dspData.workingMode)                { setCurrentWindFunc(EN_DISPLAY_WINDOW_FAILURE); }
-                        else if (EN_WORKING_MODE_NO_GSM_CONNECTION == gs_dspData.workingMode) { setCurrentWindFunc(EN_WORKING_MODE_NO_GSM_CONNECTION); }
+                        else if (EN_WORKING_MODE_NO_NETWORK == gs_dspData.workingMode)        { setCurrentWindFunc(EN_DISPLAY_WINDOW_NO_GSM_CONN); }
                         else if (EN_WORKING_MODE_SW_UPDATING == gs_dspData.workingMode)       { setCurrentWindFunc(EN_DISPLAY_WINDOW_SW_UPDATING); }
                         else if (EN_WORKING_MODE_MAIN == gs_dspData.workingMode)              { setCurrentWindFunc(EN_DISPLAY_WINDOW_MAIN); }
                         /* else if (EN_WORKING_MODE_POWER_DOWN == gs_dspData.workingMode)  !< not need to handle power down mode. keep to working as is */
@@ -358,7 +358,7 @@ static void failureWind(void)
                     {
                         gs_dspData.workingMode = devMsg.wMode;
                         if (EN_WORKING_MODE_STARTING == gs_dspData.workingMode)               { setCurrentWindFunc(EN_DISPLAY_WINDOW_STARTING); }
-                        else if (EN_WORKING_MODE_NO_GSM_CONNECTION == gs_dspData.workingMode) { setCurrentWindFunc(EN_WORKING_MODE_NO_GSM_CONNECTION); }
+                        else if (EN_WORKING_MODE_NO_NETWORK == gs_dspData.workingMode)        { setCurrentWindFunc(EN_DISPLAY_WINDOW_NO_GSM_CONN); }
                         else if (EN_WORKING_MODE_SW_UPDATING == gs_dspData.workingMode)       { setCurrentWindFunc(EN_DISPLAY_WINDOW_SW_UPDATING); }
                         else if (EN_WORKING_MODE_MAIN == gs_dspData.workingMode)              { setCurrentWindFunc(EN_DISPLAY_WINDOW_MAIN); }
                         /* else if (EN_WORKING_MODE_POWER_DOWN == gs_dspData.workingMode)  !< not need to handle power down mode. keep to working as is */
