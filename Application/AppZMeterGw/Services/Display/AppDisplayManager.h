@@ -24,11 +24,20 @@
 /************************* GLOBAL VARIBALE REFERENCES *************************/
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
-RETURN_STATUS appDisplayInit(void);
+/**
+ * @brief   Initialize the display manager
+ * @return  if everything is OK, return EN_SUCCES
+ *          otherwise return FAILURE
+ */
+RETURN_STATUS AppDisplayInit(void);
 
-void appDisplayStart(void);
+/**
+ * @brief   Start the display manager task
+ * @return  void
+ */
+void AppDisplayStart(void);
 
-//RETURN_STATUS appDisplayRefresh(void);
+//RETURN_STATUS AppDisplayRefresh(void);
 
 #endif /* __APP_DISPLAY_MANAGER_H__ */
 
