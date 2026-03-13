@@ -3,7 +3,7 @@
     "devName": "display",
     "type": "led",
     "customerPath": "./Customers/ZD_0101/Display/",
-    "customFileName": "DisplayCustom_LCD.c",
+    "customFileName": "DisplayCustom_LED.c",
     "autoGenFileName": "AppDisplayManager_Autogen.c"
   }
 }
