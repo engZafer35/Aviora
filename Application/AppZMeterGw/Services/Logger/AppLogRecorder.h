@@ -1,6 +1,6 @@
 /******************************************************************************
 * #Author       : Zafer Satılmış
-* #Revision     : 1.0
+* #Revision     : 1.3
 * #Date         : 27 Mar 2024 - 17:46:00
 * #File Name    : AppLogRecorder.h
 *******************************************************************************/
@@ -16,14 +16,21 @@
 /******************************MACRO DEFINITIONS*******************************/
 
 #define MAX_SERVICE_NUMBER (2) //move this param to configuration file
+#define LOGGER_QUEUE_SIZE (10)
+#define LOGGER_LOG_MAX_LENGTH (128)
+#define LOGGER_MAX_FILE_SIZE (1 * 1024 * 1024) // 1 MB
 
 #define FTP_SERVER  (ENABLE) //(DISABLE) /* If ftp server exists, enable this macro
 
 #define ALL_LOG_FILES   (0xFFFFFFFF)
 /*******************************TYPE DEFINITIONS ******************************/
-
-typedef int (*WriteLog) (const char *logStr);
-typedef int (*ReadLog) (const char *logStr, int size);
+/** 
+ * Logger interface function pointers 
+ */
+typedef void *(*OpenLog) (const char *path, unsigned int mode);
+typedef RETURN_STATUS (*WriteLog) (const void *file, const char *data, size_t length);
+typedef RETURN_STATUS (*ReadLog)  (const void *file, char *data, size_t size, size_t *outLength);
+typedef void (*CloseLogFile)(void *file);
 
 /**
  * Service logger interface
@@ -33,9 +40,11 @@ typedef struct
     U32 fileSize;     /* One service log file size, byte */
     U32 totalLogSize; /* Total service log area size, byte */
 
+    OpenLog openFunc;
     WriteLog writeFunc;
     ReadLog readFunc;
-
+    CloseLogFile closeFunc;
+    
     const char *logPath;
 
 }LogRecInterface;
@@ -50,23 +59,60 @@ typedef enum
 /************************* GLOBAL VARIBALE REFERENCES *************************/
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
-
+/**
+ * @brief Initialize the log recorder module
+ * @return SUCCESS on success, FAILURE on failure
+ */
 RETURN_STATUS appLogRecInit(void);
 
+/**
+ * @brief Register a logger service
+ * @param logger Logger interface structure
+ * @param srvName Service name
+ * @param loggerID Pointer to store the assigned logger ID
+ * @return SUCCESS on success, FAILURE on failure
+ */
 RETURN_STATUS appLogRecRegister(LogRecInterface *logger, const char *srvName, S32 *loggerID);
 
+/**
+ * @brief Unregister a logger service
+ * @param srvName Service name
+ * @param loggerID Logger ID to unregister
+ * @return SUCCESS on success, FAILURE on failure
+ */
 RETURN_STATUS appLogRecUnregister(const char *srvName, S32 loggerID);
 
-S32 appLogRec(S32 loggerID, const char *logStr);
+/**
+ * @brief Send log data to logger
+ * @param loggerID Logger ID obtained from registration
+ * @param logStr Log string to send
+ * @return SUCCESS on success, FAILURE on failure
+ */
+RETURN_STATUS appLogRec(S32 loggerID, const char *logStr);
 
+/**
+ * @brief Read log data from logger
+ * @param loggerID Logger ID obtained from registration
+ * @param str Buffer to store the read log data
+ * @param size Size of the buffer
+ * @return Number of bytes read on success, -1 on failure
+ */
 S32 appLogRecRead(S32 loggerID, const char *str, U32 size);
 
+/**
+ * @brief Get logger ID by service name
+ * @param srvName Service name  
+ * @return Logger ID if found, -1 if not found or input is invalid
+ * @note The caller should ensure that the service name is valid and registered before calling this function
+ */
 S32 appLogRecGetLoggerID(const char *srvName);
 
 /**
- * fileNum 0, current file
- * fileNum 0-0xffffffff last X file,
- * fileNum 0xffffffff all log file
+ * @brief Send log files through specified method
+ * @param loggerID Logger ID obtained from registration
+ * @param sendType Method to send logs (e.g., FTP, Serial Port)
+ * @param fileNum Number of log files to send, use ALL_LOG_FILES to send all available log files
+ * @return SUCCESS on success, FAILURE on failure
  */
 RETURN_STATUS appLogRecSendLog(S32 loggerID, EN_SRV_LOG_SEND sendType, U32 fileNum);
 
