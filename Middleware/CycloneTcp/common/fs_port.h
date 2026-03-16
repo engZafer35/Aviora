@@ -122,6 +122,9 @@ typedef struct
 //littleFS port?
 #elif defined(USE_LITTLEFS)
    #include "fs_port_littlefs.h"
+//FlashFS port?
+#elif defined(USE_FLASHFS)
+   #include "fs_port_flashFS.h"
 //SPIFFS port?
 #elif defined(USE_SPIFFS)
    #include "fs_port_spiffs.h"
