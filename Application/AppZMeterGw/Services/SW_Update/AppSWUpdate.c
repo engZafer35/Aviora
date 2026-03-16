@@ -5,7 +5,10 @@
 * #File Name    : AppSWUpdate.c
 *******************************************************************************/
 /******************************************************************************
-*
+* This module implements a software update service for the application. 
+* It allows the application to perform software updates by downloading
+* update files from an FTP server. The service is designed to run as a separate task, 
+* and it communicates the update status through a data bus.
 *
 *******************************************************************************/
 #define DEBUG_LEVEL  (DEBUG_LEVEL_DEBUG)
