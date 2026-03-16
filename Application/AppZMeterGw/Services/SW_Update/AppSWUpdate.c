@@ -75,6 +75,7 @@ static void appSwUpdateTask(void *arg)
     U32 bytesRead;
     char_t readBuffer[SW_UPDATE_FTP_READ_SIZE];
 
+    appTskMngImOK(ctx->taskId);
     if ((ctx == NULL) || (ctx->serverIp[0] == '\0') || (ctx->remoteFile[0] == '\0') || (ctx->localFile[0] == '\0'))
     {
         DEBUG_ERROR("Invalid parameters for SW update task");
@@ -97,6 +98,7 @@ static void appSwUpdateTask(void *arg)
     ftpClientInit(&ftpContext);
     do
     {
+        appTskMngImOK(ctx->taskId);
         error = gethostbyname(NULL, ctx->serverIp, &ipAddr, 0);
         if (error)
         {
@@ -120,9 +122,11 @@ static void appSwUpdateTask(void *arg)
             ftpClientCloseFile(&ftpContext);
             break;
         }
-
+        
         while (1)
         {
+            appTskMngImOK(ctx->taskId);
+            
             error = ftpClientReadFile(&ftpContext, readBuffer, sizeof(readBuffer), &bytesRead, 0);
             if (error == ERROR_END_OF_STREAM)
             {
@@ -180,8 +184,8 @@ static void appSwUpdateTask(void *arg)
         gs_swUpdateDbusID = -1;
     }
 
-    appTskMngDelete(ctx->taskId);
-    ctx->taskId = OS_INVALID_TASK_ID;
+    //ctx->taskId, task id is clear in task delete function, no need to set it again.
+    appTskMngDelete(ctx->taskId);   
 }
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
@@ -221,7 +225,8 @@ RETURN_STATUS AppSwUpdateInit(const char *serverIp,
     strncpy(gs_swUpdateCtx.remoteFile, remoteFilePath, SW_UPDATE_MAX_PATH - 1);
     strncpy(gs_swUpdateCtx.localFile, localFilePath, SW_UPDATE_MAX_PATH - 1);
 
-    ZOsTaskParameters taskParam = ZOS_TASK_DEFAULT_PARAMS;
+    ZOsTaskParameters taskParam;
+    taskParam.priority  = ZOS_TASK_PRIORITY_LOW;
     taskParam.stackSize = SW_UPDATE_TASK_STACK;
 
     if (SUCCESS != appDBusRegister(EN_DBUS_TOPIC_GSM | EN_DBUS_TOPIC_ETH | EN_DBUS_TOPIC_DEVICE, &gs_swUpdateDbusID))

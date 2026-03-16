@@ -18,7 +18,6 @@
 #define MAX_SERVICE_NUMBER (2) //move this param to configuration file
 #define LOGGER_QUEUE_SIZE (10)
 #define LOGGER_LOG_MAX_LENGTH (128)
-#define LOGGER_MAX_FILE_SIZE (1 * 1024 * 1024) // 1 MB
 
 #define FTP_SERVER  (ENABLE) //(DISABLE) /* If ftp server exists, enable this macro
 

@@ -128,10 +128,12 @@ RETURN_STATUS appTskMngDelete(OsTaskId tid)
         //find relevant task and update it
         if (gs_treads[i].tid == tid)
         {
-        	zosDeleteTask(tid);
-
+            OsTaskId tempTaskId  = gs_treads[i].tid;
             gs_treads[i].tid     = OS_INVALID_TASK_ID;
             gs_treads[i].isAlive = FALSE;
+            tid = OS_INVALID_TASK_ID;
+        	
+            zosDeleteTask(tempTaskId);
 
             retVal = SUCCESS;
             break;
