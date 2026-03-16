@@ -355,7 +355,7 @@ RETURN_STATUS appMsgHandlerRemoveClient(const char *cliName)
     if (SUCCESS == retVal)
     {
     /* < !! firstly delete the task, if the queue is closed firstly, task could try to read queue deleted >*/
-        appTskMngDelete(temp->msgHndTask);
+        appTskMngDelete(&temp->msgHndTask);
         zosMsgQueueClose(temp->queSend);
         zosMsgQueueClose(temp->queRcv);
 
