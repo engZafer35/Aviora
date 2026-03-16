@@ -277,7 +277,7 @@ RETURN_STATUS appHEndTcpOpenServer(const char *hEndName, const char *ip, U32 por
             server->taskSender = appTskMngCreate(tname, serverSenderTask, server, &tempParam);
             if (OS_INVALID_TASK_ID == server->taskSender)
             {
-                appTskMngDelete(server->task);
+                appTskMngDelete(&server->task);
                 CLOSESOCKET(server->masterSocket);
                 retVal = FAILURE;
             }

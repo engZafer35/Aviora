@@ -152,11 +152,10 @@ static void loggerWriterTask(void *arg)
         svc->srvIFace.closeFunc(svc->logFile);
         svc->logFile = NULL;
     }
-    if (svc->queue != OS_INVALID_QUEUE)
-    {
-        zosMsgQueueClose(svc->queue);
-        svc->queue = OS_INVALID_QUEUE;
-    }
+    
+    //don't need to check queue if it is valid or not, because if task is running, queue should be valid.
+    zosMsgQueueClose(svc->queue);
+    svc->queue = OS_INVALID_QUEUE;  
 
     svc->serviceName[0] = '\0';
     svc->loggerID = -1;
@@ -164,7 +163,7 @@ static void loggerWriterTask(void *arg)
     svc->currentLogFile[0] = '\0';
 
     //ctx->writerTask, task id is clear in task delete function, no need to set it again.
-    appTskMngDelete(svc->writerTask);
+    appTskMngDelete(&svc->writerTask);
 }
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
@@ -254,9 +253,11 @@ RETURN_STATUS appLogRecUnregister(const char *srvName, S32 loggerID)
         return FAILURE;
     }
 
+    /*
+    * task will be stopped in loggerWriterTask when taskRunning is set to false,
+    * and task will be deleted in loggerWriterTask before exiting.
+    */
     svc->taskRunning = false;
-
-
 
     DEBUG_WARNING("->[W] %s unregistered with logger ID %d", srvName, loggerID);
     return SUCCESS;
