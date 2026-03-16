@@ -119,6 +119,9 @@ typedef struct
 //Keil RL-FlashFS port?
 #elif defined(USE_RL_FS)
    #include "fs_port_rl_fs.h"
+//littleFS port?
+#elif defined(USE_LITTLEFS)
+   #include "fs_port_littlefs.h"
 //SPIFFS port?
 #elif defined(USE_SPIFFS)
    #include "fs_port_spiffs.h"
