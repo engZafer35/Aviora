@@ -89,8 +89,8 @@ static void appSwUpdateTask(void *arg)
             gs_swUpdateDbusID = -1;
         }
 
-        appTskMngDelete(ctx->taskId);
-        ctx->taskId = OS_INVALID_TASK_ID;
+        //ctx->taskId, task id is clear in task delete function, no need to set it again
+        appTskMngDelete(&ctx->taskId);        
 
         return;
     }
@@ -185,7 +185,7 @@ static void appSwUpdateTask(void *arg)
     }
 
     //ctx->taskId, task id is clear in task delete function, no need to set it again.
-    appTskMngDelete(ctx->taskId);   
+    appTskMngDelete(&ctx->taskId);   
 }
 
 /***************************** PUBLIC FUNCTIONS  ******************************/

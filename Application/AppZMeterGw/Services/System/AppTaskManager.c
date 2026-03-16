@@ -118,7 +118,7 @@ OsTaskId appTskMngCreate(const char *name, OsTaskCode taskCode, void *arg, const
     return tid;
 }
 
-RETURN_STATUS appTskMngDelete(OsTaskId tid)
+RETURN_STATUS appTskMngDelete(OsTaskId *tid)
 {
     RETURN_STATUS retVal = FAILURE;
     U32 i;
@@ -126,12 +126,12 @@ RETURN_STATUS appTskMngDelete(OsTaskId tid)
     for (i = 0; i < MANAGE_MAX_TASK_NUMBER; i++)
     {
         //find relevant task and update it
-        if (gs_treads[i].tid == tid)
+        if (gs_treads[i].tid == *tid)
         {
             OsTaskId tempTaskId  = gs_treads[i].tid;
             gs_treads[i].tid     = OS_INVALID_TASK_ID;
             gs_treads[i].isAlive = FALSE;
-            tid = OS_INVALID_TASK_ID;
+            *tid = OS_INVALID_TASK_ID;
         	
             zosDeleteTask(tempTaskId);
 
