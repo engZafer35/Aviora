@@ -132,22 +132,38 @@ static void inputDigital_6(U32 stat) /** Digital input 6*/
     g_localEvents.inDI_6 = TRUE;
 }
 
-int myWriteLog (const char *logStr)
+RETURN_STATUS myWriteLog (const void *file, const char *data, size_t length)
 {
-    return printf("sysLog: %s\n", logStr);
+    DEBUG_INFO("sysLog write: %s\n", data);
+    return SUCCESS;
 }
-int myReadLog (const char *logStr, int size)
+RETURN_STATUS myReadLog (const void *file, char *data, size_t size, size_t *outLength)
 {
-    return 0;
+    DEBUG_INFO("sysLog read: %s\n", data);
+    return SUCCESS;
 }
+
+void myOpenLogFile(const char *path, unsigned int mode)
+{
+    DEBUG_INFO("sysLog: open log file %s\n", path);
+    return SUCCESS;
+}
+
+void myCloseLogFile(void *file)
+{
+    DEBUG_INFO("sysLog: close log file\n");
+}
+
 
 static RETURN_STATUS initSWUnit(void)
 {
     RETURN_STATUS retVal = SUCCESS;
     LogRecInterface sysLoggerInterface; //TODO: change this structure with file system w/r operation
 
+    sysLoggerInterface.openFunc  = myOpenLogFile;
     sysLoggerInterface.writeFunc = myWriteLog;
     sysLoggerInterface.readFunc  = myReadLog;
+    sysLoggerInterface.closeFunc = myCloseLogFile;
     sysLoggerInterface.fileSize  = 100;
     sysLoggerInterface.logPath   = "./";
     sysLoggerInterface.totalLogSize = 1000;

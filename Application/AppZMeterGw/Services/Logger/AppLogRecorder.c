@@ -12,10 +12,9 @@
 *******************************************************************************/
 /********************************* INCLUDES ***********************************/
 #include "AppLogRecorder.h"
-#include "Midd_OSPort.h"
+#include "AppTaskManager.h"
 #include "AppTimeService.h"
-#include "fs_port.h"
-#include "fs_port_posix.h"
+
 
 #include <stdio.h>
 #include <string.h>
@@ -95,10 +94,12 @@ static RETURN_STATUS openNewLogFile(LoggerService *svc)
     svc->logFile = svc->srvIFace.openFunc(svc->currentLogFile, FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE);
     if (NULL == svc->logFile)
     {
+        DEBUG_ERROR("->[E] %s failed to open log file %s", svc->serviceName, svc->currentLogFile);
         return FAILURE;
     }
 
     svc->currentFileSize = 0;
+    DEBUG_INFO("->[I] %s opened log file %s", svc->serviceName, svc->currentLogFile);
 
     return SUCCESS;
 }
@@ -108,17 +109,20 @@ static void loggerWriterTask(void *arg)
     LoggerService *svc = (LoggerService *)arg;
     LoggerQueueItem item;
 
+    DEBUG_INFO("->[I] %s Logger writer task started", svc->serviceName);
+    appTskMngImOK(svc->writerTask);
+
     while (svc->taskRunning)
     {
-        if (QUEUE_SUCCESS == zosMsgQueueReceive(svc->queue, (char *)&item, sizeof(item), TIME_OUT_10MS))
-        {
+        if (QUEUE_SUCCESS == zosMsgQueueReceive(svc->queue, (char *)&item, sizeof(item), TIME_OUT_50MS))
+        {            
             if (NULL == svc->logFile)
             {
                 openNewLogFile(svc);
             }
             if (NULL != svc->logFile)
             {
-                if (svc->currentFileSize >= LOGGER_MAX_FILE_SIZE)
+                if (svc->currentFileSize >= svc->srvIFace.fileSize)
                 {
                     openNewLogFile(svc);
                 }
@@ -136,10 +140,13 @@ static void loggerWriterTask(void *arg)
                         svc->currentFileSize += (U32)lineLen;
                     }
                 }
-            }
+            }            
         }
+
+        appTskMngImOK(svc->writerTask);
     }
 
+    DEBUG_WARNING("->[W] %s Logger writer task stopped", svc->serviceName);
     if (svc->logFile != NULL)
     {
         svc->srvIFace.closeFunc(svc->logFile);
@@ -150,6 +157,14 @@ static void loggerWriterTask(void *arg)
         zosMsgQueueClose(svc->queue);
         svc->queue = OS_INVALID_QUEUE;
     }
+
+    svc->serviceName[0] = '\0';
+    svc->loggerID = -1;
+    svc->currentFileSize = 0;
+    svc->currentLogFile[0] = '\0';
+
+    //ctx->writerTask, task id is clear in task delete function, no need to set it again.
+    appTskMngDelete(svc->writerTask);
 }
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
@@ -163,12 +178,7 @@ RETURN_STATUS appLogRecInit(void)
         services[i].taskRunning = false;
         services[i].logFile = NULL;
         services[i].currentFileSize = 0;
-        services[i].currentDate[0] = '\0';
-        services[i].dailyNewIndex = 0;
-        services[i].historyCount = 0;
-        services[i].historyStart = 0;
-        services[i].currentLogFile[0] = '\0';
-        memset(services[i].fileHistory, 0, sizeof(services[i].fileHistory));
+        services[i].currentLogFile[0] = '\0';        
     }
     return SUCCESS;
 }
@@ -200,15 +210,13 @@ RETURN_STATUS appLogRecRegister(LogRecInterface *logger, const char *srvName, S3
             services[i].taskRunning = true;
             services[i].logFile = NULL;
             services[i].currentFileSize = 0;
-            services[i].currentDate[0]  = '\0';
-            services[i].dailyNewIndex   = 0;
-            services[i].historyCount    = 0;
-            services[i].historyStart    = 0;
             services[i].currentLogFile[0] = '\0';
-            memset(services[i].fileHistory, 0, sizeof(services[i].fileHistory));
 
-            ZOsTaskParameters params = ZOS_TASK_DEFAULT_PARAMS;
-            services[i].writerTask = zosCreateTask(services[i].serviceName, loggerWriterTask, &services[i], &params);
+            ZOsTaskParameters taskParam;
+            taskParam.priority  = ZOS_TASK_PRIORITY_LOW;
+            taskParam.stackSize = SW_UPDATE_TASK_STACK;
+
+            services[i].writerTask = appTskMngCreate(services[i].serviceName, loggerWriterTask, &services[i], &taskParam);
             if (OS_INVALID_TASK_ID == services[i].writerTask)
             {
                 zosMsgQueueClose(services[i].queue);
@@ -224,10 +232,12 @@ RETURN_STATUS appLogRecRegister(LogRecInterface *logger, const char *srvName, S3
             //zosCreateMutex(&services[i].srvIFace.logMutex);
 
             *loggerID = services[i].loggerID;
+            DEBUG_INFO("->[I] %s registered with logger ID %d", srvName, services[i].loggerID);
             return SUCCESS;
         }
     }
 
+    DEBUG_ERROR("->[E] %s registration failed", srvName);
     return FAILURE;
 }
 
@@ -245,26 +255,10 @@ RETURN_STATUS appLogRecUnregister(const char *srvName, S32 loggerID)
     }
 
     svc->taskRunning = false;
-    if (svc->queue != OS_INVALID_QUEUE)
-    {
-        zosMsgQueueClose(svc->queue);
-        svc->queue = OS_INVALID_QUEUE;
-    }
-    if (svc->logFile != NULL)
-    {
-        fsCloseFile(svc->logFile);
-        svc->logFile = NULL;
-    }
 
-    svc->serviceName[0] = '\0';
-    svc->loggerID = -1;
-    svc->currentFileSize = 0;
-    svc->currentDate[0] = '\0';
-    svc->dailyNewIndex = 0;
-    svc->historyCount = 0;
-    svc->historyStart = 0;
-    svc->currentLogFile[0] = '\0';
 
+
+    DEBUG_WARNING("->[W] %s unregistered with logger ID %d", srvName, loggerID);
     return SUCCESS;
 }
 
