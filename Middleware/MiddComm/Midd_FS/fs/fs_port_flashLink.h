@@ -3,9 +3,9 @@
  * @brief Very simple linked-cell storage in MCU internal flash
  *
  * Fixed-size cells (196 bytes):
- *  - [ 64] name (ASCII, zero-terminated, padded with 0x00)
- *  - [  2] next cell index (uint16, 0 means end of chain)
- *  - [  2] data length in this cell (0..128)
+ *  - [ 64] name (ASCII, zero-terminated, left as 0xFF when unused)
+ *  - [  2] next cell index (stored as ~nextIndex; erased 0xFFFF means nextIndex=0)
+ *  - [  2] data length in this cell (stored as ~dataLen; erased 0xFFFF means dataLen=0)
  *  - [128] data payload
  *
  * Cells are indexed sequentially from 1..cellCount.
@@ -22,10 +22,6 @@
 extern "C" {
 #endif
 
-#define FLASHLINK_CELL_SIZE      196
-#define FLASHLINK_NAME_SIZE      64
-#define FLASHLINK_CELL_DATA_SIZE 128
-
 typedef struct
 {
    error_t (*read)(uint32_t addr, void *data, size_t len);
@@ -39,12 +35,20 @@ typedef struct
    uint32_t baseAddr;   ///< Start of region in flash
    uint32_t regionSize; ///< Total bytes reserved for cells (must be multiple of 196)
    uint16_t cellCount;  ///< Optional; if 0, computed as regionSize / 196
+   uint32_t eraseBlockSize; ///< Optional; if non-zero, can be used to format/erase region safely
 } FlashLinkConfig;
 
 /**
  * @brief Initialize FlashLink storage.
  */
 error_t flashLinkInit(const FlashLinkOps *ops, const FlashLinkConfig *cfg);
+
+/**
+ * @brief Erase the whole FlashLink region (format).
+ *
+ * Requires ops->erase and cfg->eraseBlockSize.
+ */
+error_t flashLinkFormat(void);
 
 /**
  * @brief Store or append data for given name.

@@ -11,7 +11,9 @@ typedef struct
 {
    FlashLinkOps ops;
    uint32_t baseAddr;
+   uint32_t regionSize;
    uint16_t cellCount;
+   uint32_t eraseBlockSize;
    bool_t   ready;
 } FlashLinkContext;
 
@@ -46,12 +48,24 @@ static error_t flSync(void)
    return g_flashLink.ops.sync();
 }
 
+static uint16_t flDecodeU16Inv(uint16_t raw)
+{
+   return (uint16_t)(~raw);
+}
+
+static uint16_t flEncodeU16Inv(uint16_t v)
+{
+   return (uint16_t)(~v);
+}
+
 static error_t flReadHeader(uint16_t index, char_t *name,
                             uint16_t *nextIndex, uint16_t *dataLen)
 {
    uint8_t hdr[FLASHLINK_NAME_SIZE + 4];
    uint32_t addr;
    error_t error;
+   uint16_t rawNext;
+   uint16_t rawLen;
 
    if(index == 0 || index > g_flashLink.cellCount)
       return ERROR_INVALID_PARAMETER;
@@ -68,45 +82,75 @@ static error_t flReadHeader(uint16_t index, char_t *name,
 
    if(nextIndex)
    {
-      *nextIndex = (uint16_t)((uint16_t)hdr[FLASHLINK_NAME_SIZE] |
-                 ((uint16_t)hdr[FLASHLINK_NAME_SIZE + 1] << 8));
+      rawNext = (uint16_t)((uint16_t)hdr[FLASHLINK_NAME_SIZE] |
+                ((uint16_t)hdr[FLASHLINK_NAME_SIZE + 1] << 8));
+      *nextIndex = flDecodeU16Inv(rawNext);
    }
 
    if(dataLen)
    {
-      *dataLen = (uint16_t)((uint16_t)hdr[FLASHLINK_NAME_SIZE + 2] |
-                 ((uint16_t)hdr[FLASHLINK_NAME_SIZE + 3] << 8));
+      rawLen = (uint16_t)((uint16_t)hdr[FLASHLINK_NAME_SIZE + 2] |
+               ((uint16_t)hdr[FLASHLINK_NAME_SIZE + 3] << 8));
+      *dataLen = flDecodeU16Inv(rawLen);
    }
 
    return NO_ERROR;
 }
 
-static error_t flWriteHeader(uint16_t index, const char_t *name,
-                             uint16_t nextIndex, uint16_t dataLen)
+static error_t flProgName(uint16_t index, const char_t *name)
 {
-   uint8_t hdr[FLASHLINK_NAME_SIZE + 4];
+   uint8_t nameBuf[FLASHLINK_NAME_SIZE];
    uint32_t addr;
 
    if(index == 0 || index > g_flashLink.cellCount)
       return ERROR_INVALID_PARAMETER;
 
-   osMemset(hdr, 0x00, sizeof(hdr));
+   // Program name bytes; unused bytes stay 0xFF (requires erased flash)
+   osMemset(nameBuf, 0xFF, sizeof(nameBuf));
 
    if(name)
    {
       // copy and ensure zero-terminated
-      strSafeCopy((char_t *)hdr, name, FLASHLINK_NAME_SIZE - 1);
+      strSafeCopy((char_t *)nameBuf, name, FLASHLINK_NAME_SIZE - 1);
    }
 
-   hdr[FLASHLINK_NAME_SIZE]     = (uint8_t)(nextIndex & 0xFF);
-   hdr[FLASHLINK_NAME_SIZE + 1] = (uint8_t)((nextIndex >> 8) & 0xFF);
-   hdr[FLASHLINK_NAME_SIZE + 2] = (uint8_t)(dataLen & 0xFF);
-   hdr[FLASHLINK_NAME_SIZE + 3] = (uint8_t)((dataLen >> 8) & 0xFF);
-
    addr = flCellAddr(index);
-   return flProg(addr, hdr, sizeof(hdr));
+   return flProg(addr, nameBuf, sizeof(nameBuf));
 }
 
+static error_t flProgNext(uint16_t index, uint16_t nextIndex)
+{
+   uint8_t raw[2];
+   uint16_t enc = flEncodeU16Inv(nextIndex);
+   uint32_t addr;
+
+   if(index == 0 || index > g_flashLink.cellCount)
+      return ERROR_INVALID_PARAMETER;
+
+   raw[0] = (uint8_t)(enc & 0xFF);
+   raw[1] = (uint8_t)((enc >> 8) & 0xFF);
+
+   addr = flCellAddr(index) + FLASHLINK_NAME_SIZE;
+   return flProg(addr, raw, sizeof(raw));
+}
+
+static error_t flProgLen(uint16_t index, uint16_t dataLen)
+{
+   uint8_t raw[2];
+   uint16_t enc = flEncodeU16Inv(dataLen);
+   uint32_t addr;
+
+   if(index == 0 || index > g_flashLink.cellCount)
+      return ERROR_INVALID_PARAMETER;
+   if(dataLen > FLASHLINK_CELL_DATA_SIZE)
+      return ERROR_INVALID_PARAMETER;
+
+   raw[0] = (uint8_t)(enc & 0xFF);
+   raw[1] = (uint8_t)((enc >> 8) & 0xFF);
+
+   addr = flCellAddr(index) + FLASHLINK_NAME_SIZE + 2;
+   return flProg(addr, raw, sizeof(raw));
+}
 static error_t flWriteData(uint16_t index, uint16_t offset, const void *data, uint16_t len)
 {
    uint32_t addr;
@@ -135,14 +179,21 @@ static bool_t flCellIsEmpty(uint16_t index)
    if(error)
       return FALSE;
 
-   // Treat fully 0xFF header as empty (erased)
+   // Empty = fully erased header (0xFF)
+   bool_t allFF = TRUE;
    for(i = 0; i < sizeof(hdr); i++)
    {
       if(hdr[i] != 0xFF)
-         return FALSE;
+      {
+         allFF = FALSE;
+         break;
+      }
    }
+   if(allFF)
+      return TRUE;
 
-   return TRUE;
+   //full cell
+   return FALSE;
 }
 
 static int flFindFreeCell(void)
@@ -171,7 +222,8 @@ static int flFindHeadByName(const char_t *name)
          continue;
 
       // name is zero-terminated in header; compare
-      if(cellName[0] != '\0' && osStrcmp(cellName, name) == 0)
+      if(cellName[0] != '\0' && cellName[0] != (char_t)0xFF &&
+         osStrcmp(cellName, name) == 0)
          return (int)i;
    }
 
@@ -199,15 +251,14 @@ static uint16_t flFindLastInChain(uint16_t headIndex)
 
 static error_t flClearCellHeader(uint16_t index)
 {
-   uint8_t zeros[FLASHLINK_NAME_SIZE + 4];
-   uint32_t addr;
-
    if(index == 0 || index > g_flashLink.cellCount)
       return ERROR_INVALID_PARAMETER;
-
-   osMemset(zeros, 0x00, sizeof(zeros));
-   addr = flCellAddr(index);
-   return flProg(addr, zeros, sizeof(zeros));
+   // Tombstone delete for flash (only 1->0 allowed): program first name byte to 0x00.
+   {
+      uint8_t b = 0x00;
+      uint32_t addr = flCellAddr(index);
+      return flProg(addr, &b, 1);
+   }
 }
 
 // Public API ----------------------------------------------------------------//
@@ -225,6 +276,8 @@ error_t flashLinkInit(const FlashLinkOps *ops, const FlashLinkConfig *cfg)
 
    g_flashLink.ops = *ops;
    g_flashLink.baseAddr = cfg->baseAddr;
+   g_flashLink.regionSize = cfg->regionSize;
+   g_flashLink.eraseBlockSize = cfg->eraseBlockSize;
 
    if(cfg->cellCount != 0)
    {
@@ -240,6 +293,28 @@ error_t flashLinkInit(const FlashLinkOps *ops, const FlashLinkConfig *cfg)
 
    g_flashLink.ready = TRUE;
    return NO_ERROR;
+}
+
+error_t flashLinkFormat(void)
+{
+   uint32_t addr;
+   uint32_t end;
+   error_t error;
+
+   if(!g_flashLink.ready)
+      return ERROR_NOT_READY;
+   if(g_flashLink.ops.erase == NULL || g_flashLink.eraseBlockSize == 0)
+      return ERROR_NOT_IMPLEMENTED;
+
+   end = g_flashLink.baseAddr + g_flashLink.regionSize;
+   for(addr = g_flashLink.baseAddr; addr < end; addr += g_flashLink.eraseBlockSize)
+   {
+      error = g_flashLink.ops.erase(addr);
+      if(error)
+         return error;
+   }
+
+   return flSync();
 }
 
 error_t flashLinkWrite(const char_t *name, const void *data, size_t len)
@@ -266,8 +341,8 @@ error_t flashLinkWrite(const char_t *name, const void *data, size_t len)
       if(headIdx < 0)
          return ERROR_OUT_OF_RESOURCES;
 
-      // Initialize header with name, no next, no data yet
-      error = flWriteHeader((uint16_t)headIdx, name, 0, 0);
+      // Program name only; next/len fields stay erased (0xFFFF => next=0,len=0)
+      error = flProgName((uint16_t)headIdx, name);
       if(error)
          return error;
    }
@@ -278,31 +353,32 @@ error_t flashLinkWrite(const char_t *name, const void *data, size_t len)
    if(flReadHeader(lastIdx, tmpName, &nextIdx, &curDataLen))
       return ERROR_FAILURE;
 
-   // Append into last cell if space remains
-   if(curDataLen < FLASHLINK_CELL_DATA_SIZE && remain > 0)
+   // If this record has no data yet (len==0) we can fill the head cell once
+   // and program its dataLen once (flash-friendly).
+   if(curDataLen == 0 && remain > 0)
    {
-      uint16_t space = (uint16_t)(FLASHLINK_CELL_DATA_SIZE - curDataLen);
-      uint16_t toWrite = (remain < space) ? (uint16_t)remain : space;
+      uint16_t chunk = (remain > FLASHLINK_CELL_DATA_SIZE) ?
+              FLASHLINK_CELL_DATA_SIZE : (uint16_t)remain;
 
-      error = flWriteData(lastIdx, curDataLen, p, toWrite);
+      error = flWriteData(lastIdx, 0, p, chunk);
       if(error)
          return error;
 
-      curDataLen += toWrite;
-      // Update header: same name, same nextIndex, new dataLen
-      error = flWriteHeader(lastIdx, tmpName, nextIdx, curDataLen);
+      error = flProgLen(lastIdx, chunk);
       if(error)
          return error;
 
-      p += toWrite;
-      remain -= toWrite;
+      p += chunk;
+      remain -= chunk;
    }
+
+   // STM32F4 internal flash: we cannot increase dataLen in-place later.
+   // Therefore append always allocates new cells (even if last cell has free space).
 
    // While data remains, allocate new cells and chain them
    while(remain > 0)
    {
       int freeIdx = flFindFreeCell();
-      uint16_t thisDataLen;
       uint16_t chunk;
 
       if(freeIdx < 0)
@@ -313,15 +389,15 @@ error_t flashLinkWrite(const char_t *name, const void *data, size_t len)
       if(error)
          return error;
       nextIdx = (uint16_t) freeIdx;
-      error = flWriteHeader(lastIdx, tmpName, nextIdx, curDataLen);
+      error = flProgNext(lastIdx, nextIdx);
       if(error)
          return error;
 
-      // New cell has empty name (only head cell carries name)
       chunk = (remain > FLASHLINK_CELL_DATA_SIZE) ?
               FLASHLINK_CELL_DATA_SIZE : (uint16_t)remain;
 
-      error = flWriteHeader((uint16_t)freeIdx, NULL, 0, chunk);
+      // For chained cells, do not program name (stays 0xFF). Program len once.
+      error = flProgLen((uint16_t)freeIdx, chunk);
       if(error)
          return error;
 
