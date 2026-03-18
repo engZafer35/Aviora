@@ -90,7 +90,7 @@ def generate_config_h(cfg: dict) -> str:
             f"/* timeZone: {tz_str} => offset minutes */",
             f"#define APP_TIME_SERVICE_TZ_OFFSET_MINUTES ({tz_min})",
             "",
-            f'#define APP_TIME_SERVICE_DEFAULT_NTP_HOST  ("{ntp_host}")',
+            f'#define APP_TIME_SERVICE_DEFAULT_NTP_HOST  "{ntp_host}"',
             f"#define APP_TIME_SERVICE_DEFAULT_NTP_PORT  ({ntp_port})",
             f"#define APP_TIME_SERVICE_NTP_UPDATE_PERIOD_MIN ({ntp_period})",
             "",
@@ -182,72 +182,71 @@ def generate_autogen_c(cfg: dict) -> str:
             lines += ["    if (SUCCESS != appTimeSoftTickInit())", "    {", "        return FAILURE;", "    }", ""]
         lines += ["    return SUCCESS;", "}", ""]
 
-    # getEpochUtcFromPreferredSource
-    lines += [
-        "RETURN_STATUS getEpochUtcFromPreferredSource(U32 *outEpochUtc)",
-        "{",
-        "    if (IS_NULL_PTR(outEpochUtc))",
-        "    {",
-        "        return FAILURE;",
-        "    }",
-    ]
+    # getEpochUtcFromPreferredSource - returns epoch (U32), 0 on error
+    lines += ["U32 getEpochUtcFromPreferredSource(void)", "{"]
     if int_use:
         lines += [
             "    M4T11_RTC_STR r;",
-            "    if (SUCCESS != appTimeIntRtcGet(&r))",
+            "    U32 e = 0;",
+            "    if (SUCCESS == appTimeIntRtcGet(&r))",
             "    {",
-            "        return FAILURE;",
+            "        //dont need to check return value here since 0 is an invalid epoch and indicates failure", 
+            "        appTimeServiceRtcStrToEpochUtc(&r, &e);",
             "    }",
-            "    return appTimeServiceRtcStrToEpochUtc(&r, outEpochUtc);",
+            "    return e;",
         ]
     elif ext_use:
         lines += [
             "    M4T11_RTC_STR r;",
-            "    if (SUCCESS != appTimeExtRtcGet(&r))",
+            "    U32 e = 0;",
+            "    if (SUCCESS == appTimeExtRtcGet(&r))",
             "    {",
-            "        return FAILURE;",
+            "        //dont need to check return value here since 0 is an invalid epoch and indicates failure",
+            "        appTimeServiceRtcStrToEpochUtc(&r, &e);",
             "    }",
-            "    return appTimeServiceRtcStrToEpochUtc(&r, outEpochUtc);",
+            "    return e;",
         ]
     elif soft_use:
         lines += [
-            "    *outEpochUtc = appTimeSoftTickGetEpochUtc();",
-            "    return SUCCESS;",
+            "    return appTimeSoftTickGetEpochUtc();",
         ]
     else:
-        lines += ["    return FAILURE;"]
+        lines += ["    return 0;"]
     lines += ["}", ""]
 
     # updateRtcsFromEpochUtc
+    # - If no RTC is used (soft-tick only), don't generate RTC conversion code.
+    # - If one/both RTC are used, convert once to RTC str and then update the active RTC(s).
     lines += [
         "void updateRtcsFromEpochUtc(U32 epochUtc)",
         "{",
-        "    M4T11_RTC_STR r;",
-        "",
-        "    (void)appTimeServiceEpochUtcToRtcStr(epochUtc, &r);",
-        "",
     ]
-    if int_use:
-        lines += ["    (void)appTimeIntRtcSet(&r);"]
-    if ext_use:
-        lines += ["    (void)appTimeExtRtcSet(&r);"]
+
+    if int_use or ext_use:
+        lines += [
+            "    M4T11_RTC_STR r;",
+            "",
+            "    (void)appTimeServiceEpochUtcToRtcStr(epochUtc, &r);",
+            "",
+        ]
+        if int_use:
+            lines += ["    (void)appTimeIntRtcSet(&r);"]
+        if ext_use:
+            lines += ["    (void)appTimeExtRtcSet(&r);"]
+
     if soft_use:
         lines += ["    (void)appTimeSoftTickSetEpochUtc(epochUtc);"]
+
     lines += ["}", ""]
 
     # appTimeServiceAutogenGetNtpEpochUtc
-    lines += ["S32 appTimeServiceAutogenGetNtpEpochUtc(void)", "{"]
+    lines += ["U32 appTimeServiceAutogenGetNtpEpochUtc(void)", "{"]
     if ntp_use:
         lines += [
-            "    U32 e;",
-            "    if (SUCCESS == appTimeNtpGetEpochUtc(&e))",
-            "    {",
-            "        return (S32)e;",
-            "    }",
-            "    return -1;",
+            "    return appTimeNtpGetEpochUtc();",
         ]
     else:
-        lines += ["    return -1;"]
+        lines += ["    return 0;"]
     lines += ["}", ""]
 
     # appTimeServiceAutogenSetNtpServer
