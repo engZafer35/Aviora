@@ -8,7 +8,7 @@ FS_NAME_TO_MACRO = {
     "fatfs":    "USE_FATFS",
     "littlefs": "USE_LITTLEFS",
     "flashfs":  "USE_FLASHFS",
-    "flashLink": "USE_FLASHLINK",
+    "flashlink": "USE_FLASHLINK",
     "custom":   "USE_CUSTOM_FS",
 }
 
@@ -59,6 +59,7 @@ def generate_header_text(cfg: dict, script_name: str) -> str:
     erase_func = ext.get("eraseFunc", "Storage_FlashLinkErase")
     sync_func = ext.get("syncFunc", "Storage_FlashLinkSync")
 
+    print(f"Parsed config: customer={customer}, version={version}, fs_name={fs_name}, flash_size={flash_size_val} bytes")
     use_macro = FS_NAME_TO_MACRO.get(fs_name.lower(), "USE_CUSTOM_FS")
 
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
