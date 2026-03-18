@@ -1,6 +1,6 @@
 /******************************************************************************
 * #Author       : Auto-generated
-* #Date         : 18 Mar 2026 - 19:13:24
+* #Date         : 19 Mar 2026 - 02:14:39
 * #File Name    : AppTimeService_Autogen.c
 *******************************************************************************/
 /******************************************************************************
@@ -17,8 +17,6 @@
 #include "time_modules/TimeSync_Ntp.c"
 
 #include "time_modules/TimeBackend_IntRtc.c"
-
-#include "time_modules/TimeBackend_ExtRtc.c"
 
 static char g_ntpHost[128];
 static U16 g_ntpPort;
@@ -44,26 +42,19 @@ RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)
         return FAILURE;
     }
 
-    if (SUCCESS != appTimeExtRtcInit())
-    {
-        return FAILURE;
-    }
-
     return SUCCESS;
 }
 
-RETURN_STATUS getEpochUtcFromPreferredSource(U32 *outEpochUtc)
+U32 getEpochUtcFromPreferredSource(void)
 {
-    if (IS_NULL_PTR(outEpochUtc))
-    {
-        return FAILURE;
-    }
     M4T11_RTC_STR r;
-    if (SUCCESS != appTimeIntRtcGet(&r))
+    U32 e = 0;
+    if (SUCCESS == appTimeIntRtcGet(&r))
     {
-        return FAILURE;
+        //dont need to check return value here since 0 is an invalid epoch and indicates failure
+        appTimeServiceRtcStrToEpochUtc(&r, &e);
     }
-    return appTimeServiceRtcStrToEpochUtc(&r, outEpochUtc);
+    return e;
 }
 
 void updateRtcsFromEpochUtc(U32 epochUtc)
@@ -73,17 +64,11 @@ void updateRtcsFromEpochUtc(U32 epochUtc)
     (void)appTimeServiceEpochUtcToRtcStr(epochUtc, &r);
 
     (void)appTimeIntRtcSet(&r);
-    (void)appTimeExtRtcSet(&r);
 }
 
-S32 appTimeServiceAutogenGetNtpEpochUtc(void)
+U32 appTimeServiceAutogenGetNtpEpochUtc(void)
 {
-    U32 e;
-    if (SUCCESS == appTimeNtpGetEpochUtc(&e))
-    {
-        return (S32)e;
-    }
-    return -1;
+    return appTimeNtpGetEpochUtc();
 }
 
 RETURN_STATUS appTimeServiceAutogenSetNtpServer(const char *host, U16 port)
