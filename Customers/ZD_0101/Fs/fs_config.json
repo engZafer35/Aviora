@@ -5,11 +5,11 @@
     "store": {
       "useStore": true,
       "fsLib": {
-        "name": "flashLink",
+        "name": "flashlink",
         "srcPath": "fs_port_flashLink",
-        "cellSize": 196,
+        "cellSize": 1024,
         "nameSize": 64,
-        "cellDataSize": 128
+        "cellDataSize": 956
       },
       "extFlsh": {
         "type": "spi",
