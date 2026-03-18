@@ -1,0 +1,22 @@
+{
+  "timeService": {
+    "use": true,
+    "timeZone": "UTC+3",
+    "ntp": {
+      "use": true,
+      "ipAddr": "pool.ntp.org",
+      "port": 123,
+      "updatePeriodMin": 10
+    },
+    "extRTC": {
+      "use": true,
+      "deviceName": "DS1307",
+      "driverPath": "driver/ds1307/"
+    },
+    "intRTC": {
+      "use": true,
+      "driverPath": "driver/intRTC_stm32f407"
+    }
+  }
+}
+
