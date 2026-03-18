@@ -18,7 +18,7 @@
 
 /* Autogen-provided API (implemented in AppTimeService_Autogen.c) */
 RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort);
-RETURN_STATUS getEpochUtcFromPreferredSource(U32 *outEpochUtc);
+U32 getEpochUtcFromPreferredSource(void);
 void updateRtcsFromEpochUtc(U32 epochUtc);
 S32 appTimeServiceAutogenGetNtpEpochUtc(void);
 RETURN_STATUS appTimeServiceAutogenSetNtpServer(const char *host, U16 port);
@@ -247,7 +247,8 @@ static void ntpTimerCb(void)
     epoch = appTimeServiceAutogenGetNtpEpochUtc();
     if (epoch >= 0)
     {
-        DEBUG_INFO("->[I] TimeSrv: NTP sync OK, epoch=%u", (U32)epoch);
+        DEBUG_INFO("->[I] NTP sync OK, epoch=%u", (U32)epoch);
+        appLogRec(g_sysLoggerID, " NTP sync OK");
         updateRtcsFromEpochUtc((U32)epoch);
     }
     else
@@ -274,7 +275,8 @@ RETURN_STATUS appTimeServiceInit(const char *ntpHost, U16 ntpPort)
 
     if (SUCCESS != appTimeServiceAutogenInit(ntpHost, ntpPort))
     {
-        DEBUG_ERROR("->[E] TimeSrv: autogen init failed");
+        DEBUG_ERROR("->[E] autogen init failed");
+        appLogRec(g_sysLoggerID, "TimeSrv: autogen init failed");
         return FAILURE;
     }
 
@@ -306,7 +308,19 @@ void appTimeServiceGetTime(struct tm *tmValue)
 
 RETURN_STATUS appTimeServiceGetEpoch(U32 *outEpoch)
 {
-    return getEpochUtcFromPreferredSource(outEpoch);
+    U32 e;
+
+    if (IS_NULL_PTR(outEpoch))
+    {
+        return FAILURE;
+    }
+    e = getEpochUtcFromPreferredSource();
+    if (0 == e)
+    {
+        return FAILURE;
+    }
+    *outEpoch = e;
+    return SUCCESS;
 }
 
 RETURN_STATUS appTimeServiceEpochToTm(U32 epoch, struct tm *outTm)
@@ -334,12 +348,18 @@ RETURN_STATUS appTimeServiceTmToEpoch(const struct tm *tmValue, U32 *outEpoch)
 
 RETURN_STATUS appTimeServiceGetTm(struct tm *outTm)
 {
-    U32 epochUtc;
-    if (SUCCESS != getEpochUtcFromPreferredSource(&epochUtc))
+    U32 e;
+
+    if (IS_NULL_PTR(outTm))
     {
         return FAILURE;
     }
-    return appTimeServiceEpochToTm(epochUtc, outTm);
+    e = getEpochUtcFromPreferredSource();
+    if (0 == e)
+    {
+        return FAILURE;
+    }
+    return appTimeServiceEpochToTm(e, outTm);
 }
 
 /* ---------- String formatting/parsing ---------- */

@@ -108,8 +108,15 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
     return SUCCESS;
 }
 
-RETURN_STATUS appTimeNtpGetEpochUtc(U32 *outEpochUtc)
+U32 appTimeNtpGetEpochUtc(void)
 {
-    return udpNtpQuery(outEpochUtc);
+    U32 epochUtc = 0;
+
+    /**
+     * Note: This is a blocking call and may take several seconds
+     * not need to check return value here since 0 is an invalid epoch and indicates failure
+     */
+    udpNtpQuery(&epochUtc);
+    return epochUtc;
 }
 
