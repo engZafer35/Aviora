@@ -1,21 +1,27 @@
 /******************************************************************************
 * #Author       : Auto-generated
-* #Date         : 19 Mar 2026 - 18:10:19
+* #Date         : 19 Mar 2026 - 18:40:31
 * #File Name    : AppTimeService_Autogen.c
 *******************************************************************************/
 /******************************************************************************
 * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
+* Customer Name: ZD_0101
 * Generated from customer time_config.json. Only used units are included.
 *******************************************************************************/
 
 #include "Project_Conf.h"
-#include "../../Customers/TimeService_Config.h"
+#include "../../../Customers/TimeService_Config.h"
 
 #include "../Middleware/MiddZModem/inc/MiddRTC.h"
 
 static RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)
 {
     if (SUCCESS != middRtcIntInit())
+    {
+        return FAILURE;
+    }
+
+    if (SUCCESS != middRtcExtInit())
     {
         return FAILURE;
     }
@@ -43,6 +49,10 @@ static RETURN_STATUS appTimeServiceAutogenUpdateRtcsFromEpochUtc(U32 epochUtc)
     appTimeServiceEpochUtcToRtcStr(epochUtc, &r);
 
     if (SUCCESS != middRtcIntSetTime(&r))
+    {
+        retVal = FAILURE;
+    }
+    if (SUCCESS != middRtcExtSetTime(&r))
     {
         retVal = FAILURE;
     }

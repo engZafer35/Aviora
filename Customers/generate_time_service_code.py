@@ -166,11 +166,13 @@ def generate_config_h(cus_pat: Path) -> str:
         "/**",
         " * @file TimeService_Config.h",
         " * @brief AUTO-GENERATED configuration for TimeService",
+        " *        AUTO-GENERATED FILE - DO NOT EDIT MANUALLY",
         " */",
         "#ifndef __APP_TIME_SERVICE_CONFIG_H__",
         "#define __APP_TIME_SERVICE_CONFIG_H__",
         "",
         f"/* generated on: {now} */",
+        f"/* customer name: {cus_pat.parent.parent.name} */",
         "",
         f'#include "{cus_pat.parent.parent.name}/Time/Cus_TimeService_Config.h"',
         "",
@@ -200,8 +202,6 @@ def generate_autogen_c(cfg: dict) -> str:
     print(f"\033[93mExt RTC use: {ext_use}\033[0m")
     print(f"\033[93mSoft RTC use: {soft_use}\033[0m")
 
-
-
     lines = [
         "/******************************************************************************",
         "* #Author       : Auto-generated",
@@ -210,6 +210,7 @@ def generate_autogen_c(cfg: dict) -> str:
         "*******************************************************************************/",
         "/******************************************************************************",
         "* AUTO-GENERATED FILE - DO NOT EDIT MANUALLY",
+        f"* Customer Name: {cfg.get('customer', 'Unknown')}",
         "* Generated from customer time_config.json. Only used units are included.",
         "*******************************************************************************/",
         "",

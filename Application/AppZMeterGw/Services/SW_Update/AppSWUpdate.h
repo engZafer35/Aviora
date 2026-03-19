@@ -4,7 +4,6 @@
 * #Date         : 14 Mar 2026 - 18:21:51
 * #File Name    : AppSWUpdate.h
 *******************************************************************************/
-
 /******************************************************************************
 * Example OTA update startup call (uncomment and set real server/path if desired)
 * appSwUpdateInit("test.rebex.net", 21, "demo", "password", "readme.txt", "/tmp/readme.txt");

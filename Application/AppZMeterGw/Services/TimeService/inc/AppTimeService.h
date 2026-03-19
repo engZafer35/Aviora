@@ -1,24 +1,33 @@
-/**
- * @file AppTimeService.h
- * @brief Application Time Service public API
- */
+/******************************************************************************
+* #Author       : Zafer Satılmış
+* #Revision     : 1.0
+* #Date         : 15 Mar 2026 - 12:46:00
+* #File Name    : AppTimeService.h
+*******************************************************************************/
+/******************************************************************************
+* 
+******************************************************************************/
+/******************************IFNDEF & DEFINE********************************/
 #ifndef __APP_TIME_SERVICE_H__
 #define __APP_TIME_SERVICE_H__
 
+/*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
-
 #include <time.h>
+/******************************MACRO DEFINITIONS*******************************/
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+/*******************************TYPE DEFINITIONS ******************************/
 typedef enum
 {
     FIRST_YEAR = 0, /* yyyy.mm.dd hh:mm:ss */
     FIRST_DAY  = 1  /* dd.mm.yyyy hh:mm:ss */
 } AppTimeStringFormat;
+/************************* GLOBAL VARIBALE REFERENCES *************************/
 
+/************************* GLOBAL FUNCTION DEFINITIONS ************************/
 /**
  * @brief Initialize time service, including NTP sync if enabled
  * @param ntpHost NTP server hostname or IP address (null-terminated string)
@@ -107,4 +116,7 @@ RETURN_STATUS appTimeServiceSetNtpServer(const char *host, U16 port);
 #endif
 
 #endif /* __APP_TIME_SERVICE_H__ */
+
+/********************************* End Of File ********************************/
+
 
