@@ -9,7 +9,7 @@
       "updatePeriodMin": 60
     },
     "extRTC": {
-      "use": false,
+      "use": true,
       "deviceName": "DS1307",
       "driverPath": "driver/ds1307/"
     },

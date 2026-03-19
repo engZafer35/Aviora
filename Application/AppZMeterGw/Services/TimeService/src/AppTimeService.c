@@ -7,7 +7,6 @@
 #include "AppTimeService.h"
 
 #include "AppTimeService_Config.h"
-#include "TimeService_RtcIf.h"
 
 #include "MiddEventTimer.h"
 #include "AppLogRecorder.h"
@@ -18,14 +17,14 @@
 
 /* Autogen-provided API (implemented in AppTimeService_Autogen.c) */
 RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort);
-U32 getEpochUtcFromPreferredSource(void);
-void updateRtcsFromEpochUtc(U32 epochUtc);
+U32 appTimeServiceAutogenGetEpochUtcFromPreferredSource(void);
+void appTimeServiceAutogenUpdateRtcsFromEpochUtc(U32 epochUtc);
 S32 appTimeServiceAutogenGetNtpEpochUtc(void);
 RETURN_STATUS appTimeServiceAutogenSetNtpServer(const char *host, U16 port);
 
 /* RTC <-> epoch conversion (used by autogen; tz from config) */
-RETURN_STATUS appTimeServiceRtcStrToEpochUtc(const M4T11_RTC_STR *r, U32 *outEpochUtc);
-RETURN_STATUS appTimeServiceEpochUtcToRtcStr(U32 epochUtc, M4T11_RTC_STR *r);
+RETURN_STATUS appTimeServiceRtcStrToEpochUtc(const MiddRtcStr_t *r, U32 *outEpochUtc);
+RETURN_STATUS appTimeServiceEpochUtcToRtcStr(U32 epochUtc, MiddRtcStr_t *r);
 
 static S32 tzOffsetSeconds(void)
 {
@@ -52,13 +51,8 @@ static int daysInMonth(int year, int mon1to12)
     return d;
 }
 
-static RETURN_STATUS epochUtcToTm(U32 epochUtc, struct tm *outTm)
+static void epochUtcToTm(U32 epochUtc, struct tm *outTm)
 {
-    if (IS_NULL_PTR(outTm))
-    {
-        return FAILURE;
-    }
-
     /* Convert seconds since 1970-01-01 00:00:00 UTC to broken-down time */
     U32 t = epochUtc;
     U32 sec = t % 60; t /= 60;
@@ -106,8 +100,6 @@ static RETURN_STATUS epochUtcToTm(U32 epochUtc, struct tm *outTm)
 
     /* tm_wday (0=Sunday). 1970-01-01 was Thursday (4) */
     outTm->tm_wday = (int)((epochUtc / 86400U + 4U) % 7U);
-
-    return SUCCESS;
 }
 
 static RETURN_STATUS tmToEpochUtc(const struct tm *tmValue, U32 *outEpochUtc)
@@ -146,7 +138,7 @@ static RETURN_STATUS tmToEpochUtc(const struct tm *tmValue, U32 *outEpochUtc)
     return SUCCESS;
 }
 
-static void rtcStrFromTm(const struct tm *tmValue, M4T11_RTC_STR *outRtc)
+static void rtcStrFromTm(const struct tm *tmValue, MiddRtcStr_t *outRtc)
 {
     memset(outRtc, 0, sizeof(*outRtc));
     outRtc->sec  = (U8)tmValue->tm_sec;
@@ -159,7 +151,7 @@ static void rtcStrFromTm(const struct tm *tmValue, M4T11_RTC_STR *outRtc)
     outRtc->wday = (U8)((tmValue->tm_wday == 0) ? 1 : (tmValue->tm_wday + 1));
 }
 
-static RETURN_STATUS tmFromRtcStr(const M4T11_RTC_STR *rtc, struct tm *outTm)
+static RETURN_STATUS tmFromRtcStr(const MiddRtcStr_t *rtc, struct tm *outTm)
 {
     if (IS_NULL_PTR(rtc) || IS_NULL_PTR(outTm))
     {
@@ -183,7 +175,7 @@ static RETURN_STATUS tmFromRtcStr(const M4T11_RTC_STR *rtc, struct tm *outTm)
 }
 
 /* RTC <-> epoch conversion for autogen (RTC holds local time; tz from config) */
-RETURN_STATUS appTimeServiceRtcStrToEpochUtc(const M4T11_RTC_STR *r, U32 *outEpochUtc)
+RETURN_STATUS appTimeServiceRtcStrToEpochUtc(const MiddRtcStr_t *r, U32 *outEpochUtc)
 {
     struct tm tmLocal;
     U32 epochLocal;
@@ -200,28 +192,23 @@ RETURN_STATUS appTimeServiceRtcStrToEpochUtc(const M4T11_RTC_STR *r, U32 *outEpo
     {
         return FAILURE;
     }
+
     S32 utc = (S32)epochLocal - tzOffsetSeconds();
     if (utc < 0) utc = 0;
+
     *outEpochUtc = (U32)utc;
     return SUCCESS;
 }
 
-RETURN_STATUS appTimeServiceEpochUtcToRtcStr(U32 epochUtc, M4T11_RTC_STR *r)
+static void appTimeServiceEpochUtcToRtcStr(U32 epochUtc, MiddRtcStr_t *r)
 {
     struct tm tmLocal;
 
-    if (IS_NULL_PTR(r))
-    {
-        return FAILURE;
-    }
     S32 localEpoch = (S32)epochUtc + tzOffsetSeconds();
     if (localEpoch < 0) localEpoch = 0;
-    if (SUCCESS != epochUtcToTm((U32)localEpoch, &tmLocal))
-    {
-        return FAILURE;
-    }
+
+    epochUtcToTm((U32)localEpoch, &tmLocal);
     rtcStrFromTm(&tmLocal, r);
-    return SUCCESS;
 }
 
 /* Include JSON-generated autogen (defines init, getEpoch, updateRtcs, getNtp) */
