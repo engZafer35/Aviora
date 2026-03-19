@@ -383,35 +383,41 @@ RETURN_STATUS appTimeServiceSetTime(U32 epoch)
 
 RETURN_STATUS appTimeServiceGetTime(struct tm *tmValue)
 {
-    U32 e;
+    RETURN_STATUS retVal = FAILURE;
+    U32 epoch;
 
     if (IS_NULL_PTR(tmValue))
     {
         return FAILURE;
     }
-    e = getEpochUtcFromPreferredSource();
-    if (0 == e)
+
+    epoch = appTimeServiceAutogenGetEpochUtcFromPreferredSource();
+    if (epoch > 0)
     {
-        return FAILURE;
+        retVal = appTimeServiceEpochToTm(epoch, tmValue);        
     }
-    return appTimeServiceEpochToTm(e, tmValue);
+
+    return retVal;
 }
 
 RETURN_STATUS appTimeServiceGetEpoch(U32 *outEpoch)
 {
-    U32 e;
+    RETURN_STATUS retVal = FAILURE;
+    U32 epoch;
 
     if (IS_NULL_PTR(outEpoch))
     {
         return FAILURE;
     }
-    e = getEpochUtcFromPreferredSource();
-    if (0 == e)
+
+    epoch = appTimeServiceAutogenGetEpochUtcFromPreferredSource();
+    if (epoch > 0)
     {
-        return FAILURE;
+        retVal = SUCCESS;
+        *outEpoch = epoch;
     }
-    *outEpoch = e;
-    return SUCCESS;
+    
+    return retVal;
 }
 
 RETURN_STATUS appTimeServiceEpochToTm(U32 epoch, struct tm *outTm)
@@ -424,17 +430,18 @@ RETURN_STATUS appTimeServiceEpochToTm(U32 epoch, struct tm *outTm)
 
 RETURN_STATUS appTimeServiceTmToEpoch(const struct tm *tmValue, U32 *outEpoch)
 {
-    /* Input tmValue is local, output is UTC epoch */
+    RETURN_STATUS retVal = FAILURE;
     U32 localEpoch;
-    if (SUCCESS != tmToEpochUtc(tmValue, &localEpoch))
+    
+    if (SUCCESS == tmToEpochUtc(tmValue, &localEpoch))
     {
-        return FAILURE;
+        S32 utc = (S32)localEpoch - tzOffsetSeconds();
+        if (utc < 0) utc = 0;
+        *outEpoch = (U32)utc;
+        retVal = SUCCESS;
     }
 
-    S32 utc = (S32)localEpoch - tzOffsetSeconds();
-    if (utc < 0) utc = 0;
-    *outEpoch = (U32)utc;
-    return SUCCESS;
+    return retVal;
 }
 
 RETURN_STATUS appTimeServiceFormatNow(char *buf, U32 bufSize, AppTimeStringFormat fmt)
@@ -454,11 +461,14 @@ RETURN_STATUS appTimeServiceStringToTm(const char *str, AppTimeStringFormat fmt,
 
 RETURN_STATUS appTimeServiceStringToEpoch(const char *str, AppTimeStringFormat fmt, U32 *outEpoch)
 {
+    RETURN_STATUS retVal = FAILURE;
     struct tm t;
-    if (SUCCESS != parseDateTime(str, fmt, &t))
+
+    if (SUCCESS == parseDateTime(str, fmt, &t))
     {
-        return FAILURE;
+        retVal = appTimeServiceTmToEpoch(&t, outEpoch);
     }
-    return appTimeServiceTmToEpoch(&t, outEpoch);
+
+    return retVal;
 }
 
