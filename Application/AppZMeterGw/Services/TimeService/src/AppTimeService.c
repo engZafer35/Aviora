@@ -1,9 +1,20 @@
-/**
- * @file AppTimeService.c
- * @brief Application time service
- */
+/******************************************************************************
+* #Author       : Zafer Satılmış
+* #Revision     : 1.3
+* #Date         : 15 Mar 2026 - 12:46:00
+* #File Name    : AppTimeService.c
+*******************************************************************************/
+/******************************************************************************
+* This module implements an application time service that provides current time
+* information to other application modules. It supports multiple time backends
+* (e.g., NTP, internal RTC, external RTC, software tick) and can be configured
+* to use any combination of these backends. The time service provides a unified
+* API for getting the current time, converting between epoch and calendar time,
+* and formatting time as strings. It also manages NTP synchronization and can
+* update RTCs based on NTP time.
+*******************************************************************************/
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
-
+/********************************* INCLUDES ***********************************/
 #include "AppTimeService.h"
 
 #include "AppTimeService_Config.h"
@@ -15,12 +26,22 @@
 #include <string.h>
 #include <stdio.h>
 
-/* Autogen-provided API (implemented in AppTimeService_Autogen.c) */
-RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort);
-U32 appTimeServiceAutogenGetEpochUtcFromPreferredSource(void);
-void appTimeServiceAutogenUpdateRtcsFromEpochUtc(U32 epochUtc);
-S32 appTimeServiceAutogenGetNtpEpochUtc(void);
-RETURN_STATUS appTimeServiceAutogenSetNtpServer(const char *host, U16 port);
+/****************************** MACRO DEFINITIONS *****************************/
+
+/******************************* TYPE DEFINITIONS *****************************/
+typedef struct
+{
+    S32 ntpTimerId;
+    BOOL initialized;
+} AppTimeServiceCtx;
+
+/********************************** VARIABLES *********************************/
+static AppTimeServiceCtx gs_ts;
+
+/***************************** STATIC FUNCTIONS  ******************************/
+
+/* Include JSON-generated autogen (defines init, getEpoch, updateRtcs, getNtp) */
+#include "AppTimeService_Autogen.c"
 
 /* RTC <-> epoch conversion (used by autogen; tz from config) */
 RETURN_STATUS appTimeServiceRtcStrToEpochUtc(const MiddRtcStr_t *r, U32 *outEpochUtc);
@@ -174,8 +195,7 @@ static RETURN_STATUS tmFromRtcStr(const MiddRtcStr_t *rtc, struct tm *outTm)
     return SUCCESS;
 }
 
-/* RTC <-> epoch conversion for autogen (RTC holds local time; tz from config) */
-RETURN_STATUS appTimeServiceRtcStrToEpochUtc(const MiddRtcStr_t *r, U32 *outEpochUtc)
+static RETURN_STATUS appTimeServiceRtcStrToEpochUtc(const MiddRtcStr_t *r, U32 *outEpochUtc)
 {
     struct tm tmLocal;
     U32 epochLocal;
@@ -211,17 +231,6 @@ static void appTimeServiceEpochUtcToRtcStr(U32 epochUtc, MiddRtcStr_t *r)
     rtcStrFromTm(&tmLocal, r);
 }
 
-/* Include JSON-generated autogen (defines init, getEpoch, updateRtcs, getNtp) */
-#include "AppTimeService_Autogen.c"
-
-typedef struct
-{
-    S32 ntpTimerId;
-    BOOL initialized;
-} AppTimeServiceCtx;
-
-static AppTimeServiceCtx gs_ts;
-
 static void ntpTimerCb(void)
 {
     S32 epoch;
@@ -236,7 +245,11 @@ static void ntpTimerCb(void)
     {
         DEBUG_INFO("->[I] NTP sync OK, epoch=%u", (U32)epoch);
         appLogRec(g_sysLoggerID, " NTP sync OK");
-        updateRtcsFromEpochUtc((U32)epoch);
+        if (FAILURE == appTimeServiceAutogenUpdateRtcsFromEpochUtc((U32)epoch))
+        {
+            DEBUG_ERROR("->[E] TimeSrv: Failed to update RTCs from NTP epoch");
+            appLogRec(g_sysLoggerID, "TimeSrv: Failed to update RTCs from NTP epoch");
+        }
     }
     else
     {
@@ -245,6 +258,64 @@ static void ntpTimerCb(void)
     }
 }
 
+static RETURN_STATUS formatTm(const struct tm *t, char *buf, U32 bufSize, AppTimeStringFormat fmt)
+{
+    if (IS_NULL_PTR(t) || IS_NULL_PTR(buf) || bufSize < 20)
+    {
+        return FAILURE;
+    }
+
+    int year = t->tm_year + 1900;
+    int mon  = t->tm_mon + 1;
+    int day  = t->tm_mday;
+
+    if (fmt == FIRST_YEAR)
+    {
+        (void)snprintf(buf, bufSize, "%04d.%02d.%02d %02d:%02d:%02d",
+                       year, mon, day, t->tm_hour, t->tm_min, t->tm_sec);
+    }
+    else
+    {
+        (void)snprintf(buf, bufSize, "%02d.%02d.%04d %02d:%02d:%02d",
+                       day, mon, year, t->tm_hour, t->tm_min, t->tm_sec);
+    }
+    buf[bufSize - 1] = '\0';
+    return SUCCESS;
+}
+
+static RETURN_STATUS parseDateTime(const char *str, AppTimeStringFormat fmt, struct tm *outTm)
+{
+    if (IS_NULL_PTR(str) || IS_NULL_PTR(outTm))
+    {
+        return FAILURE;
+    }
+
+    int y, mo, d, hh, mm, ss;
+    if (fmt == FIRST_YEAR)
+    {
+        if (6 != sscanf(str, "%d.%d.%d %d:%d:%d", &y, &mo, &d, &hh, &mm, &ss))
+        {
+            return FAILURE;
+        }
+    }
+    else
+    {
+        if (6 != sscanf(str, "%d.%d.%d %d:%d:%d", &d, &mo, &y, &hh, &mm, &ss))
+        {
+            return FAILURE;
+        }
+    }
+
+    memset(outTm, 0, sizeof(*outTm));
+    outTm->tm_year = y - 1900;
+    outTm->tm_mon  = mo - 1;
+    outTm->tm_mday = d;
+    outTm->tm_hour = hh;
+    outTm->tm_min  = mm;
+    outTm->tm_sec  = ss;
+    return SUCCESS;
+}
+/***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS appTimeServiceSetNtpServer(const char *host, U16 port)
 {
     if (IS_NULL_PTR(host) || (0 == host[0]))
@@ -288,9 +359,44 @@ RETURN_STATUS appTimeServiceInit(const char *ntpHost, U16 ntpPort)
     return retVal;
 }
 
-void appTimeServiceGetTime(struct tm *tmValue)
+RETURN_STATUS appTimeServiceSetTime(U32 epoch)
 {
-    (void)appTimeServiceGetTm(tmValue);
+    RETURN_STATUS retVal = SUCCESS;
+    
+    if (!gs_ts.initialized)
+    {
+        return FAILURE;
+    }
+
+    if (FAILURE == appTimeServiceAutogenUpdateRtcsFromEpochUtc((U32)epoch))
+    {
+        DEBUG_ERROR("->[E] User time update Failed");
+        appLogRec(g_sysLoggerID, "TimeSrv: User time update Failed");
+        retVal = FAILURE;
+    }
+    else
+    {
+        DEBUG_INFO("->[I] User time update OK, epoch=%u", (U32)epoch);
+        appLogRec(g_sysLoggerID, "TimeSrv: User time update OK");
+    }
+
+    return retVal;
+}
+
+RETURN_STATUS appTimeServiceGetTime(struct tm *tmValue)
+{
+    U32 e;
+
+    if (IS_NULL_PTR(tmValue))
+    {
+        return FAILURE;
+    }
+    e = getEpochUtcFromPreferredSource();
+    if (0 == e)
+    {
+        return FAILURE;
+    }
+    return appTimeServiceEpochToTm(e, tmValue);
 }
 
 RETURN_STATUS appTimeServiceGetEpoch(U32 *outEpoch)
@@ -333,48 +439,6 @@ RETURN_STATUS appTimeServiceTmToEpoch(const struct tm *tmValue, U32 *outEpoch)
     return SUCCESS;
 }
 
-RETURN_STATUS appTimeServiceGetTm(struct tm *outTm)
-{
-    U32 e;
-
-    if (IS_NULL_PTR(outTm))
-    {
-        return FAILURE;
-    }
-    e = getEpochUtcFromPreferredSource();
-    if (0 == e)
-    {
-        return FAILURE;
-    }
-    return appTimeServiceEpochToTm(e, outTm);
-}
-
-/* ---------- String formatting/parsing ---------- */
-static RETURN_STATUS formatTm(const struct tm *t, char *buf, U32 bufSize, AppTimeStringFormat fmt)
-{
-    if (IS_NULL_PTR(t) || IS_NULL_PTR(buf) || bufSize < 20)
-    {
-        return FAILURE;
-    }
-
-    int year = t->tm_year + 1900;
-    int mon  = t->tm_mon + 1;
-    int day  = t->tm_mday;
-
-    if (fmt == FIRST_YEAR)
-    {
-        (void)snprintf(buf, bufSize, "%04d.%02d.%02d %02d:%02d:%02d",
-                       year, mon, day, t->tm_hour, t->tm_min, t->tm_sec);
-    }
-    else
-    {
-        (void)snprintf(buf, bufSize, "%02d.%02d.%04d %02d:%02d:%02d",
-                       day, mon, year, t->tm_hour, t->tm_min, t->tm_sec);
-    }
-    buf[bufSize - 1] = '\0';
-    return SUCCESS;
-}
-
 RETURN_STATUS appTimeServiceFormatNow(char *buf, U32 bufSize, AppTimeStringFormat fmt)
 {
     struct tm t;
@@ -383,39 +447,6 @@ RETURN_STATUS appTimeServiceFormatNow(char *buf, U32 bufSize, AppTimeStringForma
         return FAILURE;
     }
     return formatTm(&t, buf, bufSize, fmt);
-}
-
-static RETURN_STATUS parseDateTime(const char *str, AppTimeStringFormat fmt, struct tm *outTm)
-{
-    if (IS_NULL_PTR(str) || IS_NULL_PTR(outTm))
-    {
-        return FAILURE;
-    }
-
-    int y, mo, d, hh, mm, ss;
-    if (fmt == FIRST_YEAR)
-    {
-        if (6 != sscanf(str, "%d.%d.%d %d:%d:%d", &y, &mo, &d, &hh, &mm, &ss))
-        {
-            return FAILURE;
-        }
-    }
-    else
-    {
-        if (6 != sscanf(str, "%d.%d.%d %d:%d:%d", &d, &mo, &y, &hh, &mm, &ss))
-        {
-            return FAILURE;
-        }
-    }
-
-    memset(outTm, 0, sizeof(*outTm));
-    outTm->tm_year = y - 1900;
-    outTm->tm_mon  = mo - 1;
-    outTm->tm_mday = d;
-    outTm->tm_hour = hh;
-    outTm->tm_min  = mm;
-    outTm->tm_sec  = ss;
-    return SUCCESS;
 }
 
 RETURN_STATUS appTimeServiceStringToTm(const char *str, AppTimeStringFormat fmt, struct tm *outTm)

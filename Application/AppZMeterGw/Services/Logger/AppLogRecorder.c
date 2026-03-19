@@ -10,6 +10,7 @@
 * interface. The log recorder manages log files, including rotation based on file
 * size and date, and can also send log files through specified methods (e.g., FTP).
 *******************************************************************************/
+#define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
 #include "AppLogRecorder.h"
 #include "AppTaskManager.h"

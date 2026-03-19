@@ -138,7 +138,7 @@ def generate_autogen_c(cfg: dict) -> str:
     lines.append("")
     # appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)
     lines += [
-        "RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)",
+        "static RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)",
         "{",
     ]
     if not use:
@@ -156,7 +156,7 @@ def generate_autogen_c(cfg: dict) -> str:
         lines += ["    return SUCCESS;", "}", ""]
 
     # appTimeServiceAutogenGetEpochUtcFromPreferredSource - returns epoch (U32), 0 on error
-    lines += ["U32 appTimeServiceAutogenGetEpochUtcFromPreferredSource(void)", "{"]
+    lines += ["static U32 appTimeServiceAutogenGetEpochUtcFromPreferredSource(void)", "{"]
     
     if int_use:
         lines += [
@@ -192,7 +192,7 @@ def generate_autogen_c(cfg: dict) -> str:
     # - If no RTC is used (soft-tick only), don't generate RTC conversion code.
     # - If one/both RTC are used, convert once to RTC str and then update the active RTC(s).
     lines += [
-        "RETURN_STATUS appTimeServiceAutogenUpdateRtcsFromEpochUtc(U32 epochUtc)",
+        "static RETURN_STATUS appTimeServiceAutogenUpdateRtcsFromEpochUtc(U32 epochUtc)",
         "{",
     ]
     if not use:
@@ -217,7 +217,7 @@ def generate_autogen_c(cfg: dict) -> str:
     lines += ["    return retVal;", "}", ""]
 
     # appTimeServiceAutogenGetNtpEpochUtc
-    lines += ["U32 appTimeServiceAutogenGetNtpEpochUtc(void)", "{"]
+    lines += ["static U32 appTimeServiceAutogenGetNtpEpochUtc(void)", "{"]
     if ntp_use:
         lines += [
             "    return appTimeNtpGetEpochUtc();",
@@ -228,7 +228,7 @@ def generate_autogen_c(cfg: dict) -> str:
 
     # appTimeServiceAutogenSetNtpServer
     lines += [
-        "RETURN_STATUS appTimeServiceAutogenSetNtpServer(const char *host, U16 port)",
+        "static RETURN_STATUS appTimeServiceAutogenSetNtpServer(const char *host, U16 port)",
         "{",
     ]
     if ntp_use:
