@@ -1,6 +1,6 @@
 /******************************************************************************
 * #Author       : Auto-generated
-* #Date         : 19 Mar 2026 - 13:49:22
+* #Date         : 19 Mar 2026 - 14:03:37
 * #File Name    : AppTimeService_Autogen.c
 *******************************************************************************/
 /******************************************************************************
@@ -14,7 +14,7 @@
 #include "time_modules/TimeSync_Ntp.h"
 #include "../Middleware/MiddZModem/inc/MiddRTC.h"
 
-RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)
+static RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)
 {
     if (SUCCESS != appTimeNtpSetServer(ntpHost, ntpPort))
     {
@@ -34,7 +34,7 @@ RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)
     return SUCCESS;
 }
 
-U32 appTimeServiceAutogenGetEpochUtcFromPreferredSource(void)
+static U32 appTimeServiceAutogenGetEpochUtcFromPreferredSource(void)
 {
     MiddRtcStr_t r;
     U32 e = 0;
@@ -46,7 +46,7 @@ U32 appTimeServiceAutogenGetEpochUtcFromPreferredSource(void)
     return e;
 }
 
-RETURN_STATUS appTimeServiceAutogenUpdateRtcsFromEpochUtc(U32 epochUtc)
+static RETURN_STATUS appTimeServiceAutogenUpdateRtcsFromEpochUtc(U32 epochUtc)
 {
     RETURN_STATUS retVal = SUCCESS;
     MiddRtcStr_t r;
@@ -64,12 +64,12 @@ RETURN_STATUS appTimeServiceAutogenUpdateRtcsFromEpochUtc(U32 epochUtc)
     return retVal;
 }
 
-U32 appTimeServiceAutogenGetNtpEpochUtc(void)
+static U32 appTimeServiceAutogenGetNtpEpochUtc(void)
 {
     return appTimeNtpGetEpochUtc();
 }
 
-RETURN_STATUS appTimeServiceAutogenSetNtpServer(const char *host, U16 port)
+static RETURN_STATUS appTimeServiceAutogenSetNtpServer(const char *host, U16 port)
 {
     return appTimeNtpSetServer(host, port);
 }
