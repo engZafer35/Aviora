@@ -5,14 +5,12 @@
 #ifndef __APP_TIME_SERVICE_CONFIG_H__
 #define __APP_TIME_SERVICE_CONFIG_H__
 
-#include "Project_Conf.h"
-
-/* generated on: 2026-03-19 02:14:39 */
+/* generated on: 2026-03-19 13:49:22 */
 
 #define APP_TIME_SERVICE_USE              (1)
 #define APP_TIME_SERVICE_USE_NTP          (1)
 #define APP_TIME_SERVICE_USE_INT_RTC      (1)
-#define APP_TIME_SERVICE_USE_EXT_RTC      (0)
+#define APP_TIME_SERVICE_USE_EXT_RTC      (1)
 
 /* timeZone: UTC => offset minutes */
 #define APP_TIME_SERVICE_TZ_OFFSET_MINUTES (0)

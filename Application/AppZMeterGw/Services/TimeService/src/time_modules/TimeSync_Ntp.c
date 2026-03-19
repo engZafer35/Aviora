@@ -4,21 +4,19 @@
  */
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 
-#include "Project_Conf.h"
-
 #include "ZDebug.h"
+#include "AppLogRecorder.h"
 
 #include "net_config.h"
 
 #include <string.h>
 #include <stdio.h>
 
-#define NTP_PORT_DEFAULT    (123)
 #define NTP_PACKET_SIZE     (48)
 #define NTP_EPOCH_OFFSET    (2208988800UL) /* seconds between 1900 and 1970 */
 
-static char gs_ntpHost[128] = "pool.ntp.org";
-static U16  gs_ntpPort = NTP_PORT_DEFAULT;
+static char gs_ntpHost[NTP_HOST_NAME_MAX_LEN];// = "pool.ntp.org";
+static U16  gs_ntpPort;
 
 RETURN_STATUS appTimeNtpSetServer(const char *host, U16 port)
 {
@@ -29,7 +27,8 @@ RETURN_STATUS appTimeNtpSetServer(const char *host, U16 port)
 
     strncpy(gs_ntpHost, host, sizeof(gs_ntpHost) - 1);
     gs_ntpHost[sizeof(gs_ntpHost) - 1] = '\0';
-    gs_ntpPort = (port == 0) ? (U16)NTP_PORT_DEFAULT : port;
+    gs_ntpPort = port;
+
     return SUCCESS;
 }
 
@@ -52,7 +51,8 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
 
     if (0 != getaddrinfo(gs_ntpHost, portStr, &hints, &res))
     {
-        DEBUG_ERROR("->[E] TimeSrv: NTP DNS failed (%s)", gs_ntpHost);
+        DEBUG_ERROR("->[E] NTP DNS failed (%s)", gs_ntpHost);
+        appLogRec(g_sysLoggerID, "TimeSrv: NTP DNS failed");
         return FAILURE;
     }
 
@@ -60,7 +60,8 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
     if (sock < 0)
     {
         freeaddrinfo(res);
-        DEBUG_ERROR("->[E] TimeSrv: NTP socket failed");
+        DEBUG_ERROR("->[E] NTP socket failed");
+        appLogRec(g_sysLoggerID, "TimeSrv: NTP socket failed");
         return FAILURE;
     }
 
@@ -81,7 +82,8 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
     {
         CLOSESOCKET(sock);
         freeaddrinfo(res);
-        DEBUG_ERROR("->[E] TimeSrv: NTP sendto failed");
+        DEBUG_ERROR("->[E] NTP sendto failed");
+        appLogRec(g_sysLoggerID, "TimeSrv: NTP sendto failed");
         return FAILURE;
     }
 
@@ -94,7 +96,8 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
 
     if (r < (int)NTP_PACKET_SIZE)
     {
-        DEBUG_ERROR("->[E] TimeSrv: NTP recv failed");
+        DEBUG_ERROR("->[E] NTP recv failed");
+        appLogRec(g_sysLoggerID, "TimeSrv: NTP recv failed");
         return FAILURE;
     }
 
