@@ -78,8 +78,6 @@ def generate_config_h(cfg: dict) -> str:
             "#ifndef __APP_TIME_SERVICE_CONFIG_H__",
             "#define __APP_TIME_SERVICE_CONFIG_H__",
             "",
-            '#include "Project_Conf.h"',
-            "",
             f"/* generated on: {now} */",
             "",
             f"#define APP_TIME_SERVICE_USE              ({b(use)})",
@@ -108,7 +106,7 @@ def generate_autogen_c(cfg: dict) -> str:
     ntp_use = bool(ntp.get("use", False))
     int_use = bool(ts.get("intRTC", {}).get("use", False))
     ext_use = bool(ts.get("extRTC", {}).get("use", False))
-    soft_use = (not int_use) and (not ext_use)
+    soft_use = (use) and (not int_use) and (not ext_use)
 
     now = datetime.now().strftime("%d %b %Y - %H:%M:%S")
 
@@ -125,70 +123,46 @@ def generate_autogen_c(cfg: dict) -> str:
         "",
         '#include "Project_Conf.h"',
         '#include "AppTimeService_Config.h"',
-        '#include "TimeService_RtcIf.h"',
         "",
-    ]
+    ]    
 
-    if ntp_use:
-        lines.append('#include <string.h>')
-        lines.append("")
-
-    for mod in ["TimeSync_Ntp.c", "TimeBackend_IntRtc.c", "TimeBackend_ExtRtc.c", "TimeBackend_SoftTick.c"]:
+    for mod in ["time_modules/TimeSync_Ntp.h", "../Middleware/MiddZModem/inc/MiddRTC.h", "time_modules/TimeBackend_SoftTick.h"]:
         use_mod = (
-            (mod == "TimeSync_Ntp.c" and ntp_use)
-            or (mod == "TimeBackend_IntRtc.c" and int_use)
-            or (mod == "TimeBackend_ExtRtc.c" and ext_use)
-            or (mod == "TimeBackend_SoftTick.c" and soft_use)
+            (mod == "time_modules/TimeSync_Ntp.h" and ntp_use)
+            or (mod == "../Middleware/MiddZModem/inc/MiddRTC.h" and (int_use or ext_use))
+            or (mod == "time_modules/TimeBackend_SoftTick.h" and soft_use)
         )
         if use_mod:
-            lines.append(f'#include "time_modules/{mod}"')
-            lines.append("")
-
-    if ntp_use:
-        lines.append("static char g_ntpHost[128];")
-        lines.append("static U16 g_ntpPort;")
-        lines.append("")
-
+            lines.append(f'#include "{mod}"')
+            
+    lines.append("")
     # appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)
     lines += [
         "RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)",
         "{",
     ]
     if not use:
-        lines += ["    (void)ntpHost;", "    (void)ntpPort;", "    return SUCCESS;", "}", ""]
+        lines += ["    (void)ntpHost;", "    (void)ntpPort;", "    return FAILURE;", "}", ""]
     else:
         if ntp_use:
-            lines += [
-                "    if (IS_SAFELY_PTR(ntpHost) && ntpHost[0] != '\\0')",
-                "    {",
-                "        strncpy(g_ntpHost, ntpHost, sizeof(g_ntpHost) - 1);",
-                "        g_ntpHost[sizeof(g_ntpHost) - 1] = '\\0';",
-                "        g_ntpPort = (ntpPort == 0) ? (U16)APP_TIME_SERVICE_DEFAULT_NTP_PORT : ntpPort;",
-                "    }",
-                "    else",
-                "    {",
-                "        strncpy(g_ntpHost, APP_TIME_SERVICE_DEFAULT_NTP_HOST, sizeof(g_ntpHost) - 1);",
-                "        g_ntpHost[sizeof(g_ntpHost) - 1] = '\\0';",
-                "        g_ntpPort = (U16)APP_TIME_SERVICE_DEFAULT_NTP_PORT;",
-                "    }",
-                "    (void)appTimeNtpSetServer(g_ntpHost, g_ntpPort);",
-                "",
-            ]
+            lines += [   
+                "    if (SUCCESS != appTimeNtpSetServer(ntpHost, ntpPort))", "    {", "        return FAILURE;","    }", ""]
         if int_use:
-            lines += ["    if (SUCCESS != appTimeIntRtcInit())", "    {", "        return FAILURE;", "    }", ""]
+            lines += ["    if (SUCCESS != middRtcIntInit())", "    {", "        return FAILURE;", "    }", ""]
         if ext_use:
-            lines += ["    if (SUCCESS != appTimeExtRtcInit())", "    {", "        return FAILURE;", "    }", ""]
+            lines += ["    if (SUCCESS != middRtcExtInit())", "    {", "        return FAILURE;", "    }", ""]
         if soft_use:
             lines += ["    if (SUCCESS != appTimeSoftTickInit())", "    {", "        return FAILURE;", "    }", ""]
         lines += ["    return SUCCESS;", "}", ""]
 
-    # getEpochUtcFromPreferredSource - returns epoch (U32), 0 on error
-    lines += ["U32 getEpochUtcFromPreferredSource(void)", "{"]
+    # appTimeServiceAutogenGetEpochUtcFromPreferredSource - returns epoch (U32), 0 on error
+    lines += ["U32 appTimeServiceAutogenGetEpochUtcFromPreferredSource(void)", "{"]
+    
     if int_use:
         lines += [
-            "    M4T11_RTC_STR r;",
+            "    MiddRtcStr_t r;",
             "    U32 e = 0;",
-            "    if (SUCCESS == appTimeIntRtcGet(&r))",
+            "    if (SUCCESS == middRtcIntGetTime(&r))",
             "    {",
             "        //dont need to check return value here since 0 is an invalid epoch and indicates failure", 
             "        appTimeServiceRtcStrToEpochUtc(&r, &e);",
@@ -197,9 +171,9 @@ def generate_autogen_c(cfg: dict) -> str:
         ]
     elif ext_use:
         lines += [
-            "    M4T11_RTC_STR r;",
+            "    MiddRtcStr_t r;",
             "    U32 e = 0;",
-            "    if (SUCCESS == appTimeExtRtcGet(&r))",
+            "    if (SUCCESS == middRtcExtGetTime(&r))",
             "    {",
             "        //dont need to check return value here since 0 is an invalid epoch and indicates failure",
             "        appTimeServiceRtcStrToEpochUtc(&r, &e);",
@@ -214,30 +188,33 @@ def generate_autogen_c(cfg: dict) -> str:
         lines += ["    return 0;"]
     lines += ["}", ""]
 
-    # updateRtcsFromEpochUtc
+    # appTimeServiceAutogenUpdateRtcsFromEpochUtc
     # - If no RTC is used (soft-tick only), don't generate RTC conversion code.
     # - If one/both RTC are used, convert once to RTC str and then update the active RTC(s).
     lines += [
-        "void updateRtcsFromEpochUtc(U32 epochUtc)",
+        "RETURN_STATUS appTimeServiceAutogenUpdateRtcsFromEpochUtc(U32 epochUtc)",
         "{",
     ]
+    if not use:
+        lines += ["    RETURN_STATUS retVal = FAILURE;"]
+    else:
+        lines += ["    RETURN_STATUS retVal = SUCCESS;"]
+        if int_use or ext_use:
+            lines += [
+                "    MiddRtcStr_t r;",
+                "",
+                "    appTimeServiceEpochUtcToRtcStr(epochUtc, &r);",
+                "",
+            ]
+            if int_use:
+                lines += ["    if (SUCCESS != middRtcIntSetTime(&r))", "    {", "        retVal = FAILURE;", "    }"]
+            if ext_use:
+                lines += ["    if (SUCCESS != middRtcExtSetTime(&r))", "    {", "        retVal = FAILURE;", "    }"]
 
-    if int_use or ext_use:
-        lines += [
-            "    M4T11_RTC_STR r;",
-            "",
-            "    (void)appTimeServiceEpochUtcToRtcStr(epochUtc, &r);",
-            "",
-        ]
-        if int_use:
-            lines += ["    (void)appTimeIntRtcSet(&r);"]
-        if ext_use:
-            lines += ["    (void)appTimeExtRtcSet(&r);"]
+        if soft_use:
+            lines += ["    retVal = appTimeSoftTickSetEpochUtc(epochUtc);"]
 
-    if soft_use:
-        lines += ["    (void)appTimeSoftTickSetEpochUtc(epochUtc);"]
-
-    lines += ["}", ""]
+    lines += ["    return retVal;", "}", ""]
 
     # appTimeServiceAutogenGetNtpEpochUtc
     lines += ["U32 appTimeServiceAutogenGetNtpEpochUtc(void)", "{"]
@@ -256,14 +233,7 @@ def generate_autogen_c(cfg: dict) -> str:
     ]
     if ntp_use:
         lines += [
-            "    if (IS_NULL_PTR(host) || host[0] == '\\0')",
-            "    {",
-            "        return FAILURE;",
-            "    }",
-            "    strncpy(g_ntpHost, host, sizeof(g_ntpHost) - 1);",
-            "    g_ntpHost[sizeof(g_ntpHost) - 1] = '\\0';",
-            "    g_ntpPort = (port == 0) ? (U16)APP_TIME_SERVICE_DEFAULT_NTP_PORT : port;",
-            "    return appTimeNtpSetServer(g_ntpHost, g_ntpPort);",
+            "    return appTimeNtpSetServer(host, port);",
         ]
     else:
         lines += ["    (void)host;", "    (void)port;", "    return FAILURE;"]

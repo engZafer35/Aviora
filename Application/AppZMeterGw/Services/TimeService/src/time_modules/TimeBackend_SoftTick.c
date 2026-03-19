@@ -4,7 +4,7 @@
  */
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 
-#include "Project_Conf.h"
+#include "TimeBackend_SoftTick.h"
 
 #include "MiddEventTimer.h"
 #include "ZDebug.h"
@@ -28,13 +28,13 @@ RETURN_STATUS appTimeSoftTickInit(void)
     gs_timerId = -1;
     if (SUCCESS != middEventTimerRegister(&gs_timerId, softTickCb, WAIT_1_SEC, TRUE))
     {
-        DEBUG_ERROR("->[E] TimeSrv: softTick register failed");
+        DEBUG_ERROR("->[E] softTick register failed");
         return FAILURE;
     }
 
     if (SUCCESS != middEventTimerStart(gs_timerId))
     {
-        DEBUG_ERROR("->[E] TimeSrv: softTick start failed");
+        DEBUG_ERROR("->[E] softTick start failed");
         return FAILURE;
     }
 
