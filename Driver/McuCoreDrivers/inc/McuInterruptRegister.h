@@ -14,7 +14,11 @@
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
 /******************************MACRO DEFINITIONS*******************************/
-
+/** driver functions for internal RTC. Each Rtch driver has its own implementation */
+#define INT_RTC_INIT_FUNC(x)      intRtcInit(x)
+#define INT_RTC_GET_TIME_FUNC(t)  intRtcGetTime(t)
+#define INT_RTC_SET_TIME_FUNC(t)  intRtcSetTime(t)
+/** end of driver functions for internal RTC */
 /*******************************TYPE DEFINITIONS ******************************/
 
 /************************* GLOBAL VARIBALE REFERENCES *************************/

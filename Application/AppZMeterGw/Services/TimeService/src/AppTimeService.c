@@ -16,12 +16,10 @@
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
 #include "AppTimeService.h"
-
-#include "AppTimeService_Config.h"
-
-#include "MiddEventTimer.h"
 #include "AppLogRecorder.h"
 #include "AppGlobalVariables.h"
+
+#include "MiddEventTimer.h"
 
 #include <string.h>
 #include <stdio.h>
