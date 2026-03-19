@@ -3,16 +3,20 @@
 TimeService Configuration Code Generator
 
 Purpose:
-- Read customer time_config.json
+- Read customer time_config.json from Customers/<customer>/Time/
 - Generate:
-  - Application/AppZMeterGw/Services/TimeService/inc/AppTimeService_Config.h
+  - Application/AppZMeterGw/Customers/TimeService_Config.h
   - Application/AppZMeterGw/Services/TimeService/src/AppTimeService_Autogen.c
+
+Usage:
+  python generate_time_service_code.py --customer ZD_0101
 
 Design:
 - Avoid customer-specific #if/#else in core code.
 - Select pre-written, testable modules by generating a small wiring/include file.
 """
 
+import argparse
 import json
 import os
 import re
@@ -46,7 +50,29 @@ def parse_timezone_to_minutes(tz: str) -> int:
     return sign * (hours * 60 + minutes)
 
 
-def generate_config_h(cfg: dict) -> str:
+def _extract_driver_macros(driver_path: Path, block_marker: str) -> list[str]:
+    """
+    Extract #define lines from driver file between
+    /** block_marker */ and /** end of block_marker */.
+    """
+    if not driver_path.exists():
+        return []
+    text = driver_path.read_text(encoding="utf-8")
+    start = f"/** {block_marker} */"
+    end = f"/** end of {block_marker} */"
+    i = text.find(start)
+    if i < 0:
+        return []
+    i += len(start)
+    j = text.find(end, i)
+    if j < 0:
+        return []
+    block = text[i:j].strip()
+    lines = [ln.strip() for ln in block.splitlines() if ln.strip().startswith("#define")]
+    return lines
+
+
+def generate_cus_config_h(cfg: dict, repo_root: Path) -> str:
     ts = cfg.get("timeService", {})
 
     use = bool(ts.get("use", True))
@@ -54,61 +80,127 @@ def generate_config_h(cfg: dict) -> str:
     tz_min = parse_timezone_to_minutes(tz_str)
 
     ntp = ts.get("ntp", {})
-    ntp_use = bool(ntp.get("use", False))
+    ntp_use = use and bool(ntp.get("use", False))
     ntp_host = str(ntp.get("ipAddr", "pool.ntp.org"))
     ntp_port = int(ntp.get("port", 123))
     ntp_period = int(ntp.get("updatePeriodMin", 10))
 
     int_rtc = ts.get("intRTC", {})
     ext_rtc = ts.get("extRTC", {})
-    int_use = bool(int_rtc.get("use", False))
-    ext_use = bool(ext_rtc.get("use", False))
+    int_use = use and bool(int_rtc.get("use", False))
+    ext_use = use and bool(ext_rtc.get("use", False))
+
+    ext_dev = ext_rtc.get("deviceConfig", ext_rtc)
+    int_dev = int_rtc.get("deviceConfig", int_rtc)
+
+    ext_driver_path = ext_dev.get("driverPath", "")
+    int_driver_path = int_dev.get("driverPath", "")
+    ext_i2c_addr = ext_dev.get("i2cAddress", "0")
+    ext_i2c_line = ext_dev.get("i2cBusName", "I2C_LINE_UNUSED")
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def b(x: bool) -> str:
         return "1" if x else "0"
 
-    return "\n".join(
-        [
-            "/**",
-            " * @file AppTimeService_Config.h",
-            " * @brief AUTO-GENERATED configuration for TimeService",
-            " */",
-            "#ifndef __APP_TIME_SERVICE_CONFIG_H__",
-            "#define __APP_TIME_SERVICE_CONFIG_H__",
-            "",
-            f"/* generated on: {now} */",
-            "",
-            f"#define APP_TIME_SERVICE_USE              ({b(use)})",
-            f"#define APP_TIME_SERVICE_USE_NTP          ({b(ntp_use)})",
-            f"#define APP_TIME_SERVICE_USE_INT_RTC      ({b(int_use)})",
-            f"#define APP_TIME_SERVICE_USE_EXT_RTC      ({b(ext_use)})",
-            "",
-            f"/* timeZone: {tz_str} => offset minutes */",
-            f"#define APP_TIME_SERVICE_TZ_OFFSET_MINUTES ({tz_min})",
-            "",
-            f'#define APP_TIME_SERVICE_DEFAULT_NTP_HOST  "{ntp_host}"',
-            f"#define APP_TIME_SERVICE_DEFAULT_NTP_PORT  ({ntp_port})",
-            f"#define APP_TIME_SERVICE_NTP_UPDATE_PERIOD_MIN ({ntp_period})",
-            "",
-            "#endif /* __APP_TIME_SERVICE_CONFIG_H__ */",
-            "",
-        ]
-    )
+    lines = [
+        "/**",
+        " * @file TimeService_Config.h",
+        " * @brief AUTO-GENERATED configuration for TimeService",
+        " */",
+        "#ifndef __CUS_TIME_SERVICE_CONFIG_H__",
+        "#define __CUS_TIME_SERVICE_CONFIG_H__",
+        "",
+        f"/* generated on: {now} */",
+        "",
+        f"#define APP_TIME_SERVICE_USE              ({b(use)})",
+        f"#define APP_TIME_SERVICE_USE_NTP          ({b(ntp_use)})",
+        f"#define APP_TIME_SERVICE_USE_INT_RTC      ({b(int_use)})",
+        f"#define APP_TIME_SERVICE_USE_EXT_RTC      ({b(ext_use)})",
+        "",
+        f"/* timeZone: {tz_str} => offset minutes */",
+        f"#define APP_TIME_SERVICE_TZ_OFFSET_MINUTES ({tz_min})",
+        "",
+        f'#define APP_TIME_SERVICE_DEFAULT_NTP_HOST  "{ntp_host}"',
+        f"#define APP_TIME_SERVICE_DEFAULT_NTP_PORT  ({ntp_port})",
+        f"#define APP_TIME_SERVICE_NTP_UPDATE_PERIOD_MIN ({ntp_period})",
+        "",
+    ]
 
+    # Include path: from Customers/ to repo root is ../
+    inc_prefix = "../"
+
+    # --- extRTC: driver include (contains EXT_RTC_* macros), I2C macros ---
+    if ext_use and ext_driver_path:
+        lines.append(f'#include "{inc_prefix}{ext_driver_path}"')
+        lines.append("")
+        lines.append(f"#define EXT_RTC_I2C_ADDR  ({ext_i2c_addr})")
+        lines.append(f"#define EXT_RTC_I2C_LINE  ({ext_i2c_line})")
+    else:
+        lines.append("#define EXT_RTC_I2C_ADDR          (0)")
+        lines.append("#define EXT_RTC_I2C_LINE          (I2C_LINE_UNUSED)")
+        lines.append("#define EXT_RTC_INIT_FUNC(x)      (FAILURE)")
+        lines.append("#define EXT_RTC_GET_TIME_FUNC(t)  (FAILURE)")
+        lines.append("#define EXT_RTC_SET_TIME_FUNC(t)  (FAILURE)")
+
+    lines.append("")
+
+    # --- intRTC: driver include (contains INT_RTC_* macros) or FAILURE macros ---
+    if int_use and int_driver_path:
+        lines.append(f'#include "{inc_prefix}{int_driver_path}"')
+    else:
+        lines.append("#define INT_RTC_INIT_FUNC(x)      (FAILURE)")
+        lines.append("#define INT_RTC_GET_TIME_FUNC(t)  (FAILURE)")
+        lines.append("#define INT_RTC_SET_TIME_FUNC(t)  (FAILURE)")
+
+    lines.append("")
+    lines.append("#endif /* __CUS_TIME_SERVICE_CONFIG_H__ */")
+    lines.append("")
+
+    return "\n".join(lines)
+
+def generate_config_h(cus_pat: Path) -> str:
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    lines = [
+        "/**",
+        " * @file TimeService_Config.h",
+        " * @brief AUTO-GENERATED configuration for TimeService",
+        " */",
+        "#ifndef __APP_TIME_SERVICE_CONFIG_H__",
+        "#define __APP_TIME_SERVICE_CONFIG_H__",
+        "",
+        f"/* generated on: {now} */",
+        "",
+        f'#include "{cus_pat.parent.parent.name}/Time/Cus_TimeService_Config.h"',
+        "",
+    ]
+
+
+    lines.append("")
+    lines.append("#endif /* __APP_TIME_SERVICE_CONFIG_H__ */")
+    lines.append("")
+
+    return "\n".join(lines)
 
 def generate_autogen_c(cfg: dict) -> str:
     ts = cfg.get("timeService", {})
 
     use = bool(ts.get("use", True))
     ntp = ts.get("ntp", {})
-    ntp_use = bool(ntp.get("use", False))
-    int_use = bool(ts.get("intRTC", {}).get("use", False))
-    ext_use = bool(ts.get("extRTC", {}).get("use", False))
-    soft_use = (use) and (not int_use) and (not ext_use)
-
+    ntp_use = (use) and bool(ntp.get("use", False))
+    int_use = (use) and bool(ts.get("intRTC", {}).get("use", False))
+    ext_use = (use) and bool(ts.get("extRTC", {}).get("use", False))
+    soft_use = (use) and (not int_use) and (not ext_use)    
     now = datetime.now().strftime("%d %b %Y - %H:%M:%S")
+
+    print(f"\033[93mTimeService use: {use}\033[0m")
+    print(f"\033[93mNTP use: {ntp_use}\033[0m")
+    print(f"\033[93mInt RTC use: {int_use}\033[0m")
+    print(f"\033[93mExt RTC use: {ext_use}\033[0m")
+    print(f"\033[93mSoft RTC use: {soft_use}\033[0m")
+
+
 
     lines = [
         "/******************************************************************************",
@@ -122,7 +214,7 @@ def generate_autogen_c(cfg: dict) -> str:
         "*******************************************************************************/",
         "",
         '#include "Project_Conf.h"',
-        '#include "AppTimeService_Config.h"',
+        '#include "../../../Customers/TimeService_Config.h"',
         "",
     ]    
 
@@ -243,25 +335,39 @@ def generate_autogen_c(cfg: dict) -> str:
 
 
 def main():
+    parser = argparse.ArgumentParser(
+        description="Generate TimeService config and autogen from customer time_config.json"
+    )
+    parser.add_argument(
+        "--customer",
+        required=True,
+        help="Customer name (e.g. ZD_0101). Config is read from Customers/<customer>/Time/time_config.json",
+    )
+    args = parser.parse_args()
+
     here = Path(__file__).resolve().parent
-    json_path = here / "time_config.json"
+    json_path = here / args.customer / "Time" / "time_config.json"
     if not json_path.exists():
-        raise SystemExit(f"Config not found: {json_path}")
+        raise SystemExit(f"\033[91mConfig not found: {json_path}\033[0m")
 
     cfg = json.loads(json_path.read_text(encoding="utf-8"))
+    print(f"\033[95mProcessing customer: {args.customer}\033[0m")
 
-    # Repo root assumed: Customers/<cust>/Time/ -> repo root is 3 parents up (..../Aviora)
-    repo_root = here.parents[2]
+    repo_root = here.parent    
     service_dir = repo_root / "Application" / "AppZMeterGw" / "Services" / "TimeService"
-    out_h = service_dir / "inc" / "AppTimeService_Config.h"
+    out_h = here / "TimeService_Config.h"
+    cusTsConfout_h = here / args.customer / "Time" / "Cus_TimeService_Config.h"
     out_c = service_dir / "src" / "AppTimeService_Autogen.c"
 
     os.makedirs(out_h.parent, exist_ok=True)
     os.makedirs(out_c.parent, exist_ok=True)
+    os.makedirs(cusTsConfout_h.parent, exist_ok=True)
 
-    out_h.write_text(generate_config_h(cfg), encoding="utf-8")
+    cusTsConfout_h.write_text(generate_cus_config_h(cfg, cusTsConfout_h), encoding="utf-8")
     out_c.write_text(generate_autogen_c(cfg), encoding="utf-8")
+    out_h.write_text(generate_config_h(json_path), encoding="utf-8")
 
+    print(f"Generated: {cusTsConfout_h}")
     print(f"Generated: {out_h}")
     print(f"Generated: {out_c}")
 

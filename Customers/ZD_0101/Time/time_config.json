@@ -3,19 +3,25 @@
     "use": true,
     "timeZone": "UTC",
     "ntp": {
-      "use": true,
+      "use": false,
       "ipAddr": "pool.ntp.org",
       "port": 123,
       "updatePeriodMin": 60
     },
     "extRTC": {
-      "use": true,
-      "deviceName": "DS1307",
-      "driverPath": "driver/ds1307/"
+      "use": false,
+      "deviceName": "MT41T11",
+      "deviceConfig": {
+        "i2cBusName": "I2C_LINE_1",
+        "i2cAddress": "0x68",
+        "driverPath": "Driver/DeviceDrivers/inc/DrvM41T11_RTC.h"        
+      }
     },
     "intRTC": {
       "use": true,
-      "driverPath": "driver/intRTC_stm32f407"
+      "deviceConfig": {
+        "driverPath": "Driver/McuCoreDrivers/inc/McuInterruptRegister.h"        
+      }
     }
   }
 }

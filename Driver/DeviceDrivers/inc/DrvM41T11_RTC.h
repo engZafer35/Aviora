@@ -2,7 +2,7 @@
 * #Author       : Zafer Satılmış
 * #Revision     : 1.0
 * #Date         : Jan 27, 2021 - 9:05:66 AM
-* #File Name    : DrvM4T11_RTC.h
+* #File Name    : DrvM41T11_RTC.h
 *******************************************************************************/
 
 /******************************************************************************
@@ -24,17 +24,16 @@
 /*********************************INCLUDES*************************************/
 #include "GlobalDefinitions.h"
 /******************************MACRO DEFINITIONS*******************************/
- typedef struct M4T_I2C
- {
-     U32 devAddr;
-     RETURN_STATUS (*write) (U32 devAdr, U32 memAdr, U8* buff, U32 bufLeng);
-     RETURN_STATUS (*read)  (U32 devAdr, U32 memAdr, U8* buff, U32 bufLeng);
- }M4T11_I2C;
+/** driver functions for external RTC. Each Rtch driver has its own implementation */
+#define EXT_RTC_INIT_FUNC(x)      drvM41T11Init(x)
+#define EXT_RTC_GET_TIME_FUNC(t)  drvM41T11GetTime(t)
+#define EXT_RTC_SET_TIME_FUNC(t)  drvM41T11SetTime(t)
+/** end of driver functions for external RTC */
 /*******************************TYPE DEFINITIONS ******************************/
 /**
- * @brief m4t11 driver time structure
+ * @brief m41t11 driver time structure
  */
-typedef struct _M4T11_RTC_STR
+typedef struct _RtcStr_t
 {
     U8 sec;     /* Seconds parameter, from 00 to 59 */
     U8 min;     /* Minutes parameter, from 00 to 59 */
@@ -43,34 +42,41 @@ typedef struct _M4T11_RTC_STR
     U8 mday;    /* Date in a month, 1 to 31 */
     U8 mon;     /* Month in a year, 1 to 12 */
     U16 year;   /* Year parameter, 2000 to 3000 */
-}M4T11_RTC_STR;
+}RtcStr_t;
+
+ typedef struct _RtcI2c_t
+ {
+     U32 devAddr;
+     RETURN_STATUS (*write) (U32 memAdr, U8* buff, U32 bufLeng);
+     RETURN_STATUS (*read)  (U32 memAdr, U8* buff, U32 bufLeng);
+ }RtcI2c_t;
 /************************* GLOBAL VARIBALE REFERENCES *************************/
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
 
 /**
-* @brief  init M4T11
+* @brief  init M41T11
 * @param  hardware i2c, driver will copy i2c, user can delete own structure
 * @return if everything is OK, return SUCCES
 *         otherwise return FAILURE
  */
-RETURN_STATUS drvM41T11Init(const M4T11_I2C *i2c);
+RETURN_STATUS drvM41T11Init(const RtcStr_t *i2c);
 
 /**
  * @brief  get time
- * @param  M4T11_RTC_STR pointer
+ * @param  RtcStr_t pointer
  * @return if everything is OK, return SUCCES
  *         otherwise return FAILURE
  */
-RETURN_STATUS drvM41T11GetTime(M4T11_RTC_STR *getTime);
+RETURN_STATUS drvM41T11GetTime(RtcStr_t *getTime);
 
 /**
  * @brief  set time
- * @param  M4T11_RTC_STR pointer
+ * @param  RtcStr_t pointer
  * @return if everything is OK, return SUCCES
  *         otherwise return FAILURE
  */
-RETURN_STATUS drvM41T11SetTime(const M4T11_RTC_STR *setTime);
+RETURN_STATUS drvM41T11SetTime(const RtcStr_t *setTime);
 
 #endif /* __DRV_M41T11_RTC_H__ */
 

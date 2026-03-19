@@ -2,7 +2,7 @@
 * #Author       : Zafer Satilmis
 * #Revision     : 1.0
 * #Date         : Jan 27, 2021 - 9:05:66 AM
-* #File Name    : DrvM4T11_RTC.c 
+* #File Name    : DrvM41T11_RTC.c 
 *******************************************************************************/
 /******************************************************************************
 *
@@ -32,13 +32,13 @@
 #define REG_CNT            (RTC_REG_CNT+1+M41T11_YEAR_SIZE)
 #endif
 
-#define I2C_CONN_TIMEOUT    (100
+#define I2C_CONN_TIMEOUT    (100)
 /*************************** FUNCTION PROTOTYPES ******************************/
 
 /******************************* TYPE DEFINITIONS *****************************/
 
 /********************************** VARIABLES *********************************/
-static M4T11_I2C gHwI2c;
+static M41T11_I2C gHwI2c;
 /***************************** STATIC FUNCTIONS  ******************************/
 static U8 bcd2bin (U8 bcd)
 {
@@ -50,7 +50,7 @@ static U8 bin2bcd (U8 bin)
     return (((bin / 10) << 4) | (bin % 10));
 }
 /***************************** PUBLIC FUNCTIONS  ******************************/
-RETURN_STATUS drvM41T11Init(const M4T11_I2C *i2c)
+RETURN_STATUS drvM41T11Init(const RtcStr_t *i2c)
 {
     RETURN_STATUS retVal = FAILURE;
 
@@ -63,11 +63,11 @@ RETURN_STATUS drvM41T11Init(const M4T11_I2C *i2c)
 }
 /**
  * @brief  get time
- * @param  M4T11_RTC_STR pointer
+ * @param  M4T11_RtcStr_t pointer
  * @return if everything is OK, return SUCCES
  *         otherwise return FAILURE
  */
-RETURN_STATUS drvM41T11GetTime(M4T11_RTC_STR *getTime)
+RETURN_STATUS drvM41T11GetTime(RtcStr_t *getTime)
 {
     RETURN_STATUS retVal = FAILURE;
     U8 data[RTC_REG_CNT] = {0};
@@ -102,11 +102,11 @@ RETURN_STATUS drvM41T11GetTime(M4T11_RTC_STR *getTime)
 
 /**
  * @brief  set time
- * @param  M4T11_RTC_STR pointer
+ * @param  M4T11_RtcStr_t pointer
  * @return if everything is OK, return SUCCES
  *         otherwise return FAILURE
  */
-RETURN_STATUS drvM41T11SetTime(const M4T11_RTC_STR *setTime)
+RETURN_STATUS drvM41T11SetTime(const RtcStr_t *setTime)
 {
     RETURN_STATUS retVal = FAILURE;
     U8 data[RTC_REG_CNT] = {0};
