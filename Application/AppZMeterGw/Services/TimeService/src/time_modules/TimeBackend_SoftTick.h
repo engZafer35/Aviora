@@ -5,7 +5,9 @@
 * #File Name    : TimeBackend_SoftTick.h
 *******************************************************************************/
 /******************************************************************************
-* 
+* This module implements the software tick time backend. 
+* It uses a 1 second timer to increment the epoch time.
+*
 ******************************************************************************/
 /******************************IFNDEF & DEFINE********************************/
 #ifndef __TIME_BACKEND_SOFTTICK_H__

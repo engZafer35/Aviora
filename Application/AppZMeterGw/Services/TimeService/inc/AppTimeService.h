@@ -1,11 +1,17 @@
 /******************************************************************************
 * #Author       : Zafer Satılmış
-* #Revision     : 1.0
+* #Revision     : 1.3
 * #Date         : 15 Mar 2026 - 12:46:00
 * #File Name    : AppTimeService.h
 *******************************************************************************/
 /******************************************************************************
-* 
+* This module implements an application time service that provides current time
+* information to other application modules. It supports multiple time backends
+* (e.g., NTP, internal RTC, external RTC, software tick) and can be configured
+* to use any combination of these backends. The time service provides a unified
+* API for getting the current time, converting between epoch and calendar time,
+* and formatting time as strings. It also manages NTP synchronization and can
+* update RTCs based on NTP time.
 ******************************************************************************/
 /******************************IFNDEF & DEFINE********************************/
 #ifndef __APP_TIME_SERVICE_H__
