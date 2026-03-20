@@ -36,6 +36,16 @@
 #ifndef __FS_PORT_CONFIG_H__
 #define __FS_PORT_CONFIG_H__
 /*********************************INCLUDES*************************************/
+#include "error.h"
+
+/* Error codes used by fs_port but not in CycloneTCP error.h */
+#ifndef ERROR_NOT_READY
+   #define ERROR_NOT_READY  9999
+#endif
+#ifndef ERROR_ALREADY_EXISTS
+   #define ERROR_ALREADY_EXISTS  9998
+#endif
+
 #define USE_FLASHLINK 1
 
 //FatFs port?

@@ -6,13 +6,13 @@
     "use": true,
     "timeZone": "UTC",
     "ntp": {
-      "use": false,
+      "use": true,
       "ipAddr": "pool.ntp.org",
       "port": 123,
       "updatePeriodMin": 60
     },
     "extRTC": {
-      "use": true,
+      "use": false,
       "deviceName": "MT41T11",
       "deviceConfig": {
         "i2cBusName": "I2C_LINE_1",

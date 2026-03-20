@@ -3,11 +3,9 @@
  * @brief File system abstraction layer
  **/
 
-#ifndef __FS_PORT_CONFIG_H__
-#define __FS_PORT_CONFIG_H__
+#ifndef __FS_PORT_H__
+#define __FS_PORT_H__
 
-
-#include "fs_port_config.h"
 #include "os_port.h"
 #include "date_time.h"
 #include "error.h"
@@ -24,7 +22,6 @@
 extern "C" {
 #endif
 
-
 /**
  * @brief File attributes
  **/
@@ -38,7 +35,6 @@ typedef enum
    FS_FILE_ATTR_ARCHIVE     = 0x20
 } FsFileAttributes;
 
-
 /**
  * @brief File access mode
  **/
@@ -49,7 +45,6 @@ typedef enum
    FS_FILE_MODE_CREATE = 4,
    FS_FILE_MODE_TRUNC  = 8
 } FsFileMode;
-
 
 /**
  * @brief File seek origin
@@ -82,10 +77,11 @@ typedef struct
    char_t name[FS_MAX_NAME_LEN + 1];
 } FsDirEntry;
 
+#include "fs_port_config.h"
 
 //C++ guard
 #ifdef __cplusplus
 }
 #endif
 
-#endif //__FS_PORT_CONFIG_H__
+#endif /* __FS_PORT_H__ */
