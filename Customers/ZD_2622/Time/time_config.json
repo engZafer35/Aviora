@@ -6,7 +6,7 @@
     "use": true,
     "timeZone": "UTC",
     "ntp": {
-      "use": false,
+      "use": true,
       "ipAddr": "pool.ntp.org",
       "port": 123,
       "updatePeriodMin": 60
