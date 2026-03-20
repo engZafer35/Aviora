@@ -9,6 +9,37 @@
 #include "str.h"
 #include "date_time.h"
 
+/**
+ * This is a very simple append-only log-structured filesystem intended for use on MCU internal flash ranges. It is not designed for performance or long-term endurance, but rather to provide a simple way to store files in flash without needing an external SPI flash or more complex filesystem. The on-flash format is intentionally simple and hardware-agnostic, relying on user-provided callbacks for flash read/prog/erase operations. The filesystem maintains an in-memory index of files for fast lookup, which is rebuilt on mount by scanning the log. When the log is full, the user can call flashFsFormat() to erase and start fresh.
+ * Design goals:
+ * - Simple and easy to use
+ * - Low power consumption
+ * - Minimal memory footprint
+ * Overall, this is a simple and lightweight filesystem for basic file storage needs on MCU internal flash, with the tradeoff of simplicity and ease of use over performance and endurance.
+   * Note: This implementation does not include any wear leveling or garbage collection, so it is not suitable for high-write workloads or long-term use without periodic formatting. It is intended for simple use cases where files are written infrequently and the total number of writes is limited (e.g., configuration storage, occasional logs). The append-only log format means that deleted files still consume flash space until the log is formatted, so it is important to monitor free space and format when necessary.
+   * The on-flash format consists of a superblock followed by an append-only log of file records. Each file record contains metadata (name, size, data offset) and the file data is stored in the flash region immediately following the record. When a file is deleted, a delete record is appended to the log, but the file data is not erased until the log is formatted. When a file is renamed, a rename record is appended to the log. The in-memory index is rebuilt on mount by scanning the log and applying the file/create/delete/rename records in order.
+   * The API provides basic file operations (open/read/write/close, delete, rename) and relies on user-provided callbacks for flash read/prog/erase operations. The user must call flashFsConfigure() to provide the callbacks and geometry before calling fsInit() to mount the filesystem. The user can call flashFsFormat() to erase the flash region and create a fresh superblock when needed (e.g., when the log is full or on first use).
+   * This implementation is not designed for concurrent access or multi-threaded use, so the user should ensure that file operations are serialized appropriately. The API does not include any locking or synchronization mechanisms, so it is the caller's responsibility to ensure thread safety if needed.
+   * Overall, this is a simple and lightweight filesystem for basic file storage needs on MCU internal flash, with the tradeoff of simplicity and ease of use over performance and endurance. It is suitable for simple use cases where files are written infrequently and the total number of writes is limited, but it is not suitable for high-write workloads or long-term use without periodic formatting.
+   * Example usage:
+   * FlashFsOps ops = {
+   *  .read = myFlashRead,
+   *  .prog = myFlashProg,
+   * .erase = myFlashErase,
+   * .sync = myFlashSync
+   * };
+   * FlashFsGeom geom = {
+   * .baseAddr = 0x080A0000,
+   * .totalSize = 128 * 1024,
+   * .eraseBlockSize = 4 * 1024,
+   * .progGranularity = 256
+   * };
+   * flashFsConfigure(&ops, &geom);
+   * flashFsFormat(); // format on first use
+   * fsInit(); // mount filesystem
+   * // Now can use fsFileExists, fsGetFileSize, fsOpenFile, fsReadFile, fsWriteFile, fsCloseFile, fsDeleteFile, fsRenameFile APIs
+   * Note: The user should monitor free space and call flashFsFormat() when the log is full, as there is no garbage collection or wear leveling in this implementation. The append-only log format means that deleted files still consume flash space until the log is formatted, so it is important to manage free space appropriately.
+ */
 //----------------------------------------------------------------------------//
 // On-flash layout (append-only log)
 //----------------------------------------------------------------------------//

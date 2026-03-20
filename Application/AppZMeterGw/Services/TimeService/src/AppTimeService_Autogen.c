@@ -1,6 +1,6 @@
 /******************************************************************************
 * #Author       : Auto-generated
-* #Date         : 19 Mar 2026 - 18:40:31
+* #Date         : 20 Mar 2026 - 00:15:48
 * #File Name    : AppTimeService_Autogen.c
 *******************************************************************************/
 /******************************************************************************
@@ -12,16 +12,17 @@
 #include "Project_Conf.h"
 #include "../../../Customers/TimeService_Config.h"
 
+#include "time_modules/TimeSync_Ntp.h"
 #include "../Middleware/MiddZModem/inc/MiddRTC.h"
 
 static RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)
 {
-    if (SUCCESS != middRtcIntInit())
+    if (SUCCESS != appTimeNtpSetServer(ntpHost, ntpPort))
     {
         return FAILURE;
     }
 
-    if (SUCCESS != middRtcExtInit())
+    if (SUCCESS != middRtcIntInit())
     {
         return FAILURE;
     }
@@ -52,21 +53,15 @@ static RETURN_STATUS appTimeServiceAutogenUpdateRtcsFromEpochUtc(U32 epochUtc)
     {
         retVal = FAILURE;
     }
-    if (SUCCESS != middRtcExtSetTime(&r))
-    {
-        retVal = FAILURE;
-    }
     return retVal;
 }
 
 static U32 appTimeServiceAutogenGetNtpEpochUtc(void)
 {
-    return 0;
+    return appTimeNtpGetEpochUtc();
 }
 
 static RETURN_STATUS appTimeServiceAutogenSetNtpServer(const char *host, U16 port)
 {
-    (void)host;
-    (void)port;
-    return FAILURE;
+    return appTimeNtpSetServer(host, port);
 }

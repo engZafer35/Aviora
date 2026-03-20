@@ -22,6 +22,9 @@
 extern "C" {
 #endif
 
+#define FLASHLINK_MAX_OPEN_FILES  4
+#define FLASHLINK_MAX_OPEN_DIRS  2
+
 typedef struct
 {
    error_t (*read)(uint32_t addr, void *data, size_t len);
@@ -50,28 +53,65 @@ error_t flashLinkInit(const FlashLinkOps *ops, const FlashLinkConfig *cfg);
  */
 error_t flashLinkFormat(void);
 
-/**
- * @brief Store or append data for given name.
- *
- * If no cell with this name exists, a new chain of cells is allocated.
- * If name already exists, data is appended to the existing chain
- * starting from the last cell (and using extra cells as needed).
- */
-error_t flashLinkWrite(const char_t *name, const void *data, size_t len);
+
+//----------------------------------------------------------------------------//
+// fs_port API (same interface as fs_port_posix / fs_port_flashFS)
+//----------------------------------------------------------------------------//
+
+typedef void FsFile;
+typedef void FsDir;
+
+error_t fsInit(void);
+
+bool_t fsFileExists(const char_t *path);
+error_t fsGetFileSize(const char_t *path, uint32_t *size);
+error_t fsGetFileStat(const char_t *path, FsFileStat *fileStat);
+error_t fsRenameFile(const char_t *oldPath, const char_t *newPath);
+error_t fsDeleteFile(const char_t *path);
+
+FsFile *fsOpenFile(const char_t *path, uint_t mode);
+error_t fsSeekFile(FsFile *file, int_t offset, uint_t origin);
+error_t fsWriteFile(FsFile *file, void *data, size_t length);
+error_t fsReadFile(FsFile *file, void *data, size_t size, size_t *length);
+void fsCloseFile(FsFile *file);
+
+bool_t fsDirExists(const char_t *path);
+error_t fsCreateDir(const char_t *path);
+error_t fsRemoveDir(const char_t *path);
+
+FsDir *fsOpenDir(const char_t *path);
+error_t fsReadDir(FsDir *dir, FsDirEntry *dirEntry);
+void fsCloseDir(FsDir *dir);
+
+/* example usage /
+FlashLinkOps ops = { ... };
+FlashLinkConfig cfg = { ... };
+flashLinkInit(&ops, &cfg);
+fsInit();
+
+FsFile *f = fsOpenFile("config.bin", FS_FILE_MODE_READ);
+// veya
+FsFile *f = fsOpenFile("/config.bin", FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
+*/
 
 /**
- * @brief Read full data chain for given name.
- */
-error_t flashLinkRead(const char_t *name, void *buf, size_t bufLen, size_t *outLen);
+Mod	                 Dosya	     Sonuç
+READ	                  Var	      OK
+READ	                  Yok	      NULL
+WRITE	                  Var	      OK (append)
+WRITE	                  Yok	      NULL
+WRITE | CREATE	         Yok	      OK (created)
+WRITE | CREATE | TRUNC	Var	      OK (önce silinir, sonra yazılır)
+CREATE tek başına	       -	         NULL (READ/WRITE yok)
+*/
 
-/**
- * @brief Delete data for given name (logical delete).
- *
- * Only the header part of each cell (name + nextIndex + dataLen) is cleared.
- * Data bytes remain in flash but are no longer reachable.
- */
-error_t flashLinkDelete(const char_t *name);
-
+/*/
+Mod	                       Dosya var	              Dosya yok
+WRITE | CREATE | TRUNC	 Sil → sıfırdan yaz	    Handle ver → sıfırdan yaz
+WRITE | TRUNC	          Sil → sıfırdan yaz	    NULL
+WRITE | CREATE	          Append	                Yeni dosya oluştur
+WRITE	                   Append	                NULL
+*/
 #ifdef __cplusplus
 }
 #endif
