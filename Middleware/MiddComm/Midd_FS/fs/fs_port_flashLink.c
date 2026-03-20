@@ -1,13 +1,44 @@
-/**
- * @file fs_port_flashLink.c
- * @brief Very simple linked-cell storage in MCU internal flash
- */
-
+/******************************************************************************
+* #Author       : Zafer Satılmış
+* #Revision     : 1.0
+* #Date         : 20 Mar 2026 - 14:21:51
+* #File Name    : AppSWUpdate.c
+*******************************************************************************/
+/******************************************************************************
+* This file implements the flashLink storage in MCU internal flash. 
+* The flashLink storage is a simple linked-cell storage in MCU internal flash.
+* The flashLink storage is used to store the files in the MCU internal flash.
+* The flashLink storage is used to store the files in the MCU internal flash.
+* Example usage:
+* FlashLinkOps ops = {
+*  .read = myFlashRead,
+*  .prog = myFlashProg,
+*  .erase = myFlashErase,
+*  .sync = myFlashSync
+* };
+* FlashLinkConfig cfg = {
+*  .baseAddr = 0x080A0000,
+*  .regionSize = 128 * 1024,
+*  .cellCount = 1024,
+*  .eraseBlockSize = 4 * 1024
+* };
+* flashLinkInit(&ops, &cfg);
+* flashLinkFormat();
+* fsInit();
+* fsFileExists("test.txt");
+* fsOpenFile("test.txt", FS_FILE_MODE_WRITE);
+* fsWriteFile("test.txt", "Hello, world!", 13);
+* fsCloseFile("test.txt");
+*******************************************************************************/
+/********************************* INCLUDES ***********************************/
 #include <string.h>
 #include "fs_port.h"
 #include "fs_port_flashLink.h"
 #include "str.h"
 #include "date_time.h"
+/****************************** MACRO DEFINITIONS *****************************/
+
+/******************************* TYPE DEFINITIONS *****************************/
 
 typedef struct
 {
@@ -46,13 +77,13 @@ typedef struct
    FlashLinkDirHandle h;
 } FlashLinkDirSlot;
 
+/********************************** VARIABLES *********************************/
 static FlashLinkFileSlot g_filePool[FLASHLINK_MAX_OPEN_FILES];
 static FlashLinkDirSlot  g_dirPool[FLASHLINK_MAX_OPEN_DIRS];
 
 static FlashLinkContext g_flashLink;
 
-// Internal helpers ----------------------------------------------------------//
-
+/***************************** STATIC FUNCTIONS  ******************************/
 static uint32_t flCellAddr(uint16_t index)
 {
    // index is 1-based; 0 is "no cell"
@@ -380,7 +411,7 @@ static error_t flWriteChain(const char_t *name, const void *data, size_t len,
       error = flProgLen((uint16_t)freeIdx, chunk);
       if(error)
          return error;
-         
+
       error = flWriteData((uint16_t)freeIdx, 0, p, chunk);
       if(error)
          return error;
@@ -395,7 +426,7 @@ static error_t flWriteChain(const char_t *name, const void *data, size_t len,
    return NO_ERROR;
 }
 
-// Public API ----------------------------------------------------------------//
+/***************************** PUBLIC FUNCTIONS  ******************************/
 
 error_t flashLinkInit(const FlashLinkOps *ops, const FlashLinkConfig *cfg)
 {
@@ -561,10 +592,7 @@ error_t flashLinkDelete(const char_t *name)
    return NO_ERROR;
 }
 
-//----------------------------------------------------------------------------//
-// fs_port API implementation
-//----------------------------------------------------------------------------//
-
+/**** fs_port API implementation ***/
 static const char_t *flPathToName(const char_t *path, char_t *nameBuf, size_t bufLen)
 {
    if((NULL == path) || (NULL == nameBuf) || (0 == bufLen))
@@ -1096,3 +1124,4 @@ void fsCloseDir(FsDir *dir)
       flFreeDirSlot((FlashLinkDirHandle *)dir);
 }
 
+/******************************** End Of File *********************************/

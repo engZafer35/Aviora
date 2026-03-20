@@ -1,30 +1,54 @@
-/**
- * @file fs_port_flashLink.h
- * @brief Very simple linked-cell storage in MCU internal flash
- *
- * Fixed-size cells (196 bytes):
+/******************************************************************************
+* #Author       : Zafer Satılmış
+* #Revision     : 1.0
+* #Date         : 20 Mar 2026 - 14:21:51
+* #File Name    : AppSWUpdate.c
+*******************************************************************************/
+/******************************************************************************
  *  - [ 64] name (ASCII, zero-terminated, left as 0xFF when unused)
  *  - [  2] next cell index (stored as ~nextIndex; erased 0xFFFF means nextIndex=0)
  *  - [  2] data length in this cell (stored as ~dataLen; erased 0xFFFF means dataLen=0)
- *  - [128] data payload
- *
- * Cells are indexed sequentially from 1..cellCount.
- * All operations are confined to a user-provided flash region.
- */
-
+* This file implements the flashLink storage in MCU internal flash. 
+* The flashLink storage is a simple linked-cell storage in MCU internal flash.
+* The flashLink storage is used to store the files in the MCU internal flash.
+* The flashLink storage is used to store the files in the MCU internal flash.
+* Example usage:
+* FlashLinkOps ops = {
+*  .read = myFlashRead,
+*  .prog = myFlashProg,
+*  .erase = myFlashErase,
+*  .sync = myFlashSync
+* };
+* FlashLinkConfig cfg = {
+*  .baseAddr = 0x080A0000,
+*  .regionSize = 128 * 1024,
+*  .cellCount = 1024,
+*  .eraseBlockSize = 4 * 1024
+* };
+* flashLinkInit(&ops, &cfg);
+* flashLinkFormat();
+* fsInit();
+* fsFileExists("test.txt");
+* fsOpenFile("test.txt", FS_FILE_MODE_WRITE);
+* fsWriteFile("test.txt", "Hello, world!", 13);
+* fsCloseFile("test.txt");
+*******************************************************************************/
+/******************************IFNDEF & DEFINE********************************/
 #ifndef _FS_PORT_FLASHLINK_H
 #define _FS_PORT_FLASHLINK_H
 
+/*********************************INCLUDES*************************************/
 #include "os_port.h"
 #include "error.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+/******************************MACRO DEFINITIONS*******************************/
+#define FLASHLINK_MAX_OPEN_FILES  (10)
+#define FLASHLINK_MAX_OPEN_DIRS   (5)
 
-#define FLASHLINK_MAX_OPEN_FILES  4
-#define FLASHLINK_MAX_OPEN_DIRS  2
-
+/*******************************TYPE DEFINITIONS ******************************/
 typedef struct
 {
    error_t (*read)(uint32_t addr, void *data, size_t len);
@@ -41,6 +65,9 @@ typedef struct
    uint32_t eraseBlockSize; ///< Optional; if non-zero, can be used to format/erase region safely
 } FlashLinkConfig;
 
+/************************* GLOBAL VARIBALE REFERENCES *************************/
+
+/************************* GLOBAL FUNCTION DEFINITIONS ************************/
 /**
  * @brief Initialize FlashLink storage.
  */
@@ -48,16 +75,28 @@ error_t flashLinkInit(const FlashLinkOps *ops, const FlashLinkConfig *cfg);
 
 /**
  * @brief Erase the whole FlashLink region (format).
- *
- * Requires ops->erase and cfg->eraseBlockSize.
+ * @note Requires ops->erase and cfg->eraseBlockSize.
  */
 error_t flashLinkFormat(void);
 
+/**
+Mod	                 Dosya	     Sonuç
+READ	                  Var	      OK
+READ	                  Yok	      NULL
+WRITE	                  Var	      OK (append)
+WRITE	                  Yok	      NULL
+WRITE | CREATE	         Yok	      OK (created)
+WRITE | CREATE | TRUNC	Var	      OK (önce silinir, sonra yazılır)
+CREATE tek başına	       -	         NULL (READ/WRITE yok)
+*/
 
-//----------------------------------------------------------------------------//
-// fs_port API (same interface as fs_port_posix / fs_port_flashFS)
-//----------------------------------------------------------------------------//
-
+/**
+Mod	                       Dosya var	              Dosya yok
+WRITE | CREATE | TRUNC	 Sil → sıfırdan yaz	    Handle ver → sıfırdan yaz
+WRITE | TRUNC	          Sil → sıfırdan yaz	    NULL
+WRITE | CREATE	          Append	                Yeni dosya oluştur
+WRITE	                   Append	                NULL
+*/
 typedef void FsFile;
 typedef void FsDir;
 
@@ -94,27 +133,10 @@ FsFile *f = fsOpenFile("config.bin", FS_FILE_MODE_READ);
 FsFile *f = fsOpenFile("/config.bin", FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
 */
 
-/**
-Mod	                 Dosya	     Sonuç
-READ	                  Var	      OK
-READ	                  Yok	      NULL
-WRITE	                  Var	      OK (append)
-WRITE	                  Yok	      NULL
-WRITE | CREATE	         Yok	      OK (created)
-WRITE | CREATE | TRUNC	Var	      OK (önce silinir, sonra yazılır)
-CREATE tek başına	       -	         NULL (READ/WRITE yok)
-*/
 
-/*/
-Mod	                       Dosya var	              Dosya yok
-WRITE | CREATE | TRUNC	 Sil → sıfırdan yaz	    Handle ver → sıfırdan yaz
-WRITE | TRUNC	          Sil → sıfırdan yaz	    NULL
-WRITE | CREATE	          Append	                Yeni dosya oluştur
-WRITE	                   Append	                NULL
-*/
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-
+/********************************* End Of File ********************************/

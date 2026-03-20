@@ -1,9 +1,15 @@
-/**
- * @file TimeSync_Ntp.c
- * @brief Minimal NTP client (UDP) using net_config.h socket macros
- */
+/******************************************************************************
+* #Author       : Zafer Satılmış
+* #Revision     : 1.0
+* #Date         : March 19, 2026 - 12:16:00
+* #File Name    : TimeSync_Ntp.c
+*******************************************************************************/
+/******************************************************************************
+* This module implements the NTP time synchronization. 
+*
+*******************************************************************************/
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
-
+/********************************* INCLUDES ***********************************/
 #include "ZDebug.h"
 #include "AppLogRecorder.h"
 
@@ -12,26 +18,17 @@
 #include <string.h>
 #include <stdio.h>
 
+/****************************** MACRO DEFINITIONS *****************************/
 #define NTP_PACKET_SIZE     (48)
 #define NTP_EPOCH_OFFSET    (2208988800UL) /* seconds between 1900 and 1970 */
 
+/******************************* TYPE DEFINITIONS *****************************/
+
+/********************************** VARIABLES *********************************/
 static char gs_ntpHost[NTP_HOST_NAME_MAX_LEN];// = "pool.ntp.org";
 static U16  gs_ntpPort;
 
-RETURN_STATUS appTimeNtpSetServer(const char *host, U16 port)
-{
-    if (IS_NULL_PTR(host) || host[0] == '\0')
-    {
-        return FAILURE;
-    }
-
-    strncpy(gs_ntpHost, host, sizeof(gs_ntpHost) - 1);
-    gs_ntpHost[sizeof(gs_ntpHost) - 1] = '\0';
-    gs_ntpPort = port;
-
-    return SUCCESS;
-}
-
+/***************************** STATIC FUNCTIONS  ******************************/
 static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
 {
     if (IS_NULL_PTR(outEpochUtc))
@@ -111,6 +108,21 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
     return SUCCESS;
 }
 
+/***************************** PUBLIC FUNCTIONS  ******************************/
+RETURN_STATUS appTimeNtpSetServer(const char *host, U16 port)
+{
+    if (IS_NULL_PTR(host) || host[0] == '\0')
+    {
+        return FAILURE;
+    }
+
+    strncpy(gs_ntpHost, host, sizeof(gs_ntpHost) - 1);
+    gs_ntpHost[sizeof(gs_ntpHost) - 1] = '\0';
+    gs_ntpPort = port;
+
+    return SUCCESS;
+}
+
 U32 appTimeNtpGetEpochUtc(void)
 {
     U32 epochUtc = 0;
@@ -122,4 +134,6 @@ U32 appTimeNtpGetEpochUtc(void)
     udpNtpQuery(&epochUtc);
     return epochUtc;
 }
+
+/******************************** End Of File *********************************/
 
