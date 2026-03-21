@@ -7,34 +7,12 @@
 
 /******************************************************************************
 *
-{
-  "customer": "New_Costomer_ZD",
-  "version": 1.1,
-  "releaseDate": "2026-01-26",   
-  "store": {
-    "useStore": true,
-    "fsLib": {
-      "name": "flashLink",
-      "srcPath": "fs_port_flashLink",
-      "cellSize": 196,
-      "nameSize": 64,
-      "cellDataSize": 128
-    },
-    "extFlsh": {
-      "type": "spi",
-      "driverSrcPath": "StorageFlashPort_flashLink_stm32f407",
-      "flashStartAdd": "0x080A0000",
-      "flashSize": "128K",
-      "readFunc": "Storage_FlashLinkRead",
-      "progFunc": "Storage_FlashLinkProg",
-      "eraseFunc": "Storage_FlashLinkErase",
-      "syncFunc": "Storage_FlashLinkSync"
-    }
-  }
+*
 ******************************************************************************/
 /******************************IFNDEF & DEFINE********************************/
 #ifndef __FS_PORT_CONFIG_H__
 #define __FS_PORT_CONFIG_H__
+
 /*********************************INCLUDES*************************************/
 #include "error.h"
 
@@ -58,7 +36,7 @@
    #include "fs_port_flashFS.h"
 //FlashLink port?
 #elif defined(USE_FLASHLINK)
-   #include "fs_port_flashLink.h"
+   #include "fs/fs_port_flashLink.h"
 //Windows port?
 #elif defined(_WIN32)
    #include "fs_port_posix.h"
