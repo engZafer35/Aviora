@@ -10,8 +10,6 @@
  *  - [  2] data length in this cell (stored as ~dataLen; erased 0xFFFF means dataLen=0)
 * This file implements the flashLink storage in MCU internal flash. 
 * The flashLink storage is a simple linked-cell storage in MCU internal flash.
-* The flashLink storage is used to store the files in the MCU internal flash.
-* The flashLink storage is used to store the files in the MCU internal flash.
 * Example usage:
 * FlashLinkOps ops = {
 *  .read = myFlashRead,
