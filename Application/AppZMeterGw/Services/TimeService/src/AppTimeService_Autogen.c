@@ -1,6 +1,6 @@
 /******************************************************************************
 * #Author       : Auto-generated
-* #Date         : 20 Mar 2026 - 00:15:48
+* #Date         : 21 Mar 2026 - 18:21:19
 * #File Name    : AppTimeService_Autogen.c
 *******************************************************************************/
 /******************************************************************************
@@ -23,6 +23,11 @@ static RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)
     }
 
     if (SUCCESS != middRtcIntInit())
+    {
+        return FAILURE;
+    }
+
+    if (SUCCESS != middRtcExtInit())
     {
         return FAILURE;
     }
@@ -50,6 +55,10 @@ static RETURN_STATUS appTimeServiceAutogenUpdateRtcsFromEpochUtc(U32 epochUtc)
     appTimeServiceEpochUtcToRtcStr(epochUtc, &r);
 
     if (SUCCESS != middRtcIntSetTime(&r))
+    {
+        retVal = FAILURE;
+    }
+    if (SUCCESS != middRtcExtSetTime(&r))
     {
         retVal = FAILURE;
     }

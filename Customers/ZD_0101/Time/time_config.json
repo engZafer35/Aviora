@@ -12,7 +12,7 @@
       "updatePeriodMin": 60
     },
     "extRTC": {
-      "use": false,
+      "use": true,
       "deviceName": "MT41T11",
       "deviceConfig": {
         "i2cBusName": "I2C_LINE_1",
