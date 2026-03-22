@@ -12,6 +12,7 @@ import json
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 
 # Map fs name (from activeFsName) -> USE_ macro
 FS_NAME_TO_MACRO = {
@@ -23,7 +24,7 @@ FS_NAME_TO_MACRO = {
     "custom":      "USE_CUSTOM_FS",
 }
 
-def generate_header(cfg: dict, customer: str, script_name: str) -> str:
+def generate_cus_fs_port_config_h(cfg: dict, customer: str, script_name: str) -> str:
     """Generate fs_port_config.h content."""
     version = cfg.get("version", "0.0")
     release_date = cfg.get("releaseDate", "")
@@ -391,6 +392,32 @@ def _append_pc_simulator_defines(lines: list, fs: dict) -> None:
     lines.append(f"#define PC_SIMULATOR_ROOT_PATH \"{root_path}\"")
     lines.append("")
 
+def generate_config_h(cus_fs: Path) -> str:
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    lines = [
+        "/**",
+        " * @author: Zafer Satılmış",
+        " * @file FS_Port_Config.h",
+        " * @brief AUTO-GENERATED configuration for Fs Porting",
+        " *        AUTO-GENERATED FILE - DO NOT EDIT MANUALLY",
+        " */",
+        "#ifndef __FS_PORT_CONFIG_H__",
+        "#define __FS_PORT_CONFIG_H__",
+        "",
+        f"/* generated on: {now} */",
+        f"/* customer name: {cus_fs.parent.parent.name} */",
+        "",
+        f'#include "{cus_fs.parent.parent.name}/Fs/cus_fs_port_config.h"',
+        "",
+    ]
+
+    lines.append("")
+    lines.append("#endif /* __FS_PORT_CONFIG_H__ */")
+    lines.append("")
+
+    return "\n".join(lines)
+
 def main():
     parser = argparse.ArgumentParser(
         description="Generate fs_port_config.h from customer's fs_config.json.",
@@ -426,7 +453,7 @@ Examples:
 
     customers_root = script_dir
     json_path = os.path.join(customers_root, args.customer, "Fs", "fs_config.json")
-    out_path = os.path.join(customers_root, args.customer, "Fs", "fs_port_config.h")
+    out_path = os.path.join(customers_root, args.customer, "Fs", "cus_fs_port_config.h")
 
     if not os.path.isfile(json_path):
         print(f"Error: Config file not found: {json_path}", file=sys.stderr)
@@ -436,13 +463,19 @@ Examples:
         cfg = json.load(f)
 
     script_name = os.path.basename(__file__)
-    text = generate_header(cfg, args.customer, script_name)
+    text = generate_cus_fs_port_config_h(cfg, args.customer, script_name)
 
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(text)
 
-    print(f"Generated {out_path}")
+    fs_port_h = os.path.join(script_dir, "FS_Port_Config.h")
+
+    with open(fs_port_h, "w", encoding="utf-8") as f:
+        f.write(generate_config_h(Path(out_path)))
+    
+    print(f"\033[94mGenerated cus_fs_port_conf: \033[0m{out_path}")
+    print(f"\033[94mGenerated FS_Port_Conf: \033[0m{fs_port_h}")
 
 
 if __name__ == "__main__":
