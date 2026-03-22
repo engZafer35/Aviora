@@ -4,7 +4,7 @@
     "releaseDate": "2026-03-20",
     "store": {
       "useStore": true,
-      "activeFsName": "pc_simulator",
+      "activeFsName": "fatfs",
       "fsLib": {
         "flashlink": {
           "use": true,          
@@ -65,10 +65,9 @@
           "flash": {
             "type": "nor",
             "interface": "spi",
-            "chipName": "W25Q128JV",
+            "model": "W25Q128JV",
             "capacityBytes": 16777216,
             "geometry": {
-              "baseAddr": "0x080A0000",
               "pageSize": 256,
               "sectorSize": 4096,
               "blockSize": 65536
@@ -97,10 +96,11 @@
                 "nameSize": 64,
                 "cellDataSize": 956
             },          
-            "geometry": {
+            "flash": {
               "baseAddr": "0x080A0000",
-              "regionSize": 131072,              
-              "eraseBlockSize": 4096            
+              "regionSize": 131072,
+              "cellCount": 0,
+              "eraseBlockSize": 0            
             }
           },
           "flashHwFunc": {
@@ -114,7 +114,7 @@
         "pc_simulator": {
           "use": false,
           "name": "pc_simulator",
-          "rootPath": "../DevFs"
+          "rootPath": "/"
         }
       }
     }

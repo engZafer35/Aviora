@@ -195,8 +195,7 @@ def _append_fatfs_defines(lines: list, fs: dict) -> None:
     capacityBytes = int(flash.get("capacityBytes", 0))
 
     geometry = flash.get("geometry", {})
-    geometry_pageSize = int(geometry.get("pageSize", 0))
-    print(f"geometry_pageSize: {geometry_pageSize}")
+    geometry_pageSize = int(geometry.get("pageSize", 0))    
     geometry_sectorSize = int(geometry.get("sectorSize", 0))
     geometry_blockSize = int(geometry.get("blockSize", 0))
     geometry_baseAddr = geometry.get("baseAddr", "0x00000000")
@@ -214,6 +213,23 @@ def _append_fatfs_defines(lines: list, fs: dict) -> None:
     write_func = hw_func.get("writeFunc", "NOT_FOUND_FUNC");
     erase_func = hw_func.get("eraseFunc", "NOT_FOUND_FUNC");
     sync_func = hw_func.get("syncFunc", "NOT_FOUND_FUNC");
+
+    print(f"--------------------------------")
+    print(f"\033[96mchipName: \033[0m{chipName}")
+    print(f"\033[96mcapacityBytes: \033[0m{capacityBytes}")
+    print(f"\033[96mgeometry_pageSize: \033[0m{geometry_pageSize}")
+    print(f"\033[96mgeometry_sectorSize: \033[0m{geometry_sectorSize}")
+    print(f"\033[96mgeometry_blockSize: \033[0m{geometry_blockSize}")
+    print(f"\033[96mgeometry_baseAddr: \033[0m{geometry_baseAddr}")
+    print(f"\033[96mpageProgramTimeMs: \033[0m{timing_pageProgramTimeMs}")
+    print(f"\033[96msectorEraseTimeMs: \033[0m{timing_sectorEraseTimeMs}")
+    print(f"\033[96mblockEraseTimeMs: \033[0m{timing_blockEraseTimeMs}")
+    print(f"\033[96mdrv_src_path: \033[0m{drv_src_path}")
+    print(f"\033[96mread_func: \033[0m{read_func}")
+    print(f"\033[96mwrite_func: \033[0m{write_func}")
+    print(f"\033[96merase_func: \033[0m{erase_func}")
+    print(f"\033[96msync_func: \033[0m{sync_func}")    
+    print(f"--------------------------------")
 
     lines.append("/****************************** HW DRIVER INCLUDE *******************************/")
     lines.append(f"#define FATFS_CHIP_NAME \"{chipName}\"")
@@ -247,8 +263,7 @@ def _append_littlefs_defines(lines: list, fs: dict) -> None:
     capacityBytes = int(flash.get("capacityBytes", 0))
 
     geometry = flash.get("geometry", {})
-    geometry_pageSize = int(geometry.get("pageSize", 0))
-    print(f"geometry_pageSize: {geometry_pageSize}")
+    geometry_pageSize = int(geometry.get("pageSize", 0))    
     geometry_sectorSize = int(geometry.get("sectorSize", 0))
     geometry_blockSize = int(geometry.get("blockSize", 0))
     geometry_baseAddr = geometry.get("baseAddr", "0x00000000")
@@ -266,6 +281,23 @@ def _append_littlefs_defines(lines: list, fs: dict) -> None:
     write_func = hw_func.get("writeFunc", "NOT_FOUND_FUNC");
     erase_func = hw_func.get("eraseFunc", "NOT_FOUND_FUNC");
     sync_func = hw_func.get("syncFunc", "NOT_FOUND_FUNC");
+
+    print(f"--------------------------------")
+    print(f"\033[96mchipName: \033[0m{chipName}")
+    print(f"\033[96mcapacityBytes: \033[0m{capacityBytes}")
+    print(f"\033[96mgeometry_pageSize: \033[0m{geometry_pageSize}")
+    print(f"\033[96mgeometry_sectorSize: \033[0m{geometry_sectorSize}")
+    print(f"\033[96mgeometry_blockSize: \033[0m{geometry_blockSize}")
+    print(f"\033[96mgeometry_baseAddr: \033[0m{geometry_baseAddr}")
+    print(f"\033[96mpageProgramTimeMs: \033[0m{timing_pageProgramTimeMs}")
+    print(f"\033[96msectorEraseTimeMs: \033[0m{timing_sectorEraseTimeMs}")
+    print(f"\033[96mblockEraseTimeMs: \033[0m{timing_blockEraseTimeMs}")
+    print(f"\033[96mdrv_src_path: \033[0m{drv_src_path}")
+    print(f"\033[96mread_func: \033[0m{read_func}")
+    print(f"\033[96mwrite_func: \033[0m{write_func}")
+    print(f"\033[96merase_func: \033[0m{erase_func}")
+    print(f"\033[96msync_func: \033[0m{sync_func}")    
+    print(f"--------------------------------")
 
     lines.append("/****************************** HW DRIVER INCLUDE *******************************/")
     lines.append(f"#define FATFS_CHIP_NAME \"{chipName}\"")
@@ -314,6 +346,20 @@ def _append_flashfs_defines(lines: list, fs: dict) -> None:
     erase_func = hw_func.get("eraseFunc", "NOT_FOUND_FUNC");
     sync_func = hw_func.get("syncFunc", "NOT_FOUND_FUNC");   
 
+    print(f"--------------------------------")
+    print(f"\033[96mcell_size: \033[0m{cell_size}")
+    print(f"\033[96mname_size: \033[0m{name_size}")
+    print(f"\033[96mcell_data_size: \033[0m{cell_data_size}")
+    print(f"\033[96mbase_addr: \033[0m{base_addr}")
+    print(f"\033[96mregion_size: \033[0m{region_size}")
+    print(f"\033[96merase_block_size: \033[0m{erase_block_size}")
+    print(f"\033[96mdrv_src_path: \033[0m{drv_src_path}")
+    print(f"\033[96mread_func: \033[0m{read_func}")
+    print(f"\033[96mwrite_func: \033[0m{write_func}")
+    print(f"\033[96merase_func: \033[0m{erase_func}")
+    print(f"\033[96msync_func: \033[0m{sync_func}")
+    print(f"--------------------------------")
+
     lines.append("/****************************** HW DRIVER INCLUDE *******************************/")
     lines.append(f"#include \"{drv_src_path}\"")
     lines.append("")
@@ -335,7 +381,12 @@ def _append_flashfs_defines(lines: list, fs: dict) -> None:
 def _append_pc_simulator_defines(lines: list, fs: dict) -> None:
     """Append PC Simulator-specific defines from fs config."""
 
-    root_path = fs.get("rootPath", "/")
+    root_path = fs.get("rootPath", "")
+    
+    print(f"--------------------------------")
+    print(f"\033[96mroot_path: \033[0m{root_path}")
+    print(f"--------------------------------")
+
     lines.append("/****************************** MACRO DEFINITIONS *******************************/")
     lines.append(f"#define PC_SIMULATOR_ROOT_PATH \"{root_path}\"")
     lines.append("")
