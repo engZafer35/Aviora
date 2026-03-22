@@ -105,6 +105,8 @@ def generate_cus_config_h(cfg: dict, repo_root: Path) -> str:
 
     lines = [
         "/**",
+        " * @author: Zafer Satilmis",
+        " * @hype-man: Judas Priest with Tim Ripper Owens - Metal Gods 
         " * @file TimeService_Config.h",
         " * @brief AUTO-GENERATED configuration for TimeService",
         " */",
