@@ -32,7 +32,7 @@
    * .baseAddr = 0x080A0000,
    * .totalSize = 128 * 1024,
    * .eraseBlockSize = 4 * 1024,
-   * .progGranularity = 256
+   * .progMinSize = 256
    * };
    * flashFsConfigure(&ops, &geom);
    * flashFsFormat(); // format on first use
@@ -65,7 +65,7 @@ typedef struct
    uint32_t headerSize;
    uint32_t regionSize;
    uint32_t eraseBlockSize;
-   uint32_t progGranularity;
+   uint32_t progMinSize;
    uint32_t reserved[10];
    uint32_t crc32; // not used (kept for future)
 } FlashFsSuper;
@@ -216,7 +216,7 @@ static error_t fsWriteRecord(const void *rec, uint32_t recLen)
    if(!g_fs.mounted)
       return ERROR_NOT_READY;
 
-   alignedLen = alignUp(recLen, g_fs.geom.progGranularity);
+   alignedLen = alignUp(recLen, g_fs.geom.progMinSize);
    if(g_fs.logWriteOff + alignedLen > g_fs.geom.totalSize)
       return ERROR_OUT_OF_RESOURCES;
 
@@ -257,7 +257,7 @@ static error_t fsLoadOrCreateSuper(void)
       s.headerSize >= sizeof(FlashFsSuper) &&
       s.regionSize == g_fs.geom.totalSize &&
       s.eraseBlockSize == g_fs.geom.eraseBlockSize &&
-      s.progGranularity == g_fs.geom.progGranularity)
+      s.progMinSize == g_fs.geom.progMinSize)
    {
       g_fs.super = s;
       return NO_ERROR;
@@ -270,7 +270,7 @@ static error_t fsLoadOrCreateSuper(void)
    g_fs.super.headerSize = sizeof(FlashFsSuper);
    g_fs.super.regionSize = g_fs.geom.totalSize;
    g_fs.super.eraseBlockSize = g_fs.geom.eraseBlockSize;
-   g_fs.super.progGranularity = g_fs.geom.progGranularity;
+   g_fs.super.progMinSize = g_fs.geom.progMinSize;
    g_fs.super.crc32 = 0;
 
    return flashProg(0, &g_fs.super, sizeof(g_fs.super));
@@ -283,7 +283,7 @@ static error_t fsRebuildIndexAndLogPtr(void)
    uint32_t seqMax;
 
    osMemset(g_fs.index, 0, sizeof(g_fs.index));
-   off = alignUp(sizeof(FlashFsSuper), g_fs.geom.progGranularity);
+   off = alignUp(sizeof(FlashFsSuper), g_fs.geom.progMinSize);
    seqMax = 0;
 
    while(off + sizeof(FlashFsRecHdr) <= g_fs.geom.totalSize)
@@ -410,7 +410,7 @@ static error_t fsRebuildIndexAndLogPtr(void)
          }
       }
 
-      off += alignUp(hdr.length, g_fs.geom.progGranularity);
+      off += alignUp(hdr.length, g_fs.geom.progMinSize);
    }
 
    g_fs.logWriteOff = off;
@@ -428,11 +428,11 @@ error_t flashFsConfigure(const FlashFsOps *ops, const FlashFsGeom *geom)
       return ERROR_INVALID_PARAMETER;
    if(ops->read == NULL || ops->prog == NULL || ops->erase == NULL)
       return ERROR_INVALID_PARAMETER;
-   if(geom->totalSize == 0 || geom->eraseBlockSize == 0 || geom->progGranularity == 0)
+   if(geom->totalSize == 0 || geom->eraseBlockSize == 0 || geom->progMinSize == 0)
       return ERROR_INVALID_PARAMETER;
    if((geom->eraseBlockSize & (geom->eraseBlockSize - 1)) != 0)
       return ERROR_INVALID_PARAMETER;
-   if((geom->progGranularity & (geom->progGranularity - 1)) != 0)
+   if((geom->progMinSize & (geom->progMinSize - 1)) != 0)
       return ERROR_INVALID_PARAMETER;
    if(geom->totalSize < (sizeof(FlashFsSuper) + geom->eraseBlockSize))
       return ERROR_INVALID_PARAMETER;
@@ -721,9 +721,9 @@ FsFile *fsOpenFile(const char_t *path, uint_t mode)
             uint32_t chunk = (remaining > sizeof(buf)) ? sizeof(buf) : remaining;
 
             // enforce prog granularity on chunks
-            if(chunk % g_fs.geom.progGranularity != 0)
+            if(chunk % g_fs.geom.progMinSize != 0)
             {
-               chunk -= (chunk % g_fs.geom.progGranularity);
+               chunk -= (chunk % g_fs.geom.progMinSize);
                if(chunk == 0)
                   break;
             }
@@ -807,7 +807,7 @@ error_t fsWriteFile(FsFile *file, void *data, size_t length)
       return ERROR_OUT_OF_RESOURCES;
 
    // enforce prog granularity alignment on writes (simple policy)
-   if((h->writePos % g_fs.geom.progGranularity) != 0 || (length % g_fs.geom.progGranularity) != 0)
+   if((h->writePos % g_fs.geom.progMinSize) != 0 || (length % g_fs.geom.progMinSize) != 0)
       return ERROR_INVALID_PARAMETER;
 
    error = flashProg(h->writeDataOff + h->writePos, data, length);
@@ -875,7 +875,7 @@ void fsCloseFile(FsFile *file)
       // Move logWriteOff past data area first (data written directly at logWriteOff)
       // Ensure logWriteOff tracks the end of written data.
       {
-         uint32_t dataEnd = h->writeDataOff + alignUp(h->size, g_fs.geom.progGranularity);
+         uint32_t dataEnd = h->writeDataOff + alignUp(h->size, g_fs.geom.progMinSize);
          if(dataEnd > g_fs.logWriteOff)
             g_fs.logWriteOff = dataEnd;
       }
