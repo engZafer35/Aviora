@@ -2,6 +2,75 @@
  * @file fs_port_ZB.c
  * @brief Very simple flash-backed storage for logs, config and large blobs.
  */
+ /**
+ * This file is a modified version of the fs_port_ZB.c file from the CycloneTCP project.
+ how to use this file:
+ 1. include this file in your project
+ 2. use the zbInit function to initialize the file system
+ 3. use the zbLogWrite function to write logs
+ 4. use the zbConfWrite function to write configuration
+ 5. use the zbDataBegin function to begin a new data record
+ 6. use the zbDataAppend function to append data to a data record
+ 7. use the zbDataEnd function to end a data record
+ 8. use the zbDataRead function to read data from a data record
+ 9. use the zbBlobWrite function to write a blob
+ 10. use the zbBlobRead function to read a blob
+ 11. use the zbFormatLogRegion function to format the log region
+ 12. use the zbFormatConfRegion function to format the configuration region
+ 13. use the zbFormatDataRegion function to format the data region
+
+ Example:
+ 
+ error_t error;
+ ZbFlashOps ops;
+ ZbFlashLayout layout;
+ ZbLogHeader logHdr;
+ ZbConfHeader confHdr;
+ ZbDataHeader dataHdr;
+ ZbDataHandle dataHandle;
+ 
+ error = zbInit(&ops, &layout);
+ if(error)
+    return error;
+ 
+ error = zbLogWrite("Hello, world!", 13);
+ if(error)
+    return error;
+ 
+ 
+ error = zbConfWrite("Hello, world!", 13);
+ if(error)
+    return error;
+ 
+ error = zbDataBegin("Hello, world!", ZB_DATA_TYPE_BLOB, &dataHandle);
+ if(error)
+    return error;
+ 
+ error = zbDataAppend(&dataHandle, "Hello, world!", 13);
+ if(error)
+    return error;
+ 
+ error = zbDataEnd(&dataHandle);
+ if(error)
+    return error;
+ 
+ error = zbBlobWrite("Hello, world!", "Hello, world!", 13);
+ if(error)
+    return error;
+ 
+ error = zbBlobRead("Hello, world!", "Hello, world!", 13, &outLen);
+ if(error)
+    return error;
+ 
+ error = zbFormatLogRegion();
+ if(error)
+    return error;
+ 
+ error = zbFormatConfRegion();
+ if(error)
+    return error;
+ 
+ */
 
 #include <string.h>
 #include "fs_port_ZB.h"
