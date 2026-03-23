@@ -104,7 +104,7 @@
 
 //Static object allocation
 #ifndef configSUPPORT_STATIC_ALLOCATION
-   #define configSUPPORT_STATIC_ALLOCATION 0
+   #define configSUPPORT_STATIC_ALLOCATION 1
 #endif
 
 //C++ guard
