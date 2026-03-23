@@ -29,7 +29,7 @@
 #include "AppProtocol_2.h"
 
 #include "MiddDigitalIOControl.h"
-#include "MiddStorage.h" //TODO: it could be moved to file system manager
+#include "../../../Middleware/MiddComm/Midd_FS/fs_port.h"
 #include "MiddEventTimer.h"
 
 #include "Midd_OSPort.h"
@@ -193,7 +193,22 @@ static RETURN_STATUS initSWUnit(void)
             return FAILURE;
         }
 
-        //TODO: init file system before log recorder
+        /* init storage hardware and file system */
+        error_t error = ERROR_FAILURE;
+        FS_HARDWARE_INIT(error);
+        if(NO_ERROR != error)
+        {
+            DEBUG_ERROR("->[E] FS Hardware Init Error");
+            return FAILURE;
+        }
+        /* init file system */
+        error = fsInit();
+        if(NO_ERROR != error)
+        {
+            DEBUG_ERROR("->[E] FS Init Error");
+            return FAILURE;
+        }
+        DEBUG_INFO("->[I] %s fs ready", FS_NAME);
 
         zosInitKernel();
         zosStartKernel();
