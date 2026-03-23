@@ -335,10 +335,6 @@ flowchart TD
   OPS --> APP["Application fs API"]
 ```
 
-### FlashLink Layout Animation
-
-Cell chain and write flow are animated in `docs/assets/gifs/flashlink_layout.gif`.
-
 ---
 
 ## 6. FlashFS — Mini Append-Only Log File System
@@ -381,10 +377,6 @@ For FlashFS, `geometry`:
 ```
 
 `flashHwFunc` works like FlashLink; read/prog/erase/sync callbacks are injected from JSON.
-
-### FlashFS Layout Animation
-
-Superblock and log records are animated in `docs/assets/gifs/flashfs_log_layout.gif`.
 
 ---
 
@@ -515,12 +507,6 @@ Content of `cus_fs_port_config.h`:
 - `#include "fs_littlefs_helper_func.h"`
 - `#define LITTLEFS_MUTEX_*` macros
 - `#define FS_HARDWARE_INIT(error_out)` → Storage_Init + mutex create
-
-### Animations
-
-- `docs/assets/gifs/generator_flow.gif` — Generator pipeline
-- `docs/assets/gifs/generator_flashlink_ZD_2622.gif` — ZD_2622 with flashlink example
-- `docs/assets/gifs/generator_littlefs_simulated.gif` — littlefs scenario simulation
 
 ---
 
