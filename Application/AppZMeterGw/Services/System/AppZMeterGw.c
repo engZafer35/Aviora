@@ -132,41 +132,14 @@ static void inputDigital_6(U32 stat) /** Digital input 6*/
     g_localEvents.inDI_6 = TRUE;
 }
 
-RETURN_STATUS myWriteLog (const void *file, const char *data, size_t length)
-{
-    DEBUG_INFO("sysLog write: %s\n", data);
-    return SUCCESS;
-}
-RETURN_STATUS myReadLog (const void *file, char *data, size_t size, size_t *outLength)
-{
-    DEBUG_INFO("sysLog read: %s\n", data);
-    return SUCCESS;
-}
-
-void myOpenLogFile(const char *path, unsigned int mode)
-{
-    DEBUG_INFO("sysLog: open log file %s\n", path);
-    return SUCCESS;
-}
-
-void myCloseLogFile(void *file)
-{
-    DEBUG_INFO("sysLog: close log file\n");
-}
-
-
 static RETURN_STATUS initSWUnit(void)
 {
     RETURN_STATUS retVal = SUCCESS;
-    LogRecInterface sysLoggerInterface; //TODO: change this structure with file system w/r operation
+    LogRecConf_t sysLoggerConf; //TODO: change this structure with file system w/r operation
 
-    sysLoggerInterface.openFunc  = myOpenLogFile;
-    sysLoggerInterface.writeFunc = myWriteLog;
-    sysLoggerInterface.readFunc  = myReadLog;
-    sysLoggerInterface.closeFunc = myCloseLogFile;
-    sysLoggerInterface.fileSize  = 100;
-    sysLoggerInterface.logPath   = "./";
-    sysLoggerInterface.totalLogSize = 1000;
+    sysLoggerConf.fileSize  = 131072; //128*1024
+    sysLoggerConf.logPath   = "./";
+    sysLoggerConf.totalLogSize = 20*sysLoggerConf.fileSize; 
 
     /** !< Firstly initialize common used midd layer */
     retVal |= middIOInit();
@@ -226,7 +199,7 @@ static RETURN_STATUS initSWUnit(void)
             return FAILURE;
         }
 
-        if (FAILURE == appLogRecRegister(&sysLoggerInterface, "sysLogger", &g_sysLoggerID))
+        if (FAILURE == appLogRecRegister(&sysLoggerConf, "sysLogger", &g_sysLoggerID))
         {
             DEBUG_ERROR("->[E] Log Reg for sysLogger ERROR ");
             return FAILURE;
