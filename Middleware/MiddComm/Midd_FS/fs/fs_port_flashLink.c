@@ -34,7 +34,6 @@
 #include <string.h>
 #include "fs_port.h"
 #include "fs_port_flashLink.h"
-#include "str.h"
 #include "date_time.h"
 /****************************** MACRO DEFINITIONS *****************************/
 
@@ -606,7 +605,7 @@ static const char_t *flPathToName(const char_t *path, char_t *nameBuf, size_t bu
    }
      
    osStrncpy(nameBuf, path, (bufLen - 1));
-   nameBuf[(bufLen - 1)] = '\0'
+   nameBuf[(bufLen - 1)] = '\0';
 
    if('\0' == nameBuf[0])
    {
