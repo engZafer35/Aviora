@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TimeService — Aviora</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="index.html" class="active">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">TimeService</div>
+      <nav class="sidebar-nav">
+        <a href="index.html" class="active">Overview</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+  <section class="hero">
+    <div class="hero-card">
+      <h1>TimeService</h1>
+      <p>
+        Application time service with NTP, internal/external RTC, and software tick backends.
+        JSON configuration and auto-generated wiring; unified API for time sync and format.
+      </p>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="grid">
+      <article class="card col-8">
+        <h2>Overview</h2>
+        <p>
+          TimeService provides current time to other modules. Multiple backends (NTP, intRTC, extRTC, SoftTick) are selected via <code>time_config.json</code>. The generator script produces <code>Cus_TimeService_Config.h</code> and <code>AppTimeService_Autogen.c</code>.
+        </p>
+        <ul>
+          <li>Time zone support (e.g. UTC+3)</li>
+          <li>NTP sync with configurable server and period</li>
+          <li>Epoch / struct tm / string conversion</li>
+        </ul>
+      </article>
+
+      <article class="card col-4">
+        <h2>API</h2>
+        <ul>
+          <li><code>appTimeServiceInit</code></li>
+          <li><code>appTimeServiceGetTime</code></li>
+          <li><code>appTimeServiceGetEpoch</code></li>
+          <li><code>appTimeServiceFormatNow</code></li>
+        </ul>
+      </article>
+
+      <article class="card col-12">
+        <h2>Configuration</h2>
+        <pre class="code-block">Customers/&lt;customer&gt;/Time/time_config.json</pre>
+        <p>Keys: <code>timeService.use</code>, <code>timeZone</code>, <code>ntp</code>, <code>intRTC</code>, <code>extRTC</code></p>
+      </article>
+    </div>
+  </main>
+
+  <footer>
+    <p><a href="../index.html">← Back to Aviora</a></p>
+  </footer>
+    </div>
+  </div>
+</body>
+</html>

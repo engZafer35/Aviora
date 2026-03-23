@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aviora FS Docs - Architecture</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
+  <script defer src="../app.js"></script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Home</a>
+        <a href="index.html" class="active">File System</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">File System</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="architecture.html" class="active">Architecture</a>
+        <a href="generator.html">Generator</a>
+        <a href="implementations.html">FS Ports</a>
+        <a href="flexibility.html">Flexibility</a>
+        <a href="readme.html">README</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+  <section class="hero">
+    <div class="hero-card">
+      <h1>Architecture Deep Dive</h1>
+      <p>
+        How developer workflow is separated from customer customization.
+        Result: clean API at the application layer, controlled extension point at config and generation.
+      </p>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="grid">
+      <article class="card col-6">
+        <h2>Developer perspective</h2>
+        <p>
+          A developer writes business logic once and keeps using the same file operations.
+          No customer branch is required in app modules.
+        </p>
+        <ul>
+          <li>One include: `Midd_FS/fs_port.h`</li>
+          <li>One startup contract: `FS_HARDWARE_INIT` then `fsInit`</li>
+          <li>One API family: `fs*` operations</li>
+        </ul>
+      </article>
+
+      <article class="card col-6">
+        <h2>Customer perspective</h2>
+        <p>
+          Each customer controls file system behavior in JSON. The customer can switch active backend and parameters without editing app source files.
+        </p>
+        <ul>
+          <li>`activeFsName` selects backend</li>
+          <li>`cells`, `geometry`, `flashHwFunc` define behavior</li>
+          <li>Generated header reflects selected configuration</li>
+        </ul>
+      </article>
+
+      <article class="card col-12">
+        <h2>Layer model</h2>
+        <div class="diagram-wrap">
+          <div class="diagram-head">Mermaid architecture layers</div>
+          <pre class="mermaid">flowchart TB
+  APP[Application Services] --> API["Midd_FS/fs_port.h"]
+  API --> GEN1["Customers/FS_Port_Config.h"]
+  GEN1 --> GEN2["Customers/NAME/Fs/cus_fs_port_config.h"]
+  GEN2 --> PORT["fs_port_flashLink or littlefs or flashFS"]
+  PORT --> HW["Hardware callbacks from flashHwFunc"]
+  CONF["Customers/NAME/Fs/fs_config.json"] --> SCRIPT[generate_fs_port_config.py]
+  SCRIPT --> GEN1
+  SCRIPT --> GEN2</pre>
+          <pre class="fallback">[Fallback layer model]
+Application Services
+  -> Midd_FS/fs_port.h
+    -> Customers/FS_Port_Config.h
+      -> Customers/NAME/Fs/cus_fs_port_config.h
+        -> selected fs_port backend
+          -> hardware callbacks
+Customers/NAME/Fs/fs_config.json
+  -> generate_fs_port_config.py
+    -> generated headers</pre>
+        </div>
+      </article>
+
+      <article class="card col-6">
+        <h2>Lifecycle</h2>
+        <p>
+          During startup, generated macros create and configure backend operations.
+          After this point, app code only sees common API behavior.
+        </p>
+        <div class="diagram-wrap">
+          <div class="diagram-head">Startup sequence</div>
+          <pre class="mermaid">sequenceDiagram
+  participant App as AppZMeterGw
+  participant Gen as Generated FS config
+  participant Port as Active FS port
+  App->>Gen: FS_HARDWARE_INIT(error)
+  Gen->>Port: bind callbacks and geometry
+  App->>Port: fsInit()
+  Port-->>App: ready
+  App->>Port: fsOpenFile/fsReadFile/fsWriteFile</pre>
+          <pre class="fallback">[Fallback sequence]
+App -> FS_HARDWARE_INIT(error)
+    -> backend callback and geometry binding
+App -> fsInit()
+    -> backend ready
+App -> fs* operations</pre>
+        </div>
+      </article>
+
+      <article class="card col-6">
+        <h2>Operational benefit</h2>
+        <ul>
+          <li>Lower regression risk during customer adaptation</li>
+          <li>Clear change scope in generated files</li>
+          <li>Fast onboarding for new developers</li>
+          <li>Safer long term maintenance</li>
+        </ul>
+        <p class="note">
+          The architecture is fit for product families where hardware and memory map may change per customer.
+        </p>
+      </article>
+    </div>
+  </main>
+    </div>
+  </div>
+</body>
+</html>
+

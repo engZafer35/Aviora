@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>README — Aviora FS Framework</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="./readme.css" />
+  <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: false, theme: "dark" });
+    }
+  </script>
+  <script defer src="../app.js"></script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Home</a>
+        <a href="index.html" class="active">File System</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">File System</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="generator.html">Generator</a>
+        <a href="implementations.html">FS Ports</a>
+        <a href="flexibility.html">Flexibility</a>
+        <a href="readme.html" class="active">README</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+  <main class="container readme-container">
+    <article id="readme-content" class="markdown-body card col-12">
+      <div class="readme-loading">Loading README...</div>
+    </article>
+  </main>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const container = document.getElementById("readme-content");
+      const mdPath = "./README_PRO.md";
+
+      const renderer = new marked.Renderer();
+      const origCode = renderer.code.bind(renderer);
+      renderer.code = function(code, lang, escaped) {
+        if (lang === "mermaid") {
+          return '<pre class="mermaid">' + code + '</pre>';
+        }
+        return origCode(code, lang, escaped);
+      };
+
+      marked.setOptions({
+        gfm: true,
+        breaks: true,
+        renderer: renderer
+      });
+
+      fetch(mdPath)
+        .then(function(r) {
+          if (!r.ok) throw new Error("Failed to load " + mdPath);
+          return r.text();
+        })
+        .then(function(md) {
+          container.innerHTML = marked.parse ? marked.parse(md) : marked(md);
+          // Fix relative image paths for GIFs
+          container.querySelectorAll("img").forEach(function(img) {
+            const src = img.getAttribute("src");
+            if (src && !src.startsWith("http") && !src.startsWith("/")) {
+              img.setAttribute("src", src.replace("docs/", "./"));
+            }
+          });
+          return container.querySelectorAll("pre.mermaid");
+        })
+        .then(function() {
+          if (window.mermaid) {
+            mermaid.run().catch(function(e) {
+              console.warn("Mermaid render error:", e);
+            });
+          }
+        })
+        .catch(function(err) {
+          container.innerHTML = '<p class="readme-error">Could not load README. Make sure the page is served from a web server (file:// may block fetch).<br><code>' + err.message + '</code></p>';
+          container.querySelector(".readme-loading") && container.querySelector(".readme-loading").remove();
+        });
+    })();
+  </script>
+</body>
+</html>
