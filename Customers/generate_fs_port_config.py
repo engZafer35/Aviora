@@ -57,9 +57,6 @@ def generate_cus_fs_port_config_h(cfg: dict, customer: str, script_name: str) ->
     lines.append("#ifndef __CUS_FS_PORT_CONFIG_H__")
     lines.append("#define __CUS_FS_PORT_CONFIG_H__")
     lines.append("")
-    lines.append("#include \"error.h\"")
-    lines.append("")
-    lines.append("/* Error codes used by fs_port but not in CycloneTCP error.h */")
     lines.append("#ifndef ERROR_NOT_READY")
     lines.append("   #define ERROR_NOT_READY  9999")
     lines.append("#endif")
@@ -78,23 +75,6 @@ def generate_cus_fs_port_config_h(cfg: dict, customer: str, script_name: str) ->
         use_macro = FS_NAME_TO_MACRO.get(active_fs_name, "USE_CUSTOM_FS")
         lines.append(f"#define {use_macro} 1")
     lines.append("")
-
-    # MACRO DEFINITIONS - only when fs is valid and flashlink
-    if use_store and fs_config is not None and active_fs_name == "flashlink":
-        _append_flashlink_defines(lines, fs_config)
-    elif use_store and fs_config is not None and active_fs_name == "fatfs":
-        _append_fatfs_defines(lines, fs_config)
-    elif use_store and fs_config is not None and active_fs_name == "littlefs":
-        _append_littlefs_defines(lines, fs_config)
-    elif use_store and fs_config is not None and active_fs_name == "flashfs":
-        _append_flashfs_defines(lines, fs_config)
-    elif use_store and fs_config is not None and active_fs_name == "pc_simulator":
-        _append_pc_simulator_defines(lines, fs_config)
-    elif use_store and fs_config is not None and active_fs_name == "custom":        
-        print(f"\033[91mFS NOT FOUND: {active_fs_name}\033[0m")
-    else:
-        lines.append("/****************************** MACRO DEFINITIONS *******************************/")
-        lines.append("")    
 
     # FS type selection block
     lines.append("/****************************** INCLUDE FS *******************************/")
@@ -124,6 +104,25 @@ def generate_cus_fs_port_config_h(cfg: dict, customer: str, script_name: str) ->
     lines.append("   #error \"USE_NOT_USED_FS fs is not used\"")
     lines.append("#endif")
     lines.append("")
+
+    # MACRO DEFINITIONS - only when fs is valid and flashlink
+    if use_store and fs_config is not None and active_fs_name == "flashlink":
+        _append_flashlink_defines(lines, fs_config)
+    elif use_store and fs_config is not None and active_fs_name == "fatfs":
+        _append_fatfs_defines(lines, fs_config)
+    elif use_store and fs_config is not None and active_fs_name == "littlefs":
+        _append_littlefs_defines(lines, fs_config)
+    elif use_store and fs_config is not None and active_fs_name == "flashfs":
+        _append_flashfs_defines(lines, fs_config)
+    elif use_store and fs_config is not None and active_fs_name == "pc_simulator":
+        _append_pc_simulator_defines(lines, fs_config)
+    elif use_store and fs_config is not None and active_fs_name == "custom":        
+        print(f"\033[91mFS NOT FOUND: {active_fs_name}\033[0m")
+    else:
+        lines.append("/****************************** MACRO DEFINITIONS *******************************/")
+        lines.append("")    
+
+    
 
     lines.append("#endif /* __CUS_FS_PORT_CONFIG_H__ */")
     lines.append("")
@@ -188,6 +187,32 @@ def _append_flashlink_defines(lines: list, fs: dict) -> None:
     lines.append(f"#define STORAGE_DRV_FUNC_SYNC    {sync_func}")
     lines.append("")
 
+    lines.append(
+        """#define FS_HARDWARE_INIT(error_out) \\                   
+                    do { \\                        
+                        FlashLinkOps ops = { \\
+                            .read = STORAGE_DRV_FUNC_READ, \\
+                            .prog = STORAGE_DRV_FUNC_PROG, \\
+                            .erase = STORAGE_DRV_FUNC_ERASE, \\
+                            .sync = STORAGE_DRV_FUNC_SYNC \\
+                        }; \\
+                        
+                        FlashLinkConfig cfg = { \\
+                            .baseAddr = FLASHLINK_BASE_ADDR, \\
+                            .regionSize = FLASHLINK_REGION_SIZE, \\
+                            .cellCount = FLASHLINK_CELL_COUNT, \\
+                            .eraseBlockSize = FLASHLINK_ERASE_BLOCK_SIZE \\
+                        }; \\
+                        
+                        error_out = flashLinkInit(&ops, &cfg); \\
+                        if(NO_ERROR == error_out) \\
+                        { \\
+                            error_out = flashLinkFormat(); \\ 
+                        }\\
+                                               
+                    } while (0)"""
+    )
+
 def _append_fatfs_defines(lines: list, fs: dict) -> None:
     """Append fatFs-specific defines from fs config."""
 
@@ -204,11 +229,6 @@ def _append_fatfs_defines(lines: list, fs: dict) -> None:
     if isinstance(geometry_baseAddr, int):
         geometry_baseAddr = f"0x{geometry_baseAddr:08X}"
 
-    timing = flash.get("timing", {})
-    timing_pageProgramTimeMs = int(timing.get("pageProgramTimeMs", 0))
-    timing_sectorEraseTimeMs = int(timing.get("sectorEraseTimeMs", 0))
-    timing_blockEraseTimeMs = int(timing.get("blockEraseTimeMs", 0))
-
     hw_func = fs.get("flashHwFunc", {})
     drv_src_path = hw_func.get("drvSrcPath", "")
     read_func = hw_func.get("readFunc", "NOT_FOUND_FUNC");
@@ -223,9 +243,7 @@ def _append_fatfs_defines(lines: list, fs: dict) -> None:
     print(f"\033[96mgeometry_sectorSize: \033[0m{geometry_sectorSize}")
     print(f"\033[96mgeometry_blockSize: \033[0m{geometry_blockSize}")
     print(f"\033[96mgeometry_baseAddr: \033[0m{geometry_baseAddr}")
-    print(f"\033[96mpageProgramTimeMs: \033[0m{timing_pageProgramTimeMs}")
-    print(f"\033[96msectorEraseTimeMs: \033[0m{timing_sectorEraseTimeMs}")
-    print(f"\033[96mblockEraseTimeMs: \033[0m{timing_blockEraseTimeMs}")
+    print(f"--------------------------------")
     print(f"\033[96mdrv_src_path: \033[0m{drv_src_path}")
     print(f"\033[96mread_func: \033[0m{read_func}")
     print(f"\033[96mwrite_func: \033[0m{write_func}")
@@ -234,27 +252,29 @@ def _append_fatfs_defines(lines: list, fs: dict) -> None:
     print(f"--------------------------------")
 
     lines.append("/****************************** HW DRIVER INCLUDE *******************************/")
-    lines.append(f"#define FATFS_CHIP_NAME \"{chipName}\"")
+    lines.append(f"#define CHIP_NAME \"{chipName}\"")
     lines.append("")
     lines.append(f"#include \"{drv_src_path}\"")
     lines.append("")
     lines.append("/****************************** MACRO DEFINITIONS *******************************/")
     lines.append(f"#define FATFS_CAPACITY_BYTES     ({capacityBytes})")
     lines.append("")
-    lines.append(f"#define FATFS_GEOMETRY_PAGE_SIZE ({geometry_pageSize})")
-    lines.append(f"#define FATFS_GEOMETRY_SECTOR_SIZE ({geometry_sectorSize})")
-    lines.append(f"#define FATFS_GEOMETRY_BLOCK_SIZE ({geometry_blockSize})")
-    lines.append(f"#define FATFS_GEOMETRY_BASE_ADDR ({geometry_baseAddr})")
-    lines.append("")
-    lines.append(f"#define FATFS_TIMING_PAGE_PROGRAM_TIME_MS ({timing_pageProgramTimeMs})")
-    lines.append(f"#define FATFS_TIMING_SECTOR_ERASE_TIME_MS ({timing_sectorEraseTimeMs})")
-    lines.append(f"#define FATFS_TIMING_BLOCK_ERASE_TIME_MS ({timing_blockEraseTimeMs})")
+    lines.append(f"#define FATFS_GEOMETRY_PAGE_SIZE    ({geometry_pageSize})")
+    lines.append(f"#define FATFS_GEOMETRY_SECTOR_SIZE  ({geometry_sectorSize})")
+    lines.append(f"#define FATFS_GEOMETRY_BLOCK_SIZE   ({geometry_blockSize})")
+    lines.append(f"#define FATFS_GEOMETRY_BASE_ADDR    ({geometry_baseAddr})")
     lines.append("")
     lines.append(f"#define STORAGE_DRV_FUNC_READ    {read_func}")
     lines.append(f"#define STORAGE_DRV_FUNC_PROG    {write_func}")
     lines.append(f"#define STORAGE_DRV_FUNC_ERASE   {erase_func}")
     lines.append(f"#define STORAGE_DRV_FUNC_SYNC    {sync_func}")
     lines.append("")
+    lines.append(
+    """#define FS_HARDWARE_INIT(error_out) \\                   
+                do { \\                        
+                    error_out = NO_ERROR; \\                                          
+                } while (0)"""
+    )
 
 def _append_littlefs_defines(lines: list, fs: dict) -> None:
     """Append littleFs-specific defines from fs config."""
@@ -265,20 +285,30 @@ def _append_littlefs_defines(lines: list, fs: dict) -> None:
     capacityBytes = int(flash.get("capacityBytes", 0))
 
     geometry = flash.get("geometry", {})
-    geometry_pageSize = int(geometry.get("pageSize", 0))    
-    geometry_sectorSize = int(geometry.get("sectorSize", 0))
-    geometry_blockSize = int(geometry.get("blockSize", 0))
-    geometry_baseAddr = geometry.get("baseAddr", "0x00000000")
-    if isinstance(geometry_baseAddr, int):
-        geometry_baseAddr = f"0x{geometry_baseAddr:08X}"
+    readSize = int(geometry.get("readSize", 0))
+    progSize = int(geometry.get("progSize", 0))
+    blockSize = int(geometry.get("blockSize", 0))
+    blockCount = int(geometry.get("blockCount", 0))
+    cacheSize = int(geometry.get("cacheSize", 0))
+    lookaheadSize = int(geometry.get("lookaheadSize", 0))
+    blockCycles = int(geometry.get("blockCycles", 0))
+    nameMax = int(geometry.get("nameMax", 0))
+    fileMax = int(geometry.get("fileMax", 0))
+    attrMax = int(geometry.get("attrMax", 0))
+    baseAddr = geometry.get("baseAddr", "0x00000000")
+    if isinstance(baseAddr, int):
+        baseAddr = f"0x{baseAddr:08X}"
 
-    timing = flash.get("timing", {})
-    timing_pageProgramTimeMs = int(timing.get("pageProgramTimeMs", 0))
-    timing_sectorEraseTimeMs = int(timing.get("sectorEraseTimeMs", 0))
-    timing_blockEraseTimeMs = int(timing.get("blockEraseTimeMs", 0))
+    os_helper = fs.get("osHelper", {})
+    os_helper_path = os_helper.get("path", "")
+    mutexCreate = os_helper.get("mutexCreate", "NOT_FOUND_FUNC");
+    mutexDelete = os_helper.get("mutexDelete", "NOT_FOUND_FUNC");
+    mutexLock = os_helper.get("mutexLock", "NOT_FOUND_FUNC");
+    mutexUnlock = os_helper.get("mutexUnlock", "NOT_FOUND_FUNC");
 
     hw_func = fs.get("flashHwFunc", {})
     drv_src_path = hw_func.get("drvSrcPath", "")
+    init_func = hw_func.get("initFunc", "NOT_FOUND_FUNC");
     read_func = hw_func.get("readFunc", "NOT_FOUND_FUNC");
     write_func = hw_func.get("writeFunc", "NOT_FOUND_FUNC");
     erase_func = hw_func.get("eraseFunc", "NOT_FOUND_FUNC");
@@ -287,59 +317,95 @@ def _append_littlefs_defines(lines: list, fs: dict) -> None:
     print(f"--------------------------------")
     print(f"\033[96mchipName: \033[0m{chipName}")
     print(f"\033[96mcapacityBytes: \033[0m{capacityBytes}")
-    print(f"\033[96mgeometry_pageSize: \033[0m{geometry_pageSize}")
-    print(f"\033[96mgeometry_sectorSize: \033[0m{geometry_sectorSize}")
-    print(f"\033[96mgeometry_blockSize: \033[0m{geometry_blockSize}")
-    print(f"\033[96mgeometry_baseAddr: \033[0m{geometry_baseAddr}")
-    print(f"\033[96mpageProgramTimeMs: \033[0m{timing_pageProgramTimeMs}")
-    print(f"\033[96msectorEraseTimeMs: \033[0m{timing_sectorEraseTimeMs}")
-    print(f"\033[96mblockEraseTimeMs: \033[0m{timing_blockEraseTimeMs}")
+    print(f"--------------------------------")
+    print(f"\033[96mreadSize: \033[0m{readSize}")
+    print(f"\033[96mprogSize: \033[0m{progSize}")
+    print(f"\033[96mblockSize: \033[0m{blockSize}")
+    print(f"\033[96mblockCount: \033[0m{blockCount}")
+    print(f"\033[96mcacheSize: \033[0m{cacheSize}")
+    print(f"\033[96mlookaheadSize: \033[0m{lookaheadSize}")
+    print(f"\033[96mblockCycles: \033[0m{blockCycles}")
+    print(f"\033[96mnameMax: \033[0m{nameMax}")
+    print(f"\033[96mfileMax: \033[0m{fileMax}")
+    print(f"\033[96mattrMax: \033[0m{attrMax}")
+    print(f"\033[96mbaseAddr: \033[0m{baseAddr}")
+    print(f"--------------------------------")
+    print(f"\033[96mos_helper_path: \033[0m{os_helper_path}")
+    print(f"\033[96mmutexCreate: \033[0m{mutexCreate}")
+    print(f"\033[96mmutexDelete: \033[0m{mutexDelete}")
+    print(f"\033[96mmutexLock: \033[0m{mutexLock}")
+    print(f"\033[96mmutexUnlock: \033[0m{mutexUnlock}")
+    print(f"--------------------------------")
     print(f"\033[96mdrv_src_path: \033[0m{drv_src_path}")
+    print(f"\033[96minit_func: \033[0m{init_func}")
     print(f"\033[96mread_func: \033[0m{read_func}")
     print(f"\033[96mwrite_func: \033[0m{write_func}")
     print(f"\033[96merase_func: \033[0m{erase_func}")
     print(f"\033[96msync_func: \033[0m{sync_func}")    
     print(f"--------------------------------")
-
     lines.append("/****************************** HW DRIVER INCLUDE *******************************/")
-    lines.append(f"#define FATFS_CHIP_NAME \"{chipName}\"")
+    lines.append(f"#define CHIP_NAME \"{chipName}\"")
     lines.append("")
     lines.append(f"#include \"{drv_src_path}\"")
     lines.append("")
     lines.append("/****************************** MACRO DEFINITIONS *******************************/")
+    lines.append(f"#define FS_NAME \"{fs.get('name', '')}\"")
     lines.append(f"#define LITTLEFS_CAPACITY_BYTES     ({capacityBytes})")
     lines.append("")
-    lines.append(f"#define LITTLEFS_GEOMETRY_PAGE_SIZE ({geometry_pageSize})")
-    lines.append(f"#define LITTLEFS_GEOMETRY_SECTOR_SIZE ({geometry_sectorSize})")
-    lines.append(f"#define LITTLEFS_GEOMETRY_BLOCK_SIZE ({geometry_blockSize})")
-    lines.append(f"#define LITTLEFS_GEOMETRY_BASE_ADDR ({geometry_baseAddr})")
+    lines.append(f"#define LITTLEFS_GEOMETRY_READ_SIZE       ({readSize}) //bytes")
+    lines.append(f"#define LITTLEFS_GEOMETRY_PROG_SIZE       ({progSize}) //bytes")
+    lines.append(f"#define LITTLEFS_GEOMETRY_BLOCK_SIZE      ({blockSize}) //bytes")
+    lines.append(f"#define LITTLEFS_GEOMETRY_BLOCK_COUNT     ({blockCount}) //blocks")
+    lines.append(f"#define LITTLEFS_GEOMETRY_CACHE_SIZE      ({cacheSize}) //bytes")
+    lines.append(f"#define LITTLEFS_GEOMETRY_LOOKAHEAD_SIZE  ({lookaheadSize}) //bytes")
+    lines.append(f"#define LITTLEFS_GEOMETRY_BLOCK_CYCLES    ({blockCycles})")
+    lines.append(f"#define LITTLEFS_GEOMETRY_NAME_MAX        ({nameMax}) //bytes")
+    lines.append(f"#define LITTLEFS_GEOMETRY_FILE_MAX        ({fileMax}) //files")
+    lines.append(f"#define LITTLEFS_GEOMETRY_ATTR_MAX        ({attrMax})")
+    lines.append(f"#define LITTLEFS_GEOMETRY_BASE_ADDR       ({baseAddr})")
+    lines.append("")    
+    lines.append(f"#define LITTLEFS_MUTEX_CREATE  {mutexCreate}")
+    lines.append(f"#define LITTLEFS_MUTEX_DELETE  {mutexDelete}")
+    lines.append(f"#define LITTLEFS_MUTEX_LOCK    {mutexLock}")
+    lines.append(f"#define LITTLEFS_MUTEX_UNLOCK  {mutexUnlock}")
     lines.append("")
-    lines.append(f"#define LITTLEFS_TIMING_PAGE_PROGRAM_TIME_MS ({timing_pageProgramTimeMs})")
-    lines.append(f"#define LITTLEFS_TIMING_SECTOR_ERASE_TIME_MS ({timing_sectorEraseTimeMs})")
-    lines.append(f"#define LITTLEFS_TIMING_BLOCK_ERASE_TIME_MS ({timing_blockEraseTimeMs})")
+    lines.append(f"#define STORAGE_DRV_FUNC_INIT  {init_func}")
+    lines.append(f"#define STORAGE_DRV_FUNC_READ  {read_func}")
+    lines.append(f"#define STORAGE_DRV_FUNC_PROG  {write_func}")
+    lines.append(f"#define STORAGE_DRV_FUNC_ERASE {erase_func}")
+    lines.append(f"#define STORAGE_DRV_FUNC_SYNC  {sync_func}")
     lines.append("")
-    lines.append(f"#define STORAGE_DRV_FUNC_READ    {read_func}")
-    lines.append(f"#define STORAGE_DRV_FUNC_PROG    {write_func}")
-    lines.append(f"#define STORAGE_DRV_FUNC_ERASE   {erase_func}")
-    lines.append(f"#define STORAGE_DRV_FUNC_SYNC    {sync_func}")
+
+    lines.append(f"#include \"{os_helper_path}\"")
     lines.append("")
+    lines.append(
+    """#define FS_HARDWARE_INIT(error_out) \\                   
+                do { \\
+                    error_out = ERROR_FAILURE;
+                    //initialize the storage driver                    
+                    if(0 == STORAGE_DRV_FUNC_INIT()) \\
+                    { \\
+                         //just create the mutex for littlefs, fsInit() function  \\
+                        if(TRUE == LITTLEFS_MUTEX_CREATE();) \\
+                        { \\
+                            error_out = NO_ERROR; \\
+                        } \\
+                    } \\                    
+                } while (0)"""
+    )
 
 def _append_flashfs_defines(lines: list, fs: dict) -> None:
     """Append FlashFS-specific defines from fs config."""
 
     flash = fs.get("flash", {})
 
-    cells = flash.get("cells", {})
-    cell_size = int(cells.get("cellSize", 0))
-    name_size = int(cells.get("nameSize", 0))
-    cell_data_size = int(cells.get("cellDataSize", 0))
-
     flash = flash.get("geometry", {})
     base_addr = flash.get("baseAddr", "0x00000000")
     if isinstance(base_addr, int):
         base_addr = f"0x{base_addr:08X}"
-    region_size = int(flash.get("regionSize", 0))
+    total_size = int(flash.get("totalSize", 0))
     erase_block_size = int(flash.get("eraseBlockSize", 0))
+    prog_min_size = int(flash.get("progMinSize", 0))
 
     hw_func = fs.get("flashHwFunc", {})
     drv_src_path = hw_func.get("drvSrcPath", "")
@@ -349,12 +415,11 @@ def _append_flashfs_defines(lines: list, fs: dict) -> None:
     sync_func = hw_func.get("syncFunc", "NOT_FOUND_FUNC");   
 
     print(f"--------------------------------")
-    print(f"\033[96mcell_size: \033[0m{cell_size}")
-    print(f"\033[96mname_size: \033[0m{name_size}")
-    print(f"\033[96mcell_data_size: \033[0m{cell_data_size}")
     print(f"\033[96mbase_addr: \033[0m{base_addr}")
-    print(f"\033[96mregion_size: \033[0m{region_size}")
+    print(f"\033[96mtotal_size: \033[0m{total_size}")
     print(f"\033[96merase_block_size: \033[0m{erase_block_size}")
+    print(f"\033[96mprog_min_size: \033[0m{prog_min_size}")
+    print(f"--------------------------------")
     print(f"\033[96mdrv_src_path: \033[0m{drv_src_path}")
     print(f"\033[96mread_func: \033[0m{read_func}")
     print(f"\033[96mwrite_func: \033[0m{write_func}")
@@ -366,19 +431,41 @@ def _append_flashfs_defines(lines: list, fs: dict) -> None:
     lines.append(f"#include \"{drv_src_path}\"")
     lines.append("")
     lines.append("/****************************** MACRO DEFINITIONS *******************************/")
-    lines.append(f"#define FLASHFS_CELL_SIZE       ({cell_size})")
-    lines.append(f"#define FLASHFS_NAME_SIZE       ({name_size})")
-    lines.append(f"#define FLASHFS_CELL_DATA_SIZE  ({cell_data_size})")
-    lines.append("")
     lines.append(f"#define FLASHFS_BASE_ADDR        ({base_addr})")
-    lines.append(f"#define FLASHFS_REGION_SIZE      ({region_size})")
+    lines.append(f"#define FLASHFS_TOTAL_SIZE       ({total_size})")
     lines.append(f"#define FLASHFS_ERASE_BLOCK_SIZE ({erase_block_size})")
+    lines.append(f"#define FLASHFS_PROG_MIN_SIZE    ({prog_min_size})")
     lines.append("")
     lines.append(f"#define STORAGE_DRV_FUNC_READ    {read_func}")
     lines.append(f"#define STORAGE_DRV_FUNC_PROG    {write_func}")
     lines.append(f"#define STORAGE_DRV_FUNC_ERASE   {erase_func}")
     lines.append(f"#define STORAGE_DRV_FUNC_SYNC    {sync_func}")
     lines.append("")
+
+    lines.append(
+        """#define FS_HARDWARE_INIT(error_out) \\                   
+                    do { \\                        
+                        FlashFsOps ops = { \\
+                            .read = STORAGE_DRV_FUNC_READ, \\
+                            .prog = STORAGE_DRV_FUNC_PROG, \\
+                            .erase = STORAGE_DRV_FUNC_ERASE, \\
+                            .sync = STORAGE_DRV_FUNC_SYNC \\
+                        }; \\
+                        
+                        FlashFsGeom cfg = { \\
+                            .baseAddr = FLASHFS_BASE_ADDR, \\
+                            .totalSize = FLASHFS_TOTAL_SIZE, \\
+                            .eraseBlockSize = FLASHFS_ERASE_BLOCK_SIZE, \\
+                            .progMinSize = FLASHFS_PROG_MIN_SIZE \\
+                        }; \\
+                        
+                        error_out = flashFsConfigure(&ops, &cfg); \\
+                        if(NO_ERROR == error_out) \\
+                        { \\
+                            error_out = flashFsFormat(); \\ 
+                        }\\
+                    } while (0)"""
+    )
 
 def _append_pc_simulator_defines(lines: list, fs: dict) -> None:
     """Append PC Simulator-specific defines from fs config."""
@@ -392,6 +479,12 @@ def _append_pc_simulator_defines(lines: list, fs: dict) -> None:
     lines.append("/****************************** MACRO DEFINITIONS *******************************/")
     lines.append(f"#define PC_SIMULATOR_ROOT_PATH \"{root_path}\"")
     lines.append("")
+    lines.append(
+    """#define FS_HARDWARE_INIT(error_out) \\                   
+                do { \\                        
+                    error_out = NO_ERROR; \\                                          
+                } while (0)"""
+    )
 
 def generate_config_h(cus_fs: Path) -> str:
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

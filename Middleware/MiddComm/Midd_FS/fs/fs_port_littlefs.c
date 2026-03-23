@@ -14,14 +14,6 @@
 //littleFS
 #include "lfs.h"
 
-// Storage block-device callbacks (implemented in Storage service)
-int Storage_FlashRead(const struct lfs_config *c, lfs_block_t block,
-   lfs_off_t off, void *buffer, lfs_size_t size);
-int Storage_FlashProg(const struct lfs_config *c, lfs_block_t block,
-   lfs_off_t off, const void *buffer, lfs_size_t size);
-int Storage_FlashErase(const struct lfs_config *c, lfs_block_t block);
-int Storage_FlashSync(const struct lfs_config *c);
-
 // Internal state
 static lfs_t g_lfs;
 static struct lfs_config g_lfsCfg;
@@ -66,57 +58,31 @@ static void fsSetUnknownModified(DateTime *dt)
 error_t fsInit(void)
 {
    int err;
+   
 
    // Configure block-device callbacks (all geometry fields must be provided
    // by the application through fs_port_config.h or by editing below)
-   osMemset(&g_lfsCfg, 0, sizeof(g_lfsCfg));
+   osMemset(&lfsCfg, 0, sizeof(lfsCfg));
 
-   g_lfsCfg.read  = Storage_FlashRead;
-   g_lfsCfg.prog  = Storage_FlashProg;
-   g_lfsCfg.erase = Storage_FlashErase;
-   g_lfsCfg.sync  = Storage_FlashSync;
+   g_lfsCfg.read_size = LITTLEFS_GEOMETRY_READ_SIZE;
+   g_lfsCfg.prog_size = LITTLEFS_GEOMETRY_PROG_SIZE;
+   g_lfsCfg.block_size = LITTLEFS_GEOMETRY_BLOCK_SIZE;
+   g_lfsCfg.block_count = LITTLEFS_GEOMETRY_BLOCK_COUNT;
+   g_lfsCfg.cache_size = LITTLEFS_GEOMETRY_CACHE_SIZE;
+   g_lfsCfg.lookahead_size = LITTLEFS_GEOMETRY_LOOKAHEAD_SIZE;
+   g_lfsCfg.block_cycles = LITTLEFS_GEOMETRY_BLOCK_CYCLES;
+   g_lfsCfg.name_max = LITTLEFS_GEOMETRY_NAME_MAX;
+   g_lfsCfg.file_max = LITTLEFS_GEOMETRY_FILE_MAX;
+   g_lfsCfg.attr_max = LITTLEFS_GEOMETRY_ATTR_MAX;
+   g_lfsCfg.base_addr = LITTLEFS_GEOMETRY_BASE_ADDR;
+   
+   g_lfsCfg.mutex_lock = LITTLEFS_MUTEX_LOCK;
+   g_lfsCfg.mutex_unlock = LITTLEFS_MUTEX_UNLOCK;
 
-#ifndef LFS_READ_SIZE
-   g_lfsCfg.read_size = 16;
-#else
-   g_lfsCfg.read_size = LFS_READ_SIZE;
-#endif
-
-#ifndef LFS_PROG_SIZE
-   g_lfsCfg.prog_size = 16;
-#else
-   g_lfsCfg.prog_size = LFS_PROG_SIZE;
-#endif
-
-#ifndef LFS_BLOCK_SIZE
-   g_lfsCfg.block_size = 4096;
-#else
-   g_lfsCfg.block_size = LFS_BLOCK_SIZE;
-#endif
-
-#ifndef LFS_BLOCK_COUNT
-   g_lfsCfg.block_count = 128;
-#else
-   g_lfsCfg.block_count = LFS_BLOCK_COUNT;
-#endif
-
-#ifndef LFS_CACHE_SIZE
-   g_lfsCfg.cache_size = 64;
-#else
-   g_lfsCfg.cache_size = LFS_CACHE_SIZE;
-#endif
-
-#ifndef LFS_LOOKAHEAD_SIZE
-   g_lfsCfg.lookahead_size = 64;
-#else
-   g_lfsCfg.lookahead_size = LFS_LOOKAHEAD_SIZE;
-#endif
-
-#ifndef LFS_BLOCK_CYCLES
-   g_lfsCfg.block_cycles = 500;
-#else
-   g_lfsCfg.block_cycles = LFS_BLOCK_CYCLES;
-#endif
+   g_lfsCfg.read = STORAGE_DRV_FUNC_READ;
+   g_lfsCfg.prog = STORAGE_DRV_FUNC_PROG;
+   g_lfsCfg.erase = STORAGE_DRV_FUNC_ERASE;
+   g_lfsCfg.sync = STORAGE_DRV_FUNC_SYNC;
 
    // Mount the filesystem
    err = lfs_mount(&g_lfs, &g_lfsCfg);
