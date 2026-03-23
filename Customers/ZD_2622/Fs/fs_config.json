@@ -4,7 +4,7 @@
     "releaseDate": "2026-03-20",
     "store": {
       "useStore": true,
-      "activeFsName": "fatfs",
+      "activeFsName": "flashlink",
       "fsLib": {
         "flashlink": {
           "use": true,          
@@ -43,11 +43,6 @@
               "pageSize": 256,
               "sectorSize": 4096,
               "blockSize": 65536
-            },
-            "timing": {
-              "pageProgramTimeMs": 3,
-              "sectorEraseTimeMs": 50,
-              "blockEraseTimeMs": 150
             }
           },
           "flashHwFunc": {
@@ -65,42 +60,48 @@
           "flash": {
             "type": "nor",
             "interface": "spi",
-            "model": "W25Q128JV",
+            "chipName": "W25Q128JV",
             "capacityBytes": 16777216,
             "geometry": {
-              "pageSize": 256,
-              "sectorSize": 4096,
-              "blockSize": 65536
-            },
-            "timing": {
-              "pageProgramTimeMs": 3,
-              "sectorEraseTimeMs": 50,
-              "blockEraseTimeMs": 150
+              "readSize": 16,
+              "progSize": 16,
+              "blockSize": 4096,
+              "blockCount": 128,              
+              "cacheSize": 64,
+              "lookaheadSize": 64,
+              "blockCycles": 500,
+              "nameMax": 64,
+              "fileMax": 524288,
+              "attrMax": 8,
+              "baseAddr": "0x080A0000"   
             }
+          },
+          "osHelper": {
+            "path": "Middleware/MiddComm/Midd_FS/fs/fs_littlefs_helper_func.h",
+            "mutexCreate": "fsHelperMutexCreate",
+            "mutexDelete": "fsHelperMutexDelete",
+            "mutexLock": "fsHelperMutexLock",
+            "mutexUnlock": "fsHelperMutexUnlock"
           },
           "flashHwFunc": {
             "_comment": "User must implement these functions to read/prog/erase/sync the flash region used for FlashFS.",
-            "drvSrcPath": "Ext_spi_flash_W25Qxx_driver.h",
-            "readFunc": "extFlashW25QxxRead",
-            "writeFunc": "extFlashW25QxxProg",
-            "eraseFunc": "extFlashW25QxxErase",
-            "syncFunc": "extFlashW25QxxSync"
+            "drvSrcPath": "Middleware/MiddComm/Midd_FS/drivers/StorageFlashPort_littlefs.h",
+            "initFunc": "Storage_Init",
+            "readFunc": "Storage_FlashRead",
+            "writeFunc": "Storage_FlashProg",
+            "eraseFunc": "Storage_FlashErase",
+            "syncFunc": "Storage_FlashSync"
           }            
         },
         "flashfs": {
           "use": false,
           "name": "flashfs",
-          "flash": {      
-            "cells":{
-                "cellSize": 1024,
-                "nameSize": 64,
-                "cellDataSize": 956
-            },          
-            "flash": {
+          "flash": {                
+            "geometry": {
               "baseAddr": "0x080A0000",
-              "regionSize": 131072,
-              "cellCount": 0,
-              "eraseBlockSize": 0            
+              "totalSize": 131072,              
+              "eraseBlockSize": 4096,
+              "progMinSize": 1024            
             }
           },
           "flashHwFunc": {
@@ -114,7 +115,7 @@
         "pc_simulator": {
           "use": false,
           "name": "pc_simulator",
-          "rootPath": "/"
+          "rootPath": "../DevFs"
         }
       }
     }

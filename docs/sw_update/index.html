@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SW Update — Aviora</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="index.html" class="active">SW Update</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">SW Update</div>
+      <nav class="sidebar-nav">
+        <a href="index.html" class="active">Overview</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+  <section class="hero">
+    <div class="hero-card">
+      <h1>SW Update</h1>
+      <p>
+        OTA and Ethernet-based firmware updates via FTP. Downloads remote files to local storage.
+      </p>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="grid">
+      <article class="card col-8">
+        <h2>Overview</h2>
+        <p>
+          SW Update initiates an FTP download task. Server, credentials, remote path, and local path are passed at init. Result is shared via data bus.
+        </p>
+      </article>
+
+      <article class="card col-4">
+        <h2>API</h2>
+        <p><code>AppSwUpdateInit(serverIp, port, user, pass, remotePath, localPath)</code></p>
+      </article>
+    </div>
+  </main>
+
+  <footer class="container">
+    <p><a href="../index.html">← Back to Aviora</a></p>
+  </footer>
+    </div>
+  </div>
+</body>
+</html>

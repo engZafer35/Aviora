@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aviora FS — cells, geometry, flashHwFunc Flexibility</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
+  <script defer src="../app.js"></script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Home</a>
+        <a href="index.html" class="active">File System</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">File System</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="generator.html">Generator</a>
+        <a href="implementations.html">FS Ports</a>
+        <a href="flexibility.html" class="active">Flexibility</a>
+        <a href="readme.html">README</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+  <section class="hero">
+    <div class="hero-card">
+      <h1>cells · geometry · flashHwFunc — Maximum Flexibility</h1>
+      <p>
+        These three JSON blocks let the same file system code work with different hardware and customer requirements.
+        Application code stays unchanged; only configuration is updated.
+      </p>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="grid">
+      <article class="card col-12">
+        <h2>General Model</h2>
+        <div class="diagram-wrap">
+          <div class="diagram-head">JSON → Macros → FS_HARDWARE_INIT</div>
+          <pre class="mermaid">flowchart LR
+  CFG[fs_config.json] --> CELLS[cells]
+  CFG --> GEO[geometry]
+  CFG --> HW[flashHwFunc]
+  CELLS --> MAC1["FLASHLINK_CELL macros"]
+  GEO --> MAC2[BASE/REGION/ERASE]
+  HW --> MAC3["STORAGE_DRV_FUNC + driver"]
+  MAC1 --> INIT[FS_HARDWARE_INIT]
+  MAC2 --> INIT
+  MAC3 --> INIT</pre>
+        </div>
+      </article>
+
+      <article class="card col-4">
+        <h2>cells</h2>
+        <p><strong>Logical storage slicing.</strong> For FlashLink: cell size, file name field, and data capacity.</p>
+        <pre class="code-block">"cells": {
+  "cellSize": 1024,
+  "nameSize": 64,
+  "cellDataSize": 956,
+  "cellCount": 10
+}</pre>
+        <p class="small">→ FLASHLINK_CELL_SIZE, FLASHLINK_NAME_SIZE, FLASHLINK_CELL_DATA_SIZE, FLASHLINK_CELL_COUNT</p>
+      </article>
+
+      <article class="card col-4">
+        <h2>geometry</h2>
+        <p><strong>Physical memory region.</strong> Base address, total size, erase/program units.</p>
+        <pre class="code-block">"geometry": {
+  "baseAddr": "0x080A0000",
+  "regionSize": 131072,
+  "eraseBlockSize": 4096
+}</pre>
+        <p class="small">→ FLASHLINK_BASE_ADDR, FLASHLINK_REGION_SIZE, FLASHLINK_ERASE_BLOCK_SIZE</p>
+      </article>
+
+      <article class="card col-4">
+        <h2>flashHwFunc</h2>
+        <p><strong>Hardware callback injection.</strong> read/prog/erase/sync function names and driver header path.</p>
+        <pre class="code-block">"flashHwFunc": {
+  "drvSrcPath": "Driver/.../McuInternalFlashDrv_Stm32f407.h",
+  "readFunc": "internalStm32f407FlashRead",
+  "writeFunc": "internalStm32f407FlashProg",
+  "eraseFunc": "internalStm32f407FlashErase",
+  "syncFunc": "internalStm32f407FlashSync"
+}</pre>
+        <p class="small">→ STORAGE_DRV_FUNC_READ, *_PROG, *_ERASE, *_SYNC</p>
+      </article>
+
+      <article class="card col-12">
+        <h2>Same Code, Different Hardware</h2>
+        <div class="diagram-wrap">
+          <div class="diagram-head">Hardware independence via flashHwFunc</div>
+          <pre class="mermaid">flowchart TD
+  subgraph SameCode["Same FlashLink Code"]
+    FS[fs_port_flashLink.c]
+  end
+
+  subgraph HW1["STM32F407 Internal Flash"]
+    D1[McuInternalFlashDrv_Stm32f407]
+  end
+
+  subgraph HW2["W25Q128 External SPI"]
+    D2[Ext_spi_flash_W25Qxx_driver]
+  end
+
+  JSON[fs_config.json] -->|flashHwFunc A| D1
+  JSON -->|flashHwFunc B| D2
+  FS --> D1
+  FS --> D2</pre>
+        </div>
+        <p class="note">
+          Only drvSrcPath and function names in JSON change. FS code stays the same.
+        </p>
+      </article>
+    </div>
+  </main>
+
+  <footer class="container">
+    <p>See <a href="implementations.html">FS Ports</a> for FlashLink and FlashFS details.</p>
+  </footer>
+    </div>
+  </div>
+</body>
+</html>

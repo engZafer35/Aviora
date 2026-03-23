@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aviora FS Docs - Generator</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
+  <script defer src="../app.js"></script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Home</a>
+        <a href="index.html" class="active">File System</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">File System</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="generator.html" class="active">Generator</a>
+        <a href="implementations.html">FS Ports</a>
+        <a href="flexibility.html">Flexibility</a>
+        <a href="readme.html">README</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+  <section class="hero">
+    <div class="hero-card">
+      <h1>Generator Script — Detailed Explanation</h1>
+      <p>
+        <code>Customers/generate_fs_port_config.py</code> converts customer JSON configuration into build-ready C headers and macros.
+        Invoked via command line; results appear in <code>cus_fs_port_config.h</code> and <code>FS_Port_Config.h</code>.
+      </p>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="grid">
+      <article class="card col-6">
+        <h2>Input and output</h2>
+        <h3>Input</h3>
+        <ul>
+          <li>`Customers/NAME/Fs/fs_config.json`</li>
+          <li>`store.activeFsName` and selected `fsLib` branch</li>
+        </ul>
+        <h3>Output</h3>
+        <ul>
+          <li>`Customers/NAME/Fs/cus_fs_port_config.h`</li>
+          <li>`Customers/FS_Port_Config.h`</li>
+        </ul>
+      </article>
+
+      <article class="card col-6">
+        <h2>Selection logic</h2>
+        <ul>
+          <li>Map fs name to `USE_*` macro</li>
+          <li>Emit selected `fs_port_*.h` include block</li>
+          <li>Emit FS specific macros from JSON values</li>
+          <li>Emit `FS_HARDWARE_INIT(error_out)`</li>
+        </ul>
+        <p class="note">
+          The generated header is the bridge between static app API and dynamic customer configuration.
+        </p>
+      </article>
+
+      <article class="card col-12">
+        <h2>Generator pipeline animation</h2>
+        <img class="gif" src="../assets/gifs/generator_flow.gif" alt="Generator flow" />
+      </article>
+
+      <article class="card col-12">
+        <h2>Internal call graph</h2>
+        <div class="diagram-wrap">
+          <div class="diagram-head">Mermaid call graph</div>
+          <pre class="mermaid">flowchart TD
+  main["main()"] --> read["read fs_config.json"]
+  read --> map["map activeFsName to USE macro"]
+  map --> branch{activeFs}
+  branch --> FL[_append_flashlink_defines]
+  branch --> LF[_append_littlefs_defines]
+  branch --> FF[_append_flashfs_defines]
+  FL --> write1["write cus_fs_port_config.h"]
+  LF --> write1
+  FF --> write1
+  write1 --> write2["write FS_Port_Config.h"]</pre>
+          <pre class="fallback">[Fallback call graph]
+main
+  -> read fs_config.json
+  -> map activeFsName to USE macro
+  -> branch by active fs
+     -> _append_flashlink_defines
+     -> _append_littlefs_defines
+     -> _append_flashfs_defines
+  -> write cus_fs_port_config.h
+  -> write Customers/FS_Port_Config.h</pre>
+        </div>
+      </article>
+
+      <article class="card col-6">
+        <h2>Example: <code>--customer ZD_2622</code> + flashlink</h2>
+        <p>
+          When <code>.\generate_fs_port_config.py --customer ZD_2622</code> is run with <code>activeFsName: "flashlink"</code>:
+          Console shows <em>SELECTED FS NAME: flashlink</em>; <code>cus_fs_port_config.h</code> is generated with USE_FLASHLINK, flashlink port, HW driver include, and FS_HARDWARE_INIT macro.
+        </p>
+        <img class="gif" src="../assets/gifs/generator_flashlink_ZD_2622.gif" alt="ZD_2622 flashlink example" />
+      </article>
+
+      <article class="card col-6">
+        <h2>Example: <code>activeFsName: "littlefs"</code></h2>
+        <p>
+          With <code>activeFsName</code> littlefs, console shows <em>SELECTED FS NAME: littlefs</em>; output includes USE_LITTLEFS, LITTLEFS_GEOMETRY_* macros, fs_littlefs_helper_func include, and FS_HARDWARE_INIT with Storage init + mutex create.
+        </p>
+        <img class="gif" src="../assets/gifs/generator_littlefs_simulated.gif" alt="littlefs scenario" />
+      </article>
+
+      <article class="card col-12">
+        <h2>Command Summary</h2>
+        <pre class="code-block">python Customers/generate_fs_port_config.py --customer ZD_2622</pre>
+        <p><strong>Input:</strong> <code>Customers/ZD_2622/Fs/fs_config.json</code></p>
+        <p><strong>Output:</strong> <code>Customers/ZD_2622/Fs/cus_fs_port_config.h</code>, <code>Customers/FS_Port_Config.h</code></p>
+      </article>
+    </div>
+  </main>
+    </div>
+  </div>
+</body>
+</html>
+

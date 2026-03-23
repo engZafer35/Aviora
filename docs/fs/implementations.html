@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aviora FS Docs — FS Port Implementations</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
+  <script defer src="../app.js"></script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Home</a>
+        <a href="index.html" class="active">File System</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">File System</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="generator.html">Generator</a>
+        <a href="implementations.html" class="active">FS Ports</a>
+        <a href="flexibility.html">Flexibility</a>
+        <a href="readme.html">README</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+  <section class="hero">
+    <div class="hero-card">
+      <h1>File System Port Implementations</h1>
+      <p>
+        FlashLink, FlashFS and littlefs integration — and the flexibility provided by <code>cells</code>, <code>geometry</code>, and <code>flashHwFunc</code>.
+      </p>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="grid">
+      <article class="card col-6">
+        <h2>FlashLink — Linked-Cell Storage</h2>
+        <p>
+          Lightweight linked-cell model running in MCU internal flash. Ideal for customers with small storage needs; no external flash required.
+        </p>
+        <ul>
+          <li>File data stored across multiple linked cells</li>
+          <li>Header: name (64B), nextIndex, dataLen</li>
+          <li>Delete: flash-safe tombstone-style header update</li>
+        </ul>
+        <img class="gif" src="../assets/gifs/flashlink_layout.gif" alt="FlashLink cell layout" />
+      </article>
+
+      <article class="card col-6">
+        <h2>FlashFS — Append-Only Log</h2>
+        <p>
+          Tiny append-only log backend. Good for simple write patterns with controlled format cycles.
+        </p>
+        <ul>
+          <li>Superblock plus append-only records</li>
+          <li>FILE, DELETE, RENAME records</li>
+          <li>Index rebuilt at mount time</li>
+        </ul>
+        <img class="gif" src="../assets/gifs/flashfs_log_layout.gif" alt="FlashFS log layout" />
+      </article>
+
+      <article class="card col-12">
+        <h2>Flexibility Points: cells, geometry, flashHwFunc</h2>
+        <p>
+          These three blocks enable customer adaptation without editing app-level code.
+        </p>
+        <h3>cells</h3>
+        <p>
+          Controls logical storage granularity and file split behavior for flashlink-style backends.
+        </p>
+        <h3>geometry</h3>
+        <p>
+          Controls physical memory region, size, and erase/program units.
+        </p>
+        <h3>flashHwFunc</h3>
+        <p>
+          Injects platform-specific read/prog/erase/sync callbacks and driver include path. Main hardware portability mechanism.
+        </p>
+        <div class="diagram-wrap">
+          <div class="diagram-head">Mermaid flexibility model</div>
+          <pre class="mermaid">flowchart LR
+  CFG[fs_config.json] --> CELLS[cells]
+  CFG --> GEO[geometry]
+  CFG --> HW[flashHwFunc]
+  CELLS --> MAC1["FLASHLINK_CELL macros"]
+  GEO --> MAC2["BASE/REGION/ERASE macros"]
+  HW --> MAC3["STORAGE_DRV_FUNC + driver"]
+  MAC1 --> INIT[FS_HARDWARE_INIT]
+  MAC2 --> INIT
+  MAC3 --> INIT</pre>
+          <pre class="fallback">[Fallback flexibility model]
+fs_config.json
+  -> cells      -> cell related macros
+  -> geometry   -> base and size macros
+  -> flashHwFunc -> callback macros and driver include
+all -> FS_HARDWARE_INIT()</pre>
+        </div>
+      </article>
+
+      <article class="card col-8">
+        <h2>fs_littlefs_helper_func — Why It Exists</h2>
+        <p>
+          littlefs expects <strong>mutex lock/unlock</strong> callbacks for thread-safe access. These depend on the RTOS or bare-metal environment and are centralized in the <code>fs_littlefs_helper_func</code> module.
+        </p>
+        <ul>
+          <li><code>fsHelperMutexCreate()</code> — Suitable for static mutex before kernel start</li>
+          <li><code>fsHelperMutexLock/Unlock</code> — Called from lfs_config; critical section enter/exit</li>
+          <li><code>osHelper</code> JSON block injects path and function names</li>
+        </ul>
+        <div class="diagram-wrap">
+          <div class="diagram-head">littlefs → mutex → RTOS</div>
+          <pre class="mermaid">flowchart LR
+  A[fs_port_littlefs] --> B[lfs_config]
+  B --> C[mutex_lock]
+  B --> D[mutex_unlock]
+  C --> E[fsHelperMutexLock]
+  D --> F[fsHelperMutexUnlock]
+  E --> G["OsMutex/RTOS"]
+  F --> G</pre>
+        </div>
+      </article>
+
+      <article class="card col-4">
+        <h2>Integration Note</h2>
+        <p>
+          <code>StorageFlashPort_littlefs.c</code> may be a stub in the current repo. Product branches should replace it with real hardware I/O callbacks.
+        </p>
+      </article>
+    </div>
+  </main>
+    </div>
+  </div>
+</body>
+</html>

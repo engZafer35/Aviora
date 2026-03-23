@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Network — Aviora</title>
+  <link rel="stylesheet" href="../styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="index.html" class="active">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Network</div>
+      <nav class="sidebar-nav">
+        <a href="index.html" class="active">Overview</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+  <section class="hero">
+    <div class="hero-card">
+      <h1>Network Service</h1>
+      <p>
+        Manages GSM and Ethernet interfaces. PPP, lwIP. Multi-interface support with config-driven initialization.
+      </p>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="grid">
+      <article class="card col-8">
+        <h2>Overview</h2>
+        <p>
+          Network Service initializes and starts GSM (PPP) and Ethernet (lwIP) interfaces. Configuration is per-customer; interfaces can be enabled/disabled.
+        </p>
+        <ul>
+          <li>GSM: PPP over UART, modem AT commands</li>
+          <li>Ethernet: ENC28J60 (SPI), lwIP stack</li>
+        </ul>
+      </article>
+
+      <article class="card col-4">
+        <h2>API</h2>
+        <p><code>AppNetworkService_Start()</code></p>
+      </article>
+    </div>
+  </main>
+
+  <footer class="container">
+    <p><a href="../index.html">← Back to Aviora</a></p>
+  </footer>
+    </div>
+  </div>
+</body>
+</html>
