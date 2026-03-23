@@ -23,30 +23,16 @@
 
 #define ALL_LOG_FILES   (0xFFFFFFFF)
 /*******************************TYPE DEFINITIONS ******************************/
-/** 
- * Logger interface function pointers 
- */
-typedef void *(*OpenLog) (const char *path, unsigned int mode);
-typedef RETURN_STATUS (*WriteLog) (const void *file, const char *data, size_t length);
-typedef RETURN_STATUS (*ReadLog)  (const void *file, char *data, size_t size, size_t *outLength);
-typedef void (*CloseLogFile)(void *file);
-
 /**
  * Service logger interface
  */
 typedef struct
 {
     U32 fileSize;     /* One service log file size, byte */
-    U32 totalLogSize; /* Total service log area size, byte */
-
-    OpenLog openFunc;
-    WriteLog writeFunc;
-    ReadLog readFunc;
-    CloseLogFile closeFunc;
-    
+    U32 totalLogSize; /* Total service log area size, byte */   
     const char *logPath;
 
-}LogRecInterface;
+}LogRecConf_t;
 
 typedef enum
 {
@@ -71,7 +57,7 @@ RETURN_STATUS appLogRecInit(void);
  * @param loggerID Pointer to store the assigned logger ID
  * @return SUCCESS on success, FAILURE on failure
  */
-RETURN_STATUS appLogRecRegister(LogRecInterface *logger, const char *srvName, S32 *loggerID);
+RETURN_STATUS appLogRecRegister(LogRecConf_t *logger, const char *srvName, S32 *loggerID);
 
 /**
  * @brief Unregister a logger service
