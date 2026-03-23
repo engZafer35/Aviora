@@ -70,7 +70,7 @@ typedef struct
    uint32_t baseAddr;        // base address of flash region used for FlashFS
    uint32_t totalSize;       // total size of flash region used for FlashFS
    uint32_t eraseBlockSize;  // minimum erasable block size (e.g. sector size)
-   uint32_t progGranularity; // minimum write size and alignment (e.g. page size)
+   uint32_t progMinSize; // minimum write size and alignment (e.g. page size)
 } FlashFsGeom;
 
 /**

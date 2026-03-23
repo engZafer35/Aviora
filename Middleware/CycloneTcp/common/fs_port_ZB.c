@@ -241,7 +241,7 @@ static error_t zbConfScan(void)
       if(hdr.seqNo > seqMax)
          seqMax = hdr.seqNo;
 
-      off += sizeof(ZbConfHeader) + zbAlignUp(hdr.length, zbCtx.layout.progGranularity);
+      off += sizeof(ZbConfHeader) + zbAlignUp(hdr.length, zbCtx.layout.progMinSize);
       scanCount++;
    }
 
@@ -277,11 +277,11 @@ error_t zbConfWrite(const void *conf, size_t len)
       if(cur.length == 0 || off + sizeof(ZbConfHeader) + cur.length > end)
          break;
 
-      off += sizeof(ZbConfHeader) + zbAlignUp(cur.length, zbCtx.layout.progGranularity);
+      off += sizeof(ZbConfHeader) + zbAlignUp(cur.length, zbCtx.layout.progMinSize);
    }
 
    needed = (uint32_t) len;
-   needed = sizeof(ZbConfHeader) + zbAlignUp(needed, zbCtx.layout.progGranularity);
+   needed = sizeof(ZbConfHeader) + zbAlignUp(needed, zbCtx.layout.progMinSize);
 
    if(off + needed > end)
    {
@@ -345,7 +345,7 @@ error_t zbConfRead(void *buf, size_t bufLen, size_t *outLen)
          found = TRUE;
       }
 
-      off += sizeof(ZbConfHeader) + zbAlignUp(hdr.length, zbCtx.layout.progGranularity);
+      off += sizeof(ZbConfHeader) + zbAlignUp(hdr.length, zbCtx.layout.progMinSize);
    }
 
    if(!found)

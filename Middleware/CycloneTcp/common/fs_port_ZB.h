@@ -53,7 +53,7 @@ typedef struct
    uint32_t dataSize;
 
    uint32_t eraseBlockSize;
-   uint32_t progGranularity;
+   uint32_t progMinSize;
 } ZbFlashLayout;
 
 error_t zbInit(const ZbFlashOps *ops, const ZbFlashLayout *layout);

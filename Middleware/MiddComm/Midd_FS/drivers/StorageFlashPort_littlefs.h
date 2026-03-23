@@ -15,6 +15,13 @@
 extern "C" {
 #endif
 
+/**
+ * @brief Initialize the storage driver
+ * @return The function returns 0 if the storage driver was successfully
+ *   initialized. Otherwise, an error code is returned
+*/
+int Storage_Init(void);
+
 int Storage_FlashRead(const struct lfs_config *c, lfs_block_t block,
    lfs_off_t off, void *buffer, lfs_size_t size);
 
