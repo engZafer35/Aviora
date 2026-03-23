@@ -191,10 +191,6 @@ flowchart TD
   G --> H
 ```
 
-### Visual Flow (Include Chain GIF)
-
-Include chain animation is in `docs/assets/gifs/include_chain.gif`.
-
 ---
 
 ## 4. Tested Units — Development Cycle
@@ -549,7 +545,6 @@ Content of `cus_fs_port_config.h`:
 
 ## 10. Visual Assets
 
-All GIFs are in `docs/assets/gifs/`:
 
 | File | Content |
 |------|---------|
@@ -559,12 +554,6 @@ All GIFs are in `docs/assets/gifs/`:
 | `flashfs_log_layout.gif` | FlashFS superblock and log records |
 | `generator_flashlink_ZD_2622.gif` | Generator output for ZD_2622 + flashlink |
 | `generator_littlefs_simulated.gif` | littlefs scenario simulation |
-
-To generate GIFs:
-
-```bash
-python docs/scripts/generate_gifs.py
-```
 
 ---
 
