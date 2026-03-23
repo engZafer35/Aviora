@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aviora FS Framework — Modular File System Platform</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: true, theme: "dark" });
+    }
+  </script>
+  <script defer src="../app.js"></script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="index.html" class="active">File System</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">File System</div>
+      <nav class="sidebar-nav">
+        <a href="index.html" class="active">Overview</a>
+        <a href="architecture.html">Architecture</a>
+        <a href="generator.html">Generator</a>
+        <a href="implementations.html">FS Ports</a>
+        <a href="flexibility.html">Flexibility</a>
+        <a href="readme.html">README</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+  <section class="hero">
+    <div class="hero-card">
+      <h1>Modular File System Platform</h1>
+      <p>
+        Switch file systems per customer and platform <strong>without #if/#else</strong>.
+        Single stable API, JSON-based configuration, automatic code generation. Developers always use the same interface; backend changes stay transparent.
+      </p>
+      <div class="tag-row">
+        <span class="tag highlight">Zero #if/#else</span>
+        <span class="tag">Single Include</span>
+        <span class="tag">JSON Config</span>
+        <span class="tag">Code Generation</span>
+      </div>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="grid">
+      <article class="card col-8">
+        <h2>Why This Platform Is Strong</h2>
+        <p>
+          The design removes customer-specific <code>#if/#else</code> branches from application code.
+          File system selection and parameters are configured via JSON; a generator script produces headers before build.
+        </p>
+        <ul>
+          <li><strong>Single API contract</strong> — Developers always use the same <code>fs*</code> functions</li>
+          <li><strong>Configuration-driven</strong> — Customer selects backend via <code>activeFsName</code></li>
+          <li><strong>Tested units</strong> — New FS is developed and tested externally; added via config</li>
+          <li><strong>Hardware independence</strong> — read/prog/erase/sync callbacks injected from JSON via <code>flashHwFunc</code></li>
+        </ul>
+        <div class="tag-row">
+          <span class="tag">Stable API</span>
+          <span class="tag">Hardware Injection</span>
+          <span class="tag">Modular</span>
+        </div>
+      </article>
+
+      <article class="card col-4">
+        <h2>Quick Startup Flow</h2>
+        <ul>
+          <li><code>#include "Midd_FS/fs_port.h"</code></li>
+          <li><code>FS_HARDWARE_INIT(error)</code></li>
+          <li><code>fsInit()</code></li>
+          <li><code>fsOpenFile</code>, <code>fsReadFile</code>, <code>fsWriteFile</code></li>
+        </ul>
+        <p class="note">
+          The application is isolated from backend changes. Customer and platform details are pushed into generated headers.
+        </p>
+      </article>
+
+      <article class="card col-6">
+        <h2>Include Chain Animation</h2>
+        <p>
+          A single include resolves automatically to customer-specific headers and the active FS port.
+        </p>
+        <img class="gif" src="../assets/gifs/include_chain.gif" alt="Include chain flow" />
+      </article>
+
+      <article class="card col-6">
+        <h2>Generator Pipeline Animation</h2>
+        <p>
+          From JSON input to generated headers — the generator script pipeline.
+        </p>
+        <img class="gif" src="../assets/gifs/generator_flow.gif" alt="Generator flow" />
+      </article>
+
+      <article class="card col-12">
+        <h2>System Flow Diagram</h2>
+        <div class="diagram-wrap">
+          <div class="diagram-head">General Flow (Mermaid)</div>
+          <pre class="mermaid">flowchart LR
+  J[fs_config.json] --> G[generate_fs_port_config.py]
+  G --> C[cus_fs_port_config.h]
+  G --> F[FS_Port_Config.h]
+  A[fs_port.h] --> F
+  F --> C
+  C --> H["fs_port_xx.h"]
+  H --> I[FS_HARDWARE_INIT]
+  I --> M[fsInit]
+  M --> O["fs API"]</pre>
+        </div>
+      </article>
+
+      <article class="card col-12">
+        <h2>Benefits Summary</h2>
+        <div class="benefit-grid">
+          <div class="benefit-item">
+            <span class="benefit-icon">🔒</span>
+            <h3>Immutable Application Code</h3>
+            <p>Same source compiles and runs regardless of backend.</p>
+          </div>
+          <div class="benefit-item">
+            <span class="benefit-icon">⚙️</span>
+            <h3>Fast Customer Adaptation</h3>
+            <p>Change activeFsName, run generator — new build ready.</p>
+          </div>
+          <div class="benefit-item">
+            <span class="benefit-icon">🧪</span>
+            <h3>Independent Test Cycle</h3>
+            <p>New FS unit developed in isolation; added via config after test.</p>
+          </div>
+        </div>
+      </article>
+    </div>
+  </main>
+
+  <footer class="container">
+    <p>See other pages for detailed architecture, generator internals, and FlashLink/FlashFS/littlefs deep dive.</p>
+  </footer>
+    </div>
+  </div>
+</body>
+</html>

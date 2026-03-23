@@ -29,7 +29,7 @@
 #include "AppProtocol_2.h"
 
 #include "MiddDigitalIOControl.h"
-#include "../../../Middleware/MiddComm/Midd_FS/fs_port.h"
+#include "../Middleware/MiddComm/Midd_FS/fs_port.h"
 #include "MiddEventTimer.h"
 
 #include "Midd_OSPort.h"

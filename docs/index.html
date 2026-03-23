@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aviora — Let Your Data Fly</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="index.html" class="active">Aviora</a>
+        <a href="fs/index.html">File System</a>
+        <a href="timeservice/index.html">TimeService</a>
+        <a href="network/index.html">Network</a>
+        <a href="display/index.html">Display</a>
+        <a href="sw_update/index.html">SW Update</a>
+      </nav>
+    </div>
+  </div>
+
+  <section class="hero">
+    <div class="hero-card">
+      <h1>Let Your Data Fly</h1>
+      <p>
+        Aviora is an intelligent, flexible, and secure IoT data collection device. It gathers data from local devices—utility meters, industrial sensors, environmental monitors—and transmits it seamlessly to remote servers over GSM, Ethernet, Wi-Fi, or other methods.
+      </p>
+      <div class="tag-row">
+        <span class="tag highlight">Modular</span>
+        <span class="tag">Multi-Protocol</span>
+        <span class="tag">Secure</span>
+        <span class="tag">Config-Driven</span>
+      </div>
+    </div>
+  </section>
+
+  <main class="container">
+    <div class="grid">
+      <article class="card col-12">
+        <h2>Hardware in Action</h2>
+        <p>The silver Aviora hub connects to multiple utility meters for real-world data collection.</p>
+        <img class="hero-img" src="./assets/images/aviora-lab-setup.png" alt="Aviora IoT system with connected meters" />
+      </article>
+
+      <article class="card col-12">
+        <h2>Software Architecture</h2>
+        <p>Modular hub-and-spoke design: each unit connects to the central Aviora core.</p>
+        <img class="hero-img" src="./assets/images/aviora-architecture.png" alt="Aviora software units and services" />
+      </article>
+
+      <article class="card col-12">
+        <h2>Auto-Generation & Validation</h2>
+        <p>Meta-programming, digital twin simulation, and CI/CD pipeline for reliable deployment.</p>
+        <img class="hero-img" src="./assets/images/aviora-factory.png" alt="Modular IoT Software Factory" />
+      </article>
+
+      <article class="card col-12">
+        <h2>Service Units</h2>
+        <p>Click a unit to explore its documentation and architecture.</p>
+        <div class="unit-grid">
+          <a href="fs/index.html" class="unit-card">
+            <span class="unit-icon">📂</span>
+            <h3>File System</h3>
+            <p>Modular FS: FlashLink, FlashFS, littlefs. JSON config, auto-generated headers.</p>
+          </a>
+          <a href="timeservice/index.html" class="unit-card">
+            <span class="unit-icon">🕐</span>
+            <h3>TimeService</h3>
+            <p>NTP, RTC backends. Time sync, epoch/calendar conversion.</p>
+          </a>
+          <a href="network/index.html" class="unit-card">
+            <span class="unit-icon">🌐</span>
+            <h3>Network</h3>
+            <p>GSM, Ethernet (PPP, lwIP). Multi-interface support.</p>
+          </a>
+          <a href="display/index.html" class="unit-card">
+            <span class="unit-icon">🖥️</span>
+            <h3>Display</h3>
+            <p>LED/LCD displays. Customer-specific drivers via config.</p>
+          </a>
+          <a href="sw_update/index.html" class="unit-card">
+            <span class="unit-icon">🔄</span>
+            <h3>SW Update</h3>
+            <p>OTA & Ethernet updates via FTP.</p>
+          </a>
+        </div>
+      </article>
+
+      <article class="card col-12">
+        <h2>Features</h2>
+        <ul>
+          <li><strong>Smart Data Acquisition</strong> — Water, gas, electricity meters; digital/analog sensors</li>
+          <li><strong>Multi-Protocol</strong> — GSM, Ethernet, Wi-Fi, MQTT, HTTPS</li>
+          <li><strong>Secure Transmission</strong> — Encryption, buffering for intermittent connectivity</li>
+          <li><strong>Modular Architecture</strong> — Extensible data formats, protocols, endpoints</li>
+          <li><strong>Real-Time Monitoring</strong> — Web or local interface for setup and diagnostics</li>
+        </ul>
+      </article>
+
+      <article class="card col-12">
+        <h2>Use Cases</h2>
+        <p>Smart city infrastructure • Energy and water tracking • Industrial monitoring • Agricultural sensing • Remote diagnostics</p>
+      </article>
+    </div>
+  </main>
+
+  <footer>
+    <p>Aviora — Modular IoT Platform. Designed by Zafer Satılmış.</p>
+  </footer>
+</body>
+</html>
