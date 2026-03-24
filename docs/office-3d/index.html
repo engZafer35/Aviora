@@ -568,16 +568,16 @@ class Character {
     this.returnMessages = [
       "Odaklandığım iş var,\ndevam etmem gerekiyor",
       "Aktif çalıştığım task var,\nyarım kaldı",
-      "Bazı işlerim var,\nmasaya dönüyorum",
-      "Devam eden işler var,\nmasama dönüyorum",
-      "Task açık,onu tamamlayayım,\nmasama dönüyorum",
+      "Bazı işlerim var,\masama dönüyorum",
+      "Devam eden işler var,\ngidip çalışayım",
+      "Açık taskım var,\ngidip onu tamamlayayım",
       "İşi yarıda bıraktım,\ndönüyorum🔥",
       "Bir şey yazıyordum,\nonu bitirip gelirim",
       "Task duruyor,\ndönüp halledeyim⚡",
-      "Şu işi kapatıp gelirim ya",
-      "Kod yarım kaldı,\nçok uzatmayayım",
+      "İşleri kapatayım,\nakşam erken çıkmam lazım",
+      "Kod yarım kaldı,\ngidip onu tamamlayayım",
       "Task bekliyor,\ndöneyim ben🔥",
-      "Kod yarım kaldı,\nben kaçıyorum",      
+      "İşlerim yarım kaldı,\nben kaçıyorum",      
       "Kodu kontrol etmem lazım,\naklım orada kaldı",
       "Aktif task var,\nyarım bırakmayayım",
       "Acele işler var,\n dönüp devam edeyim"
@@ -791,10 +791,10 @@ class Character {
             this._setBubble(this.getRandomReturnMessage());
             this.autoDeselect = true;
           } else {
-            this._setBubble('Yeni task eklersen söyle\n ben PC de takılıyorum😄');
+            this._setBubble('Yeni task eklersen söyle\n ben PC de takılıyorum');
           }
           //this.autoDeselect = true;
-          this.sentTimer = 150;
+          this.sentTimer = 180;
         }
         break;
 
