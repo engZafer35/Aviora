@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D Ofis Animasyonu</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="legend">
+  <div class="li"><div class="dot r"></div><span>Meşgul</span></div>
+  <div class="li"><div class="dot g"></div><span>Uygun</span></div>
+  <div class="li"><div class="dot y"></div><span>Seçili</span></div>
+</div>
+<div id="info">Karaktere tıkla &bull; Fare ile döndür &bull; Scroll ile yakınlaştır</div>
+
+<div id="chatPanel">
+  <div class="chat-header">
+    <div class="chat-avatar" id="chatAvatar">D1</div>
+    <div class="chat-header-info">
+      <h3 id="chatName">Dev-1</h3>
+      <div class="status-line"><span class="status-dot" id="chatStatusDot"></span><span id="chatStatusText"></span></div>
+    </div>
+    <button class="chat-close" id="chatClose">&times;</button>
+  </div>
+  <div class="chat-body" id="chatBody"></div>
+  <div class="chat-footer">
+    <button class="add-task-btn" id="addTaskBtn">+ Yeni Task Ekle</button>
+    <div class="send-loc-hint">Zemine tıklayarak seçili kişiyi oraya gönderebilirsin</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="taskModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-header-icon">📋</div>
+      <h2 id="modalTitle">Yeni Task Oluştur</h2>
+      <button class="modal-close-btn" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Başlık <span class="required">*</span></label>
+        <input type="text" class="form-input" id="formTaskTitle" placeholder="Task başlığı..." maxlength="80">
+        <div class="form-char-count"><span id="titleCharCount">0</span>/80</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Tür</label>
+          <select class="form-select" id="formTaskType">
+            <option value="task">📌 Task</option>
+            <option value="bug">🐛 Bug</option>
+            <option value="story">📖 Story</option>
+            <option value="improvement">⚡ Improvement</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Öncelik</label>
+          <select class="form-select" id="formTaskPriority">
+            <option value="low">🟢 Düşük</option>
+            <option value="medium" selected>🟡 Orta</option>
+            <option value="high">🟠 Yüksek</option>
+            <option value="critical">🔴 Kritik</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Açıklama</label>
+        <textarea class="form-textarea" id="formTaskDesc" placeholder="Task detayları, kabul kriterleri, notlar..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ekler</label>
+        <div class="upload-area" id="uploadArea">
+          <span class="upload-icon">📎</span>
+          <div>Dosya sürükle veya tıklayarak yükle</div>
+          <div class="upload-hint">PNG, JPG, GIF - Max 5MB</div>
+        </div>
+        <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
+        <div class="preview-grid" id="previewGrid"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn modal-btn-cancel" id="modalCancel">İptal</button>
+      <button class="modal-btn modal-btn-save" id="modalSave">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<div class="lightbox-overlay" id="lightbox">
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<script async src="https://ga.jspm.io/npm:es-module-shims@1.10.0/dist/es-module-shims.js" crossorigin="anonymous"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<div id="loadMsg" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font:16px Segoe UI,sans-serif;z-index:999;text-align:center">
+  Yükleniyor...<br><span style="font-size:12px;color:#888">Three.js kütüphanesi indiriliyor</span>
+</div>
+
+<script>
+window.addEventListener('error', function(e) {
+  var el = document.getElementById('loadMsg');
+  if (el) el.innerHTML = '<span style="color:#f66">Hata: ' + (e.message || 'Bilinmeyen hata') + '</span><br><span style="font-size:12px;color:#888">Lütfen sayfayı yenileyin veya tarayıcı konsolunu kontrol edin (F12)</span>';
+});
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+document.getElementById('loadMsg')?.remove();
+
+try {
+// ═══════════════════════ SCENE ═══════════════════════
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x7aaccf);
+scene.fog = new THREE.FogExp2(0x7aaccf, 0.012);
+
+const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 200);
+camera.position.set(20, 17, 20);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 1, 0);
+controls.maxPolarAngle = Math.PI / 2.15;
+controls.minDistance = 10;
+controls.maxDistance = 45;
+controls.enableDamping = true;
+controls.dampingFactor = 0.06;
+controls.update();
+
+window.addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// ═══════════════════════ LIGHTS ═══════════════════════
+scene.add(new THREE.AmbientLight(0xffeedd, 0.55));
+scene.add(new THREE.HemisphereLight(0x88bbdd, 0x886644, 0.3));
+
+const sun = new THREE.DirectionalLight(0xfff5e0, 1.1);
+sun.position.set(10, 18, 8);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.camera.left = -16;
+sun.shadow.camera.right = 16;
+sun.shadow.camera.top = 16;
+sun.shadow.camera.bottom = -16;
+sun.shadow.camera.near = 1;
+sun.shadow.camera.far = 40;
+sun.shadow.bias = -0.0008;
+scene.add(sun);
+
+const fill = new THREE.DirectionalLight(0x8899bb, 0.25);
+fill.position.set(-6, 10, -6);
+scene.add(fill);
+
+// ═══════════════════════ HELPERS ═══════════════════════
+const _geo = {};
+function getBoxGeo(w, h, d) {
+  const k = `${w}_${h}_${d}`;
+  if (!_geo[k]) _geo[k] = new THREE.BoxGeometry(w, h, d);
+  return _geo[k];
+}
+function M(color) {
+  return new THREE.MeshStandardMaterial({ color, flatShading: true });
+}
+function addBox(w, h, d, color, x, y, z, parent) {
+  const m = new THREE.Mesh(getBoxGeo(w, h, d), M(color));
+  m.position.set(x, y, z);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  (parent || scene).add(m);
+  return m;
+}
+function addCyl(rt, rb, h, seg, color, x, y, z, parent) {
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), M(color));
+  m.position.set(x, y, z);
+  m.castShadow = true;
+  m.receiveShadow = true;
+  (parent || scene).add(m);
+  return m;
+}
+function addSphere(r, seg, color, x, y, z, parent) {
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r, seg, Math.max(4, seg / 2)), M(color));
+  m.position.set(x, y, z);
+  m.castShadow = true;
+  (parent || scene).add(m);
+  return m;
+}
+
+// ═══════════════════════ ROOM ═══════════════════════
+const RW = 24, RD = 18, WH = 3.8, WT = 0.35;
+
+const floorTex = (() => {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 512;
+  const g = c.getContext('2d');
+  g.fillStyle = '#A06858'; g.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 8; i++) for (let j = 0; j < 8; j++) {
+    g.fillStyle = (i + j) % 2 ? '#A87060' : '#986058';
+    g.fillRect(i * 64 + 1, j * 64 + 1, 62, 62);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.repeat.set(3, 2.25);
+  return t;
+})();
+
+const floor = new THREE.Mesh(
+  new THREE.PlaneGeometry(RW, RD),
+  new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.9 })
+);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+function wallB(w, h, d, x, y, z) {
+  const m = new THREE.Mesh(getBoxGeo(w, h, d), M(0x8B5E3C));
+  m.position.set(x, y, z); m.receiveShadow = true; m.castShadow = true;
+  scene.add(m);
+}
+wallB(RW, WH, WT, 0, WH/2, -RD/2);
+wallB(RW, WH, WT, 0, WH/2, RD/2);
+wallB(WT, WH, RD, -RW/2, WH/2, 0);
+wallB(WT, WH, RD, RW/2, WH/2, 0);
+
+const bbMat = M(0x5C3A1F);
+[[-RW/2+WT/2,0.08,0,WT,0.16,RD],[RW/2-WT/2,0.08,0,WT,0.16,RD],
+ [0,0.08,-RD/2+WT/2,RW,0.16,WT],[0,0.08,RD/2-WT/2,RW,0.16,WT]].forEach(p => {
+  const m = new THREE.Mesh(getBoxGeo(p[3],p[4],p[5]), bbMat);
+  m.position.set(p[0],p[1],p[2]); scene.add(m);
+});
+
+function addWindow(z) {
+  addBox(0.08,1.8,2,0xCCCCCC,RW/2-0.01,2.2,z);
+  const g = new THREE.Mesh(new THREE.PlaneGeometry(1.8,1.6),
+    new THREE.MeshStandardMaterial({color:0x88CCEE,transparent:true,opacity:0.35,side:THREE.DoubleSide}));
+  g.rotation.y = Math.PI/2; g.position.set(RW/2+0.04,2.2,z); scene.add(g);
+  addBox(0.06,1.6,0.06,0xDDDDDD,RW/2+0.05,2.2,z);
+  addBox(0.06,0.06,1.8,0xDDDDDD,RW/2+0.05,2.2,z);
+}
+[-5.5,-2,2,5.5].forEach(addWindow);
+[8,10].forEach(x => {
+  addBox(1.8,1.6,0.08,0xCCCCCC,x,2.4,-RD/2+0.01);
+  const g = new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.4),
+    new THREE.MeshStandardMaterial({color:0x88CCEE,transparent:true,opacity:0.3,side:THREE.DoubleSide}));
+  g.position.set(x,2.4,-RD/2-0.04); scene.add(g);
+});
+
+// ═══════════════════════ CUBICLES ═══════════════════════
+const DH = 1.7, DT = 0.1;
+function addDivH(x,z,l){ addBox(l,DH,DT,0x2E6B7B,x,DH/2,z); addBox(l+0.06,0.06,DT+0.04,0x3C92A8,x,DH+0.03,z); }
+function addDivV(x,z,l){ addBox(DT,DH,l,0x2E6B7B,x,DH/2,z); addBox(DT+0.04,0.06,l+0.06,0x3C92A8,x,DH+0.03,z); }
+
+// Console screen
+const screenTextures = [], consoleCanvases = [];
+function createConsoleTex() {
+  const c = document.createElement('canvas'); c.width = 256; c.height = 170;
+  consoleCanvases.push(c);
+  const t = new THREE.CanvasTexture(c);
+  t.minFilter = t.magFilter = THREE.LinearFilter;
+  return t;
+}
+function updateConsoleScreens(time) {
+  const cur = Math.floor(time * 1.8) % 2 === 0;
+  consoleCanvases.forEach((c, i) => {
+    const g = c.getContext('2d');
+    g.fillStyle = '#0a0e14'; g.fillRect(0,0,256,170);
+    g.fillStyle = '#1a1e24'; g.fillRect(0,0,256,16);
+    g.fillStyle='#FF5F56'; g.beginPath(); g.arc(10,8,4,0,Math.PI*2); g.fill();
+    g.fillStyle='#FFBD2E'; g.beginPath(); g.arc(22,8,4,0,Math.PI*2); g.fill();
+    g.fillStyle='#27C93F'; g.beginPath(); g.arc(34,8,4,0,Math.PI*2); g.fill();
+    g.fillStyle='#555'; g.font='8px monospace'; g.fillText('terminal',100,11);
+    const y0=32; g.font='10px monospace';
+    g.fillStyle='#27C93F'; g.fillText('$',8,y0); g.fillStyle='#7ec8e3'; g.fillText('cd ~/projects',20,y0);
+    g.fillStyle='#27C93F'; g.fillText('$',8,y0+16); g.fillStyle='#7ec8e3'; g.fillText('node server.js',20,y0+16);
+    g.fillStyle='#888'; g.fillText('Server running on :3000',8,y0+32);
+    g.fillStyle='#27C93F'; g.fillText('$',8,y0+52); g.fillStyle='#7ec8e3'; g.fillText('./run',20,y0+52);
+    g.fillStyle='#e06c75'; g.font='bold 38px monospace'; g.fillText('TrailBlazer',8,y0+76);
+    g.fillStyle='#888'; g.font='10px monospace'; g.fillText('v2.4.1 ready',100,y0+76);
+    g.fillStyle='#27C93F'; g.fillText('$ ',8,y0+96);
+    if(cur){ g.fillStyle='#27C93F'; g.fillRect(22,y0+86,7,12); }
+    g.strokeStyle='#1a2030'; g.lineWidth=1;
+    for(let ly=0;ly<170;ly+=3){ g.globalAlpha=0.08; g.beginPath(); g.moveTo(0,ly); g.lineTo(256,ly); g.stroke(); }
+    g.globalAlpha=1;
+    screenTextures[i].needsUpdate=true;
+  });
+}
+
+const cubicles = [
+  {cx:-5.5,cz:-5.5,open:'s'},{cx:0,cz:-5.5,open:'s'},{cx:5.5,cz:-5.5,open:'s'},
+  {cx:-5.5,cz:5.5,open:'n'},{cx:0,cz:5.5,open:'n'},{cx:5.5,cz:5.5,open:'n'},
+];
+const CW=4.8, CD=3.6;
+
+cubicles.forEach((c,i)=>{
+  const hw=CW/2,hd=CD/2;
+  addDivV(c.cx-hw,c.cz,CD); addDivV(c.cx+hw,c.cz,CD);
+  if(c.open==='s') addDivH(c.cx,c.cz-hd,CW); else addDivH(c.cx,c.cz+hd,CW);
+
+  const dz=c.open==='s'?c.cz-hd+1.0:c.cz+hd-1.0;
+  addBox(3.4,0.1,1.4,0xC4A87C,c.cx,0.88,dz);
+  addBox(0.1,0.88,0.1,0xA68B5B,c.cx-1.5,0.44,dz-0.55);
+  addBox(0.1,0.88,0.1,0xA68B5B,c.cx+1.5,0.44,dz-0.55);
+  addBox(0.1,0.88,0.1,0xA68B5B,c.cx-1.5,0.44,dz+0.55);
+  addBox(0.1,0.88,0.1,0xA68B5B,c.cx+1.5,0.44,dz+0.55);
+  addBox(0.6,0.55,0.8,0xBB9B6B,c.cx+1.0,0.33,dz);
+
+  const md=c.open==='s'?-1:1, mz=dz+md*0.35;
+  addBox(0.08,0.35,0.08,0x333333,c.cx,1.1,mz);
+  addBox(0.45,0.04,0.3,0x444444,c.cx,0.93,mz);
+  addBox(1.1,0.75,0.06,0x1a1a1a,c.cx,1.5,mz);
+  const sTex=createConsoleTex(); screenTextures.push(sTex);
+  const scr=new THREE.Mesh(new THREE.PlaneGeometry(1.0,0.65),
+    new THREE.MeshStandardMaterial({map:sTex,emissive:0xffffff,emissiveMap:sTex,emissiveIntensity:0.5,roughness:0.3}));
+  scr.position.set(c.cx,1.5,mz-md*0.035);
+  if(c.open==='n') scr.rotation.y=Math.PI; scene.add(scr);
+
+  addBox(0.55,0.025,0.2,0x222222,c.cx-0.1,0.94,dz-md*0.35);
+  addBox(0.12,0.025,0.18,0x333333,c.cx+0.55,0.94,dz-md*0.35);
+  if(i%2===0) addBox(0.35,0.015,0.25,0xF5F5F0,c.cx-1.1,0.94,dz-md*0.15);
+  if(i%3!==2) addCyl(0.06,0.05,0.14,8,0xDDDDDD,c.cx-1.2,1.0,dz+md*0.15);
+  addCyl(0.05,0.06,0.1,6,0x333333,c.cx+1.4,0.98,dz-md*0.2);
+
+  const chZ=c.open==='s'?c.cz+0.2:c.cz-0.2;
+  const chG=new THREE.Group(); chG.position.set(c.cx,0,chZ);
+  for(let a=0;a<5;a++){
+    const ang=(a/5)*Math.PI*2;
+    addBox(0.06,0.06,0.06,0x333333,Math.cos(ang)*0.32,0.03,Math.sin(ang)*0.32,chG);
+    addSphere(0.04,6,0x222222,Math.cos(ang)*0.38,0.02,Math.sin(ang)*0.38,chG);
+  }
+  addCyl(0.05,0.05,0.38,6,0x555555,0,0.25,0,chG);
+  addCyl(0.38,0.38,0.1,10,0x444444,0,0.52,0,chG);
+  const bd=c.open==='s'?1:-1;
+  addBox(0.65,0.55,0.08,0x3A3A3A,0,0.85,bd*0.32,chG);
+  scene.add(chG);
+
+  if(i===1||i===3||i===5){ const px=c.cx+hw-0.6, pz=c.open==='s'?c.cz+hd-0.6:c.cz-hd+0.6; addPlantSmall(px,pz); }
+  c.deskZ=dz; c.chairZ=chZ; c.monDir=md;
+});
+
+// ═══════════════════════ OFFICE ACCESSORIES ═══════════════════════
+function addPlantSmall(x,z){
+  addCyl(0.18,0.22,0.3,8,0x8B5E3C,x,0.15,z); addCyl(0.2,0.18,0.05,8,0x6B4226,x,0.32,z);
+  addSphere(0.3,8,0x3A8B3A,x,0.55,z); addSphere(0.2,6,0x5DAF5D,x-0.1,0.65,z+0.05); addSphere(0.15,6,0x4AA84A,x+0.1,0.7,z-0.08);
+}
+function addPlantLarge(x,z){
+  addCyl(0.28,0.35,0.5,8,0x6B4226,x,0.25,z); addCyl(0.32,0.28,0.08,8,0x5A3518,x,0.54,z);
+  addSphere(0.5,8,0x2E7A2E,x,1.0,z); addSphere(0.35,6,0x4AA84A,x-0.15,1.25,z+0.1);
+  addSphere(0.3,6,0x3A9A3A,x+0.2,1.15,z-0.12); addSphere(0.22,6,0x5CB85C,x,1.35,z);
+}
+function addWaterCooler(x,z){
+  addBox(0.5,0.9,0.4,0xDDDDDD,x,0.45,z); addCyl(0.12,0.12,0.45,8,0x88BBDD,x,1.15,z);
+  addBox(0.08,0.06,0.04,0xCC0000,x-0.08,0.65,z+0.22); addBox(0.08,0.06,0.04,0x0000CC,x+0.08,0.65,z+0.22);
+}
+function addPrinter(x,z){
+  addBox(1.0,0.45,0.7,0xE8E8E8,x,0.93,z); addBox(0.6,0.5,0.55,0xBBBBBB,x,0.45,z);
+  addSphere(0.04,6,0x00CC00,x+0.4,1.1,z+0.36);
+}
+function addFileCabinet(x,z){
+  addBox(0.6,1.2,0.5,0x808080,x,0.6,z);
+  for(let i=0;i<3;i++){ addBox(0.52,0.33,0.02,0x707070,x,0.25+i*0.38,z+0.26); addBox(0.15,0.06,0.04,0x999999,x,0.25+i*0.38,z+0.28); }
+}
+function addBookshelf(x,z){
+  addBox(1.4,2.2,0.45,0x8B6B4A,x,1.1,z);
+  const bc=[0xCC3333,0x3366CC,0x33AA33,0xCC9933,0x9933CC,0x33AAAA,0xCC6633,0x6633CC];
+  for(let s=0;s<4;s++){
+    addBox(1.3,0.04,0.4,0x7B5B3A,x,0.25+s*0.52,z);
+    let bx=-0.55;
+    for(let b=0;b<5;b++){
+      const bw=0.08+(((s*5+b)*7+3)%5)*0.03;
+      addBox(bw,0.4,0.15,bc[(s*5+b)%bc.length],x+bx+bw/2,0.48+s*0.52,z); bx+=bw+0.03;
+      if(bx>0.5) break;
+    }
+  }
+}
+function addWhiteboard(x,y,z,ry){
+  const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.y=ry||0;
+  addBox(2.0,1.3,0.06,0xF5F5F5,0,0,0,g);
+  addBox(2.1,0.06,0.08,0xCCCCCC,0,0.68,0,g); addBox(2.1,0.06,0.08,0xCCCCCC,0,-0.68,0,g);
+  scene.add(g);
+}
+function addBulletinBoard(x,y,z,ry){
+  const g=new THREE.Group(); g.position.set(x,y,z); g.rotation.y=ry||0;
+  addBox(1.2,0.9,0.06,0xC4A060,0,0,0,g);
+  [0xFFFF55,0x55FF55,0xFF5555,0x5588FF,0xFFBB55].forEach((sc,i)=>addBox(0.18,0.18,0.02,sc,-0.4+i*0.2,0.1+(i%2)*0.15,0.04,g));
+  scene.add(g);
+}
+
+addPlantLarge(9.5,-7); addPlantLarge(9.5,7); addPlantLarge(-10.5,0); addPlantLarge(10,0);
+addWaterCooler(9,-3.5); addPrinter(9,0.5);
+addFileCabinet(9,-5.5); addFileCabinet(9,4.5);
+addBookshelf(10.8,-3.5); addBookshelf(10.8,3.5);
+addWhiteboard(8.5,2.2,-7.5,0); addWhiteboard(8.5,2.2,7.5,Math.PI);
+addBulletinBoard(-3,2.5,-8.8,0); addBulletinBoard(3,2.5,-8.8,0);
+
+addCyl(0.03,0.03,0.7,6,0xFFD700,-1,0.35,0);
+const cone=new THREE.Mesh(new THREE.ConeGeometry(0.25,0.5,4),M(0xFFD700));
+cone.position.set(-1,0.95,0); cone.castShadow=true; scene.add(cone);
+addBox(0.3,0.04,0.3,0xFFD700,-1,0.03,0);
+
+addBox(2.0,0.35,0.8,0x4A6070,9,0.3,2.5); addBox(2.0,0.5,0.15,0x3A5060,9,0.6,2.17);
+addBox(0.3,0.5,0.8,0x3A5060,8,0.6,2.5); addBox(0.3,0.5,0.8,0x3A5060,10,0.6,2.5);
+
+addCyl(0.5,0.5,0.06,12,0xA08060,-2,0.47,1.5); addCyl(0.06,0.06,0.44,8,0x806040,-2,0.22,1.5);
+addCyl(0.15,0.18,0.35,8,0x666666,8,0.175,-1.5); addCyl(0.15,0.18,0.35,8,0x666666,4,0.175,3.5);
+addBox(0.5,0.4,0.4,0xC4A060,-10,0.2,-7); addBox(0.45,0.35,0.35,0xD4B070,-9.85,0.55,-6.95);
+
+addBox(1.8,0.08,1.0,0xC4A87C,-9,0.88,0);
+[[-9.5,-0.9],[-8.5,-0.9],[-9.5,0.9],[-8.5,0.9]].forEach(([cx,cz])=>{
+  addCyl(0.28,0.28,0.08,8,0x444444,cx,0.52,cz); addCyl(0.04,0.04,0.3,6,0x555555,cx,0.3,cz);
+});
+
+function addFloorLamp(x,z){
+  addCyl(0.15,0.2,0.05,8,0x777777,x,0.025,z); addCyl(0.03,0.03,1.8,6,0x888888,x,0.95,z);
+  addCyl(0.2,0.12,0.25,8,0xFFE4B5,x,1.95,z);
+  const gl=new THREE.PointLight(0xFFE4B5,0.3,3); gl.position.set(x,1.8,z); scene.add(gl);
+}
+addFloorLamp(9.5,-1.5); addFloorLamp(9.5,4.5);
+addBox(1.0,0.6,0.03,0xE8D8C0,0,2.5,-8.8); addBox(0.7,0.5,0.03,0xDDCCBB,5,2.5,-8.8);
+
+// ═══════════════════════ ICON TEXTURES ═══════════════════════
+function makeIconTex(type) {
+  const c = document.createElement('canvas'); c.width=128; c.height=128;
+  const g = c.getContext('2d'); g.clearRect(0,0,128,128);
+  const colors = { busy:[220,50,50], avail:[50,200,50], selected:[220,200,40] };
+  const col = colors[type];
+  g.beginPath(); g.arc(64,64,56,0,Math.PI*2);
+  g.fillStyle=`rgba(${col[0]},${col[1]},${col[2]},0.25)`; g.fill();
+  g.beginPath(); g.arc(64,64,38,0,Math.PI*2);
+  g.fillStyle=`rgb(${col[0]},${col[1]},${col[2]})`; g.fill();
+  g.strokeStyle=type==='busy'?'#F66':type==='avail'?'#6F6':'#FF6';
+  g.lineWidth=4; g.stroke();
+  g.strokeStyle='#FFF'; g.lineWidth=7; g.lineCap='round';
+  if(type==='busy'||type==='selected'){
+    g.beginPath(); g.moveTo(48,48); g.lineTo(80,80); g.stroke();
+    g.beginPath(); g.moveTo(80,48); g.lineTo(48,80); g.stroke();
+  } else {
+    g.beginPath(); g.moveTo(42,64); g.lineTo(56,78); g.lineTo(86,48); g.stroke();
+  }
+  const t=new THREE.CanvasTexture(c); t.needsUpdate=true; return t;
+}
+const busyTex=makeIconTex('busy'), availTex=makeIconTex('avail'), selTex=makeIconTex('selected');
+const busyMat=new THREE.SpriteMaterial({map:busyTex,transparent:true,depthTest:false});
+const availMat=new THREE.SpriteMaterial({map:availTex,transparent:true,depthTest:false});
+const selMat=new THREE.SpriteMaterial({map:selTex,transparent:true,depthTest:false});
+
+// ═══════════════════════ SPEECH BUBBLE ═══════════════════════
+function createBubbleTex(text) {
+  const c = document.createElement('canvas'); c.width = 512; c.height = 256;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, 512, 256);
+
+  const lines = text.split('\n');
+  const fontSize = lines.length > 1 ? 32 : 40;
+  const lineHeight = fontSize * 1.3;
+  g.font = `bold ${fontSize}px Segoe UI`;
+
+  let maxLineW = 0;
+  for (const ln of lines) maxLineW = Math.max(maxLineW, g.measureText(ln).width);
+  const tw = Math.min(maxLineW + 60, 490);
+  const bh = lines.length * lineHeight + 30;
+  const bx = (512 - tw) / 2, by = 10, bw = tw;
+
+  g.shadowColor = 'rgba(0,0,0,0.25)';
+  g.shadowBlur = 12;
+  g.shadowOffsetY = 4;
+  g.fillStyle = 'rgba(255,255,255,0.97)';
+  g.beginPath(); g.roundRect(bx, by, bw, bh, 20); g.fill();
+  g.shadowBlur = 0; g.shadowOffsetY = 0;
+  g.strokeStyle = '#ccc'; g.lineWidth = 3; g.stroke();
+
+  g.fillStyle = 'rgba(255,255,255,0.97)';
+  g.beginPath();
+  g.moveTo(236, by + bh); g.lineTo(256, by + bh + 28); g.lineTo(276, by + bh);
+  g.fill();
+  g.strokeStyle = '#ccc'; g.lineWidth = 3;
+  g.beginPath();
+  g.moveTo(236, by + bh); g.lineTo(256, by + bh + 28); g.lineTo(276, by + bh);
+  g.stroke();
+  g.fillStyle = 'rgba(255,255,255,0.97)';
+  g.fillRect(234, by + bh - 3, 44, 6);
+
+  g.fillStyle = '#222';
+  g.font = `bold ${fontSize}px Segoe UI`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  const textBlockH = lines.length * lineHeight;
+  const startY = by + (bh - textBlockH) / 2 + lineHeight / 2;
+  for (let i = 0; i < lines.length; i++) {
+    g.fillText(lines[i], 256, startY + i * lineHeight, 460);
+  }
+
+  const t = new THREE.CanvasTexture(c); t.needsUpdate = true;
+  return t;
+}
+
+// ═══════════════════════ CHARACTERS ═══════════════════════
+const HAIR_C=[0x2C1B0E,0x8B6914,0xB8652A,0x1A0E05,0x5C3020,0xD4A056];
+const SHIRT_C=[0x3B6DAA,0xAA3B50,0x4A9960,0xB08530,0x7050A8,0x5898A8];
+const PANTS_C=[0x2A2A3A,0x333344,0x2E2E2E,0x383848,0x303040,0x2C2C38];
+const SKIN_C=[0xF5D0A9,0xE5BD8E,0xD4A97A,0xC49060,0xB07850,0xEFDBCB];
+const AVATAR_COLORS=['#89b4fa','#f38ba8','#a6e3a1','#fab387','#cba6f7','#74c7ec'];
+
+class Character {
+  constructor(cubicle, index) {
+    this.idx = index;
+    this.cub = cubicle;
+    this.name = `Dev-${index + 1}`;
+    this.avatarColor = AVATAR_COLORS[index];
+    this.skinC = SKIN_C[index%SKIN_C.length];
+    this.hairC = HAIR_C[index%HAIR_C.length];
+    this.shirtC = SHIRT_C[index%SHIRT_C.length];
+    this.pantsC = PANTS_C[index%PANTS_C.length];
+
+    this.homeX = cubicle.cx;
+    this.homeZ = cubicle.chairZ;
+    this.faceY = cubicle.open==='s' ? Math.PI : 0;
+
+    this.x = this.homeX;
+    this.z = this.homeZ;
+    this.state = 'sitting';
+    this.timer = 600 + Math.random() * 900;
+    this.sitFactor = 1;
+    this.walkPath = [];
+    this.walkIdx = 0;
+    this.frame = Math.floor(Math.random() * 500);
+
+    this.tasks = [];
+    this.autoDeselect = false;
+    this.selected = false;
+    this._bubbleText = '';
+    this.sentTimer = 0;
+
+    this._build();
+    this.group.position.set(this.x, 0, this.z);
+    this.group.rotation.y = this.faceY;
+    scene.add(this.group);
+  }
+
+  get currentTask() { return this.tasks.length > 0 ? this.tasks[0] : null; }
+
+  static taskTitle(t) {
+    if (!t) return '';
+    const s = t.title || t.name || '';
+    return s.length > 20 ? s.slice(0, 20) + '…' : s;
+  }
+
+  addTask(task) {
+    const had = this.tasks.length > 0;
+    this.tasks.push(Object.assign({ status: 'active', description: '', type: 'task', priority: 'medium', images: [] }, task));
+    if (!had) this._forceReturn();
+  }
+
+  pauseCurrentTask() {
+    if (!this.currentTask) return;
+    const t = this.currentTask;
+    t.status = t.status === 'paused' ? 'active' : 'paused';
+  }
+
+  endCurrentTask() {
+    if (!this.currentTask) return;
+    this.tasks.shift();
+  }
+
+  deleteCurrentTask() {
+    if (!this.currentTask) return;
+    this.tasks.shift();
+  }
+
+  sendTo(tx, tz) {
+    this.state = 'sent';
+    this.sitFactor = 0;
+    this.walkPath = [{ x: tx, z: tz }];
+    this.walkIdx = 0;
+    this.sentTimer = 0;
+    this._setBubble('');
+  }
+
+  _forceReturn() {
+    if (this.state === 'sitting' || this.state === 'sitting_down') return;
+    this.state = 'returning';
+    this.sitFactor = 0;
+    this.walkPath = [{ x: this.homeX, z: this.homeZ }];
+    this.walkIdx = 0;
+    this._setBubble('');
+  }
+
+  setSelected(on) {
+    this.selected = on;
+    this.body.traverse(child => {
+      if (child.isMesh && child.material) {
+        if (on) {
+          if (child.userData.oc === undefined) child.userData.oc = child.material.color.getHex();
+          child.material.color.setHex(0xFFDD33);
+          child.material.emissive = new THREE.Color(0x332200);
+          child.material.emissiveIntensity = 0.2;
+        } else if (child.userData.oc !== undefined) {
+          child.material.color.setHex(child.userData.oc);
+          child.material.emissive = new THREE.Color(0x000000);
+          child.material.emissiveIntensity = 0;
+        }
+      }
+    });
+  }
+
+  _build() {
+    this.group = new THREE.Group();
+    this.body = new THREE.Group();
+    this.group.add(this.body);
+
+    addBox(0.5,0.55,0.28,this.shirtC,0,1.0,0,this.body);
+    addSphere(0.22,8,this.skinC,0,1.52,0,this.body);
+    const hair=new THREE.Mesh(new THREE.SphereGeometry(0.24,8,4,0,Math.PI*2,0,Math.PI*0.55),M(this.hairC));
+    hair.position.set(0,1.56,0); hair.castShadow=true; this.body.add(hair);
+    addSphere(0.03,4,0x222222,-0.07,1.53,0.18,this.body);
+    addSphere(0.03,4,0x222222,0.07,1.53,0.18,this.body);
+
+    this.lArmPivot=new THREE.Group(); this.lArmPivot.position.set(-0.34,1.2,0); this.body.add(this.lArmPivot);
+    addBox(0.13,0.48,0.13,this.shirtC,0,-0.15,0,this.lArmPivot);
+    addBox(0.1,0.08,0.1,this.skinC,0,-0.42,0.02,this.lArmPivot);
+
+    this.rArmPivot=new THREE.Group(); this.rArmPivot.position.set(0.34,1.2,0); this.body.add(this.rArmPivot);
+    addBox(0.13,0.48,0.13,this.shirtC,0,-0.15,0,this.rArmPivot);
+    addBox(0.1,0.08,0.1,this.skinC,0,-0.42,0.02,this.rArmPivot);
+
+    this.lLegPivot=new THREE.Group(); this.lLegPivot.position.set(-0.13,0.72,0); this.body.add(this.lLegPivot);
+    addBox(0.16,0.5,0.16,this.pantsC,0,-0.25,0,this.lLegPivot);
+    addBox(0.16,0.08,0.22,0x222222,0,-0.54,0.03,this.lLegPivot);
+
+    this.rLegPivot=new THREE.Group(); this.rLegPivot.position.set(0.13,0.72,0); this.body.add(this.rLegPivot);
+    addBox(0.16,0.5,0.16,this.pantsC,0,-0.25,0,this.rLegPivot);
+    addBox(0.16,0.08,0.22,0x222222,0,-0.54,0.03,this.rLegPivot);
+
+    this.icon=new THREE.Sprite(busyMat.clone());
+    this.icon.scale.set(0.5,0.5,1); this.icon.position.set(0,2.15,0);
+    this.group.add(this.icon);
+
+    this.bubble=new THREE.Sprite(new THREE.SpriteMaterial({transparent:true,depthTest:false}));
+    this.bubble.scale.set(4.5,2.2,1); this.bubble.position.set(0,3.2,0);
+    this.bubble.visible=false;
+    this.group.add(this.bubble);
+  }
+
+  _setBubble(text) {
+    if (text === this._bubbleText) return;
+    this._bubbleText = text;
+    if (!text) { this.bubble.visible = false; return; }
+    this.bubble.material.map = createBubbleTex(text);
+    this.bubble.material.needsUpdate = true;
+    this.bubble.visible = true;
+  }
+
+  update() {
+    this.frame++;
+
+    switch (this.state) {
+      case 'sitting':
+        this.sitFactor = 1;
+        if (this.tasks.length > 0) {
+          const t = this.currentTask;
+          const title = Character.taskTitle(t);
+          this._setBubble(t.status === 'paused' ? `⏸ ${title}` : title);
+        } else {
+          this._setBubble('');
+          this.timer--;
+          if (this.timer <= 0) { this.state = 'standing_up'; this.timer = 45; }
+        }
+        break;
+
+      case 'standing_up':
+        this.sitFactor = this.timer / 45;
+        this.timer--;
+        if (this.timer <= 0) { this.state = 'walking'; this.sitFactor = 0; this._genPath(); }
+        break;
+
+      case 'walking':
+        this.sitFactor = 0; this._step();
+        break;
+
+      case 'idle':
+        this.sitFactor = 0; this.timer--;
+        if (this.timer <= 0) {
+          this.state = 'returning';
+          this.walkPath = [{x:this.homeX, z:this.homeZ}]; this.walkIdx = 0;
+        }
+        break;
+
+      case 'returning':
+        this.sitFactor = 0; this._step();
+        if (this.walkIdx >= this.walkPath.length) {
+          this.x=this.homeX; this.z=this.homeZ;
+          this.group.position.x=this.x; this.group.position.z=this.z;
+          this.group.rotation.y=this.faceY;
+          this.state='sitting_down'; this.timer=45;
+        }
+        break;
+
+      case 'sitting_down':
+        this.sitFactor = 1 - this.timer / 45;
+        this.timer--;
+        if (this.timer <= 0) {
+          this.state='sitting'; this.sitFactor=1;
+          this.timer = 600 + Math.random() * 900;
+        }
+        break;
+
+      case 'sent':
+        this.sitFactor = 0;
+        this._step();
+        if (this.walkIdx >= this.walkPath.length) {
+          this.state = 'sent_waiting'; this.sentTimer = 90;
+        }
+        break;
+
+      case 'sent_waiting':
+        this.sitFactor = 0;
+        this.sentTimer--;
+        if (this.sentTimer <= 0) {
+          this.state = 'sent_bubble';
+          if (this.tasks.length > 0) {
+            this._setBubble('Yapmam gereken işlerim var\nMasama dönüyorum.');
+            this.autoDeselect = true;
+          } else {
+            this._setBubble('Yeni task atanmış olabilir\nTask listimi kontrol edeceğim');
+          }
+          //this.autoDeselect = true;
+          this.sentTimer = 240;
+        }
+        break;
+
+      case 'sent_bubble':
+        this.sitFactor = 0;
+        this.sentTimer--;
+        if (this.sentTimer <= 0) {
+          this._setBubble('');
+          this.state = 'returning';
+          this.walkPath = [{x:this.homeX, z:this.homeZ}]; this.walkIdx = 0;
+        }
+        break;
+    }
+
+    this._pose();
+    this._updateIcon();
+  }
+
+  _step() {
+    if (this.walkIdx >= this.walkPath.length) {
+      if (this.state === 'walking') { this.state = 'idle'; this.timer = 80 + Math.random() * 180; }
+      return;
+    }
+    const t = this.walkPath[this.walkIdx];
+    const dx = t.x - this.x, dz = t.z - this.z;
+    const d = Math.sqrt(dx*dx + dz*dz);
+    if (d < 0.15) { this.walkIdx++; return; }
+    const sp = 0.035;
+    this.x += (dx/d)*sp; this.z += (dz/d)*sp;
+    this.group.position.x = this.x; this.group.position.z = this.z;
+    this.group.rotation.y = Math.atan2(dx, dz);
+  }
+
+  _genPath() {
+    const path = [];
+    const n = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < n; i++) path.push({ x: -7 + Math.random()*14, z: -3 + Math.random()*6 });
+    this.walkPath = path; this.walkIdx = 0;
+  }
+
+  _pose() {
+    const sf = this.sitFactor;
+    const moving = ['walking','returning','sent'].includes(this.state);
+    this.body.position.y = -0.22 * sf;
+    if (sf > 0.1) {
+      this.lLegPivot.rotation.x = (-Math.PI/2)*sf;
+      this.rLegPivot.rotation.x = (-Math.PI/2)*sf;
+      if (sf > 0.8) {
+        const tp = Math.sin(this.frame*0.15)*0.12;
+        this.lArmPivot.rotation.x = -1.1+tp; this.rArmPivot.rotation.x = -1.1-tp;
+      } else {
+        this.lArmPivot.rotation.x = -1.1*sf; this.rArmPivot.rotation.x = -1.1*sf;
+      }
+    } else if (moving) {
+      const sw = Math.sin(this.frame*0.1)*0.55;
+      this.lLegPivot.rotation.x=sw; this.rLegPivot.rotation.x=-sw;
+      this.lArmPivot.rotation.x=-sw*0.5; this.rArmPivot.rotation.x=sw*0.5;
+      this.body.position.y = Math.abs(Math.sin(this.frame*0.1))*0.04;
+    } else {
+      this.lLegPivot.rotation.x=0; this.rLegPivot.rotation.x=0;
+      this.lArmPivot.rotation.x=0; this.rArmPivot.rotation.x=0;
+      this.body.position.y = Math.sin(this.frame*0.025)*0.015;
+    }
+  }
+
+  _updateIcon() {
+    if (this.selected) {
+      this.icon.material = selMat;
+    } else {
+      this.icon.material = this.isBusy ? busyMat : availMat;
+    }
+    this.icon.position.y = 2.15 + Math.sin(this.frame*0.045)*0.12;
+    if (this.bubble.visible) {
+      this.bubble.position.y = 3.2 + Math.sin(this.frame*0.03)*0.08;
+    }
+  }
+
+  get isBusy() {
+    return this.tasks.length > 0;
+  }
+
+  get statusText() {
+    if (this.state === 'sent' || this.state === 'sent_waiting') return 'Görevde (Gönderildi)';
+    if (this.state === 'sent_bubble') return 'Dönmek istiyor';
+    if (this.tasks.length > 0) return `"${Character.taskTitle(this.currentTask)}" üzerinde çalışıyor`;
+    return 'Uygun';
+  }
+}
+
+const characters = cubicles.map((c,i) => new Character(c,i));
+
+// ═══════════════════════ CLICK / RAYCASTING ═══════════════════════
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let selectedChar = null;
+let mouseDownPos = null, mouseDownTime = 0;
+
+renderer.domElement.addEventListener('pointerdown', e => {
+  mouseDownPos = { x: e.clientX, y: e.clientY };
+  mouseDownTime = Date.now();
+});
+
+renderer.domElement.addEventListener('pointerup', e => {
+  if (!mouseDownPos) return;
+  const dx = e.clientX - mouseDownPos.x, dy = e.clientY - mouseDownPos.y;
+  const dist = Math.sqrt(dx*dx + dy*dy);
+  if (dist < 6 && (Date.now() - mouseDownTime) < 350) handleClick(e);
+  mouseDownPos = null;
+});
+
+function handleClick(e) {
+  mouse.x = (e.clientX / innerWidth) * 2 - 1;
+  mouse.y = -(e.clientY / innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+
+  let hitChar = null;
+  for (const ch of characters) {
+    const hits = raycaster.intersectObjects(ch.body.children, true);
+    if (hits.length > 0) { hitChar = ch; break; }
+  }
+
+  if (hitChar) {
+    selectCharacter(hitChar);
+    return;
+  }
+
+  if (selectedChar) {
+    const floorHits = raycaster.intersectObject(floor);
+    if (floorHits.length > 0) {
+      const p = floorHits[0].point;
+      selectedChar.sendTo(p.x, p.z);
+      refreshChat();
+    }
+  }
+}
+
+function selectCharacter(ch) {
+  if (selectedChar && selectedChar !== ch) {
+    selectedChar.setSelected(false);
+  }
+  if (selectedChar === ch) {
+    ch.setSelected(false);
+    selectedChar = null;
+    chatPanel.classList.remove('open');
+    return;
+  }
+  selectedChar = ch;
+  ch.setSelected(true);
+  openChat(ch);
+}
+
+// ═══════════════════════ CHAT PANEL ═══════════════════════
+const chatPanel = document.getElementById('chatPanel');
+const chatBody = document.getElementById('chatBody');
+const chatName = document.getElementById('chatName');
+const chatAvatar = document.getElementById('chatAvatar');
+const chatStatusDot = document.getElementById('chatStatusDot');
+const chatStatusText = document.getElementById('chatStatusText');
+const addTaskBtn = document.getElementById('addTaskBtn');
+const closeBtn = document.getElementById('chatClose');
+
+function openChat(ch) {
+  chatPanel.classList.add('open');
+  chatName.textContent = ch.name;
+  chatAvatar.textContent = `D${ch.idx+1}`;
+  chatAvatar.style.background = ch.avatarColor;
+  refreshChat();
+}
+
+function refreshStatus() {
+  if (!selectedChar) return;
+  const busy = selectedChar.isBusy;
+  chatStatusDot.style.background = busy ? '#f38ba8' : '#a6e3a1';
+  chatStatusText.textContent = selectedChar.statusText;
+}
+
+const TYPE_ICONS = { task:'📌', bug:'🐛', story:'📖', improvement:'⚡' };
+const PRIORITY_LABELS = { low:'Düşük', medium:'Orta', high:'Yüksek', critical:'Kritik' };
+
+function renderTaskCard(t, idx, isActive) {
+  const title = Character.taskTitle(t);
+  const typeIcon = TYPE_ICONS[t.type] || '📌';
+  const priClass = 'badge-priority-' + (t.priority || 'medium');
+
+  let html = `<div class="task-card${isActive ? ' active' : ' draggable'}${t.status==='paused'?' paused':''}" ${!isActive ? `draggable="true" data-qi="${idx}"` : ''}>`;
+  html += `<div class="task-name">${!isActive ? '<span class="drag-handle">⠿</span>' : ''}${t.status==='paused'?'⏸ ':''}${title}</div>`;
+  if (t.description) html += `<div class="task-desc">${t.description}</div>`;
+  html += `<div class="task-meta">
+    <span class="task-badge badge-type">${typeIcon} ${t.type||'task'}</span>
+    <span class="task-badge ${priClass}">${PRIORITY_LABELS[t.priority]||'Orta'}</span>
+  </div>`;
+  if (t.images && t.images.length > 0) {
+    html += '<div class="task-imgs">';
+    t.images.forEach((src, ii) => { html += `<img src="${src}" onclick="window._showLightbox('${src.replace(/'/g,"\\'")}')" alt="ek-${ii}">`; });
+    html += '</div>';
+  }
+  html += `<div class="task-status">${isActive ? (t.status==='paused'?'Bekletildi':'Çalışılıyor...') : 'Sırada #'+idx}</div>`;
+  html += '<div class="task-actions">';
+  if (isActive) {
+    html += `<button class="btn-pause" onclick="window._taskAction('pause')">${t.status==='paused'?'Devam Et':'Beklet'}</button>`;
+    html += `<button class="btn-edit" onclick="window._openEditModal(0)">Düzenle</button>`;
+    html += `<button class="btn-end" onclick="window._taskAction('end')">Sonlandır</button>`;
+    html += `<button class="btn-delete" onclick="window._taskAction('delete')">Sil</button>`;
+  } else {
+    html += `<button class="btn-edit" onclick="window._openEditModal(${idx})">Düzenle</button>`;
+    html += `<button class="btn-delete" onclick="window._queueAction('delete',${idx})">Sil</button>`;
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function refreshChat() {
+  if (!selectedChar) return;
+  const ch = selectedChar;
+  refreshStatus();
+
+  let html = '';
+  if (ch.tasks.length > 0) {
+    html += '<div class="section-label">Aktif Görev</div>';
+    html += renderTaskCard(ch.tasks[0], 0, true);
+    if (ch.tasks.length > 1) {
+      html += '<div class="section-label">Sıradaki Görevler</div><div id="queueList">';
+      for (let i = 1; i < ch.tasks.length; i++) html += renderTaskCard(ch.tasks[i], i, false);
+      html += '</div>';
+    }
+  } else {
+    html += '<div class="no-task">Henüz atanmış görev yok.<br>Aşağıdan yeni task ekleyebilirsin.</div>';
+  }
+  chatBody.innerHTML = html;
+  initQueueDrag();
+}
+
+let _dragIdx = null;
+function initQueueDrag() {
+  const list = document.getElementById('queueList');
+  if (!list) return;
+  list.querySelectorAll('.task-card.draggable').forEach(el => {
+    el.addEventListener('dragstart', e => { _dragIdx = parseInt(el.dataset.qi); el.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+    el.addEventListener('dragend', () => { el.classList.remove('dragging'); list.querySelectorAll('.drag-over').forEach(x=>x.classList.remove('drag-over')); _dragIdx = null; });
+    el.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; el.classList.add('drag-over'); });
+    el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+    el.addEventListener('drop', e => {
+      e.preventDefault(); el.classList.remove('drag-over');
+      if (_dragIdx === null || !selectedChar) return;
+      const toIdx = parseInt(el.dataset.qi);
+      if (_dragIdx !== toIdx) { const m = selectedChar.tasks.splice(_dragIdx,1)[0]; selectedChar.tasks.splice(toIdx,0,m); }
+      _dragIdx = null; refreshChat();
+    });
+  });
+}
+
+window._taskAction = function(action) {
+  if (!selectedChar) return;
+  if (action === 'pause') selectedChar.pauseCurrentTask();
+  else if (action === 'end') selectedChar.endCurrentTask();
+  else if (action === 'delete') selectedChar.deleteCurrentTask();
+  refreshChat();
+};
+
+window._queueAction = function(action, idx) {
+  if (!selectedChar) return;
+  if (idx < 1 || idx >= selectedChar.tasks.length) return;
+  if (action === 'delete') { selectedChar.tasks.splice(idx, 1); refreshChat(); }
+};
+
+// ═══════════════════════ JIRA MODAL ═══════════════════════
+const modal = document.getElementById('taskModal');
+const modalTitle = document.getElementById('modalTitle');
+const formTitle = document.getElementById('formTaskTitle');
+const formType = document.getElementById('formTaskType');
+const formPriority = document.getElementById('formTaskPriority');
+const formDesc = document.getElementById('formTaskDesc');
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const previewGrid = document.getElementById('previewGrid');
+const titleCharCount = document.getElementById('titleCharCount');
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+
+let modalImages = [];
+let editingTaskIdx = -1;
+
+function openModal(task, idx) {
+  editingTaskIdx = idx;
+  modalImages = [];
+  if (task) {
+    modalTitle.textContent = 'Görevi Düzenle';
+    formTitle.value = task.title || '';
+    formType.value = task.type || 'task';
+    formPriority.value = task.priority || 'medium';
+    formDesc.value = task.description || '';
+    modalImages = task.images ? [...task.images] : [];
+  } else {
+    modalTitle.textContent = 'Yeni Task Oluştur';
+    formTitle.value = '';
+    formType.value = 'task';
+    formPriority.value = 'medium';
+    formDesc.value = '';
+  }
+  titleCharCount.textContent = formTitle.value.length;
+  renderPreviews();
+  modal.classList.add('active');
+  formTitle.focus();
+}
+
+function closeModal() {
+  modal.classList.remove('active');
+  editingTaskIdx = -1;
+  modalImages = [];
+}
+
+function renderPreviews() {
+  previewGrid.innerHTML = modalImages.map((src, i) =>
+    `<div class="preview-item"><img src="${src}"><button class="preview-remove" onclick="window._removeImage(${i})">✕</button></div>`
+  ).join('');
+}
+
+function readFiles(files) {
+  Array.from(files).forEach(f => {
+    if (!f.type.startsWith('image/') || f.size > 5 * 1024 * 1024) return;
+    const r = new FileReader();
+    r.onload = () => { modalImages.push(r.result); renderPreviews(); };
+    r.readAsDataURL(f);
+  });
+}
+
+window._removeImage = function(i) { modalImages.splice(i, 1); renderPreviews(); };
+
+window._showLightbox = function(src) { lightboxImg.src = src; lightbox.classList.add('active'); };
+lightbox.addEventListener('click', () => lightbox.classList.remove('active'));
+
+formTitle.addEventListener('input', () => { titleCharCount.textContent = formTitle.value.length; });
+
+uploadArea.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => { readFiles(fileInput.files); fileInput.value = ''; });
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-active'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-active'));
+uploadArea.addEventListener('drop', e => { e.preventDefault(); uploadArea.classList.remove('drag-active'); readFiles(e.dataTransfer.files); });
+
+document.getElementById('modalSave').addEventListener('click', () => {
+  const title = formTitle.value.trim();
+  if (!title) { formTitle.style.borderColor = '#f38ba8'; formTitle.focus(); return; }
+  const taskData = {
+    title,
+    type: formType.value,
+    priority: formPriority.value,
+    description: formDesc.value.trim(),
+    images: [...modalImages]
+  };
+  if (editingTaskIdx >= 0 && selectedChar && editingTaskIdx < selectedChar.tasks.length) {
+    Object.assign(selectedChar.tasks[editingTaskIdx], taskData);
+  } else if (selectedChar) {
+    selectedChar.addTask(taskData);
+  }
+  closeModal();
+  refreshChat();
+});
+
+document.getElementById('modalCancel').addEventListener('click', closeModal);
+document.getElementById('modalClose').addEventListener('click', closeModal);
+
+window._openEditModal = function(idx) {
+  if (!selectedChar || idx < 0 || idx >= selectedChar.tasks.length) return;
+  openModal(selectedChar.tasks[idx], idx);
+};
+
+addTaskBtn.addEventListener('click', () => { if (selectedChar) openModal(null, -1); });
+
+closeBtn.addEventListener('click', () => {
+  if (selectedChar) selectedChar.setSelected(false);
+  selectedChar = null;
+  chatPanel.classList.remove('open');
+});
+
+let chatRefreshCounter = 0;
+
+// ═══════════════════════ ANIMATION LOOP ═══════════════════════
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+
+  const t = clock.getElapsedTime();
+  updateConsoleScreens(t);
+
+  characters.forEach(ch => {
+    ch.update();
+    if (ch.autoDeselect && selectedChar === ch) {
+      ch.setSelected(false);
+      selectedChar = null;
+      chatPanel.classList.remove('open');
+      ch.autoDeselect = false;
+    }
+  });
+
+  chatRefreshCounter++;
+  if (chatRefreshCounter % 30 === 0 && selectedChar && chatPanel.classList.contains('open')) {
+    refreshStatus();
+  }
+
+  renderer.render(scene, camera);
+}
+
+animate();
+
+} catch (err) {
+  document.body.innerHTML = '<div style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#f66;font:16px Segoe UI,sans-serif;text-align:center;background:#111;padding:30px;border-radius:12px;max-width:500px">'
+    + '<b>Hata oluştu:</b><br><br><code style="color:#faa;font-size:13px;word-break:break-all">' + err.message + '</code><br><br>'
+    + '<span style="color:#888;font-size:12px">Satır: ' + (err.stack ? err.stack.split('\\n')[0] : '?') + '</span><br><br>'
+    + '<span style="color:#888;font-size:12px">Tarayıcı konsolunu açmak için F12 tuşuna basın</span></div>';
+  console.error(err);
+}
+</script>
+</body>
+</html>
