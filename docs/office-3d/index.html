@@ -117,14 +117,25 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 document.getElementById('loadMsg')?.remove();
 
+const STORAGE_KEY = "Aviora_Char_";
+
+function saveTasks(charIndex, tasks) {
+  localStorage.setItem(STORAGE_KEY + charIndex, JSON.stringify(tasks));
+}
+
+function loadTasks(charIndex) {
+  const data = localStorage.getItem(STORAGE_KEY + charIndex);
+  return data ? JSON.parse(data) : [];
+}
+
 try {
 // ═══════════════════════ SCENE ═══════════════════════
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x7aaccf);
 scene.fog = new THREE.FogExp2(0x7aaccf, 0.012);
 
-const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 0.1, 200);
-camera.position.set(20, 17, 20);
+const camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 200);
+camera.position.set(0, 22, 15);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(innerWidth, innerHeight);
@@ -543,7 +554,7 @@ class Character {
     this.walkIdx = 0;
     this.frame = Math.floor(Math.random() * 500);
 
-    this.tasks = [];
+    this.tasks = loadTasks(this.idx);
     this.autoDeselect = false;
     this.selected = false;
     this._bubbleText = '';
@@ -588,7 +599,20 @@ class Character {
 
   addTask(task) {
     const had = this.tasks.length > 0;
-    this.tasks.push(Object.assign({ status: 'active', description: '', type: 'task', priority: 'medium', images: [] }, task));
+
+    const newTask = Object.assign({
+      id: crypto.randomUUID(), // ✅ UNIQUE ID
+      status: 'active',
+      description: '',
+      type: 'task',
+      priority: 'medium',
+      images: []
+    }, task);
+
+    this.tasks.push(newTask);
+
+    saveTasks(this.idx, this.tasks);
+
     if (!had) this._forceReturn();
   }
 
@@ -596,16 +620,18 @@ class Character {
     if (!this.currentTask) return;
     const t = this.currentTask;
     t.status = t.status === 'paused' ? 'active' : 'paused';
+    saveTasks(this.idx, this.tasks);
   }
 
   endCurrentTask() {
     if (!this.currentTask) return;
     this.tasks.shift();
+    saveTasks(this.idx, this.tasks);
   }
 
-  deleteCurrentTask() {
-    if (!this.currentTask) return;
-    this.tasks.shift();
+  deleteTaskById(id) {
+    this.tasks = this.tasks.filter(t => t.id !== id);
+    saveTasks(this.idx, this.tasks);
   }
 
   sendTo(tx, tz) {
@@ -1031,14 +1057,17 @@ window._taskAction = function(action) {
   if (!selectedChar) return;
   if (action === 'pause') selectedChar.pauseCurrentTask();
   else if (action === 'end') selectedChar.endCurrentTask();
-  else if (action === 'delete') selectedChar.deleteCurrentTask();
+  else if (action === 'delete') selectedChar.deleteTaskById(selectedChar.currentTask.id);
   refreshChat();
 };
 
 window._queueAction = function(action, idx) {
   if (!selectedChar) return;
   if (idx < 1 || idx >= selectedChar.tasks.length) return;
-  if (action === 'delete') { selectedChar.tasks.splice(idx, 1); refreshChat(); }
+  if (action === 'delete') {
+     selectedChar.deleteTaskById(selectedChar.tasks[idx].id);
+      refreshChat(); 
+  }
 };
 
 // ═══════════════════════ JIRA MODAL ═══════════════════════
@@ -1126,8 +1155,19 @@ document.getElementById('modalSave').addEventListener('click', () => {
     images: [...modalImages]
   };
   if (editingTaskIdx >= 0 && selectedChar && editingTaskIdx < selectedChar.tasks.length) {
-    Object.assign(selectedChar.tasks[editingTaskIdx], taskData);
-  } else if (selectedChar) {
+    const newTask = Object.assign({
+      id: selectedChar.tasks[editingTaskIdx].id,
+      status: 'active',
+      description: '',
+      type: 'task',
+      priority: 'medium',
+      images: []
+    }, taskData);
+
+    selectedChar.tasks[editingTaskIdx] = newTask;
+    saveTasks(selectedChar.idx, selectedChar.tasks);
+  } 
+  else if (selectedChar) {
     selectedChar.addTask(taskData);
   }
   closeModal();
