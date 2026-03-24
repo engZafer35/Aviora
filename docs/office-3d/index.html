@@ -469,7 +469,7 @@ function createBubbleTex(text) {
   g.clearRect(0, 0, 512, 256);
 
   const lines = text.split('\n');
-  const fontSize = lines.length > 1 ? 32 : 40;
+  const fontSize = lines.length > 1 ? 50 : 50;
   const lineHeight = fontSize * 1.3;
   g.font = `bold ${fontSize}px Segoe UI`;
 
@@ -553,6 +553,29 @@ class Character {
     this.group.position.set(this.x, 0, this.z);
     this.group.rotation.y = this.faceY;
     scene.add(this.group);
+
+    this.returnMessages = [
+      "Odaklandığım iş var,\ndevam etmem gerekiyor",
+      "Aktif çalıştığım task var,\nyarım kaldı",
+      "Bazı işlerim var,\nmasaya dönüyorum",
+      "Devam eden işler var,\nmasama dönüyorum",
+      "Task açık,onu tamamlayayım,\nmasama dönüyorum",
+      "İşi yarıda bıraktım,\ndönüyorum🔥",
+      "Bir şey yazıyordum,\nonu bitirip gelirim",
+      "Task duruyor,\ndönüp halledeyim⚡",
+      "Şu işi kapatıp gelirim ya",
+      "Kod yarım kaldı,\nçok uzatmayayım",
+      "Task bekliyor,\ndöneyim ben🔥",
+      "Kod yarım kaldı,\nben kaçıyorum",      
+      "Kodu kontrol etmem lazım,\naklım orada kaldı",
+      "Aktif task var,\nyarım bırakmayayım",
+      "Acele işler var,\n dönüp devam edeyim"
+    ];
+  }
+
+  getRandomReturnMessage() {
+  const i = Math.floor(Math.random() * this.returnMessages.length);
+  return this.returnMessages[i];
   }
 
   get currentTask() { return this.tasks.length > 0 ? this.tasks[0] : null; }
@@ -591,7 +614,6 @@ class Character {
     this.walkPath = [{ x: tx, z: tz }];
     this.walkIdx = 0;
     this.sentTimer = 0;
-    this._setBubble('');
   }
 
   _forceReturn() {
@@ -674,15 +696,15 @@ class Character {
     switch (this.state) {
       case 'sitting':
         this.sitFactor = 1;
+        this.timer--;
         if (this.tasks.length > 0) {
           const t = this.currentTask;
           const title = Character.taskTitle(t);
           this._setBubble(t.status === 'paused' ? `⏸ ${title}` : title);
         } else {
           this._setBubble('');
-          this.timer--;
-          if (this.timer <= 0) { this.state = 'standing_up'; this.timer = 45; }
         }
+        if (this.timer <= 0) { this.state = 'standing_up'; this.timer = 45; }
         break;
 
       case 'standing_up':
@@ -726,23 +748,27 @@ class Character {
         this.sitFactor = 0;
         this._step();
         if (this.walkIdx >= this.walkPath.length) {
-          this.state = 'sent_waiting'; this.sentTimer = 90;
+          this.state = 'sent_waiting'; this.sentTimer = 600;
         }
         break;
 
       case 'sent_waiting':
         this.sitFactor = 0;
-        this.sentTimer--;
+
+        if (!modal.classList.contains('active')) {
+          this.sentTimer--;
+        }
+        
         if (this.sentTimer <= 0) {
           this.state = 'sent_bubble';
           if (this.tasks.length > 0) {
-            this._setBubble('Yapmam gereken işlerim var\nMasama dönüyorum.');
+            this._setBubble(this.getRandomReturnMessage());
             this.autoDeselect = true;
           } else {
-            this._setBubble('Yeni task atanmış olabilir\nTask listimi kontrol edeceğim');
+            this._setBubble('Yeni task eklersen söyle\n ben PC de takılıyorum😄');
           }
           //this.autoDeselect = true;
-          this.sentTimer = 240;
+          this.sentTimer = 150;
         }
         break;
 
@@ -750,7 +776,14 @@ class Character {
         this.sitFactor = 0;
         this.sentTimer--;
         if (this.sentTimer <= 0) {
-          this._setBubble('');
+          if (this.tasks.length > 0) {
+            const t = this.currentTask;
+            const title = Character.taskTitle(t);
+            this._setBubble(t.status === 'paused' ? `⏸ ${title}` : title);
+          } else {
+            this._setBubble('');
+          }
+
           this.state = 'returning';
           this.walkPath = [{x:this.homeX, z:this.homeZ}]; this.walkIdx = 0;
         }
