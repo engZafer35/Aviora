@@ -122,7 +122,7 @@ static void startingWind(void)
     DevInfoMsg devMsg;
     GsmMsg gsmMsg;
 
-    appLogRec(g_sysLoggerID, "Display:Starting mode");
+    APP_LOG_REC(g_sysLoggerID, "Display:Starting mode");
     DEBUG_INFO("->[I] Display:Starting mode");
     while(1)
     {
@@ -189,7 +189,7 @@ static void mainWind(void)
     GsmMsg gsmMsg;
 
     DEBUG_INFO("->[I] Display:Main Window Started");
-    appLogRec(g_sysLoggerID, "Display:Main Window");
+    APP_LOG_REC(g_sysLoggerID, "Display:Main Window");
 
     clearDisplay();
     showGsmLevel(gs_dspData.gsmSigLevel);
@@ -250,7 +250,7 @@ static void swUpdatingWind(void)
     DevInfoMsg devMsg;
 
     DEBUG_INFO("->[I] Display:SW Updating Window");
-    appLogRec(g_sysLoggerID, "Display:SW Updating Window");
+    APP_LOG_REC(g_sysLoggerID, "Display:SW Updating Window");
 
     clearDisplay();
 
@@ -297,7 +297,7 @@ static void noGsmConnWind(void)
     DevInfoMsg devMsg;
 
     DEBUG_INFO("->[I] Display: No Connection Window");
-    appLogRec(g_sysLoggerID, "Display:No Connection Window");
+    APP_LOG_REC(g_sysLoggerID, "Display:No Connection Window");
 
     clearDisplay();
 
@@ -342,7 +342,7 @@ static void failureWind(void)
     DevInfoMsg devMsg;
 
     DEBUG_INFO("->[I] Display:SW Updating Window");
-    appLogRec(g_sysLoggerID, "Display:SW Updating Window");
+    APP_LOG_REC(g_sysLoggerID, "Display:SW Updating Window");
 
     clearDisplay();
 

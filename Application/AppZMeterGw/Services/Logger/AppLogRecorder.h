@@ -14,6 +14,7 @@
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
 #include "AppTimeService.h"
+#include "LoggerService_Config.h"
 /******************************MACRO DEFINITIONS*******************************/
 
 #define MAX_SERVICE_NUMBER (2) //move this param to configuration file
@@ -66,6 +67,12 @@ typedef enum
  * @return SUCCESS on success, FAILURE on failure
  */
 RETURN_STATUS appLogRecInit(void);
+
+/**
+ * @brief Start the logger services
+ * @return SUCCESS on success, FAILURE on failure
+ */
+RETURN_STATUS appLogStartLoggers(void);
 
 /**
  * @brief Register a logger service

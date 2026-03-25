@@ -36,7 +36,7 @@ RETURN_STATUS appProtocol2MessageHandler(const Msg_Handler_Message *message, U8 
     {
         DEBUG_DEBUG("->[I] Protocol-2 Message Received");
         DEBUG_DEBUG_ARRAY("Protocol-2 Rcv:", message->data, message->length);
-//        appLogRec(g_sysLoggerID, message->data);todo log hex buffer should be supported
+//        APP_LOG_REC(g_sysLoggerID, message->data);todo log hex buffer should be supported
 
         printf("rcv: %s \n", message->data);
         appMeterMsgHandler(NULL, replyMsg, replyMsgLeng);

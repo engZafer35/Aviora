@@ -56,16 +56,16 @@ static void timerCb(void * param)
 				char tempBuff[256];
 				sprintf(tempBuff, "Dead Task: name: %s - CurrState: %d - Total RunTime: %d - Free stack %d ", tinfo.pcTaskName, tinfo.eCurrentState, \
 																											  tinfo.ulRunTimeCounter, tinfo.usStackHighWaterMark )
-				appLogRec(g_sysLoggerID, tempBuff);
+				APP_LOG_REC(g_sysLoggerID, tempBuff);
 				DEBUG_ERROR("->[I] TMNG:Dead Task: name: %s - CurrState: %d - Total RunTime: %d - Free stack %d ", tinfo.pcTaskName, tinfo.eCurrentState, \
 																												   tinfo.ulRunTimeCounter, tinfo.usStackHighWaterMark) ;
 
 #else
 				char tempBuff[256];
 				sprintf(tempBuff, "Dead Task: %ld", tinfo);
-				appLogRec(g_sysLoggerID, tempBuff);
+				APP_LOG_REC(g_sysLoggerID, tempBuff);
 #endif
-				appLogRec(g_sysLoggerID, "TMNG:Device will be restarted");
+				APP_LOG_REC(g_sysLoggerID, "TMNG:Device will be restarted");
 
 				//zosSuspendTask(gs_tmTaskID); // stop this task to restart (hw reset).
 				//todo send restart request.
