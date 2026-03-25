@@ -379,7 +379,7 @@ static gsmConnManagerTask(void* argument)
                 {
                     retVal = FAILURE;
                     DEBUG_ERROR("Failed to initialize PPP!");
-                    appLogRec(g_sysLoggerID, "Failed to initialize PPP!");
+                    APP_LOG_REC(g_sysLoggerID, "Failed to initialize PPP!");
                 }
 
                 if (SUCCESS == retVal)
@@ -394,7 +394,7 @@ static gsmConnManagerTask(void* argument)
                     {
                         retVal = FAILURE;
                         DEBUG_ERROR("Failed to configure interface %s!", interface->name);
-                        appLogRec(g_sysLoggerID, "Failed to configure interface Gsm!");
+                        APP_LOG_REC(g_sysLoggerID, "Failed to configure interface Gsm!");
                     }
                 }
                 
@@ -402,7 +402,7 @@ static gsmConnManagerTask(void* argument)
                 {
                     gs_smInitStep = GSM_MODULE_STEP_INIT_GSM_MODEM;
                     DEBUG_INFO("PPP interface initialized successfully!");
-                    appLogRec(g_sysLoggerID, "PPP interface initialized successfully!");
+                    APP_LOG_REC(g_sysLoggerID, "PPP interface initialized successfully!");
                 }
                 break;      
             }
@@ -416,7 +416,7 @@ static gsmConnManagerTask(void* argument)
                     netAttachLinkChangeCallback(interface, pppLinkStatusCb, NULL);
 
                     DEBUG_INFO("GSM modem initialized successfully!");
-                    appLogRec(g_sysLoggerID, "GSM modem initialized successfully!");-                    
+                    APP_LOG_REC(g_sysLoggerID, "GSM modem initialized successfully!");-                    
                 }
 
                 break;
@@ -428,7 +428,7 @@ static gsmConnManagerTask(void* argument)
                 {
                     gs_smInitStep = GSM_MODULE_STEP_COMPLETED;
                     DEBUG_INFO("PPP connection established successfully!");
-                    appLogRec(g_sysLoggerID, "PPP connection established successfully!");
+                    APP_LOG_REC(g_sysLoggerID, "PPP connection established successfully!");
                     gs_dataBusPck.pppLinkState = TRUE;
 
                     gs_dataBusPck.gsmSignalLevel = 80; //TODO: for test purpose
@@ -443,7 +443,7 @@ static gsmConnManagerTask(void* argument)
                 if (SUCCESS == closePPP())
                 {
                     DEBUG_INFO("PPP connection closed successfully!");
-                    appLogRec(g_sysLoggerID, "PPP connection closed successfully!");
+                    APP_LOG_REC(g_sysLoggerID, "PPP connection closed successfully!");
 
                     gs_smInitStep = GSM_MODULE_STEP_COMPLETED;
                 }
@@ -492,7 +492,7 @@ static gsmConnManagerTask(void* argument)
             {                
                 gs_smInitStep = GSM_MODULE_STEP_INIT_GSM_MODEM;
                 DEBUG_INFO("PPP interface initialized successfully!");
-                appLogRec(g_sysLoggerID, "PPP interface initialized successfully!");
+                APP_LOG_REC(g_sysLoggerID, "PPP interface initialized successfully!");
             
                 break;      
             }
@@ -503,7 +503,7 @@ static gsmConnManagerTask(void* argument)
                 gs_dataBusPck.modemState = TRUE;
 
                 DEBUG_INFO("GSM modem initialized successfully!");
-                appLogRec(g_sysLoggerID, "GSM modem initialized successfully!");-                    
+                APP_LOG_REC(g_sysLoggerID, "GSM modem initialized successfully!");-                    
             
                 break;
             }
@@ -512,7 +512,7 @@ static gsmConnManagerTask(void* argument)
             {         
                 gs_smInitStep = GSM_MODULE_STEP_COMPLETED;
                 DEBUG_INFO("PPP connection established successfully!");
-                appLogRec(g_sysLoggerID, "PPP connection established successfully!");
+                APP_LOG_REC(g_sysLoggerID, "PPP connection established successfully!");
                 gs_dataBusPck.pppLinkState = TRUE;
 
                 gs_dataBusPck.gsmSignalLevel = 80; //TODO: for test purpose
@@ -525,7 +525,7 @@ static gsmConnManagerTask(void* argument)
             case GSM_MODULE_STEP_DISCONNECTED:
             {
                 DEBUG_INFO("PPP connection closed successfully!");
-                appLogRec(g_sysLoggerID, "PPP connection closed successfully!");
+                APP_LOG_REC(g_sysLoggerID, "PPP connection closed successfully!");
 
                 gs_smInitStep = GSM_MODULE_STEP_COMPLETED;
                 
@@ -562,7 +562,7 @@ RETURN_STATUS GsmConnInit(void)
     if (SUCCESS != retVal)
     {
         DEBUG_ERROR("Failed to register GSM manager to DBus!");
-        appLogRec(g_sysLoggerID, "Failed to register GSM manager to DBus!");
+        APP_LOG_REC(g_sysLoggerID, "Failed to register GSM manager to DBus!");
         return FAILURE;
     }
 
@@ -577,7 +577,7 @@ RETURN_STATUS GsmConnInit(void)
         if (OS_INVALID_TASK_ID != gsmTaskID)
         {
             DEBUG_ERROR("->[E] GSM Task created id: %d", gsmTaskID);
-            appLogRec(g_sysLoggerID, "GSM: Task created successfully");
+            APP_LOG_REC(g_sysLoggerID, "GSM: Task created successfully");
         }
         else
         {
@@ -585,7 +585,7 @@ RETURN_STATUS GsmConnInit(void)
             retVal = FAILURE;
 
             DEBUG_ERROR("->[E] GSM Task could not be created");
-            appLogRec(g_sysLoggerID, "GSM: Task could not be created");
+            APP_LOG_REC(g_sysLoggerID, "GSM: Task could not be created");
         }
     }
 

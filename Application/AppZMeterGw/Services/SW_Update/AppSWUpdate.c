@@ -82,7 +82,7 @@ static void appSwUpdateTask(void *arg)
     if ((ctx == NULL) || (ctx->serverIp[0] == '\0') || (ctx->remoteFile[0] == '\0') || (ctx->localFile[0] == '\0'))
     {
         DEBUG_ERROR("Invalid parameters for SW update task");
-        appLogRec(g_sysLoggerID, "Invalid parameters for SW update task");
+        APP_LOG_REC(g_sysLoggerID, "Invalid parameters for SW update task");
 
         appSwUpdatePublishStatus(EN_SW_UPDATE_RESULT_INVALID_PARAM);
         

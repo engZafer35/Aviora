@@ -221,7 +221,7 @@ static RETURN_STATUS initSWUnit(void)
         if (FAILURE == appTimeServiceInit("us.pool.ntp.org", 123))
         {
             DEBUG_ERROR("->[E] TimeSrv init Error");
-            appLogRec(g_sysLoggerID, "TimeSrv init Error");
+            APP_LOG_REC(g_sysLoggerID, "TimeSrv init Error");
             return FAILURE;
         }
 
@@ -229,7 +229,7 @@ static RETURN_STATUS initSWUnit(void)
         if (FAILURE == appDisplayInit())
         {
             DEBUG_ERROR("->[E] Display init ERROR");
-            appLogRec(g_sysLoggerID, "Display init Error");
+            APP_LOG_REC(g_sysLoggerID, "Display init Error");
             return FAILURE;
         }
         appDisplayStart();
@@ -237,7 +237,7 @@ static RETURN_STATUS initSWUnit(void)
         if (FAILURE == appMsgHandlerInit())
         {
             DEBUG_ERROR("->[E] Message Handler Init ERROR");
-            appLogRec(g_sysLoggerID, "Message Handler Init Error");
+            APP_LOG_REC(g_sysLoggerID, "Message Handler Init Error");
             return FAILURE;
             //todo: conf kısmından bakılarak protokoller yüklensin ve hangi protokoller aktif ise o protokoller kendisi addhandler çağırsın.
         }
@@ -249,7 +249,7 @@ static RETURN_STATUS initSWUnit(void)
         if (SUCCESS != appMeterMsgHandlerSetSerialInterface(&electricityMeterLine))
         {
             DEBUG_ERROR("->[E] Meter Serial Interface Error");
-            appLogRec(g_sysLoggerID, "Meter Serial Interface Error");
+            APP_LOG_REC(g_sysLoggerID, "Meter Serial Interface Error");
             return FAILURE;
         }
 
@@ -285,7 +285,7 @@ static void zmgTask(void * pvParameters)
                 if (TRUE == middIORead(EN_IN_AC_INPUT)) //AC input exist
                 {
                     gs_devVar.AC = TRUE;
-                    appLogRec(g_sysLoggerID, "ZMG: AC input ON");
+                    APP_LOG_REC(g_sysLoggerID, "ZMG: AC input ON");
                     DEBUG_INFO("->[I] ZMG:AC input ON");
                     /*todo: set timer to wait for super cap. If it will not be available at end of this timer,
                     system can be started without super cap */
@@ -295,7 +295,7 @@ static void zmgTask(void * pvParameters)
                     gs_devVar.AC = FALSE;
 
                     gs_devVar.wMode = EN_WORKING_MODE_POWER_DOWN;
-                    appLogRec(g_sysLoggerID, "ZMG: AC input OFF");
+                    APP_LOG_REC(g_sysLoggerID, "ZMG: AC input OFF");
                     DEBUG_INFO("->[I] ZMG:AC input OFF, POWER DOWN Mode");
 
                     dbPacket.packetID   = gs_devMsgSN++;
@@ -315,7 +315,7 @@ static void zmgTask(void * pvParameters)
 
                 if (gs_devVar.AC)
                 {
-                    appLogRec(g_sysLoggerID, "ZMG:SCap READY, main mode");
+                    APP_LOG_REC(g_sysLoggerID, "ZMG:SCap READY, main mode");
                     DEBUG_INFO("->[I] ZMG:SCap READY, Main Mode");
 
                     gs_devVar.wMode = EN_WORKING_MODE_MAIN; /*Scap and AC input is ready now, device can switch main working mode */

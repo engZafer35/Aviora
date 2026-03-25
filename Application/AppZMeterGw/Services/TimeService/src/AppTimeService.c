@@ -242,17 +242,17 @@ static void ntpTimerCb(void)
     if (epoch >= 0)
     {
         DEBUG_INFO("->[I] NTP sync OK, epoch=%u", (U32)epoch);
-        appLogRec(g_sysLoggerID, " NTP sync OK");
+        APP_LOG_REC(g_sysLoggerID, " NTP sync OK");
         if (FAILURE == appTimeServiceAutogenUpdateRtcsFromEpochUtc((U32)epoch))
         {
             DEBUG_ERROR("->[E] TimeSrv: Failed to update RTCs from NTP epoch");
-            appLogRec(g_sysLoggerID, "TimeSrv: Failed to update RTCs from NTP epoch");
+            APP_LOG_REC(g_sysLoggerID, "TimeSrv: Failed to update RTCs from NTP epoch");
         }
     }
     else
     {
         DEBUG_ERROR("->[E] TimeSrv: NTP sync failed");
-        appLogRec(g_sysLoggerID, "TimeSrv: NTP sync failed");
+        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP sync failed");
     }
 }
 
@@ -332,7 +332,7 @@ RETURN_STATUS appTimeServiceInit(const char *ntpHost, U16 ntpPort)
     if (SUCCESS != appTimeServiceAutogenInit(ntpHost, ntpPort))
     {
         DEBUG_ERROR("->[E] autogen init failed");
-        appLogRec(g_sysLoggerID, "TimeSrv: autogen init failed");
+        APP_LOG_REC(g_sysLoggerID, "TimeSrv: autogen init failed");
         return FAILURE;
     }
 
@@ -369,13 +369,13 @@ RETURN_STATUS appTimeServiceSetTime(U32 epoch)
     if (FAILURE == appTimeServiceAutogenUpdateRtcsFromEpochUtc((U32)epoch))
     {
         DEBUG_ERROR("->[E] User time update Failed");
-        appLogRec(g_sysLoggerID, "TimeSrv: User time update Failed");
+        APP_LOG_REC(g_sysLoggerID, "TimeSrv: User time update Failed");
         retVal = FAILURE;
     }
     else
     {
         DEBUG_INFO("->[I] User time update OK, epoch=%u", (U32)epoch);
-        appLogRec(g_sysLoggerID, "TimeSrv: User time update OK");
+        APP_LOG_REC(g_sysLoggerID, "TimeSrv: User time update OK");
     }
 
     return retVal;

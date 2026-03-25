@@ -138,7 +138,7 @@ static ethConnManagerTask(void* argument)
                 if(NO_ERROR != netConfigInterface(interface))
                 {                    
                     DEBUG_ERROR("Failed to configure interface %s!\r\n", interface->name);
-                    appLogRec(g_sysLoggerID, "Failed to configure interface Ethernet!");
+                    APP_LOG_REC(g_sysLoggerID, "Failed to configure interface Ethernet!");
                     retVal = FAILURE;
                 }
 
@@ -163,7 +163,7 @@ static ethConnManagerTask(void* argument)
                     netAttachLinkChangeCallback(interface, ethLinkChangeCallback, NULL);
 
                     DEBUG_INFO("Eth driver initialized successfully");
-                    appLogRec(g_sysLoggerID, "Eth driver initialized successfully");
+                    APP_LOG_REC(g_sysLoggerID, "Eth driver initialized successfully");
                 }
                 break;      
             }
@@ -174,7 +174,7 @@ static ethConnManagerTask(void* argument)
                 {
                     gs_ethInitStep = ETH_CONN_STEP_COMPLETED;
                     DEBUG_INFO("Ethernet connection established successfully!");
-                    appLogRec(g_sysLoggerID, "Ethernet connection established successfully!");
+                    APP_LOG_REC(g_sysLoggerID, "Ethernet connection established successfully!");
                 }    
                 
                 break;
@@ -186,7 +186,7 @@ static ethConnManagerTask(void* argument)
                 {
                     gs_ethInitStep = ETH_CONN_STEP_COMPLETED;
                     DEBUG_INFO("eth connection down !");
-                    appLogRec(g_sysLoggerID, "eth connection down !");                    
+                    APP_LOG_REC(g_sysLoggerID, "eth connection down !");                    
                 }
                 break;
             }
@@ -214,7 +214,7 @@ static ethConnManagerTask(void* argument)
             {                
                 gs_ethInitStep = ETH_CONN_STEP_COMPLETED;
                 DEBUG_INFO("Eth driver initialized successfully");
-                appLogRec(g_sysLoggerID, "Eth driver initialized successfully");
+                APP_LOG_REC(g_sysLoggerID, "Eth driver initialized successfully");
             
                 break;      
             }
@@ -223,7 +223,7 @@ static ethConnManagerTask(void* argument)
             {     
                 gs_ethInitStep = ETH_CONN_STEP_COMPLETED;
                 DEBUG_INFO("Ethernet connection established successfully!");
-                appLogRec(g_sysLoggerID, "Ethernet connection established successfully!");
+                APP_LOG_REC(g_sysLoggerID, "Ethernet connection established successfully!");
                                 
                 break;
             }
@@ -232,7 +232,7 @@ static ethConnManagerTask(void* argument)
             {
                 gs_ethInitStep = ETH_CONN_STEP_COMPLETED;
                 DEBUG_INFO("eth connection down !");
-                appLogRec(g_sysLoggerID, "eth connection down !");                    
+                APP_LOG_REC(g_sysLoggerID, "eth connection down !");                    
             
                 break;
             }
@@ -260,7 +260,7 @@ RETURN_STATUS EthConn_Enc28J60_Init(void)
     if (SUCCESS != retVal)
     {
         DEBUG_ERROR("Failed to register GSM manager to DBus!");
-        appLogRec(g_sysLoggerID, "Failed to register GSM manager to DBus!");
+        APP_LOG_REC(g_sysLoggerID, "Failed to register GSM manager to DBus!");
         return FAILURE;
     }
 
@@ -275,7 +275,7 @@ RETURN_STATUS EthConn_Enc28J60_Init(void)
         if (OS_INVALID_TASK_ID != gsmTaskID)
         {
             DEBUG_ERROR("->[E] GSM Task created id: %d", gsmTaskID);
-            appLogRec(g_sysLoggerID, "GSM: Task created successfully");
+            APP_LOG_REC(g_sysLoggerID, "GSM: Task created successfully");
         }
         else
         {
@@ -283,7 +283,7 @@ RETURN_STATUS EthConn_Enc28J60_Init(void)
             retVal = FAILURE;
 
             DEBUG_ERROR("->[E] GSM Task could not be created");
-            appLogRec(g_sysLoggerID, "GSM: Task could not be created");
+            APP_LOG_REC(g_sysLoggerID, "GSM: Task could not be created");
         }
     }
 
