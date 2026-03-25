@@ -13,6 +13,7 @@
 #define __APP_LOG_RECORDER_H__
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
+#include "AppTimeService.h"
 /******************************MACRO DEFINITIONS*******************************/
 
 #define MAX_SERVICE_NUMBER (2) //move this param to configuration file
@@ -45,8 +46,10 @@ typedef struct
     CloseLogFile closeFunc;
     
     const char *logPath;
+    BOOL timeStamp;
+    APP_TIME_STRING_FORMAT timeStampFormat;
 
-}LogRecInterface;
+}logRecConf_t;
 
 typedef enum
 {
@@ -71,7 +74,7 @@ RETURN_STATUS appLogRecInit(void);
  * @param loggerID Pointer to store the assigned logger ID
  * @return SUCCESS on success, FAILURE on failure
  */
-RETURN_STATUS appLogRecRegister(LogRecInterface *logger, const char *srvName, S32 *loggerID);
+RETURN_STATUS appLogRecRegister(logRecConf_t *logger, const char *srvName, S32 *loggerID);
 
 /**
  * @brief Unregister a logger service
@@ -105,15 +108,6 @@ S32 appLogRecRead(S32 loggerID, const char *str, U32 size);
  * @note The caller should ensure that the service name is valid and registered before calling this function
  */
 S32 appLogRecGetLoggerID(const char *srvName);
-
-/**
- * @brief Send log files through specified method
- * @param loggerID Logger ID obtained from registration
- * @param sendType Method to send logs (e.g., FTP, Serial Port)
- * @param fileNum Number of log files to send, use ALL_LOG_FILES to send all available log files
- * @return SUCCESS on success, FAILURE on failure
- */
-RETURN_STATUS appLogRecSendLog(S32 loggerID, EN_SRV_LOG_SEND sendType, U32 fileNum);
 
 #endif /* __APP_LOG_RECORDER_H__ */
 
