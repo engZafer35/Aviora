@@ -34,7 +34,7 @@ typedef struct
 
 typedef struct
 {
-    LogRecInterface srvIFace;
+    logRecConf_t srvIFace;
     S32 loggerID;
     char serviceName[SERVICE_NAME_MAX];
     OsQueue queue;
@@ -80,14 +80,8 @@ static RETURN_STATUS openNewLogFile(LoggerService *svc)
         svc->logFile = NULL;
     }
 
-#ifdef _WIN32
-#define PATH_SEP "\\"
-#else
-#define PATH_SEP "/"
-#endif
-
-    snprintf(svc->currentLogFile, sizeof(svc->currentLogFile), "%s%c%s_%s-%02d%02d%02d.log",
-                                                                svc->srvIFace.logPath, PATH_SEP, 
+    snprintf(svc->currentLogFile, sizeof(svc->currentLogFile), "%s/%s_%s-%02d%02d%02d.log",
+                                                                svc->srvIFace.logPath,
                                                                 svc->serviceName, 
                                                                 svc->currentDate, 
                                                                 tmValue.tm_hour, tmValue.tm_min, tmValue.tm_sec);
@@ -183,7 +177,7 @@ RETURN_STATUS appLogRecInit(void)
     return SUCCESS;
 }
 
-RETURN_STATUS appLogRecRegister(LogRecInterface *logger, const char *srvName, S32 *loggerID)
+RETURN_STATUS appLogRecRegister(logRecConf_t *logger, const char *srvName, S32 *loggerID)
 {
     if ((logger == NULL) || (srvName == NULL) || (loggerID == NULL))
     {
@@ -321,14 +315,6 @@ S32 appLogRecGetLoggerID(const char *srvName)
     }
 
     return -1;
-}
-
-RETURN_STATUS appLogRecSendLog(S32 loggerID, EN_SRV_LOG_SEND sendType, U32 fileNum)
-{
-    (void)loggerID;
-    (void)sendType;
-    (void)fileNum;
-    return SUCCESS;
 }
 
 /******************************** End Of File *********************************/

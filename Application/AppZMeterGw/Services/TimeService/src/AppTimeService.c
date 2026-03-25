@@ -256,7 +256,7 @@ static void ntpTimerCb(void)
     }
 }
 
-static RETURN_STATUS formatTm(const struct tm *t, char *buf, U32 bufSize, AppTimeStringFormat fmt)
+static RETURN_STATUS formatTm(const struct tm *t, char *buf, U32 bufSize, APP_TIME_STRING_FORMAT fmt)
 {
     if (IS_NULL_PTR(t) || IS_NULL_PTR(buf) || bufSize < 20)
     {
@@ -281,7 +281,7 @@ static RETURN_STATUS formatTm(const struct tm *t, char *buf, U32 bufSize, AppTim
     return SUCCESS;
 }
 
-static RETURN_STATUS parseDateTime(const char *str, AppTimeStringFormat fmt, struct tm *outTm)
+static RETURN_STATUS parseDateTime(const char *str, APP_TIME_STRING_FORMAT fmt, struct tm *outTm)
 {
     if (IS_NULL_PTR(str) || IS_NULL_PTR(outTm))
     {
@@ -444,7 +444,7 @@ RETURN_STATUS appTimeServiceTmToEpoch(const struct tm *tmValue, U32 *outEpoch)
     return retVal;
 }
 
-RETURN_STATUS appTimeServiceFormatNow(char *buf, U32 bufSize, AppTimeStringFormat fmt)
+RETURN_STATUS appTimeServiceFormatNow(char *buf, U32 bufSize, APP_TIME_STRING_FORMAT fmt)
 {
     struct tm t;
     if (SUCCESS != appTimeServiceGetTm(&t))
@@ -454,12 +454,12 @@ RETURN_STATUS appTimeServiceFormatNow(char *buf, U32 bufSize, AppTimeStringForma
     return formatTm(&t, buf, bufSize, fmt);
 }
 
-RETURN_STATUS appTimeServiceStringToTm(const char *str, AppTimeStringFormat fmt, struct tm *outTm)
+RETURN_STATUS appTimeServiceStringToTm(const char *str, APP_TIME_STRING_FORMAT fmt, struct tm *outTm)
 {
     return parseDateTime(str, fmt, outTm);
 }
 
-RETURN_STATUS appTimeServiceStringToEpoch(const char *str, AppTimeStringFormat fmt, U32 *outEpoch)
+RETURN_STATUS appTimeServiceStringToEpoch(const char *str, APP_TIME_STRING_FORMAT fmt, U32 *outEpoch)
 {
     RETURN_STATUS retVal = FAILURE;
     struct tm t;
