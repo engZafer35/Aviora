@@ -30,7 +30,7 @@ typedef enum
 {
     FIRST_YEAR = 0, /* yyyy.mm.dd hh:mm:ss */
     FIRST_DAY  = 1  /* dd.mm.yyyy hh:mm:ss */
-} AppTimeStringFormat;
+} APP_TIME_STRING_FORMAT;
 /************************* GLOBAL VARIBALE REFERENCES *************************/
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
@@ -89,7 +89,7 @@ RETURN_STATUS appTimeServiceTmToEpoch(const struct tm *tmValue, U32 *outEpoch);
  * @param fmt Format specifier
  * @return RETURN_STATUS_SUCCESS if successful, RETURN_STATUS_FAILURE otherwise
  */
-RETURN_STATUS appTimeServiceFormatNow(char *buf, U32 bufSize, AppTimeStringFormat fmt);
+RETURN_STATUS appTimeServiceFormatNow(char *buf, U32 bufSize, APP_TIME_STRING_FORMAT fmt);
 
 /**
  * @brief Convert a time string to epoch time
@@ -98,7 +98,7 @@ RETURN_STATUS appTimeServiceFormatNow(char *buf, U32 bufSize, AppTimeStringForma
  * @param outEpoch Output parameter for epoch time
  * @return RETURN_STATUS_SUCCESS if successful, RETURN_STATUS_FAILURE otherwise
  */
-RETURN_STATUS appTimeServiceStringToEpoch(const char *str, AppTimeStringFormat fmt, U32 *outEpoch);
+RETURN_STATUS appTimeServiceStringToEpoch(const char *str, APP_TIME_STRING_FORMAT fmt, U32 *outEpoch);
 
 /**
  * @brief Convert a time string to struct tm
@@ -107,7 +107,7 @@ RETURN_STATUS appTimeServiceStringToEpoch(const char *str, AppTimeStringFormat f
  * @param outTm Output parameter for struct tm
  * @return RETURN_STATUS_SUCCESS if successful, RETURN_STATUS_FAILURE otherwise
  */
-RETURN_STATUS appTimeServiceStringToTm(const char *str, AppTimeStringFormat fmt, struct tm *outTm);
+RETURN_STATUS appTimeServiceStringToTm(const char *str, APP_TIME_STRING_FORMAT fmt, struct tm *outTm);
 
 /**
  * @brief Set NTP server settings at runtime

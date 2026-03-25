@@ -18,7 +18,6 @@
 /*******************************TYPE DEFINITIONS ******************************/
 
 /************************* GLOBAL VARIBALE REFERENCES *************************/
-extern S32 g_sysLoggerID; /* After calling logger initialize with this variable, dont update it */
 extern U32 g_protocol;
 extern U32 g_meterHandlerList;
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
