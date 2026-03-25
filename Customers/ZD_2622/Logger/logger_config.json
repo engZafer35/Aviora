@@ -1,0 +1,68 @@
+{
+  "customer": "ZD_2622",
+  "version": 1.1,
+  "releaseDate": "2026-03-25",
+  "loggerService": {
+    "use": true,
+    "queueSize": 10,
+    "logMaxLength": 128,
+    "_comment": "logger is an array of logger configurations",
+    "loggerCount": 3,
+    "loggerList": [
+      {
+        "_comment": "don't change the name, sysLogger is mandatory, loggerID is g_sysLoggerID, this logger can bu used with the g_sysLoggerID",
+        "name": "sysLogger",
+        "use": true,
+        "fsPath": "Middleware/MiddComm/Midd_FS/fs_port.h",
+        "openFunc": "fsOpenFile",
+        "readFunc": "fsReadFile",
+        "writeFunc": "fsWriteFile",
+        "closeFunc": "fsCloseFile",
+        "logPath": "./sys",
+        "fileSize": 1024,
+        "totalLogSize": 10240,
+        "timeInfo": {
+          "use": true,
+          "format": "FIRST_YEAR"
+        }
+      },
+      {
+        "_comment": "don't change the name, loggerID is g_appLoggerID, this logger can bu used with the g_appLoggerID",
+        "name": "appLogger",
+        "use": false,
+        "fsPath": "Middleware/MiddComm/Midd_FS/fs_port.h",
+        "openFunc": "fsOpenFile",
+        "readFunc": "fsReadFile",
+        "writeFunc": "fsWriteFile",
+        "closeFunc": "fsCloseFile",
+        "logPath": "./app",
+        "fileSize": 1024,
+        "totalLogSize": 10240,
+        "timeInfo": {
+          "use": true,
+          "format": "FIRST_YEAR"
+        }
+      },
+      {
+        "_comment": "don't change the name, loggerID is g_protLoggerID, this logger can bu used with the g_protLoggerID",
+        "name": "protocolLogger",
+        "use": true,
+        "fsPath": "Middleware/MiddComm/Midd_FS/fs_port.h",
+        "openFunc": "fsOpenFile",
+        "readFunc": "fsReadFile",
+        "writeFunc": "fsWriteFile",
+        "closeFunc": "fsCloseFile",
+        "logPath": "./protocol",
+        "fileSize": 1024,
+        "totalLogSize": 10240,
+        "timeInfo": {
+          "use": true,
+          "format": "FIRST_YEAR"
+        }
+      }
+    ]
+  }
+}
+  
+
+
