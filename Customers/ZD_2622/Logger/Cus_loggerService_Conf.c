@@ -1,12 +1,12 @@
 /******************************************************************************
 * #Author       : Zafer Satilmis
 * #File Name    : Cus_loggerService_Conf.c
-* #Customer     : ZD_0101
-* #Date         : 2026-03-25 17:16:05
+* #Customer     : ZD_2622
+* #Date         : 2026-03-25 17:18:00
 ******************************************************************************/
 /******************************************************************************
 * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
-* Customer Name: ZD_0101
+* Customer Name: ZD_2622
 * Generated from customer logger_config.json via generate_logger_service.py.
 ******************************************************************************/
 
@@ -17,6 +17,7 @@
 #include "AppLogRecorder.h"
 
 #include LOGGER_SYS_FS_PATH
+#include LOGGER_PROT_FS_PATH
 /****************************** MACRO DEFINITIONS *****************************/
 
 /******************************* TYPE DEFINITIONS *****************************/
@@ -24,6 +25,7 @@
 /********************************** VARIABLES *********************************/
 
 S32 g_sysLoggerID;
+S32 g_protLoggerID;
 
 /******************************* PUBLIC FUNCTIONS  *****************************/
 
@@ -46,6 +48,22 @@ RETURN_STATUS appLogStartLoggers(void)
     sysLoggerConf.timeStampFormat = LOGGER_SYS_TIME_INFO_FORMAT;
 
     retVal |= appLogRecRegister(&sysLoggerConf, loggerSysName, &g_sysLoggerID);
+
+    char loggerProtName[] = LOGGER_PROT_NAME;
+
+    logRecConf_t protocolLoggerConf;
+
+    protocolLoggerConf.openFunc  = LOGGER_PROT_OPEN_FUNC;
+    protocolLoggerConf.writeFunc = LOGGER_PROT_WRITE_FUNC;
+    protocolLoggerConf.readFunc  = LOGGER_PROT_READ_FUNC;
+    protocolLoggerConf.closeFunc = LOGGER_PROT_CLOSE_FUNC;
+    protocolLoggerConf.fileSize  = LOGGER_PROT_FILE_SIZE;
+    protocolLoggerConf.logPath   = LOGGER_PROT_LOG_PATH;
+    protocolLoggerConf.totalLogSize = LOGGER_PROT_TOTAL_LOG_SIZE;
+    protocolLoggerConf.timeStamp = LOGGER_PROT_TIME_INFO_USE;
+    protocolLoggerConf.timeStampFormat = LOGGER_PROT_TIME_INFO_FORMAT;
+
+    retVal |= appLogRecRegister(&protocolLoggerConf, loggerProtName, &g_protLoggerID);
 
     return retVal;
 }
