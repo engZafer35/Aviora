@@ -59,7 +59,7 @@ static void serverSenderTask(void *pvParameters)
             if ((OS_INVALID_QUEUE != server->cli[z].cliSndQue) && (0 < (rLen = zosMsgQueueReceive(server->cli[z].cliSndQue, buff, 2048, WAIT_10_MS))))
             {
                 SEND(server->cli[z].cliSock, buff, rLen , 0 );
-                printf("Viko Reply: RLen: %d - %s \n\r", rLen, buff);
+                printf("Reply: RLen: %d - %s \n\r", rLen, buff);
             }
         }
 

@@ -135,11 +135,6 @@ static void inputDigital_6(U32 stat) /** Digital input 6*/
 static RETURN_STATUS initSWUnit(void)
 {
     RETURN_STATUS retVal = SUCCESS;
-    LogRecConf_t sysLoggerConf; //TODO: change this structure with file system w/r operation
-
-    sysLoggerConf.fileSize  = 131072; //128*1024
-    sysLoggerConf.logPath   = "./";
-    sysLoggerConf.totalLogSize = 20*sysLoggerConf.fileSize; 
 
     /** !< Firstly initialize common used midd layer */
     retVal |= middIOInit();
@@ -199,11 +194,14 @@ static RETURN_STATUS initSWUnit(void)
             return FAILURE;
         }
 
-        if (FAILURE == appLogRecRegister(&sysLoggerConf, "sysLogger", &g_sysLoggerID))
+        if (FAILURE == appLogStartLoggers()))
         {
             DEBUG_ERROR("->[E] Log Reg for sysLogger ERROR ");
             return FAILURE;
         }
+
+        //wait until logger service is ready
+        zosDelayTask(WAIT_2_SEC);
 
         if (FAILURE == appDBusInit())
         {
