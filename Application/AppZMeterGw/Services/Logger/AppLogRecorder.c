@@ -16,7 +16,6 @@
 #include "AppTaskManager.h"
 #include "AppTimeService.h"
 
-#include "Middleware/MiddComm/Midd_FS/fs_port.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -35,7 +34,7 @@ typedef struct
 
 typedef struct
 {
-    LogRecConf_t srvIFace;
+    LogRecInterface srvIFace;
     S32 loggerID;
     char serviceName[SERVICE_NAME_MAX];
     OsQueue queue;
@@ -77,17 +76,23 @@ static RETURN_STATUS openNewLogFile(LoggerService *svc)
 
     if (svc->logFile)
     {
-        fsCloseFile(svc->logFile);
+        svc->srvIFace.closeFunc(svc->logFile);
         svc->logFile = NULL;
     }
 
-    snprintf(svc->currentLogFile, sizeof(svc->currentLogFile), "%s/%s_%s-%02d%02d%02d.log",
-                                                                svc->srvIFace.logPath, 
+#ifdef _WIN32
+#define PATH_SEP "\\"
+#else
+#define PATH_SEP "/"
+#endif
+
+    snprintf(svc->currentLogFile, sizeof(svc->currentLogFile), "%s%c%s_%s-%02d%02d%02d.log",
+                                                                svc->srvIFace.logPath, PATH_SEP, 
                                                                 svc->serviceName, 
                                                                 svc->currentDate, 
                                                                 tmValue.tm_hour, tmValue.tm_min, tmValue.tm_sec);
 
-    svc->logFile = fsOpenFile(svc->currentLogFile, FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE);
+    svc->logFile = svc->srvIFace.openFunc(svc->currentLogFile, FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE);
     if (NULL == svc->logFile)
     {
         DEBUG_ERROR("->[E] %s failed to open log file %s", svc->serviceName, svc->currentLogFile);
@@ -131,7 +136,7 @@ static void loggerWriterTask(void *arg)
                 int lineLen = snprintf(line, sizeof(line), "%s %s - %s\n", dateStr, timeStr, item.text);
                 if (lineLen > 0)
                 {
-                    if (NO_ERROR == fsWriteFile(svc->logFile, line, (size_t)lineLen))
+                    if (SUCCESS == svc->srvIFace.writeFunc(svc->logFile, line, (size_t)lineLen))
                     {
                         svc->currentFileSize += (U32)lineLen;
                     }
@@ -145,7 +150,7 @@ static void loggerWriterTask(void *arg)
     DEBUG_WARNING("->[W] %s Logger writer task stopped", svc->serviceName);
     if (svc->logFile != NULL)
     {
-        fsCloseFile(svc->logFile);
+        svc->srvIFace.closeFunc(svc->logFile);
         svc->logFile = NULL;
     }
     
@@ -178,7 +183,7 @@ RETURN_STATUS appLogRecInit(void)
     return SUCCESS;
 }
 
-RETURN_STATUS appLogRecRegister(LogRecConf_t *logger, const char *srvName, S32 *loggerID)
+RETURN_STATUS appLogRecRegister(LogRecInterface *logger, const char *srvName, S32 *loggerID)
 {
     if ((logger == NULL) || (srvName == NULL) || (loggerID == NULL))
     {
@@ -292,18 +297,12 @@ S32 appLogRecRead(S32 loggerID, const char *str, U32 size)
     }
 
     LoggerService *svc = &services[loggerID];
-    if (-1 == svc->loggerID)
+    if ((-1 == svc->loggerID) || (NULL == svc->srvIFace.readFunc))
     {
         return -1;
     }
 
-    U32 rLeng;    
-    if (NO_ERROR != fsReadFile(svc->logFile, str, size, &rLeng))
-    {
-        return -1;
-    }
-    
-    return rLeng;
+    return svc->srvIFace.readFunc(str, size);
 }
 
 S32 appLogRecGetLoggerID(const char *srvName)
