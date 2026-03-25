@@ -49,7 +49,7 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
     if (0 != getaddrinfo(gs_ntpHost, portStr, &hints, &res))
     {
         DEBUG_ERROR("->[E] NTP DNS failed (%s)", gs_ntpHost);
-        appLogRec(g_sysLoggerID, "TimeSrv: NTP DNS failed");
+        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP DNS failed");
         return FAILURE;
     }
 
@@ -58,7 +58,7 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
     {
         freeaddrinfo(res);
         DEBUG_ERROR("->[E] NTP socket failed");
-        appLogRec(g_sysLoggerID, "TimeSrv: NTP socket failed");
+        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP socket failed");
         return FAILURE;
     }
 
@@ -80,7 +80,7 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
         CLOSESOCKET(sock);
         freeaddrinfo(res);
         DEBUG_ERROR("->[E] NTP sendto failed");
-        appLogRec(g_sysLoggerID, "TimeSrv: NTP sendto failed");
+        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP sendto failed");
         return FAILURE;
     }
 
@@ -94,7 +94,7 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
     if (r < (int)NTP_PACKET_SIZE)
     {
         DEBUG_ERROR("->[E] NTP recv failed");
-        appLogRec(g_sysLoggerID, "TimeSrv: NTP recv failed");
+        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP recv failed");
         return FAILURE;
     }
 

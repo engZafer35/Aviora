@@ -62,7 +62,7 @@ RETURN_STATUS AppDisplayInit(void)
     else
     {
         DEBUG_ERROR("->[E] Display Task could not be created");
-        appLogRec(g_sysLoggerID, "Display: Task could not be created");
+        APP_LOG_REC(g_sysLoggerID, "Display: Task could not be created");
     }
 
     return retVal;

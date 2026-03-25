@@ -19,7 +19,7 @@
 static void lcdDisplayInit(void)
 {
     DEBUG_INFO("->[I] LCD Display: Initialization started");
-    appLogRec(g_sysLoggerID, "LCD Display: Init");
+    APP_LOG_REC(g_sysLoggerID, "LCD Display: Init");
     
     /* TFT LCD sürücü başlatma kodu ... */
 }
@@ -77,7 +77,7 @@ static void clearDisplay(void)
 static void startingWind(void)
 {
     DEBUG_INFO("->[I] Display:Starting mode (LCD)");
-    appLogRec(g_sysLoggerID, "LCD Display:Starting mode");
+    APP_LOG_REC(g_sysLoggerID, "LCD Display:Starting mode");
     
     clearDisplay();
     lcdShowTextMessage("Device Starting...");
@@ -91,7 +91,7 @@ static void startingWind(void)
 static void mainWind(void)
 {
     DEBUG_INFO("->[I] Display:Main Window (LCD)");
-    appLogRec(g_sysLoggerID, "LCD Display:Main Window");
+    APP_LOG_REC(g_sysLoggerID, "LCD Display:Main Window");
     
     clearDisplay();
     lcdShowTextMessage("System Running");
@@ -105,7 +105,7 @@ static void mainWind(void)
 static void swUpdatingWind(void)
 {
     DEBUG_INFO("->[I] Display:SW Updating (LCD)");
-    appLogRec(g_sysLoggerID, "LCD Display:SW Updating");
+    APP_LOG_REC(g_sysLoggerID, "LCD Display:SW Updating");
     
     clearDisplay();
     lcdShowTextMessage("Software Update...");
@@ -119,7 +119,7 @@ static void swUpdatingWind(void)
 static void noGsmConnWind(void)
 {
     DEBUG_INFO("->[I] Display: No Connection (LCD)");
-    appLogRec(g_sysLoggerID, "LCD Display:No Connection");
+    APP_LOG_REC(g_sysLoggerID, "LCD Display:No Connection");
     
     clearDisplay();
     lcdShowTextMessage("No GSM Connection");
@@ -130,7 +130,7 @@ static void noGsmConnWind(void)
 static void failureWind(void)
 {
     DEBUG_INFO("->[I] Display:Failure Mode (LCD)");
-    appLogRec(g_sysLoggerID, "LCD Display:Failure Mode");
+    APP_LOG_REC(g_sysLoggerID, "LCD Display:Failure Mode");
     
     clearDisplay();
     lcdShowTextMessage("SYSTEM ERROR");

@@ -98,12 +98,12 @@ RETURN_STATUS AppNetworkService_Start(void)
     {
         retVal = SUCCESS;
         DEBUG_ERROR("->[E] Network Task created id: %d", networkTaskID);
-        appLogRec(g_sysLoggerID, "Network: Task created successfully");
+        APP_LOG_REC(g_sysLoggerID, "Network: Task created successfully");
     }
     else
     {
         DEBUG_ERROR("->[E] Network Task could not be created");
-        appLogRec(g_sysLoggerID, "Network: Task could not be created");
+        APP_LOG_REC(g_sysLoggerID, "Network: Task could not be created");
     }
 
     return retVal;

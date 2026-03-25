@@ -150,7 +150,7 @@ RETURN_STATUS appMsgHandlerAddHandler(const char *name, MsgHandler_t msgHnd)
             DEBUG_DEBUG("->[I] Added message handler: %s", name);
             char temp[128] = "";
             sprintf(temp, "Added message handler: %s", name);
-            appLogRec(g_sysLoggerID, temp);
+            APP_LOG_REC(g_sysLoggerID, temp);
             break;
         }
     }
@@ -173,7 +173,7 @@ RETURN_STATUS appMsgHandlerRemoveHandler(const char *name)
             DEBUG_DEBUG("->[I] Removed message handler: %s", name);
             char temp[128] = "";
             sprintf(temp, "Removed message handler: %s", name);
-            appLogRec(g_sysLoggerID, temp);
+            APP_LOG_REC(g_sysLoggerID, temp);
             break;
         }
     }
