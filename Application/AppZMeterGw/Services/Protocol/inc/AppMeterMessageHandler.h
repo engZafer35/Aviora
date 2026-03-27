@@ -13,7 +13,6 @@
 #define __APP_METER_MESSAGE_HANDLER_H__
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
-#include "AppMessageHandlerManager.h"
 
 /******************************MACRO DEFINITIONS*******************************/
 #define METER_HANDLER_NAME "E_METER"
@@ -28,7 +27,6 @@ typedef struct
 
 typedef enum MeterBrands
 {
-    EN_METER_BRAND_LUNA,
     EN_METER_BRAND_BAYLAN,
     EN_METER_BRAND_KOHLER,
     EN_METER_BRAND_MAKEL,
