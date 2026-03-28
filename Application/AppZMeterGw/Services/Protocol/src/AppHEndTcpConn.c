@@ -299,6 +299,41 @@ RETURN_STATUS appHEndTcpCloseServer(const char *hEndName)
     return SUCCESS;
 }
 
+BOOL appHEndTcpServerIsConnected(const char *hEndName)
+{
+    if (IS_NULL_PTR(hEndName))
+        return FALSE;
+
+    for (U32 i = 0; i < MAX_SERVER_NUM; i++)
+    {
+        if (strcmp(gs_tcpServer[i].name, hEndName) == 0)
+            return (gs_tcpServer[i].activeClientNum > 0) ? TRUE : FALSE;
+    }
+    return FALSE;
+}
+
+RETURN_STATUS appHEndTcpServerSend(const char *hEndName, const void *data, size_t dataLen)
+{
+    if (IS_NULL_PTR(hEndName) || IS_NULL_PTR(data) || dataLen == 0)
+        return FAILURE;
+
+    for (U32 i = 0; i < MAX_SERVER_NUM; i++)
+    {
+        if (strcmp(gs_tcpServer[i].name, hEndName) == 0)
+        {
+            for (U32 c = 0; c < (U32)gs_tcpServer[i].maxClient; c++)
+            {
+                if ((gs_tcpServer[i].cli[c].cliSock > 0) && (gs_tcpServer[i].cli[c].cliSndQue != OS_INVALID_QUEUE))
+                {
+                    zosMsgQueueSend(gs_tcpServer[i].cli[c].cliSndQue, (const char *)data, dataLen, TIME_OUT_10MS);
+                }
+            }
+            return SUCCESS;
+        }
+    }
+    return FAILURE;
+}
+
 RETURN_STATUS appHEndTcpConnect(const char *hEndName, const char *ip, U32 port, void *packetHandlerFunc)
 {
     return SUCCESS;
@@ -307,5 +342,19 @@ RETURN_STATUS appHEndTcpConnect(const char *hEndName, const char *ip, U32 port, 
 RETURN_STATUS appHEndTcpDisconnect(const char *hEndName)
 {
     return SUCCESS;
+}
+
+BOOL appHEndTcpClientIsConnected(const char *hEndName)
+{
+    (void)hEndName;
+    return FALSE;
+}
+
+RETURN_STATUS appHEndTcpClientSend(const char *hEndName, const void *data, size_t dataLen)
+{
+    (void)hEndName;
+    (void)data;
+    (void)dataLen;
+    return FAILURE;
 }
 /******************************** End Of File *********************************/
