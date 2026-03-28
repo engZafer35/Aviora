@@ -13,12 +13,12 @@
 #include "AppMeterOperations.h"
 #include "AppTaskManager.h"
 #include "ZDJson.h"
+#include "AppLogRecorder.h"
 #include "fs_port.h"
 
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 #include <stdbool.h>
 
 #ifndef METER_OPS_TASK_STACK
@@ -26,10 +26,9 @@
 #endif
 
 #define MAX_DIRECTIVES       (64)
-#define MAX_METER_TASKS      (32)
+#define MAX_METER_TASKS      (16)
 #define METER_OPS_QUEUE_DEPTH (16)
 #define DIRECTIVE_INDEX_FILE DIRECTIVE_MAIN_DIR "directive.idx"
-#define MAX_DIRECTIVE_BODY   (8192)
 #define MAX_PATH_LEN         (96)
 #define IEC_LINE_TIMEOUT_MS  (5000U)
 #define IEC_BYTE_TIMEOUT_MS  (500U)
@@ -90,9 +89,6 @@ static OsMutex s_meterRegMux;
 static OsMutex s_directiveMux;
 static OsMutex s_taskMux;
 
-/* Shared read buffers (mutex-protected) */
-static char s_directiveReadBuf[MAX_DIRECTIVE_BODY];
-static OsMutex s_getDirectiveMux;
 
 /***************************** STATIC FUNCTIONS  ******************************/
 
@@ -332,34 +328,11 @@ static error_t meterListRemoveSerial(const char serialKey[16])
 
 /* ---- Directive index helpers ---- */
 
-static void directiveSafeBasename(const char *id, char *out, size_t outSz)
-{
-    size_t j = 0;
-    for (size_t i = 0; id[i] != '\0' && j + 1 < outSz; i++)
-    {
-        unsigned char c = (unsigned char)id[i];
-        if (isalnum(c) || c == '_' || c == '-')
-            out[j++] = (char)c;
-        else
-            out[j++] = '_';
-    }
-    out[j] = '\0';
-    if (strlen(out) > 40U)
-        out[40] = '\0';
-}
-
-static void directiveFilePath(const char *id, char *path, size_t pathSz)
-{
-    char base[48];
-    directiveSafeBasename(id, base, sizeof(base));
-    snprintf(path, pathSz, "%s%s.json", DIRECTIVE_MAIN_DIR, base);
-    path[pathSz - 1] = '\0';
-}
-
 static RETURN_STATUS directiveIndexSave(void)
 {
     U32 magic = 0x44495258u;
     U8 hdr[sizeof(U32) * 2];
+
     memcpy(hdr, &magic, sizeof(magic));
     memcpy(hdr + sizeof(U32), &s_directiveCount, sizeof(U32));
 
@@ -369,8 +342,9 @@ static RETURN_STATUS directiveIndexSave(void)
         return FAILURE;
 
     error_t e = fsWriteFile(f, hdr, sizeof(hdr));
-    if (e == NO_ERROR && s_directiveCount > 0)
+    if ((NO_ERROR == e) && (s_directiveCount > 0))
         e = fsWriteFile(f, s_directiveIds, (size_t)s_directiveCount * MAX_KEY_LENGTH);
+        
     fsCloseFile(f);
     return (e == NO_ERROR) ? SUCCESS : FAILURE;
 }
@@ -673,7 +647,7 @@ RETURN_STATUS appMeterOperationsStart(MeterCommInterface_t *meterComm)
     s_meterIf = meterComm;
 
     if ((zosCreateMutex(&s_meterRegMux) == FALSE) || (zosCreateMutex(&s_directiveMux) == FALSE)
-        || (zosCreateMutex(&s_taskMux) == FALSE) || (zosCreateMutex(&s_getDirectiveMux) == FALSE))
+        || (zosCreateMutex(&s_taskMux) == FALSE))
         return FAILURE;
 
     lockMeterReg();
@@ -761,6 +735,9 @@ RETURN_STATUS appMeterOperationsAddMeter(MeterData_t *meterData)
     }
     s_meterCount++;
 
+    DEBUG_INFO("->[I] Meter %s added", meterData->serialNumber);
+    APP_LOG_REC(g_sysLoggerID, "Meter %s added", meterData->serialNumber);
+
     unlockMeterReg();
     return SUCCESS;
 }
@@ -769,7 +746,7 @@ RETURN_STATUS appMeterOperationsGetMeterData(const char *serialNumber, MeterData
 {
     char path[MAX_PATH_LEN];
 
-    if (serialNumber == NULL || serialNumber[0] == '\0' || meterDataOut == NULL)
+    if ((NULL == serialNumber) || (serialNumber[0] == '\0') || (NULL == meterDataOut))
         return FAILURE;
 
     snprintf(path, sizeof(path), "%s%.16s", METER_REG_DIR, serialNumber);
@@ -779,13 +756,52 @@ RETURN_STATUS appMeterOperationsGetMeterData(const char *serialNumber, MeterData
         return FAILURE;
 
     size_t got = 0;
-    if (fsReadFile(f, meterDataOut, sizeof(MeterData_t), &got) != NO_ERROR || got != sizeof(MeterData_t))
+    if ((NO_ERROR != fsReadFile(f, meterDataOut, sizeof(MeterData_t), &got)) || (got != sizeof(MeterData_t)))
     {
         fsCloseFile(f);
         return FAILURE;
     }
+
     fsCloseFile(f);
     return SUCCESS;
+}
+
+RETURN_STATUS appMeterOperationsGetMeterDataByIndex(U32 index, MeterData_t *meterDataOut)
+{
+    lockMeterReg();
+
+    if (index >= s_meterCount)
+    {
+        unlockMeterReg();
+        return FAILURE;
+    }
+
+    FsFile *f = fsOpenFile((char_t *)METER_LIST_FILE, FS_FILE_MODE_READ);
+    if (NULL == f)
+    {
+        unlockMeterReg();
+        return FAILURE;
+    }
+
+    if (NO_ERROR != fsSeekFile(f, (int_t)(index * METER_LIST_ROW_SZ), FS_SEEK_SET))
+    {
+        fsCloseFile(f);
+        unlockMeterReg();
+        return FAILURE;
+    }
+
+    MeterTable_t row;
+    size_t got = 0;
+    if ((NO_ERROR != fsReadFile(f, &row, sizeof(row), &got)) || (got < sizeof(row)))
+    {
+        fsCloseFile(f);
+        unlockMeterReg();
+        return FAILURE;
+    }
+    fsCloseFile(f);
+    unlockMeterReg();
+
+    return appMeterOperationsGetMeterData(row.serialNumber, meterDataOut);
 }
 
 RETURN_STATUS appMeterOperationsDeleteMeter(const char *serialNumber)
@@ -808,6 +824,9 @@ RETURN_STATUS appMeterOperationsDeleteMeter(const char *serialNumber)
     snprintf(path, sizeof(path), "%s%.16s", METER_REG_DIR, serialNumber);
     (void)fsDeleteFile((char_t *)path);
 
+    DEBUG_INFO("->[I] Meter %s deleted", serialNumber);
+    APP_LOG_REC(g_sysLoggerID, "Meter %s deleted", serialNumber);
+
     unlockMeterReg();
     return SUCCESS;
 }
@@ -815,7 +834,7 @@ RETURN_STATUS appMeterOperationsDeleteMeter(const char *serialNumber)
 RETURN_STATUS appMeterOperationsDeleteAllMeters(void)
 {
     char path[MAX_PATH_LEN];
-    U8 buf[METER_LIST_ROW_SZ * 32];
+    U8 buf[METER_LIST_ROW_SZ * 32]; //32 is temp value. chunk size
 
     lockMeterReg();
 
@@ -849,14 +868,17 @@ RETURN_STATUS appMeterOperationsDeleteAllMeters(void)
     (void)fsDeleteFile((char_t *)METER_LIST_FILE);
     s_meterCount = 0;
 
+    DEBUG_INFO("->[I] All meters deleted");
+    APP_LOG_REC(g_sysLoggerID, "All meters deleted");
+
     unlockMeterReg();
     return SUCCESS;
 }
 
-S32 appMeterOperationsGetMeterCount(void)
+U32 appMeterOperationsGetMeterCount(void)
 {
     lockMeterReg();
-    S32 n = (S32)s_meterCount;
+    U32 n = s_meterCount;
     unlockMeterReg();
     return n;
 }
@@ -865,17 +887,17 @@ S32 appMeterOperationsGetMeterCount(void)
 
 S32 appMeterOperationsAddReadoutTask(const char *request, Callback_t callback)
 {
-    if (request == NULL || callback == NULL)
+    if ((request == NULL) || (callback == NULL))
         return (S32)EN_ERR_CODE_METER_PARAM_ERROR;
-    if (!ZDJson_IsValid(request))
+    if (FALSE == ZDJson_IsValid(request))
         return (S32)EN_ERR_CODE_METER_PARAM_ERROR;
 
     char serial[20];
-    if (!getJsonParamString(request, "METERSERIALNUMBER", serial, sizeof(serial)))
+    if (FALSE == getJsonParamString(request, "METERSERIALNUMBER", serial, sizeof(serial)))
         return (S32)EN_ERR_CODE_METER_PARAM_ERROR;
 
     MeterData_t tmp;
-    if (appMeterOperationsGetMeterData(serial, &tmp) != SUCCESS)
+    if (SUCCESS != appMeterOperationsGetMeterData(serial, &tmp))
         return (S32)EN_ERR_CODE_METER_NOT_FOUND;
 
     S32 tid = taskSlotAlloc();
@@ -894,6 +916,10 @@ S32 appMeterOperationsAddReadoutTask(const char *request, Callback_t callback)
         taskSlotAbort(tid);
         return (S32)EN_ERR_CODE_NO_RESOURCES;
     }
+
+    DEBUG_INFO("->[I] Readout task %d added", tid);
+    APP_LOG_REC(g_sysLoggerID, "Readout task %d added", tid);
+
     return tid;
 }
 
@@ -901,7 +927,7 @@ S32 appMeterOperationsAddProfileTask(const char *request, Callback_t callback)
 {
     if (request == NULL || callback == NULL)
         return (S32)EN_ERR_CODE_METER_PARAM_ERROR;
-    if (!ZDJson_IsValid(request))
+    if (FALSE == ZDJson_IsValid(request))
         return (S32)EN_ERR_CODE_METER_PARAM_ERROR;
 
     char serial[20];
@@ -940,6 +966,10 @@ S32 appMeterOperationsAddProfileTask(const char *request, Callback_t callback)
         taskSlotAbort(tid);
         return (S32)EN_ERR_CODE_NO_RESOURCES;
     }
+
+    DEBUG_INFO("->[I] Profile task %d added", tid);
+    APP_LOG_REC(g_sysLoggerID, "Profile task %d added", tid);
+
     return tid;
 }
 
@@ -959,81 +989,101 @@ S32 appMeterOperationsAddWriteTask(const char *request, Callback_t callback)
 
 ERR_CODE_T appMeterOperationsIsTaskDone(S32 taskID)
 {
+    ERR_CODE_T retVal = EN_ERR_CODE_FAILURE;
     if (taskID <= 0)
         return EN_ERR_CODE_FAILURE;
+    
     lockTask();
     int ix = taskSlotFindLocked(taskID);
-    if (ix < 0)
+    if (ix >= 0)
     {
-        unlockTask();
-        return EN_ERR_CODE_FAILURE;
+        retVal = (TASK_PHASE_FINISHED == s_taskSlots[ix].phase) ? s_taskSlots[ix].result : EN_ERR_CODE_PENDING;
     }
-    TaskPhase_t ph = s_taskSlots[ix].phase;
-    ERR_CODE_T r = s_taskSlots[ix].result;
     unlockTask();
-    return (ph == TASK_PHASE_FINISHED) ? r : EN_ERR_CODE_PENDING;
+    return retVal;
 }
 
-void appMeterOperationsTaskIDFree(S32 taskID)
+ERR_CODE_T appMeterOperationsTaskIDFree(S32 taskID)
 {
+    ERR_CODE_T retVal = EN_ERR_CODE_FAILURE;
     lockTask();
+
     int ix = taskSlotFindLocked(taskID);
-    if (ix < 0 || s_taskSlots[ix].phase != TASK_PHASE_FINISHED)
+    if ((ix >= 0) && (TASK_PHASE_FINISHED == s_taskSlots[ix].phase))
     {
-        unlockTask();
-        return;
+        s_taskSlots[ix].taskId = 0;
+        s_taskSlots[ix].phase = TASK_PHASE_FREE;
+        s_taskSlots[ix].result = EN_ERR_CODE_SUCCESS;
+        retVal = EN_ERR_CODE_SUCCESS;
+
+        DEBUG_INFO("->[I] Task %d freed", taskID);
+        APP_LOG_REC(g_sysLoggerID, "Task %d freed", taskID);
     }
-    s_taskSlots[ix].taskId = 0;
-    s_taskSlots[ix].phase = TASK_PHASE_FREE;
-    s_taskSlots[ix].result = EN_ERR_CODE_SUCCESS;
+    
     unlockTask();
+    return retVal;
 }
 
 /* ---- Directive management ---- */
 
 S32 appMeterOperationsAddDirective(const char *directive)
 {
-    if (directive == NULL || !ZDJson_IsValid(directive))
-        return (S32)EN_ERR_CODE_DIRECTIVE_PARAM_ERROR;
-
-    char id[MAX_KEY_LENGTH];
-    if (!ZDJson_GetStringValue(directive, "id", id, sizeof(id)))
-        return (S32)EN_ERR_CODE_DIRECTIVE_PARAM_ERROR;
-
-    lockDirective();
-
-    char path[MAX_PATH_LEN];
-    directiveFilePath(id, path, sizeof(path));
-
-    size_t dlen = strlen(directive);
-    if (dlen >= MAX_DIRECTIVE_BODY)
+    if ((NULL == directive) || (FALSE == ZDJson_IsValid(directive)))
     {
-        unlockDirective();
+        DEBUG_INFO("->[E] Directive add failed: invalid JSON");
+        APP_LOG_REC(g_sysLoggerID, "Directive add failed: invalid JSON");
         return (S32)EN_ERR_CODE_DIRECTIVE_PARAM_ERROR;
     }
 
-    if (fsWriteWholeFile((char_t *)path, directive, dlen) != NO_ERROR)
+    char id[MAX_KEY_LENGTH];
+    if (FALSE == ZDJson_GetStringValue(directive, "id", id, sizeof(id)))
     {
+        DEBUG_INFO("->[E] Directive add failed ID not found");
+        APP_LOG_REC(g_sysLoggerID, "Directive add failed ID not found");
+        return (S32)EN_ERR_CODE_DIRECTIVE_PARAM_ERROR;
+    }
+
+    lockDirective();
+
+    S32 idx = directiveIndexFind(id);
+
+    if ((idx < 0) && (s_directiveCount >= MAX_DIRECTIVES))
+    {
+        unlockDirective();
+        DEBUG_INFO("->[E] Directive add failed: max directives reached");
+        APP_LOG_REC(g_sysLoggerID, "Directive add failed: max directives reached");
+        return (S32)EN_ERR_CODE_NO_RESOURCES;
+    }
+
+    char path[MAX_PATH_LEN];
+    snprintf(path, sizeof(path), "%s%s.json", DIRECTIVE_MAIN_DIR, id);
+    path[sizeof(path) - 1] = '\0';
+
+    if (NO_ERROR != fsWriteWholeFile((char_t *)path, directive, strlen(directive)))
+    {
+        DEBUG_INFO("->[E] Directive add failed: Write failed");
+        APP_LOG_REC(g_sysLoggerID, "Directive add failed: Write failed");
         unlockDirective();
         return (S32)EN_ERR_CODE_FAILURE;
     }
 
-    S32 idx = directiveIndexFind(id);
-    if (idx < 0)
+    BOOL isNew = (idx < 0) ? TRUE : FALSE;
+    if (isNew)
     {
-        if (s_directiveCount >= MAX_DIRECTIVES)
-        {
-            unlockDirective();
-            return (S32)EN_ERR_CODE_NO_RESOURCES;
-        }
         strncpy(s_directiveIds[s_directiveCount], id, MAX_KEY_LENGTH - 1);
         s_directiveIds[s_directiveCount][MAX_KEY_LENGTH - 1] = '\0';
         idx = (S32)s_directiveCount;
         s_directiveCount++;
     }
 
-    if (directiveIndexSave() != SUCCESS)
+    if (SUCCESS != directiveIndexSave())
     {
+        if (isNew) { s_directiveCount--; }
+        (void)fsDeleteFile((char_t *)path);
+
+        DEBUG_INFO("->[E] Directive add failed: Index save failed");
+        APP_LOG_REC(g_sysLoggerID, "Directive add failed: Index save failed");
+
         unlockDirective();
         return (S32)EN_ERR_CODE_FAILURE;
     }
@@ -1050,11 +1100,16 @@ RETURN_STATUS appMeterOperationsDeleteDirective(const char *directiveID)
         for (U32 i = 0; i < s_directiveCount; i++)
         {
             char path[MAX_PATH_LEN];
-            directiveFilePath(s_directiveIds[i], path, sizeof(path));
+            snprintf(path, sizeof(path), "%s%s.json", DIRECTIVE_MAIN_DIR, s_directiveIds[i]);
+            path[sizeof(path) - 1] = '\0';
             (void)fsDeleteFile((char_t *)path);
         }
         s_directiveCount = 0;
         (void)fsDeleteFile((char_t *)DIRECTIVE_INDEX_FILE);
+
+        DEBUG_INFO("->[I] All directives deleted");
+        APP_LOG_REC(g_sysLoggerID, "All directives deleted");
+
         unlockDirective();
         return SUCCESS;
     }
@@ -1067,66 +1122,71 @@ RETURN_STATUS appMeterOperationsDeleteDirective(const char *directiveID)
     }
 
     char path[MAX_PATH_LEN];
-    directiveFilePath(directiveID, path, sizeof(path));
+    snprintf(path, sizeof(path), "%s%s.json", DIRECTIVE_MAIN_DIR, directiveID);
+    path[sizeof(path) - 1] = '\0';
     (void)fsDeleteFile((char_t *)path);
 
     for (U32 j = (U32)ix + 1; j < s_directiveCount; j++)
         memcpy(s_directiveIds[j - 1], s_directiveIds[j], MAX_KEY_LENGTH);
     s_directiveCount--;
 
-    directiveIndexSave();
+    // we cannot check the return valud, because files are deleted and index set to 0
+    directiveIndexSave(); 
+
+    DEBUG_INFO("->[I] Directive %s deleted", directiveID);
+    APP_LOG_REC(g_sysLoggerID, "Directive %s deleted", directiveID);
+
     unlockDirective();
     return SUCCESS;
 }
 
-const char *appMeterOperationsGetDirective(const char *directiveID)
+RETURN_STATUS appMeterOperationsGetDirective(const char *directiveID, char *directiveOut, size_t directiveOutSz)
 {
-    if (directiveID == NULL)
-        return NULL;
+    if (directiveID == NULL || directiveOut == NULL || directiveOutSz == 0)
+        return FAILURE;
 
     lockDirective();
     if (directiveIndexFind(directiveID) < 0)
     {
         unlockDirective();
-        return NULL;
+        return FAILURE;
     }
     char path[MAX_PATH_LEN];
-    directiveFilePath(directiveID, path, sizeof(path));
+    snprintf(path, sizeof(path), "%s%s.json", DIRECTIVE_MAIN_DIR, directiveID);
+    path[sizeof(path) - 1] = '\0';
     unlockDirective();
 
-    zosAcquireMutex(&s_getDirectiveMux);
     size_t got = 0;
-    error_t e = fsReadWholeText((char_t *)path, s_directiveReadBuf, sizeof(s_directiveReadBuf), &got);
-    zosReleaseMutex(&s_getDirectiveMux);
-
-    return (e == NO_ERROR) ? s_directiveReadBuf : NULL;
+    error_t e = fsReadWholeText((char_t *)path, directiveOut, directiveOutSz, &got);
+    return (e == NO_ERROR) ? SUCCESS : FAILURE;
 }
 
-const char *appMeterOperationsGetDirectiveByIndex(U32 index)
+RETURN_STATUS appMeterOperationsGetDirectiveByIndex(U32 index, char *directiveOut, size_t directiveOutSz)
 {
+    if (directiveOut == NULL || directiveOutSz == 0)
+        return FAILURE;
+
     char path[MAX_PATH_LEN];
 
     lockDirective();
     if (index >= s_directiveCount)
     {
         unlockDirective();
-        return NULL;
+        return FAILURE;
     }
-    directiveFilePath(s_directiveIds[index], path, sizeof(path));
+    snprintf(path, sizeof(path), "%s%s.json", DIRECTIVE_MAIN_DIR, s_directiveIds[index]);
+    path[sizeof(path) - 1] = '\0';
     unlockDirective();
 
-    zosAcquireMutex(&s_getDirectiveMux);
     size_t got = 0;
-    error_t er = fsReadWholeText((char_t *)path, s_directiveReadBuf, sizeof(s_directiveReadBuf), &got);
-    zosReleaseMutex(&s_getDirectiveMux);
-
-    return (er == NO_ERROR) ? s_directiveReadBuf : NULL;
+    error_t e = fsReadWholeText((char_t *)path, directiveOut, directiveOutSz, &got);
+    return (e == NO_ERROR) ? SUCCESS : FAILURE;
 }
 
-S32 appMeterOperationsGetDirectiveCount(void)
+U32 appMeterOperationsGetDirectiveCount(void)
 {
     lockDirective();
-    S32 n = (S32)s_directiveCount;
+    U32 n = s_directiveCount;
     unlockDirective();
     return n;
 }

@@ -127,11 +127,13 @@ RETURN_STATUS appMeterOperationsAddMeter(MeterData_t *meterData);
 
 RETURN_STATUS appMeterOperationsGetMeterData(const char *serialNumber, MeterData_t *meterDataOut);
 
+RETURN_STATUS appMeterOperationsGetMeterDataByIndex(U32 index, MeterData_t *meterDataOut);
+
 RETURN_STATUS appMeterOperationsDeleteMeter(const char *serialNumber);
 
 RETURN_STATUS appMeterOperationsDeleteAllMeters(void);
 
-S32 appMeterOperationsGetMeterCount(void);
+U32 appMeterOperationsGetMeterCount(void);
 
 //example requests
 /*
@@ -165,7 +167,7 @@ S32 appMeterOperationsAddWriteTask(const char *request, Callback_t callback);
 
 ERR_CODE_T appMeterOperationsIsTaskDone(S32 taskID);
 
-void appMeterOperationsTaskIDFree(S32 taskID);
+ERR_CODE_T appMeterOperationsTaskIDFree(S32 taskID);
 
 /* Example directives
 "directives": [
@@ -232,20 +234,20 @@ RETURN_STATUS appMeterOperationsDeleteDirective(const char *directiveID);
  * @param directiveID Pointer to the directive ID
  * @return const char * Pointer to the directive list
  */
-const char *appMeterOperationsGetDirective(const char *directiveID);
+RETURN_STATUS appMeterOperationsGetDirective(const char *directiveID, char *directiveOut, size_t directiveOutSz);
 
 /**
  * @brief Get a directive by index from the meter manager
  * @param index Index of the directive
  * @return const char * Pointer to the directive
  */
-const char *appMeterOperationsGetDirectiveByIndex(U32 index);
+RETURN_STATUS appMeterOperationsGetDirectiveByIndex(U32 index, char *directiveOut, size_t directiveOutSz);
 
 /**
  * @brief Get the count of directives from the meter manager
  * @return S32 Count of directives
  */
-S32 appMeterOperationsGetDirectiveCount(void);
+U32 appMeterOperationsGetDirectiveCount(void);
 
 #endif /* __APP_METER_OPERATIONS_H__ */
 
