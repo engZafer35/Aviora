@@ -89,7 +89,7 @@ static char s_directiveReadBuf[MAX_DIRECTIVE_BODY];
 static OsMutex s_getDirectiveMux;
 
 /** RAM'de kayıtlı sayaç adedi; meterList dosya boyutu ile senkron (start'ta yüklenir). */
-static U32 s_meterRegisteredCount = 0;
+static U32 s_meterCount = 0;
 
 /***************************** STATIC FUNCTIONS  ******************************/
 
@@ -214,42 +214,58 @@ static void meterListRefreshCountFromFile(void)
 
     if (fsGetFileSize((char_t *)METER_LIST_FILE, &sz) != NO_ERROR)
     {
-        s_meterRegisteredCount = 0;
+        s_meterCount = 0;
         return;
     }
     if (sz == 0U || (sz % (uint32_t)METER_LIST_ROW_SZ) != 0U)
     {
-        s_meterRegisteredCount = 0;
+        s_meterCount = 0;
         return;
     }
-    s_meterRegisteredCount = sz / (uint32_t)METER_LIST_ROW_SZ;
+    s_meterCount = sz / (uint32_t)METER_LIST_ROW_SZ;
 }
 
 static BOOL meterListContainsSerial(const char serialKey[16])
 {
-    FsFile *f = fsOpenFile((char_t *)METER_LIST_FILE, FS_FILE_MODE_READ);
-    MeterTable_t row;
+    unsigned char buf[1024];
+    FsFile *f;
 
+    if (s_meterCount == 0U)
+        return FALSE;
+
+    f = fsOpenFile((char_t *)METER_LIST_FILE, FS_FILE_MODE_READ);
     if (f == NULL)
         return FALSE;
 
     for (;;)
     {
         size_t got = 0;
-        error_t e = fsReadFile(f, &row, sizeof(row), &got);
 
-        if (e == ERROR_END_OF_FILE || got == 0)
-            break;
-        if (got != sizeof(row))
-            break;
-        if (memcmp(row.serialNumber, serialKey, 16) == 0)
+        (void)fsReadFile(f, buf, sizeof(buf), &got);
+
+        if (got == 0U)
         {
             fsCloseFile(f);
-            return TRUE;
+            return FALSE;
+        }
+
+        size_t nMeters = got / METER_LIST_ROW_SZ;
+
+        for (size_t m = 0; m < nMeters; m++)
+        {
+            if (memcmp(buf + m * METER_LIST_ROW_SZ, serialKey, 16) == 0)
+            {
+                fsCloseFile(f);
+                return TRUE;
+            }
+        }
+
+        if (got < sizeof(buf))
+        {
+            fsCloseFile(f);
+            return FALSE;
         }
     }
-    fsCloseFile(f);
-    return FALSE;
 }
 
 static error_t meterListAppendRow(const MeterTable_t *row)
@@ -270,15 +286,13 @@ static error_t meterListAppendRow(const MeterTable_t *row)
 
 static error_t meterListRemoveSerial(const char serialKey[16])
 {
-    uint32_t sz = 0;
+    U32 n = s_meterCount;
 
-    if (fsGetFileSize((char_t *)METER_LIST_FILE, &sz) != NO_ERROR || sz == 0U)
+    if (n == 0U)
         return NO_ERROR;
-    if ((sz % (uint32_t)METER_LIST_ROW_SZ) != 0U)
-        return ERROR_INVALID_PARAMETER;
 
-    size_t n = (size_t)sz / METER_LIST_ROW_SZ;
-    MeterTable_t *buf = (MeterTable_t *)malloc(n * sizeof(MeterTable_t));
+    size_t blob = (size_t)n * sizeof(MeterTable_t);
+    MeterTable_t *buf = (MeterTable_t *)malloc(blob);
 
     if (buf == NULL)
         return ERROR_OUT_OF_MEMORY;
@@ -290,16 +304,16 @@ static error_t meterListRemoveSerial(const char serialKey[16])
         return ERROR_FILE_OPENING_FAILED;
     }
     size_t got = 0;
-    error_t e = fsReadFile(f, buf, sz, &got);
+    error_t e = fsReadFile(f, buf, blob, &got);
     fsCloseFile(f);
-    if (e != NO_ERROR || got != sz)
+    if (e != NO_ERROR || got != blob)
     {
         free(buf);
-        return e;
+        return (e != NO_ERROR) ? e : ERROR_INVALID_PARAMETER;
     }
 
     size_t w = 0;
-    for (size_t i = 0; i < n; i++)
+    for (U32 i = 0; i < n; i++)
     {
         if (memcmp(buf[i].serialNumber, serialKey, 16) != 0)
             buf[w++] = buf[i];
@@ -317,7 +331,7 @@ static error_t meterListRemoveSerial(const char serialKey[16])
 
     free(buf);
     if (e == NO_ERROR)
-        s_meterRegisteredCount = (U32)w;
+        s_meterCount = (U32)w;
     return e;
 }
 
@@ -677,23 +691,8 @@ RETURN_STATUS appMeterAddMeter(MeterData_t *meterData)
 
     if (meterListContainsSerial(row.serialNumber))
     {
-        if (!fsFileExists((char_t *)path))
-        {
-            error_t e = fsWriteWholeFile((char_t *)path, meterData, sizeof(MeterData_t));
-            unlockMeterReg();
-            return (e == NO_ERROR) ? SUCCESS : FAILURE;
-        }
         unlockMeterReg();
         return SUCCESS;
-    }
-
-    if (fsFileExists((char_t *)path))
-    {
-        error_t e = meterListAppendRow(&row);
-        if (e == NO_ERROR)
-            s_meterRegisteredCount++;
-        unlockMeterReg();
-        return (e == NO_ERROR) ? SUCCESS : FAILURE;
     }
 
     error_t e = fsWriteWholeFile((char_t *)path, meterData, sizeof(MeterData_t));
@@ -709,7 +708,7 @@ RETURN_STATUS appMeterAddMeter(MeterData_t *meterData)
         unlockMeterReg();
         return FAILURE;
     }
-    s_meterRegisteredCount++;
+    s_meterCount++;
     unlockMeterReg();
     return SUCCESS;
 }
@@ -769,29 +768,54 @@ RETURN_STATUS appMeterDeleteMeter(const char *serialNumber)
 RETURN_STATUS appMeterDeleteAllMeters(void)
 {
     char path[MAX_PATH_LEN];
+    unsigned char buf[1024];
+    U32 n;
 
     lockMeterReg();
+    n = s_meterCount;
+    if (n > 0U)
     {
         FsFile *f = fsOpenFile((char_t *)METER_LIST_FILE, FS_FILE_MODE_READ);
         if (f != NULL)
         {
-            MeterTable_t row;
-            for (;;)
+            U32 processed = 0;
+            const size_t totalBytes = (size_t)n * METER_LIST_ROW_SZ;
+
+            while (processed < n)
             {
+                size_t stillBytes = totalBytes - (size_t)processed * METER_LIST_ROW_SZ;
+                size_t toRead = sizeof(buf);
+
+                if (toRead > stillBytes)
+                    toRead = stillBytes;
+                if (toRead == 0U)
+                    break;
+
                 size_t got = 0;
-                error_t e = fsReadFile(f, &row, sizeof(row), &got);
-                if (e == ERROR_END_OF_FILE || got == 0)
+                (void)fsReadFile(f, buf, toRead, &got);
+
+                if (got == 0U)
                     break;
-                if (got != sizeof(row))
+
+                size_t nRows = got / METER_LIST_ROW_SZ;
+
+                for (size_t m = 0; m < nRows; m++)
+                {
+                    MeterTable_t row;
+                    memcpy(&row, buf + m * METER_LIST_ROW_SZ, sizeof(row));
+                    snprintf(path, sizeof(path), "%s%.16s", METER_REG_DIR, row.serialNumber);
+                    (void)fsDeleteFile((char_t *)path);
+                }
+                processed += (U32)nRows;
+
+                if (got < toRead)
                     break;
-                snprintf(path, sizeof(path), "%s%.16s", METER_REG_DIR, row.serialNumber);
-                (void)fsDeleteFile((char_t *)path);
             }
             fsCloseFile(f);
         }
     }
     (void)fsDeleteFile((char_t *)METER_LIST_FILE);
-    s_meterRegisteredCount = 0;
+    s_meterCount = 0;
     unlockMeterReg();
     return SUCCESS;
 }
@@ -801,7 +825,7 @@ S32 appMeterGetMeterCount(void)
     S32 n;
 
     lockMeterReg();
-    n = (S32)s_meterRegisteredCount;
+    n = (S32)s_meterCount;
     unlockMeterReg();
     return n;
 }
