@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Protocol — Python Test Server</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
+  <style>
+    .doc-figure { margin: 18px 0; text-align: center; }
+    .doc-figure img {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(0,0,0,0.25);
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .doc-figure figcaption {
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.45;
+      text-align: left;
+      max-width: 720px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .figure-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="index.html" class="active">Protocol</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Protocol</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="tcp-conn.html">TCP Connection</a>
+        <a href="meter-operations.html">Meter Operations</a>
+        <a href="protocolzd.html">ProtocolZD</a>
+        <a href="test-server.html" class="active">Test Server</a>
+        <a href="readme.html">README</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1>Python test server (<code>server.py</code>)</h1>
+          <p>
+            Desktop Test Server application listens on the <strong>push</strong> port where the device connects,
+            reads <code>pullIP</code> / <code>pullPort</code> from the first <strong>ident</strong> message (or uses the TCP source IP when needed) and sends pull commands to that address.
+          </p>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+          <article class="card col-12">
+            <h2>How to run</h2>
+            <pre class="code-block">cd Application\AppZMeterGw\Services\Protocol\server
+python server.py          # default push port: 8722
+python server.py 9000     # custom port</pre>
+            <p class="note">After the window opens, click <strong>Start</strong> to begin listening. The device must be configured to reach this machine’s IP and the same port.</p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Test Server — screenshots (wireframes)</h2>
+
+            <figure class="doc-figure">
+              <img src="images/test-server-main.svg" width="720" height="420" alt="Main window wireframe" />
+              <figcaption><strong>Main window.</strong> Left: port, Start/Stop, device fields, auto-reply options, pull commands. Right: message log (SENT/RECV colors).</figcaption>
+            </figure>
+
+            <div class="figure-grid">
+              <figure class="doc-figure">
+                <img src="images/test-server-controls.svg" width="520" height="160" alt="Server port and Start Stop" />
+                <figcaption><strong>Server block.</strong> Push listen port and Start/Stop.</figcaption>
+              </figure>
+              <figure class="doc-figure">
+                <img src="images/test-server-auto-reply.svg" width="480" height="140" alt="Auto-reply checkboxes" />
+                <figcaption><strong>Auto reply.</strong> Optionally send automatic ACK for ident, alive, and data.</figcaption>
+              </figure>
+            </div>
+
+            <figure class="doc-figure">
+              <img src="images/test-server-pull-buttons.svg" width="220" height="380" alt="Pull command list" />
+              <figcaption><strong>Pull commands.</strong> Disabled until ident; then enabled. The tool opens a TCP client to <code>pullIP:pullPort</code>.</figcaption>
+            </figure>
+
+            <figure class="doc-figure">
+              <img src="images/test-server-log-panel.svg" width="640" height="280" alt="Message log panel" />
+              <figcaption><strong>Log panel.</strong> The same text is appended to <code>server_log_*.txt</code>.</figcaption>
+            </figure>
+
+            <div class="figure-grid">
+              <figure class="doc-figure">
+                <img src="images/test-server-ident.svg" width="400" height="200" alt="Device info after ident" />
+                <figcaption><strong>After ident.</strong> Serial, pull IP and port are filled in.</figcaption>
+              </figure>
+              <figure class="doc-figure">
+                <img src="images/test-server-dialog.svg" width="440" height="280" alt="Readout parameter dialog" />
+                <figcaption><strong>Example dialog.</strong> Readout directive and meter serial.</figcaption>
+              </figure>
+            </div>
+
+            <figure class="doc-figure">
+              <img src="images/test-server-scenario-a.svg" width="560" height="200" alt="Scenario A steps" />
+              <figcaption><strong>Scenario A summary.</strong> Command line, Start, device push address, ident exchange, pull commands.</figcaption>
+            </figure>
+          </article>
+
+          <article class="card col-12">
+            <h2>Features</h2>
+            <ul>
+              <li><strong>Push listener</strong> — Single client; logs ident, alive, readout/load profile data.</li>
+              <li><strong>Auto replies</strong> — Optional <code>register: true</code> for ident, <code>ack</code> for alive and end-of-data (can be disabled).</li>
+              <li><strong>Pull client</strong> — Buttons stay disabled until ident; then connects to <code>pullIP:pullPort</code> and sends JSON.</li>
+              <li><strong>Multi-packet</strong> — For log and directive list, reads until <code>packetStream</code> is false.</li>
+              <li><strong>File log</strong> — <code>server_log_YYYYMMDD_HHMMSS.txt</code> is created automatically.</li>
+              <li><strong>Loopback fix</strong> — If the device reports <code>127.0.0.1</code>, the server can use the real TCP source IP as the pull target.</li>
+            </ul>
+          </article>
+
+          <article class="card col-12">
+            <h2>Test server flow diagram</h2>
+            <div class="diagram-wrap">
+              <div class="diagram-head">End-to-end</div>
+              <pre class="mermaid">flowchart TD
+  A[User: Start] --> B[Listen on push port]
+  B --> C[Device TCP connects]
+  C --> D[Receive ident]
+  D --> E[Update pullIP/pullPort in UI]
+  E --> F[Enable pull buttons]
+  F --> G{User command?}
+  G -->|Yes| H[TCP connect to device pull port]
+  H --> I[Send JSON, read responses]
+  I --> J[Log panel + file]
+  G -->|No| K[Listen for alive / data]
+  K --> G</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Sample scenarios</h2>
+            <h3>Scenario A — First registration</h3>
+            <ol>
+              <li>Run <code>python server.py 8722</code>, then click <strong>Start</strong>.</li>
+              <li>Configure the gateway push target as <code>this_PC_IP:8722</code>.</li>
+              <li>Device sends ident; JSON appears in the log; optional auto <code>register: true</code> is sent back.</li>
+              <li>Pull IP/port update; try <strong>Log request</strong> or <strong>Add meter</strong>.</li>
+            </ol>
+            <h3>Scenario B — Readout</h3>
+            <ol>
+              <li>First use <strong>Add meter</strong> to register a meter.</li>
+              <li>Use <strong>Readout request</strong> and enter directive and serial.</li>
+              <li>You should see <code>ack</code> on pull, then packetized readout on push.</li>
+            </ol>
+            <h3>Scenario C — Change server address</h3>
+            <ol>
+              <li>Use <strong>Server settings</strong> to send a new IP/port; the device restarts TCP (next connection uses the new address on real hardware).</li>
+            </ol>
+          </article>
+
+          <article class="card col-12">
+            <h2>Push ↔ pull timeline</h2>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Typical session</div>
+              <pre class="mermaid">sequenceDiagram
+  participant GW as Gateway
+  participant TS as Test server
+  GW->>TS: ident (push)
+  TS->>GW: ident response register true
+  loop every 5 min
+    GW->>TS: alive (push)
+    TS->>GW: ack (push)
+  end
+  TS->>GW: setting (pull)
+  GW->>TS: ack (pull)</pre>
+            </div>
+          </article>
+        </div>
+      </main>
+    </div>
+  </div>
+  <footer class="protocol-global-footer">
+    <p>Aviora - Designed By Zafer SATILMIS</p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="380" viewBox="0 0 220 380">
+  <rect width="220" height="380" fill="#252526" rx="8"/>
+  <text x="12" y="22" fill="#ffa500" font-size="10">Wait ident...</text>
+  <text x="12" y="42" fill="#6ea8ff" font-size="11">Pull commands</text>
+  <g font-size="9" fill="#ccc">
+    <rect x="10" y="52" width="200" height="22" fill="#3c3c3c" rx="3"/><text x="18" y="67" fill="#888">Log request</text>
+    <rect x="10" y="78" width="200" height="22" fill="#3c3c3c" rx="3"/><text x="18" y="93" fill="#888">Server settings</text>
+    <rect x="10" y="104" width="200" height="22" fill="#3c3c3c" rx="3"/><text x="18" y="119" fill="#888">Add meter</text>
+    <rect x="10" y="130" width="200" height="22" fill="#3c3c3c" rx="3"/><text x="18" y="145" fill="#888">Remove meter</text>
+    <rect x="10" y="156" width="200" height="22" fill="#3c3c3c" rx="3"/><text x="18" y="171" fill="#888">FW update</text>
+    <rect x="10" y="182" width="200" height="22" fill="#3c3c3c" rx="3"/><text x="18" y="197" fill="#888">Readout</text>
+    <rect x="10" y="208" width="200" height="22" fill="#3c3c3c" rx="3"/><text x="18" y="223" fill="#888">Load profile</text>
+    <rect x="10" y="234" width="200" height="22" fill="#3c3c3c" rx="3"/><text x="18" y="249" fill="#888">Directive list</text>
+    <rect x="10" y="260" width="200" height="22" fill="#3c3c3c" rx="3"/><text x="18" y="275" fill="#888">Directive add</text>
+    <rect x="10" y="286" width="200" height="22" fill="#3c3c3c" rx="3"/><text x="18" y="301" fill="#888">Directive delete</text>
+  </g>
+  <text x="12" y="350" fill="#6a9955" font-size="9">Enabled after ident (green state)</text>
+</svg>

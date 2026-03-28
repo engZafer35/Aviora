@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Protocol — Meter Operations</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="index.html" class="active">Protocol</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Protocol</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="tcp-conn.html">TCP Connection</a>
+        <a href="meter-operations.html" class="active">Meter Operations</a>
+        <a href="protocolzd.html">ProtocolZD</a>
+        <a href="test-server.html">Test Server</a>
+        <a href="readme.html">README</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1>AppMeterOperations</h1>
+          <p>
+            File-based meter registry, IEC 62056-21–style readout and load profile jobs,
+            directive storage, and a queued worker task — the protocol layer enqueues work here and waits for completion callbacks.
+          </p>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+          <article class="card col-12">
+            <h2>Directories and files</h2>
+            <ul>
+              <li><code>./meter/meterList</code> — registered meter index</li>
+              <li><code>./meter/reg/&lt;serial&gt;</code> — binary <code>MeterData_t</code> record</li>
+              <li><code>./meter/directive/&lt;id&gt;.json</code> — directive payload</li>
+              <li><code>./meter/meterDataOut/</code> — job outputs: <code>&lt;taskId&gt;_meterID.txt</code>, <code>_readout.txt</code>, <code>_payload.txt</code></li>
+            </ul>
+          </article>
+
+          <article class="card col-12">
+            <h2>Readout / load profile job flow</h2>
+            <div class="diagram-wrap">
+              <div class="diagram-head">ProtocolZD → MeterOps → file output</div>
+              <pre class="mermaid">sequenceDiagram
+  participant PZ as AppProtocolZD
+  participant MO as MeterOperations worker
+  participant FS as File system
+  PZ->>MO: AddReadoutTask / AddProfileTask + callback
+  MO->>MO: IEC flow (serial line)
+  MO->>FS: taskId_readout.txt / _payload.txt
+  MO-->>PZ: callback(taskId, status)
+  PZ->>FS: read files
+  PZ->>PZ: packetize and send on push
+  PZ->>FS: delete output files</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Directive API summary</h2>
+            <table style="width:100%;border-collapse:collapse;color:var(--muted);font-size:14px">
+              <tr style="border-bottom:1px solid var(--line)"><th style="text-align:left;padding:8px">Function</th><th style="text-align:left;padding:8px">Description</th></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><code>appMeterOperationsAddDirective</code></td><td style="padding:8px">Writes a file keyed by <code>id</code> in the JSON.</td></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><code>appMeterOperationsDeleteDirective</code></td><td style="padding:8px"><code>*</code> deletes all directives.</td></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><code>appMeterOperationsGetDirectiveCount</code> / <code>GetDirectiveByIndex</code></td><td style="padding:8px">Indexed read for listing (max ~1024-byte buffer).</td></tr>
+              <tr><td style="padding:8px"><code>appMeterOperationsAddReadoutTask</code></td><td style="padding:8px">Request JSON must include <code>METERSERIALNUMBER</code> and a registered meter.</td></tr>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Internal dependencies</h2>
+            <div class="diagram-wrap">
+              <div class="diagram-head">MeterOperations building blocks</div>
+              <pre class="mermaid">flowchart TB
+  MO[AppMeterOperations]
+  MO --> FS[fs_port]
+  MO --> ZJ[ZDJson]
+  MO --> MIF[MeterCommInterface_t]
+  MIF -.->|read/write| SER[RS485 / optical port]</pre>
+            </div>
+          </article>
+        </div>
+      </main>
+    </div>
+  </div>
+  <footer class="protocol-global-footer">
+    <p>Aviora - Designed By Zafer SATILMIS</p>
+  </footer>
+</body>
+</html>
