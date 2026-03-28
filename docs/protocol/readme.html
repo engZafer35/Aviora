@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>README — Aviora FS Framework</title>
+  <title>README — Aviora Protocol (ZMeter Gateway)</title>
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="./readme.css" />
   <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
@@ -13,34 +13,34 @@
       mermaid.initialize({ startOnLoad: false, theme: "dark" });
     }
   </script>
-  <script defer src="../app.js"></script>
 </head>
 <body>
   <div class="topbar">
     <div class="topbar-inner">
-      <div class="brand">🛰️Zafer Satılmış -Aviora</div>
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
       <nav class="nav">
         <a href="../index.html">Aviora</a>
-        <a href="index.html" class="active">File System</a>
-        <a href="../protocol/index.html">Protocol</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="index.html" class="active">Protocol</a>
         <a href="../timeservice/index.html">TimeService</a>
         <a href="../network/index.html">Network</a>
         <a href="../display/index.html">Display</a>
         <a href="../sw_update/index.html">SW Update</a>
         <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
       </nav>
     </div>
   </div>
 
   <div class="layout-with-sidebar">
     <aside class="sidebar">
-      <div class="sidebar-title">File System</div>
+      <div class="sidebar-title">Protocol</div>
       <nav class="sidebar-nav">
         <a href="index.html">Overview</a>
-        <a href="architecture.html">Architecture</a>
-        <a href="generator.html">Generator</a>
-        <a href="implementations.html">FS Ports</a>
-        <a href="flexibility.html">Flexibility</a>
+        <a href="tcp-conn.html">TCP Connection</a>
+        <a href="meter-operations.html">Meter Operations</a>
+        <a href="protocolzd.html">ProtocolZD</a>
+        <a href="test-server.html">Test Server</a>
         <a href="readme.html" class="active">README</a>
       </nav>
     </aside>
@@ -53,6 +53,10 @@
     </div>
   </div>
 
+  <footer class="protocol-global-footer">
+    <p>Aviora - Designed By Zafer SATILMIS</p>
+  </footer>
+
   <script>
     (function() {
       const container = document.getElementById("readme-content");
@@ -62,7 +66,7 @@
       const origCode = renderer.code.bind(renderer);
       renderer.code = function(code, lang, escaped) {
         if (lang === "mermaid") {
-          return '<pre class="mermaid">' + code + '</pre>';
+          return '<pre class="mermaid">' + code + "</pre>";
         }
         return origCode(code, lang, escaped);
       };
@@ -80,7 +84,6 @@
         })
         .then(function(md) {
           container.innerHTML = marked.parse ? marked.parse(md) : marked(md);
-          // Fix relative image paths for GIFs
           container.querySelectorAll("img").forEach(function(img) {
             const src = img.getAttribute("src");
             if (src && !src.startsWith("http") && !src.startsWith("/")) {
@@ -97,8 +100,12 @@
           }
         })
         .catch(function(err) {
-          container.innerHTML = '<p class="readme-error">Could not load README. Make sure the page is served from a web server (file:// may block fetch).<br><code>' + err.message + '</code></p>';
-          container.querySelector(".readme-loading") && container.querySelector(".readme-loading").remove();
+          container.innerHTML =
+            '<p class="readme-error">Could not load README. Serve the docs from a web server (file:// may block fetch).<br><code>' +
+            err.message +
+            "</code></p>";
+          var loading = container.querySelector(".readme-loading");
+          if (loading) loading.remove();
         });
     })();
   </script>

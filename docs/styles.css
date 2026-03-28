@@ -290,10 +290,39 @@ code{background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-size:0.9e
 .main-with-sidebar{
   flex:1;
   min-width:0;
+  display:flex;
+  flex-direction:column;
 }
 
 .main-with-sidebar .hero,
 .main-with-sidebar .container{
   max-width:100%;
+}
+
+/* Protocol docs — full-width footer (viewport-centered text, below sidebar + main) */
+.protocol-global-footer{
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 22px 18px 32px;
+  border-top: 1px solid var(--line);
+  background: rgba(8, 13, 27, 0.35);
+  text-align: center;
+  font-size: 13px;
+  color: #8a9cc7;
+  letter-spacing: 0.04em;
+}
+.protocol-global-footer p{
+  margin: 0 auto;
+  max-width: 100%;
+  text-align: center;
+  display: block;
+}
+.protocol-footer-note{
+  margin: 28px auto 0 auto;
+  padding: 0 18px 8px;
+  color: #9fb1dd;
+  text-align: center;
+  font-size: 14px;
 }
 

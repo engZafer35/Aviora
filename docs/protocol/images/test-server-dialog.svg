@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280">
+  <rect width="440" height="280" fill="#000000" opacity="0.5"/>
+  <rect x="40" y="30" width="360" height="220" fill="#252526" stroke="#6ea8ff" rx="8"/>
+  <text x="56" y="58" fill="#fff" font-family="Segoe UI,sans-serif" font-size="14">Readout request</text>
+  <text x="56" y="88" fill="#aaa" font-size="11">Directive:</text>
+  <rect x="140" y="74" width="240" height="22" fill="#3c3c3c" rx="3"/>
+  <text x="148" y="89" fill="#d4d4d4" font-size="10">ReadoutDirective1</text>
+  <text x="56" y="120" fill="#aaa" font-size="11">Meter serial:</text>
+  <rect x="140" y="106" width="240" height="22" fill="#3c3c3c" rx="3"/>
+  <text x="148" y="121" fill="#d4d4d4" font-size="10">12345678</text>
+  <rect x="200" y="200" width="80" height="28" fill="#0e639c" rx="4"/>
+  <text x="218" y="218" fill="#fff" font-size="11">Send</text>
+  <rect x="290" y="200" width="70" height="28" fill="#444" rx="4"/>
+  <text x="308" y="218" fill="#ccc" font-size="11">Cancel</text>
+</svg>

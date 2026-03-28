@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200">
+  <rect width="400" height="200" fill="#252526" rx="8"/>
+  <text x="16" y="28" fill="#6ea8ff" font-family="Segoe UI,sans-serif" font-size="12">Device info (after ident)</text>
+  <text x="16" y="52" fill="#aaa" font-size="10">Serial</text>
+  <rect x="100" y="40" width="280" height="20" fill="#3c3c3c" rx="2"/>
+  <text x="108" y="54" fill="#d4d4d4" font-family="Consolas,monospace" font-size="10">0123456789ABCDE</text>
+  <text x="16" y="82" fill="#aaa" font-size="10">Pull IP</text>
+  <rect x="100" y="70" width="280" height="20" fill="#264f78" rx="2"/>
+  <text x="108" y="84" fill="#9cdcfe" font-family="Consolas,monospace" font-size="10">192.168.1.50</text>
+  <text x="16" y="112" fill="#aaa" font-size="10">Pull port</text>
+  <rect x="100" y="100" width="280" height="20" fill="#3c3c3c" rx="2"/>
+  <text x="108" y="114" fill="#d4d4d4" font-family="Consolas,monospace" font-size="10">2622</text>
+  <text x="16" y="150" fill="#6a9955" font-size="10">OK: Pull 192.168.1.50:2622</text>
+</svg>
