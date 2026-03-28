@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="160" viewBox="0 0 520 160">
+  <rect width="520" height="160" fill="#252526" rx="8"/>
+  <text x="16" y="28" fill="#6ea8ff" font-size="12">Server block</text>
+  <text x="16" y="52" fill="#aaa" font-size="11">Push listen port</text>
+  <rect x="140" y="40" width="80" height="22" fill="#3c3c3c" rx="3"/>
+  <text x="148" y="55" fill="#d4d4d4" font-family="Consolas,monospace" font-size="11">8722</text>
+  <rect x="16" y="72" width="100" height="30" fill="#0e639c" rx="5"/>
+  <text x="44" y="91" fill="#fff" font-size="12">Start</text>
+  <rect x="130" y="72" width="100" height="30" fill="#722" rx="5"/>
+  <text x="158" y="91" fill="#fff" font-size="12">Stop</text>
+  <text x="250" y="92" fill="#888" font-size="10">Status: running / stopped</text>
+  <text x="16" y="130" fill="#666" font-size="9">Bind 0.0.0.0:port - device connects to this PC IP:port</text>
+</svg>

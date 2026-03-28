@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Protocol — AppProtocolZD (message reference)</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
+  <style>
+    .msg-block{margin:14px 0;padding:12px;border:1px solid var(--line);border-radius:10px;background:rgba(0,0,0,0.2)}
+    .msg-block h3{margin-top:0;font-size:16px;color:var(--accent)}
+    pre.json{font-size:12px;overflow:auto;margin:8px 0}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="index.html" class="active">Protocol</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Protocol</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="tcp-conn.html">TCP Connection</a>
+        <a href="meter-operations.html">Meter Operations</a>
+        <a href="protocolzd.html" class="active">ProtocolZD</a>
+        <a href="test-server.html">Test Server</a>
+        <a href="readme.html">README</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1>AppProtocolZD — JSON protocol</h1>
+          <p>
+            Every message includes a common <strong>device</strong> header. The <code>function</code> field selects the operation.
+            On the push channel, device → server; on the pull channel, server → device requests and (in most cases) immediate replies.
+          </p>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+          <article class="card col-12">
+            <h2>ProtocolZD state machine</h2>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Registration, alive, and pull handling</div>
+              <pre class="mermaid">stateDiagram-v2
+  [*] --> Init: appProtocolZDStart
+  Init --> Registering: connect push, send ident
+  Registering --> Registered: response.register true
+  Registering --> Registering: 30s timeout, retry
+  Registered --> Registered: alive every 5 min
+  Registered --> Registered: handle pull messages
+  Registered --> Registered: push data when meter job completes</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Common header (all messages)</h2>
+            <div class="msg-block">
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  ...
+}</pre>
+              <p><code>flag</code> is a product constant; <code>serialNumber</code> is the serial programmed into the device.</p>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>1. Ident (registration) — Push</h2>
+            <div class="msg-block">
+              <h3>Device → server</h3>
+              <pre class="code-block json">{
+  "device": { "flag": "AVI", "serialNumber": "0123456789ABCDE" },
+  "function": "ident",
+  "response": {
+    "registered": false,
+    "brand": "AVI",
+    "model": "AVIO2622",
+    "deviceDate": "2021-06-02 17:19:58",
+    "pullIP": "192.168.1.10",
+    "pullPort": 2622
+  }
+}</pre>
+              <p><code>registered: false</code> means first-time registration; if persisted, <code>true</code> is sent. If the server does not answer, retry after ~30 s.</p>
+              <h3>Server → device (same push socket)</h3>
+              <pre class="code-block json">{
+  "device": { "flag": "AVI", "serialNumber": "0123456789ABCDE" },
+  "function": "ident",
+  "response": { "register": true }
+}</pre>
+              <p><code>register: true</code> means acceptance; device state is saved to file so ident is not required again after reboot.</p>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>2. Alive — Push</h2>
+            <div class="msg-block">
+              <h3>Device → server (e.g. every 5 minutes)</h3>
+              <pre class="code-block json">{
+  "device": { "flag": "AVI", "serialNumber": "0123456789ABCDE" },
+  "function": "alive",
+  "response": { "deviceDate": "2021-06-02 17:19:58" }
+}</pre>
+              <h3>Server → device (optional)</h3>
+              <pre class="code-block json">{
+  "device": { "flag": "AVI", "serialNumber": "0123456789ABCDE" },
+  "function": "ack"
+}</pre>
+              <p>On error, <code>"function": "nack"</code>. The device resends on the next period even if no reply is received.</p>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>3. Log — Pull</h2>
+            <div class="msg-block">
+              <h3>Server → device</h3>
+              <pre class="code-block json">{
+  "device": { "flag": "AVI", "serialNumber": "0123456789ABCDE" },
+  "function": "log"
+}</pre>
+              <h3>Device → server (same pull session, may be packetized)</h3>
+              <pre class="code-block json">{
+  "device": { "flag": "AVI", "serialNumber": "0123456789ABCDE" },
+  "function": "log",
+  "packetNum": 1,
+  "packetStream": true,
+  "response": { "log": "... up to ~1024-byte JSON body ..." }
+}</pre>
+              <p>Last packet has <code>packetStream: false</code>. If there is no log, <code>log: "NO-LOG"</code>.</p>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>4. Setting — Pull</h2>
+            <div class="msg-block">
+              <h3>Server → device (server IP/port + meter add/remove)</h3>
+              <pre class="code-block json">{
+  "device": { "flag": "AVI", "serialNumber": "0123456789ABCDE" },
+  "function": "setting",
+  "request": {
+    "Server": { "ip": "192.168.1.100", "port": 8722 },
+    "meters": [
+      {
+        "operation": "add",
+        "meter": {
+          "protocol": "IEC62056",
+          "type": "electricity",
+          "brand": "MKL",
+          "serialNumber": "12345678",
+          "serialPort": "port-1",
+          "initBaud": 300,
+          "fixBaud": false,
+          "frame": "7E1"
+        }
+      },
+      {
+        "operation": "remove",
+        "meter": { "brand": "MKL", "serialNumber": "12345678" }
+      }
+    ]
+  }
+}</pre>
+              <h3>Device → server</h3>
+              <pre class="code-block json">{ "device": {...}, "function": "ack" }</pre>
+              <p>On failure, <code>nack</code>. If the server address is updated, the TCP manager is restarted.</p>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>5. fwUpdate — Pull</h2>
+            <div class="msg-block">
+              <h3>Server → device</h3>
+              <pre class="code-block json">{
+  "device": { "flag": "AVI", "serialNumber": "0123456789ABCDE" },
+  "function": "fwUpdate",
+  "request": { "address": "ftp://user:pass@host:21/path/file.bin" }
+}</pre>
+              <h3>Device → server</h3>
+              <pre class="code-block json">{ "device": {...}, "function": "ack" }</pre>
+              <p>Then the FTP download task is started (<code>AppSwUpdateInit</code>).</p>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>6. Readout — Pull + push</h2>
+            <div class="msg-block">
+              <h3>a) Server → device (pull)</h3>
+              <pre class="code-block json">{
+  "device": { "flag": "AVI", "serialNumber": "0123456789ABCDE" },
+  "function": "readout",
+  "request": {
+    "directive": "ReadoutDirective1",
+    "parameters": { "meterSerialNumber": "12345678" }
+  }
+}</pre>
+              <h3>b) Device → server (pull, if JSON is valid)</h3>
+              <pre class="code-block json">{ "device": {...}, "function": "ack" }</pre>
+              <p>Invalid request → <code>nack</code>. Job is queued.</p>
+              <h3>c) When done, device → server (push, packetized)</h3>
+              <pre class="code-block json">{
+  "device": { "flag": "AVI", "serialNumber": "0123456789ABCDE" },
+  "function": "readout",
+  "packetNum": 1,
+  "packetStream": false,
+  "response": {
+    "data": {
+      "id": "/LGZ5\\2ZMG405000b.P07",
+      "readout": "0.0.0(23660088)..."
+    }
+  }
+}</pre>
+              <h3>d) Server → device (push)</h3>
+              <pre class="code-block json">{ "device": {...}, "function": "ack" }</pre>
+              <p>Even if the server never answers, <code>_meterID.txt</code> and <code>_readout.txt</code> are deleted.</p>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>7. Load profile — Pull + push</h2>
+            <div class="msg-block">
+              <h3>Server → device (pull)</h3>
+              <pre class="code-block json">{
+  "device": { "flag": "AVI", "serialNumber": "0123456789ABCDE" },
+  "function": "loadprofile",
+  "request": {
+    "directive": "ProfileDirective1",
+    "METERSERIALNUMBER": "12345678",
+    "startDate": "2021-06-22 00:00:00",
+    "endDate": "2021-06-22 12:05:00"
+  }
+}</pre>
+              <p>ACK/NACK same idea as readout. Payload is read from <code>_payload.txt</code>; the <code>id</code> field uses <code>load-profile-no-id</code>; content is still packed under the <code>readout</code> key in the implementation.</p>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>8. directiveList — Pull</h2>
+            <div class="msg-block">
+              <h3>Server → device</h3>
+              <pre class="code-block json">{
+  "device": { "flag": "AVI", "serialNumber": "0123456789ABCDE" },
+  "function": "directiveList",
+  "request": { "filter": { "id": "ReadoutDirective" } }
+}</pre>
+              <p><code>id: "*"</code> returns all directives; each in a separate message with <code>packetNum</code> / <code>packetStream</code>.</p>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>9. directiveAdd / directiveDelete — Pull</h2>
+            <div class="msg-block">
+              <h3>Add request</h3>
+              <pre class="code-block json">{
+  "function": "directiveAdd",
+  "device": {...},
+  "request": {
+    "directive": {
+      "id": "DirectiveID",
+      "directive": [
+        { "operation": "setBaud", "parameter": "300" },
+        { "operation": "setFraming", "parameter": "7E1" }
+      ]
+    }
+  }
+}</pre>
+              <h3>Delete</h3>
+              <pre class="code-block json">{
+  "function": "directiveDelete",
+  "device": {...},
+  "request": { "filter": { "id": "DirectiveID" } }
+}</pre>
+              <p>Reply: <code>ack</code> or <code>nack</code>. For delete, <code>id: "*"</code> removes all.</p>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>End-to-end readout sequence (Mermaid)</h2>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Pull request → push data</div>
+              <pre class="mermaid">sequenceDiagram
+  participant S as Server
+  participant Pull as Device pull :2622
+  participant PZ as ProtocolZD
+  participant MO as MeterOps
+  participant Push as Device push to server
+  S->>Pull: readout + request JSON
+  Pull->>PZ: incoming message
+  PZ->>S: ack (pull)
+  PZ->>MO: AddReadoutTask
+  MO-->>PZ: callback SUCCESS
+  PZ->>Push: readout packets
+  S->>Push: ack
+  PZ->>PZ: delete output files</pre>
+            </div>
+          </article>
+        </div>
+      </main>
+    </div>
+  </div>
+  <footer class="protocol-global-footer">
+    <p>Aviora - Designed By Zafer SATILMIS</p>
+  </footer>
+</body>
+</html>

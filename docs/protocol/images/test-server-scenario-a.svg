@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="200" viewBox="0 0 560 200">
+  <rect width="560" height="200" fill="#1a1f2e" rx="8"/>
+  <text x="16" y="28" fill="#6ea8ff" font-size="13">Scenario A: first registration</text>
+  <g font-family="Consolas,monospace" font-size="10">
+    <text x="16" y="55" fill="#888">1.</text><text x="32" y="55" fill="#ccc">python server.py 8722</text>
+    <text x="16" y="78" fill="#888">2.</text><text x="32" y="78" fill="#ccc">Click Start in UI</text>
+    <text x="16" y="101" fill="#888">3.</text><text x="32" y="101" fill="#ccc">Device push: PC_IP:8722</text>
+    <text x="16" y="124" fill="#888">4.</text><text x="32" y="124" fill="#4ec9b0">ident RECV</text><text x="120" y="124" fill="#888"> --&gt; </text><text x="150" y="124" fill="#569cd6">register auto-SENT</text>
+    <text x="16" y="147" fill="#888">5.</text><text x="32" y="147" fill="#ccc">Pull buttons enabled - try Log / Add meter</text>
+  </g>
+</svg>

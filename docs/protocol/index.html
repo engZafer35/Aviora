@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Aviora — Protocol (ZMeter Gateway)</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="index.html" class="active">Protocol</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Protocol</div>
+      <nav class="sidebar-nav">
+        <a href="index.html" class="active">Overview</a>
+        <a href="tcp-conn.html">TCP Connection</a>
+        <a href="meter-operations.html">Meter Operations</a>
+        <a href="protocolzd.html">ProtocolZD</a>
+        <a href="test-server.html">Test Server</a>
+        <a href="readme.html">README</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1>ZMeter Gateway — Protocol Layer</h1>
+          <p>
+            <strong>JSON-over-TCP</strong> between the device and the central server:
+            <strong>AppTcpConnManager</strong> (push/pull sockets),
+            <strong>AppMeterOperations</strong> (meter and directive jobs),
+            <strong>AppProtocolZD</strong> (message flow and state machine),
+            and a <strong>Python test server</strong> for development.
+          </p>
+          <div class="tag-row">
+            <span class="tag highlight">JSON / TCP</span>
+            <span class="tag">Push + Pull</span>
+            <span class="tag">Ident / Alive</span>
+            <span class="tag">Readout / Load Profile</span>
+          </div>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+          <article class="card col-12">
+            <h2>Source layout</h2>
+            <pre class="code-block">Application/AppZMeterGw/Services/Protocol/
+├── inc/
+│   ├── AppTcpConnManager.h
+│   ├── AppMeterOperations.h
+│   └── AppProtocolZD.h
+├── src/
+│   ├── AppTcpConnManager.c
+│   ├── AppMeterOperations.c
+│   └── AppProtocolZD.c
+└── server/
+    └── server.py  </pre>
+          </article>
+
+          <article class="card col-12">
+            <h2>High-level data flow</h2>
+            <div class="diagram-wrap">
+              <div class="diagram-head">High level (Mermaid)</div>
+              <pre class="mermaid">flowchart TB
+  subgraph Server["Central server"]
+    SP[Listen push port]
+    PC[Pull client]
+  end
+  subgraph Device["Gateway device"]
+    PZD[AppProtocolZD]
+    TCP[AppTcpConnManager]
+    MTR[AppMeterOperations]
+    PZD --> TCP
+    PZD --> MTR
+    TCP -->|push: device connects| SP
+    PC -->|pull: server connects to device| TCP
+  end</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Push vs pull</h2>
+            <table style="width:100%;border-collapse:collapse;color:var(--muted);font-size:14px">
+              <tr style="border-bottom:1px solid var(--line)">
+                <th style="text-align:left;padding:8px">Channel</th>
+                <th style="text-align:left;padding:8px">Who initiates?</th>
+                <th style="text-align:left;padding:8px">Typical messages</th>
+              </tr>
+              <tr style="border-bottom:1px solid var(--line)">
+                <td style="padding:8px"><strong>Push</strong></td>
+                <td style="padding:8px">Device opens TCP to the server</td>
+                <td style="padding:8px"><code>ident</code>, <code>alive</code>, readout/load profile data packets</td>
+              </tr>
+              <tr>
+                <td style="padding:8px"><strong>Pull</strong></td>
+                <td style="padding:8px">Device listens locally; server connects in</td>
+                <td style="padding:8px"><code>log</code>, <code>setting</code>, <code>fwUpdate</code>, requests, directive CRUD</td>
+              </tr>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Page guide</h2>
+            <ul>
+              <li><a href="readme.html">README</a> — full protocol documentation (Markdown + Mermaid diagrams)</li>
+              <li><a href="tcp-conn.html">TCP Connection</a> — socket tasks, thread, incoming-data callback</li>
+              <li><a href="meter-operations.html">Meter Operations</a> — meter registry, directives, readout/profile jobs</li>
+              <li><a href="protocolzd.html">ProtocolZD</a> — all JSON message types, examples, response pairing, state diagram</li>
+              <li><a href="test-server.html">Test Server</a> — Python UI, usage, flows, sample scenarios</li>
+            </ul>
+          </article>
+        </div>
+        <p class="protocol-footer-note">For the full message dictionary, see the <a href="protocolzd.html">ProtocolZD</a> page.</p>
+      </main>
+    </div>
+  </div>
+  <footer class="protocol-global-footer">
+    <p>Aviora - Designed By Zafer SATILMIS</p>
+  </footer>
+</body>
+</html>

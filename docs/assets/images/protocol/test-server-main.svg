@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="420" viewBox="0 0 720 420">
+  <rect width="720" height="420" fill="#1e1e1e" rx="8"/>
+  <rect x="8" y="8" width="704" height="28" fill="#252526" rx="4"/>
+  <text x="16" y="26" fill="#d4d4d4" font-family="Segoe UI,sans-serif" font-size="13">AVI Protocol Test Server</text>
+  <rect x="8" y="44" width="200" height="368" fill="#252526" rx="4"/>
+  <text x="16" y="68" fill="#6ea8ff" font-family="Segoe UI,sans-serif" font-size="11">Server</text>
+  <rect x="16" y="76" width="184" height="22" fill="#3c3c3c" rx="3"/>
+  <rect x="16" y="104" width="88" height="26" fill="#0e639c" rx="4"/>
+  <rect x="108" y="104" width="92" height="26" fill="#5a1d1d" rx="4"/>
+  <text x="38" y="121" fill="#fff" font-size="10">Start</text>
+  <text x="124" y="121" fill="#fff" font-size="10">Stop</text>
+  <text x="16" y="150" fill="#888" font-size="9">Pull cmds (after ident)</text>
+  <rect x="16" y="158" width="184" height="18" fill="#3c3c3c" rx="2"/>
+  <rect x="16" y="180" width="184" height="18" fill="#3c3c3c" rx="2"/>
+  <rect x="16" y="202" width="184" height="18" fill="#3c3c3c" rx="2"/>
+  <rect x="216" y="44" width="496" height="368" fill="#1e1e1e" stroke="#333" rx="4"/>
+  <text x="228" y="68" fill="#d4d4d4" font-size="11">Message log</text>
+  <text x="228" y="100" fill="#4EC9B0" font-family="Consolas,monospace" font-size="9">SENT [PULL] ...</text>
+  <text x="228" y="118" fill="#569CD6" font-family="Consolas,monospace" font-size="9">RECV [PUSH] ident...</text>
+  <text x="24" y="400" fill="#666" font-size="9" font-style="italic">Wireframe</text>
+</svg>
