@@ -29,7 +29,6 @@
 #define MAX_METER_TASKS      (32)
 #define EMETER_QUEUE_DEPTH   (16)
 #define DIRECTIVE_INDEX_FILE DIRECTIVE_MAIN_DIR "directive.idx"
-#define MAX_DIRECTIVE_BODY   (8192)
 #define MAX_PATH_LEN         (96)
 #define IEC_LINE_TIMEOUT_MS  (5000U)
 #define IEC_BYTE_TIMEOUT_MS  (500U)
@@ -85,7 +84,8 @@ static OsMutex s_meterRegMux;
 static OsMutex s_directiveMux;
 static OsMutex s_taskMux;
 
-static char s_directiveReadBuf[MAX_DIRECTIVE_BODY];
+static char *s_directiveReadBuf = NULL;
+static size_t s_directiveReadBufCap = 0;
 static OsMutex s_getDirectiveMux;
 
 /** RAM'de kayıtlı sayaç adedi; meterList dosya boyutu ile senkron (start'ta yüklenir). */
@@ -204,6 +204,28 @@ static error_t fsReadWholeText(const char_t *path, char *buf, size_t cap, size_t
         *outLen = total;
     fsCloseFile(f);
     return NO_ERROR;
+}
+
+static const char *directiveReadFileToScratch(const char_t *path)
+{
+    uint32_t fsz = 0;
+    if (fsGetFileSize((char_t *)path, &fsz) != NO_ERROR)
+        return NULL;
+    size_t need = (size_t)fsz + 1U;
+    if (need == 0U)
+        need = 1U;
+    if (need > s_directiveReadBufCap)
+    {
+        char *nb = (char *)realloc(s_directiveReadBuf, need);
+        if (nb == NULL)
+            return NULL;
+        s_directiveReadBuf = nb;
+        s_directiveReadBufCap = need;
+    }
+    size_t got = 0;
+    if (fsReadWholeText((char_t *)path, s_directiveReadBuf, s_directiveReadBufCap, &got) != NO_ERROR)
+        return NULL;
+    return s_directiveReadBuf;
 }
 
 #define METER_LIST_ROW_SZ  (sizeof(MeterTable_t))
@@ -985,11 +1007,6 @@ S32 appMeterAddDirective(const char *directive)
     char path[MAX_PATH_LEN];
     directiveFilePath(id, path, sizeof(path));
     size_t dlen = strlen(directive);
-    if (dlen >= MAX_DIRECTIVE_BODY)
-    {
-        unlockDirective();
-        return (S32)EN_ERR_CODE_DIRECTIVE_PARAM_ERROR;
-    }
     if (fsWriteWholeFile((char_t *)path, directive, dlen) != NO_ERROR)
     {
         unlockDirective();
@@ -1065,16 +1082,9 @@ const char *appMeterGetDirective(const char *directiveID)
     unlockDirective();
 
     zosAcquireMutex(&s_getDirectiveMux);
-    size_t got = 0;
-    error_t e = fsReadWholeText((char_t *)path, s_directiveReadBuf, sizeof(s_directiveReadBuf), &got);
-    (void)got;
-    if (e != NO_ERROR)
-    {
-        zosReleaseMutex(&s_getDirectiveMux);
-        return NULL;
-    }
+    const char *out = directiveReadFileToScratch((char_t *)path);
     zosReleaseMutex(&s_getDirectiveMux);
-    return s_directiveReadBuf;
+    return out;
 }
 
 const char *appMeterGetDirectiveByIndex(U32 index)
@@ -1091,13 +1101,9 @@ const char *appMeterGetDirectiveByIndex(U32 index)
     unlockDirective();
 
     zosAcquireMutex(&s_getDirectiveMux);
-    size_t got = 0;
-    error_t er = fsReadWholeText((char_t *)path, s_directiveReadBuf, sizeof(s_directiveReadBuf), &got);
-    (void)got;
+    const char *out = directiveReadFileToScratch((char_t *)path);
     zosReleaseMutex(&s_getDirectiveMux);
-    if (er != NO_ERROR)
-        return NULL;
-    return s_directiveReadBuf;
+    return out;
 }
 
 S32 appMeterGetDirectiveCount(void)
