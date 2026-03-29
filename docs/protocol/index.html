@@ -3,16 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Aviora — Protocol</title>
+  <title>🛰️Aviora-Protocol</title>
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="./protocol-docs.css" />
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
 </head>
-<body class="protocol-docs">
-  <div class="topbar">
-    <div class="topbar-inner">
-      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+
+ <div class="topbar">
+   <div class="topbar-inner">
+    <div class="brand">🛰️Zafer Satılmış - Aviora</div>
       <nav class="nav">
         <a href="../index.html">Aviora</a>
         <a href="../fs/index.html">File System</a>
@@ -35,6 +35,7 @@
         <a href="tcp-conn.html">TCP Connection</a>
         <a href="meter-operations.html">Meter Operations</a>
         <a href="protocolzd.html">ProtocolZD</a>
+        <a href="protocolOrionTLV.html">ProtocolOrionTLV</a>
         <a href="test-server.html">Test Server</a>
         <a href="readme.html">README</a>
       </nav>
@@ -44,17 +45,18 @@
         <div class="hero-card">
           <h1>Aviora — Protocol Layer</h1>
           <p>
-            <strong>JSON-over-TCP</strong> between the device and the central server:
-            <strong>AppTcpConnManager</strong> (push/pull sockets; received bytes are passed to the protocol via <code>IncomingMsngCb_t</code> at <code>appTcpConnManagerStart</code>),
-            <strong>AppMeterOperations</strong> (meter and directive jobs),
-            <strong>AppProtocolZD</strong> (message flow and state machine),
-            and a <strong>Python test server</strong> for development.
+            Two protocol implementations over TCP between the device and the central server:
+            <strong>AppProtocolZD</strong> (JSON-over-TCP) and
+            <strong>AppProtocolOrionTLV</strong> (binary TLV-over-TCP).
+            Both share <strong>AppTcpConnManager</strong> (push/pull sockets) and
+            <strong>AppMeterOperations</strong> (meter and directive jobs).
           </p>
           <div class="tag-row">
             <span class="tag highlight">JSON / TCP</span>
-            <span class="tag">Push + Pull</span>
-            <span class="tag">Ident / Alive</span>
-            <span class="tag">Readout / Load Profile</span>
+            <span class="tag highlight">TLV / TCP</span>
+            <span class="tag highlight">Push + Pull</span>
+            <span class="tag highlight">Ident / Alive</span>
+            <span class="tag highlight">Readout / Load Profile</span>
           </div>
         </div>
       </section>
@@ -67,11 +69,13 @@
 ├── inc/
 │   ├── AppTcpConnManager.h
 │   ├── AppMeterOperations.h
-│   └── AppProtocolZD.h
+│   ├── AppProtocolZD.h
+│   └── AppProtocolOrionTLV.h
 ├── src/
 │   ├── AppTcpConnManager.c
 │   ├── AppMeterOperations.c
-│   └── AppProtocolZD.c
+│   ├── AppProtocolZD.c
+│   └── AppProtocolOrionTLV.c
 └── server/
     └── server.py  </pre>
           </article>
@@ -87,10 +91,13 @@
   end
   subgraph Device["Gateway device"]
     PZD[AppProtocolZD]
+    ORION[AppProtocolOrionTLV]
     TCP[AppTcpConnManager]
     MTR[AppMeterOperations]
     PZD --> TCP
     PZD --> MTR
+    ORION --> TCP
+    ORION --> MTR
     TCP -->|push: device connects| SP
     PC -->|pull: server connects to device| TCP
   end</pre>
@@ -125,11 +132,12 @@
               <li><a href="tcp-conn.html">TCP Connection</a> — socket tasks, thread, <code>IncomingMsngCb_t</code> registration</li>
               <li><a href="meter-operations.html">Meter Operations</a> — meter registry, directives, readout/profile jobs</li>
               <li><a href="protocolzd.html">ProtocolZD</a> — all JSON message types, examples, response pairing, state diagram</li>
+              <li><a href="protocolba.html">ProtocolOrionTLV</a> — binary TLV protocol: TAG table, wire format, packet examples</li>
               <li><a href="test-server.html">Test Server</a> — Python UI, usage, flows, sample scenarios</li>
             </ul>
           </article>
         </div>
-        <p class="protocol-footer-note">For the full message dictionary, see the <a href="protocolzd.html">ProtocolZD</a> page.</p>
+        <p class="protocol-footer-note">JSON message dictionary → <a href="protocolzd.html">ProtocolZD</a> &nbsp;|&nbsp; Binary TLV protocol → <a href="protocolba.html">ProtocolOrionTLV</a></p>
       </main>
     </div>
   </div>
