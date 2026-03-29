@@ -1,13 +1,11 @@
 /* Wide layout: docs home (index) + FS README — matches protocol ~1820px feel */
 
-body.docs-wide .topbar-inner,
 body.docs-wide .hero,
 body.docs-wide .container {
   max-width: min(1820px, 100%);
 }
 
 /* docs/index.html only — slightly narrower “frame” than full docs-wide */
-body.docs-home .topbar-inner,
 body.docs-home .hero,
 body.docs-home .container {
   max-width: min(1180px, 100%);
@@ -19,7 +17,6 @@ body.docs-home footer {
   margin-right: auto;
 }
 
-body.docs-wide .topbar-inner,
 body.docs-wide .hero,
 body.docs-wide .container {
   padding-left: max(16px, env(safe-area-inset-left));
