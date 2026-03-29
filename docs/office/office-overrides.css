@@ -1,0 +1,28 @@
+/* 2D office page: allow scroll + footer; office-3d styles set body overflow hidden */
+body.office-2d {
+  overflow-x: hidden;
+  overflow-y: auto !important;
+}
+
+/* İpucu çubuğu: nav altında, fixed üst çakışmasını kaldır */
+body.office-2d #info {
+  position: static;
+  left: auto;
+  transform: none;
+  max-width: 1150px;
+  margin: 0 auto;
+  padding: 20px 20px 50px;
+  text-align: center;
+  font-size: 16px !important;
+  line-height: 1.4;
+  pointer-events: none;
+  color: rgba(234, 240, 255, 0.92);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* İpucu ile canvas arasındaki boşluk: üst padding + dikey ortalamayı kaldır */
+body.office-2d .canvas-wrap {
+  min-height: unset;
+  align-items: flex-start;
+  padding: 4px 16px 16px;
+}

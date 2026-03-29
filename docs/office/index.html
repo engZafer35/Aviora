@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Ofis Animasyonu - Top Down View</title>
+<link rel="stylesheet" href="../office-3d/styles.css" />
+<link rel="stylesheet" href="office-overrides.css" />
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
@@ -57,7 +59,89 @@ body {
 }
 </style>
 </head>
-<body>
+<body class="office-2d">
+
+<div id="legend">
+  <div class="li"><div class="dot r"></div><span>Meşgul (görev var)</span></div>
+  <div class="li"><div class="dot g"></div><span>Uygun (görev yok)</span></div>
+  <div class="li"><div class="dot y"></div><span>Seçili</span></div>
+</div>
+
+<div id="chatPanel">
+  <div class="chat-header">
+    <div class="chat-avatar" id="chatAvatar">D1</div>
+    <div class="chat-header-info">
+      <h3 id="chatName">Dev-1</h3>
+      <div class="status-line"><span class="status-dot" id="chatStatusDot"></span><span id="chatStatusText"></span></div>
+    </div>
+    <button class="chat-close" id="chatClose">&times;</button>
+  </div>
+  <div class="chat-body" id="chatBody"></div>
+  <div class="chat-footer">
+    <button class="add-task-btn" id="addTaskBtn">+ Yeni Task Ekle</button>
+    <div class="send-loc-hint">Canvas’ta boş bir yere tıklayarak seçili kişiyi oraya gönderirsin (Office-3D ile aynı veri)</div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="taskModal">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-header-icon">📋</div>
+      <h2 id="modalTitle">Yeni Task Oluştur</h2>
+      <button class="modal-close-btn" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Başlık <span class="required">*</span></label>
+        <input type="text" class="form-input" id="formTaskTitle" placeholder="Task başlığı..." maxlength="80">
+        <div class="form-char-count"><span id="titleCharCount">0</span>/80</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Tür</label>
+          <select class="form-select" id="formTaskType">
+            <option value="task">📌 Task</option>
+            <option value="bug">🐛 Bug</option>
+            <option value="story">📖 Story</option>
+            <option value="improvement">⚡ Improvement</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Öncelik</label>
+          <select class="form-select" id="formTaskPriority">
+            <option value="low">🟢 Düşük</option>
+            <option value="medium" selected>🟡 Orta</option>
+            <option value="high">🟠 Yüksek</option>
+            <option value="critical">🔴 Kritik</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Açıklama</label>
+        <textarea class="form-textarea" id="formTaskDesc" placeholder="Task detayları..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Ekler</label>
+        <div class="upload-area" id="uploadArea">
+          <span class="upload-icon">📎</span>
+          <div>Dosya sürükle veya tıklayarak yükle</div>
+          <div class="upload-hint">PNG, JPG, GIF - Max 5MB</div>
+        </div>
+        <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
+        <div class="preview-grid" id="previewGrid"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn modal-btn-cancel" id="modalCancel">İptal</button>
+      <button class="modal-btn modal-btn-save" id="modalSave">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<div class="lightbox-overlay" id="lightbox">
+  <img id="lightboxImg" src="" alt="">
+</div>
+
 <div class="topbar">
   <div class="topbar-inner">
     <div class="brand">🛰️ Zafer Satılmış - Aviora</div>
@@ -70,9 +154,11 @@ body {
       <a href="../display/index.html">Display</a>
       <a href="../sw_update/index.html">SW Update</a>
       <a href="index.html" class="active">Office</a>
+      <a href="../office-3d/index.html">Office 3D</a>
     </nav>
   </div>
 </div>
+<div id="info">Karakter seçin ofis içinde yönlendirin yada panelden task atayın</div>
 <div class="canvas-wrap">
 <canvas id="office"></canvas>
 </div>
@@ -83,6 +169,20 @@ const ctx = canvas.getContext('2d');
 const W = 1100, H = 820;
 canvas.width = W;
 canvas.height = H;
+
+const modal = document.getElementById('taskModal');
+
+const STORAGE_KEY = 'Aviora_Char_';
+function saveTasks(charIndex, tasks) {
+  localStorage.setItem(STORAGE_KEY + charIndex, JSON.stringify(tasks));
+}
+function loadTasks(charIndex) {
+  const data = localStorage.getItem(STORAGE_KEY + charIndex);
+  return data ? JSON.parse(data) : [];
+}
+function newTaskId() {
+  return (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : ('id-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+}
 
 function seededRandom(seed) {
   let s = seed;
@@ -128,6 +228,22 @@ const CORRIDOR_Y_TOP = 250;
 const CORRIDOR_Y_BOTTOM = 470;
 const CORRIDOR_CENTER_Y = (CORRIDOR_Y_TOP + CORRIDOR_Y_BOTTOM) / 2;
 
+/** Ofis içi anlamlı yürüyüş hedefleri (mobilya / drawAllOfficeItems ile hizalı) */
+const OFFICE_WALK_POIS = [
+  /* sol: duvar penceresi hizası (drawWindows sağdaki y=70/180/490/600 bloklarıyla uyumlu iç noktalar) */
+  { x: 40, y: 105 }, { x: 40, y: 215 }, { x: 40, y: 525 }, { x: 40, y: 635 },
+  { x: 58, y: 378 }, /* drawLargePlant(45,375) bitişiğinde */
+  { x: 326, y: 364 }, /* drawYellowSign(330,355) sarı ünlem tabelası */
+  { x: 698, y: 252 }, { x: 698, y: 392 }, { x: 672, y: 178 }, { x: 672, y: 518 },
+  { x: 365, y: 378 }, { x: 802, y: 302 }, { x: 825, y: 388 }, { x: 828, y: 192 },
+  { x: 845, y: 215 }, { x: 792, y: 118 }, { x: 792, y: 562 }, { x: 668, y: 358 },
+  { x: 925, y: 175 }, { x: 925, y: 565 }, { x: 732, y: 138 }, { x: 732, y: 582 },
+  { x: 848, y: 695 },
+];
+
+/** Hedefte bekleme süresi (~60 FPS varsayımı, ≈5 sn) */
+const IDLE_WAIT_FRAMES = Math.round(5 * 60);
+
 const cubicleHasPlant = cubicles.map(() => srand() > 0.35);
 const cubicleHasCup = cubicles.map(() => srand() > 0.4);
 const cubicleHasBooks = cubicles.map(() => srand() > 0.5);
@@ -138,11 +254,20 @@ const HAIR = ['#2C1B0E','#8B6914','#B8652A','#1A0E05','#5C3020','#D4A056','#4A35
 const SHIRT = ['#3B6DAA','#AA3B50','#4A9960','#B08530','#7050A8','#4898A8','#CC7744','#5C40A0'];
 const PANTS = ['#2A2A3A','#333344','#2E2E2E','#383848','#303040','#2C2C38','#343434','#2E2E3E'];
 const SKIN = ['#F5D0A9','#E5BD8E','#D4A97A','#C49060','#B07850','#EFDBCB','#E0C49B','#C8956A'];
+const AVATAR_COLORS = ['#89b4fa','#f38ba8','#a6e3a1','#fab387','#cba6f7','#74c7ec'];
 
 class Character {
+  static taskTitle(t) {
+    if (!t) return '';
+    const s = t.title || t.name || '';
+    return s.length > 20 ? s.slice(0, 20) + '…' : s;
+  }
+
   constructor(cub, idx) {
     this.idx = idx;
     this.cub = cub;
+    this.name = 'Dev-' + (idx + 1);
+    this.avatarColor = AVATAR_COLORS[idx % AVATAR_COLORS.length];
 
     this.hairColor = HAIR[idx % HAIR.length];
     this.shirtColor = SHIRT[idx % SHIRT.length];
@@ -163,7 +288,7 @@ class Character {
     this.x = this.homeX;
     this.y = this.homeY;
     this.state = 'sitting';
-    this.stateTimer = 120 + srand() * 350;
+    this.stateTimer = 600 + srand() * 600;
     this.walkPath = [];
     this.walkIdx = 0;
     this.speed = 1.0 + srand() * 0.5;
@@ -171,10 +296,143 @@ class Character {
     this.moveDir = 0;
     this.bob = 0;
     this.standTransition = 0;
+
+    this.tasks = loadTasks(this.idx);
+    this.selected = false;
+    this.autoDeselect = false;
+    this.sentTimer = 0;
+    this.bubbleText = '';
+
+    this.returnMessages = [
+      "Uff çok iş var,\ngidip çalışmam lazım",
+      "Aktif taskım var,\nyarım kaldı",
+      "Bazı işlerim var,\nmasama dönüyorum",
+      "Devam eden işler var,\ngidip çalışayım",
+      "Açık taskım var,\ngidip uğraşayım biraz",
+      "İşi yarıda bıraktım,\ndönüyorum🔥",
+      "Bir şey yazıyordum,\nonu bitirip gelirim",
+      "Task duruyor,\ndönüp halledeyim⚡",
+      "İşleri kapatayım,\nakşam erken çıkmam lazım",
+      "Kod yarım kaldı,\ngidip onu tamamlayayım",
+      "Task bekliyor,\ndöneyim ben🔥",
+      "Gereksiz işler var gidiyorum,\ntakım lideri de anlamıyor",      
+      "Günlük iş kapatın diyor\npuhaha yalakasın yapay zekam",
+      "Aktif task var,\nyarım bırakmayayım",
+      "Acele işler var,\n dönüp devam edeyim"
+    ];
+  }
+
+  getRandomReturnMessage() {
+    return this.returnMessages[Math.floor(Math.random() * this.returnMessages.length)];
+  }
+
+  get currentTask() {
+    return this.tasks.length > 0 ? this.tasks[0] : null;
+  }
+
+  get hasTaskWork() {
+    return this.tasks.length > 0;
+  }
+
+  get statusText() {
+    if (this.state === 'sent' || this.state === 'sent_waiting') return 'Görevde (gönderildi)';
+    if (this.state === 'sent_bubble') return 'Masaya dönmek istiyor';
+    if (this.tasks.length > 0) return '"' + Character.taskTitle(this.currentTask) + '" üzerinde çalışıyor';
+    return 'Uygun';
+  }
+
+  setSelected(on) {
+    this.selected = !!on;
+  }
+
+  addTask(task) {
+    const had = this.tasks.length > 0;
+    const newTask = Object.assign({
+      id: newTaskId(),
+      status: 'active',
+      description: '',
+      type: 'task',
+      priority: 'medium',
+      images: []
+    }, task);
+    this.tasks.push(newTask);
+    saveTasks(this.idx, this.tasks);
+    if (!had) this._forceReturn();
+  }
+
+  pauseCurrentTask() {
+    if (!this.currentTask) return;
+    const t = this.currentTask;
+    t.status = t.status === 'paused' ? 'active' : 'paused';
+    saveTasks(this.idx, this.tasks);
+  }
+
+  endCurrentTask() {
+    if (!this.currentTask) return;
+    this.tasks.shift();
+    saveTasks(this.idx, this.tasks);
+  }
+
+  deleteTaskById(id) {
+    this.tasks = this.tasks.filter(t => t.id !== id);
+    saveTasks(this.idx, this.tasks);
+  }
+
+  sendTo(tx, ty) {
+    this.state = 'sent';
+    this.walkPath = [{ x: tx, y: ty }];
+    this.walkIdx = 0;
+    this.sentTimer = 0;
+  }
+
+  _forceReturn() {
+    if (this.state === 'sitting' || this.state === 'sitting_down') return;
+    this.state = 'returning';
+    this.walkPath = [{ x: this.homeX, y: this.homeY }];
+    this.walkIdx = 0;
+  }
+
+  _taskBubbleLine() {
+    if (this.tasks.length === 0) return '';
+    const t = this.currentTask;
+    const title = Character.taskTitle(t);
+    return t.status === 'paused' ? '⏸ ' + title : title;
+  }
+
+  _syncBubbleText() {
+    if (this.state === 'sent_bubble') return;
+
+    const taskLine = this._taskBubbleLine();
+
+    if (this.state === 'sitting') {
+      this.bubbleText = taskLine;
+      return;
+    }
+
+    if (this.state === 'returning') {
+      this.bubbleText = taskLine;
+      return;
+    }
+
+    if (this.state === 'standing_up' || this.state === 'walking') {
+      this.bubbleText = taskLine || '';
+      return;
+    }
+
+    if (this.state === 'idle') {
+      this.bubbleText = taskLine || '';
+      return;
+    }
+
+    if (this.state === 'sent' || this.state === 'sent_waiting') {
+      this.bubbleText = taskLine || '';
+      return;
+    }
   }
 
   update() {
     this.frame++;
+    this._syncBubbleText();
 
     switch (this.state) {
       case 'sitting':
@@ -211,22 +469,42 @@ class Character {
 
       case 'returning':
         this._walk();
-        if (this.walkIdx >= this.walkPath.length) {
-          this.x = this.homeX;
-          this.y = this.homeY;
-          this.state = 'sitting_down';
-          this.stateTimer = 35;
-          this.standTransition = 1;
-          this.bob = 0;
+        break;
+
+      case 'sent':
+        this._walk();
+        break;
+
+      case 'sent_waiting':
+        if (!modal.classList.contains('active')) this.sentTimer--;
+        if (this.sentTimer <= 0) {
+          this.state = 'sent_bubble';
+          if (this.tasks.length > 0) {
+            this.bubbleText = this.getRandomReturnMessage();
+            this.autoDeselect = true;
+          } else {
+            this.bubbleText = 'Yeni task eklersen söyle\nben PC de takılıyorum';
+          }
+          this.sentTimer = 240;
         }
-        return;
+        break;
+
+      case 'sent_bubble':
+        this.sentTimer--;
+        if (this.sentTimer <= 0) {
+          this.state = 'returning';
+          this.walkPath = [{ x: this.homeX, y: this.homeY }];
+          this.walkIdx = 0;
+          this.bubbleText = '';
+        }
+        break;
 
       case 'sitting_down':
         this.standTransition = Math.max(0, this.standTransition - 0.04);
         this.stateTimer--;
         if (this.stateTimer <= 0) {
           this.state = 'sitting';
-          this.stateTimer = 180 + srand() * 400;
+          this.stateTimer = 600 + srand() * 600;
           this.standTransition = 0;
         }
         break;
@@ -235,8 +513,24 @@ class Character {
 
   _walk() {
     if (this.walkIdx >= this.walkPath.length) {
+      if (this.state === 'returning') {
+        this.x = this.homeX;
+        this.y = this.homeY;
+        this.state = 'sitting_down';
+        this.stateTimer = 35;
+        this.standTransition = 1;
+        this.bob = 0;
+        return;
+      }
+      if (this.state === 'sent') {
+        this.state = 'sent_waiting';
+        this.sentTimer = 600;
+        this.bob = 0;
+        //this.bubbleText = '';
+        return;
+      }
       this.state = 'idle';
-      this.stateTimer = 50 + srand() * 150;
+      this.stateTimer = IDLE_WAIT_FRAMES;
       this.bob = 0;
       return;
     }
@@ -255,24 +549,20 @@ class Character {
   }
 
   _genPath() {
-    const path = [];
-    const n = 1 + Math.floor(srand() * 3);
-    for (let i = 0; i < n; i++) {
-      path.push({
-        x: 80 + srand() * 560,
-        y: CORRIDOR_Y_TOP + 20 + srand() * (CORRIDOR_Y_BOTTOM - CORRIDOR_Y_TOP - 40)
-      });
+    let idx = Math.floor(Math.random() * OFFICE_WALK_POIS.length);
+    let poi = OFFICE_WALK_POIS[idx];
+    let tries = 0;
+    while (tries < 8 && Math.hypot(poi.x - this.homeX, poi.y - this.homeY) < 85) {
+      idx = Math.floor(Math.random() * OFFICE_WALK_POIS.length);
+      poi = OFFICE_WALK_POIS[idx];
+      tries++;
     }
-    this.walkPath = path;
+    this.walkPath = [{ x: poi.x, y: poi.y }];
     this.walkIdx = 0;
   }
 
   get isSitting() {
     return this.state === 'sitting';
-  }
-
-  get isBusy() {
-    return this.state === 'sitting' || this.state === 'sitting_down' || this.state === 'standing_up';
   }
 
   get isAtDesk() {
@@ -290,7 +580,35 @@ class Character {
     }
 
     this._drawIcon();
+    if (this.bubbleText) this._drawSpeechBubble();
     ctx.restore();
+  }
+
+  _drawSpeechBubble() {
+    const lines = this.bubbleText.split('\n');
+    ctx.font = '10px Segoe UI, sans-serif';
+    const lh = 12;
+    let mw = 40;
+    lines.forEach(line => { mw = Math.max(mw, Math.min(ctx.measureText(line).width + 16, 140)); });
+    const bw = mw;
+    const bh = lines.length * lh + 10;
+    const bx = -bw / 2;
+    const by = (this.isAtDesk ? -52 : -58) - bh;
+
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.beginPath();
+    ctx.roundRect(bx, by, bw, bh, 5);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.2)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.fillStyle = '#222';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    lines.forEach((line, i) => {
+      ctx.fillText(line, 0, by + 5 + i * lh, bw - 8);
+    });
   }
 
   _drawSitting() {
@@ -395,7 +713,16 @@ class Character {
     const baseY = this.isAtDesk ? -28 : -34;
     const pulse = Math.sin(this.frame * 0.06) * 2;
     const iy = baseY + pulse;
-    const busy = this.isBusy;
+    const busy = this.hasTaskWork;
+
+    if (this.selected) {
+      ctx.globalAlpha = 0.4;
+      ctx.beginPath();
+      ctx.arc(0, iy, 15, 0, Math.PI * 2);
+      ctx.fillStyle = '#DDCC33';
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
 
     ctx.globalAlpha = 0.25;
     ctx.beginPath();
@@ -408,8 +735,8 @@ class Character {
     ctx.arc(0, iy, 7, 0, Math.PI * 2);
     ctx.fillStyle = busy ? '#DD3333' : '#33CC33';
     ctx.fill();
-    ctx.strokeStyle = busy ? '#FF6666' : '#66FF66';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = this.selected ? '#FFEE66' : (busy ? '#FF6666' : '#66FF66');
+    ctx.lineWidth = this.selected ? 2.2 : 1.5;
     ctx.stroke();
 
     ctx.fillStyle = '#FFF';
@@ -431,6 +758,10 @@ class Character {
       ctx.lineTo(4, iy - 3);
       ctx.stroke();
     }
+  }
+
+  hitTest(wx, wy) {
+    return Math.hypot(wx - this.x, wy - this.y) < 26;
   }
 }
 
@@ -834,7 +1165,7 @@ function drawCubicleAccessories(c, cub) {
     drawSmallPlant(c, px, py);
   }
 
-  const labels = ['SALES', 'PRODUCT', 'DEV', 'DESIGN', 'MARKETING', 'QA'];
+  const labels = ['DEV', 'DEV', 'DEV', 'ARCH', 'PM', 'QA'];
   if (cub.id < labels.length) {
     c.fillStyle = '#E8D0A0';
     const lx = cub.x + cub.w / 2 - 22;
@@ -1306,19 +1637,347 @@ function drawMeetingTable(c, x, y) {
 // ──────── CHARACTERS ────────
 const characters = cubicles.map((c, i) => new Character(c, i));
 
+// ──────── UI (Office-3D parity: aynı localStorage + panel + modal) ────────
+let selectedChar = null;
+let chatRefreshCounter = 0;
+let mouseDownPos = null;
+let mouseDownTime = 0;
+
+const chatPanel = document.getElementById('chatPanel');
+const chatBody = document.getElementById('chatBody');
+const chatName = document.getElementById('chatName');
+const chatAvatar = document.getElementById('chatAvatar');
+const chatStatusDot = document.getElementById('chatStatusDot');
+const chatStatusText = document.getElementById('chatStatusText');
+const addTaskBtn = document.getElementById('addTaskBtn');
+const chatClose = document.getElementById('chatClose');
+
+function canvasLogicalPos(clientX, clientY) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: (clientX - r.left) * (canvas.width / r.width),
+    y: (clientY - r.top) * (canvas.height / r.height)
+  };
+}
+
+function pickCharacterAt(wx, wy) {
+  const sorted = [...characters].sort((a, b) => b.y - a.y);
+  for (const ch of sorted) {
+    if (ch.hitTest(wx, wy)) return ch;
+  }
+  return null;
+}
+
+function selectCharacter(ch) {
+  if (selectedChar && selectedChar !== ch) selectedChar.setSelected(false);
+  if (selectedChar === ch) {
+    ch.setSelected(false);
+    selectedChar = null;
+    chatPanel.classList.remove('open');
+    return;
+  }
+  selectedChar = ch;
+  ch.setSelected(true);
+  openChat(ch);
+}
+
+function openChat(ch) {
+  chatPanel.classList.add('open');
+  chatName.textContent = ch.name;
+  chatAvatar.textContent = 'D' + (ch.idx + 1);
+  chatAvatar.style.background = ch.avatarColor;
+  refreshChat();
+}
+
+function refreshStatus() {
+  if (!selectedChar) return;
+  const busy = selectedChar.hasTaskWork;
+  chatStatusDot.style.background = busy ? '#f38ba8' : '#a6e3a1';
+  chatStatusText.textContent = selectedChar.statusText;
+}
+
+const TYPE_ICONS = { task: '📌', bug: '🐛', story: '📖', improvement: '⚡' };
+const PRIORITY_LABELS = { low: 'Düşük', medium: 'Orta', high: 'Yüksek', critical: 'Kritik' };
+
+function renderTaskCard(t, idx, isActive) {
+  const title = Character.taskTitle(t);
+  const typeIcon = TYPE_ICONS[t.type] || '📌';
+  const priClass = 'badge-priority-' + (t.priority || 'medium');
+  let html = '<div class="task-card' + (isActive ? ' active' : ' draggable') + (t.status === 'paused' ? ' paused' : '') + '"';
+  if (!isActive) html += ' draggable="true" data-qi="' + idx + '"';
+  html += '>';
+  html += '<div class="task-name">' + (!isActive ? '<span class="drag-handle">⠿</span>' : '') + (t.status === 'paused' ? '⏸ ' : '') + title + '</div>';
+  if (t.description) html += '<div class="task-desc">' + t.description + '</div>';
+  html += '<div class="task-meta"><span class="task-badge badge-type">' + typeIcon + ' ' + (t.type || 'task') + '</span>';
+  html += '<span class="task-badge ' + priClass + '">' + (PRIORITY_LABELS[t.priority] || 'Orta') + '</span></div>';
+  if (t.images && t.images.length > 0) {
+    html += '<div class="task-imgs">';
+    t.images.forEach(function(src, ii) {
+      const safe = src.replace(/'/g, "\\'");
+      html += '<img src="' + src + '" onclick="window._showLightbox(\'' + safe + '\')" alt="ek-' + ii + '">';
+    });
+    html += '</div>';
+  }
+  html += '<div class="task-status">' + (isActive ? (t.status === 'paused' ? 'Bekletildi' : 'Çalışılıyor...') : 'Sırada #' + idx) + '</div>';
+  html += '<div class="task-actions">';
+  if (isActive) {
+    html += '<button class="btn-pause" onclick="window._taskAction(\'pause\')">' + (t.status === 'paused' ? 'Devam Et' : 'Beklet') + '</button>';
+    html += '<button class="btn-edit" onclick="window._openEditModal(0)">Düzenle</button>';
+    html += '<button class="btn-end" onclick="window._taskAction(\'end\')">Sonlandır</button>';
+    html += '<button class="btn-delete" onclick="window._taskAction(\'delete\')">Sil</button>';
+  } else {
+    html += '<button class="btn-edit" onclick="window._openEditModal(' + idx + ')">Düzenle</button>';
+    html += '<button class="btn-delete" onclick="window._queueAction(\'delete\',' + idx + ')">Sil</button>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+function refreshChat() {
+  if (!selectedChar) return;
+  const ch = selectedChar;
+  refreshStatus();
+  let html = '';
+  if (ch.tasks.length > 0) {
+    html += '<div class="section-label">Aktif Görev</div>';
+    html += renderTaskCard(ch.tasks[0], 0, true);
+    if (ch.tasks.length > 1) {
+      html += '<div class="section-label">Sıradaki Görevler</div><div id="queueList">';
+      for (let i = 1; i < ch.tasks.length; i++) html += renderTaskCard(ch.tasks[i], i, false);
+      html += '</div>';
+    }
+  } else {
+    html += '<div class="no-task">Henüz atanmış görev yok.<br>Aşağıdan yeni task ekleyebilirsin.</div>';
+  }
+  chatBody.innerHTML = html;
+  initQueueDrag();
+}
+
+let _dragIdx = null;
+function initQueueDrag() {
+  const list = document.getElementById('queueList');
+  if (!list) return;
+  list.querySelectorAll('.task-card.draggable').forEach(function(el) {
+    el.addEventListener('dragstart', function(e) {
+      _dragIdx = parseInt(el.dataset.qi, 10);
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('dragend', function() {
+      el.classList.remove('dragging');
+      list.querySelectorAll('.drag-over').forEach(function(x) { x.classList.remove('drag-over'); });
+      _dragIdx = null;
+    });
+    el.addEventListener('dragover', function(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      el.classList.add('drag-over');
+    });
+    el.addEventListener('dragleave', function() { el.classList.remove('drag-over'); });
+    el.addEventListener('drop', function(e) {
+      e.preventDefault();
+      el.classList.remove('drag-over');
+      if (_dragIdx === null || !selectedChar) return;
+      const toIdx = parseInt(el.dataset.qi, 10);
+      if (_dragIdx !== toIdx) {
+        const m = selectedChar.tasks.splice(_dragIdx, 1)[0];
+        selectedChar.tasks.splice(toIdx, 0, m);
+        saveTasks(selectedChar.idx, selectedChar.tasks);
+      }
+      _dragIdx = null;
+      refreshChat();
+    });
+  });
+}
+
+window._taskAction = function(action) {
+  if (!selectedChar) return;
+  if (action === 'pause') selectedChar.pauseCurrentTask();
+  else if (action === 'end') selectedChar.endCurrentTask();
+  else if (action === 'delete') selectedChar.deleteTaskById(selectedChar.currentTask.id);
+  refreshChat();
+};
+
+window._queueAction = function(action, idx) {
+  if (!selectedChar) return;
+  if (idx < 1 || idx >= selectedChar.tasks.length) return;
+  if (action === 'delete') {
+    selectedChar.deleteTaskById(selectedChar.tasks[idx].id);
+    refreshChat();
+  }
+};
+
+const modalTitle = document.getElementById('modalTitle');
+const formTitle = document.getElementById('formTaskTitle');
+const formType = document.getElementById('formTaskType');
+const formPriority = document.getElementById('formTaskPriority');
+const formDesc = document.getElementById('formTaskDesc');
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const previewGrid = document.getElementById('previewGrid');
+const titleCharCount = document.getElementById('titleCharCount');
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+
+let modalImages = [];
+let editingTaskIdx = -1;
+
+function openModal(task, idx) {
+  editingTaskIdx = idx;
+  modalImages = [];
+  if (task) {
+    modalTitle.textContent = 'Görevi Düzenle';
+    formTitle.value = task.title || '';
+    formType.value = task.type || 'task';
+    formPriority.value = task.priority || 'medium';
+    formDesc.value = task.description || '';
+    modalImages = task.images ? task.images.slice() : [];
+  } else {
+    modalTitle.textContent = 'Yeni Task Oluştur';
+    formTitle.value = '';
+    formType.value = 'task';
+    formPriority.value = 'medium';
+    formDesc.value = '';
+  }
+  titleCharCount.textContent = String(formTitle.value.length);
+  renderPreviews();
+  modal.classList.add('active');
+  formTitle.focus();
+}
+
+function closeModal() {
+  modal.classList.remove('active');
+  editingTaskIdx = -1;
+  modalImages = [];
+}
+
+function renderPreviews() {
+  previewGrid.innerHTML = modalImages.map(function(src, i) {
+    return '<div class="preview-item"><img src="' + src + '"><button type="button" class="preview-remove" onclick="window._removeImage(' + i + ')">✕</button></div>';
+  }).join('');
+}
+
+function readFiles(files) {
+  Array.from(files).forEach(function(f) {
+    if (!f.type.startsWith('image/') || f.size > 5 * 1024 * 1024) return;
+    const r = new FileReader();
+    r.onload = function() { modalImages.push(r.result); renderPreviews(); };
+    r.readAsDataURL(f);
+  });
+}
+
+window._removeImage = function(i) { modalImages.splice(i, 1); renderPreviews(); };
+window._showLightbox = function(src) { lightboxImg.src = src; lightbox.classList.add('active'); };
+lightbox.addEventListener('click', function() { lightbox.classList.remove('active'); });
+
+formTitle.addEventListener('input', function() { titleCharCount.textContent = String(formTitle.value.length); });
+uploadArea.addEventListener('click', function() { fileInput.click(); });
+fileInput.addEventListener('change', function() { readFiles(fileInput.files); fileInput.value = ''; });
+uploadArea.addEventListener('dragover', function(e) { e.preventDefault(); uploadArea.classList.add('drag-active'); });
+uploadArea.addEventListener('dragleave', function() { uploadArea.classList.remove('drag-active'); });
+uploadArea.addEventListener('drop', function(e) {
+  e.preventDefault();
+  uploadArea.classList.remove('drag-active');
+  readFiles(e.dataTransfer.files);
+});
+
+document.getElementById('modalSave').addEventListener('click', function() {
+  const title = formTitle.value.trim();
+  if (!title) { formTitle.style.borderColor = '#f38ba8'; formTitle.focus(); return; }
+  formTitle.style.borderColor = '';
+  const taskData = {
+    title: title,
+    type: formType.value,
+    priority: formPriority.value,
+    description: formDesc.value.trim(),
+    images: modalImages.slice()
+  };
+  if (editingTaskIdx >= 0 && selectedChar && editingTaskIdx < selectedChar.tasks.length) {
+    const newTask = Object.assign({
+      id: selectedChar.tasks[editingTaskIdx].id,
+      status: 'active',
+      description: '',
+      type: 'task',
+      priority: 'medium',
+      images: []
+    }, taskData);
+    selectedChar.tasks[editingTaskIdx] = newTask;
+    saveTasks(selectedChar.idx, selectedChar.tasks);
+  } else if (selectedChar) {
+    selectedChar.addTask(taskData);
+  }
+  closeModal();
+  refreshChat();
+});
+
+document.getElementById('modalCancel').addEventListener('click', closeModal);
+document.getElementById('modalClose').addEventListener('click', closeModal);
+
+window._openEditModal = function(idx) {
+  if (!selectedChar || idx < 0 || idx >= selectedChar.tasks.length) return;
+  openModal(selectedChar.tasks[idx], idx);
+};
+
+addTaskBtn.addEventListener('click', function() { if (selectedChar) openModal(null, -1); });
+chatClose.addEventListener('click', function() {
+  if (selectedChar) selectedChar.setSelected(false);
+  selectedChar = null;
+  chatPanel.classList.remove('open');
+});
+
+canvas.addEventListener('pointerdown', function(e) {
+  mouseDownPos = { x: e.clientX, y: e.clientY };
+  mouseDownTime = Date.now();
+});
+
+canvas.addEventListener('pointerup', function(e) {
+  if (!mouseDownPos) return;
+  const dx = e.clientX - mouseDownPos.x;
+  const dy = e.clientY - mouseDownPos.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist >= 6 || Date.now() - mouseDownTime >= 350) { mouseDownPos = null; return; }
+  mouseDownPos = null;
+
+  const p = canvasLogicalPos(e.clientX, e.clientY);
+  const hit = pickCharacterAt(p.x, p.y);
+  if (hit) {
+    selectCharacter(hit);
+    return;
+  }
+  if (selectedChar) {
+    const x = Math.max(24, Math.min(W - 24, p.x));
+    const y = Math.max(24, Math.min(H - 24, p.y));
+    selectedChar.sendTo(x, y);
+    refreshChat();
+  }
+});
+
 // ──────── ANIMATION LOOP ────────
 buildStaticScene();
 
 function render() {
   ctx.drawImage(staticCanvas, 0, 0);
 
-  characters.forEach(ch => ch.update());
+  characters.forEach(function(ch) {
+    ch.update();
+    if (ch.autoDeselect && selectedChar === ch) {
+      ch.setSelected(false);
+      selectedChar = null;
+      chatPanel.classList.remove('open');
+      ch.autoDeselect = false;
+    }
+  });
 
   const sorted = [...characters].sort((a, b) => a.y - b.y);
   sorted.forEach(ch => ch.draw());
 
   drawScreenGlow();
   drawLegend();
+
+  chatRefreshCounter++;
+  if (chatRefreshCounter % 30 === 0 && selectedChar && chatPanel.classList.contains('open')) {
+    refreshStatus();
+  }
 
   requestAnimationFrame(render);
 }
@@ -1341,10 +2000,10 @@ function drawScreenGlow() {
 }
 
 function drawLegend() {
-  const lx = W - 210, ly = H - 65;
+  const lx = W - 220, ly = H - 88;
   ctx.fillStyle = 'rgba(0,0,0,0.65)';
   ctx.beginPath();
-  ctx.roundRect(lx, ly, 195, 52, 8);
+  ctx.roundRect(lx, ly, 208, 78, 8);
   ctx.fill();
   ctx.strokeStyle = 'rgba(255,255,255,0.1)';
   ctx.lineWidth = 1;
@@ -1352,7 +2011,7 @@ function drawLegend() {
 
   ctx.fillStyle = 'rgba(220,50,50,0.9)';
   ctx.beginPath();
-  ctx.arc(lx + 20, ly + 16, 7, 0, Math.PI * 2);
+  ctx.arc(lx + 20, ly + 14, 7, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = '#FF6666';
   ctx.lineWidth = 1;
@@ -1361,20 +2020,20 @@ function drawLegend() {
   ctx.strokeStyle = '#FFF';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(lx + 18, ly + 14);
-  ctx.lineTo(lx + 22, ly + 18);
+  ctx.moveTo(lx + 18, ly + 12);
+  ctx.lineTo(lx + 22, ly + 16);
   ctx.stroke();
   ctx.beginPath();
-  ctx.moveTo(lx + 22, ly + 14);
-  ctx.lineTo(lx + 18, ly + 18);
+  ctx.moveTo(lx + 22, ly + 12);
+  ctx.lineTo(lx + 18, ly + 16);
   ctx.stroke();
   ctx.fillStyle = '#EEE';
-  ctx.font = '12px Segoe UI, sans-serif';
-  ctx.fillText('Meşgul (Masada)', lx + 35, ly + 20);
+  ctx.font = '11px Segoe UI, sans-serif';
+  ctx.fillText('Görev var', lx + 34, ly + 18);
 
   ctx.fillStyle = 'rgba(50,200,50,0.9)';
   ctx.beginPath();
-  ctx.arc(lx + 20, ly + 37, 7, 0, Math.PI * 2);
+  ctx.arc(lx + 20, ly + 35, 7, 0, Math.PI * 2);
   ctx.fill();
   ctx.strokeStyle = '#66FF66';
   ctx.lineWidth = 1;
@@ -1382,12 +2041,22 @@ function drawLegend() {
   ctx.strokeStyle = '#FFF';
   ctx.lineWidth = 1.5;
   ctx.beginPath();
-  ctx.moveTo(lx + 17, ly + 37);
-  ctx.lineTo(lx + 19, ly + 40);
-  ctx.lineTo(lx + 24, ly + 34);
+  ctx.moveTo(lx + 17, ly + 35);
+  ctx.lineTo(lx + 19, ly + 38);
+  ctx.lineTo(lx + 24, ly + 32);
   ctx.stroke();
   ctx.fillStyle = '#EEE';
-  ctx.fillText('Uygun (Ayakta)', lx + 35, ly + 41);
+  ctx.fillText('Görev yok', lx + 34, ly + 39);
+
+  ctx.fillStyle = 'rgba(221,204,51,0.95)';
+  ctx.beginPath();
+  ctx.arc(lx + 20, ly + 56, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#FFEE88';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = '#EEE';
+  ctx.fillText('Seçili', lx + 34, ly + 60);
 }
 
 render();
