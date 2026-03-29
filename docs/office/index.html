@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ofis Animasyonu - Top Down View</title>
+<title>🛰️Aviora-Ofise2D</title>
 <link rel="stylesheet" href="../office-3d/styles.css" />
 <link rel="stylesheet" href="office-overrides.css" />
 <style>
@@ -27,10 +27,16 @@ body {
   display: flex;
   gap: 14px;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
-.topbar .brand { font-weight: 700; color: #eaf0ff; }
-.topbar .nav { display: flex; gap: 14px; flex-wrap: wrap; }
+.topbar .brand { font-weight: 700; color: #eaf0ff; flex-shrink: 0; }
+.topbar .nav {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-left: auto;
+  justify-content: flex-end;
+}
 .topbar .nav a {
   padding: 6px 10px;
   border: 1px solid transparent;
@@ -144,7 +150,7 @@ body {
 
 <div class="topbar">
   <div class="topbar-inner">
-    <div class="brand">🛰️ Zafer Satılmış - Aviora</div>
+    <div class="brand">🛰️Zafer Satılmış - Aviora</div>
     <nav class="nav">
       <a href="../index.html">Aviora</a>
       <a href="../fs/index.html">File System</a>

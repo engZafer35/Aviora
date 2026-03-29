@@ -2,7 +2,7 @@
 * #Author       : Zafer Satılmış
 * #Revision     : 1.0
 * #Date         : Mar 29, 2026
-* #File Name    : AppProtocolByteArray.c
+* #File Name    : AppProtocolOrionTLV.c
 *******************************************************************************/
 /******************************************************************************
 * Binary TLV-over-TCP protocol handler for IoT meter gateway.
@@ -20,7 +20,7 @@
 ******************************************************************************/
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
-#include "AppProtocolByteArray.h"
+#include "AppProtocolOrionTLV.h"
 #include "AppTcpConnManager.h"
 #include "AppMeterOperations.h"
 #include "AppTaskManager.h"
@@ -34,8 +34,8 @@
 #include <stdlib.h>
 
 /****************************** MACRO DEFINITIONS *****************************/
-#define BA_TASK_STACK_SIZE    (4096U)
-#define BA_TASK_NAME          "ProtoBA"
+#define ORION_TASK_STACK_SIZE    (4096U)
+#define ORION_TASK_NAME          "OrionTLV"
 
 #define MAX_PENDING_JOBS      (4)
 #define MAX_PATH_LEN          (96)
@@ -50,7 +50,7 @@
 
 typedef struct
 {
-    uint8_t data[PROTO_BA_PACKET_MAX_SIZE + 1];
+    uint8_t data[PROTO_ORION_PACKET_MAX_SIZE + 1];
     unsigned int length;
     volatile BOOL ready;
 } RxBuffer_t;
@@ -86,7 +86,7 @@ static RxBuffer_t gs_pullRx;
 
 static PendingJob_t gs_pendingJobs[MAX_PENDING_JOBS];
 
-static uint8_t gs_txBuf[PROTO_BA_PACKET_MAX_SIZE];
+static uint8_t gs_txBuf[PROTO_ORION_PACKET_MAX_SIZE];
 
 /* ================================================================== */
 /*                       TLV BUILDER                                  */
@@ -103,7 +103,7 @@ static uint16_t readU16BE(const uint8_t *src)
     return (uint16_t)((uint16_t)src[0] << 8 | src[1]);
 }
 
-void protoBA_BuilderInit(ProtoBA_Builder_t *b, uint8_t *buf, uint16_t capacity)
+void orionTLV_BuilderInit(OrionTLV_Builder_t *b, uint8_t *buf, uint16_t capacity)
 {
     b->buf      = buf;
     b->capacity = capacity;
@@ -111,15 +111,15 @@ void protoBA_BuilderInit(ProtoBA_Builder_t *b, uint8_t *buf, uint16_t capacity)
     b->overflow = FALSE;
 }
 
-void protoBA_PacketBegin(ProtoBA_Builder_t *b)
+void orionTLV_PacketBegin(OrionTLV_Builder_t *b)
 {
     b->pos      = 0;
     b->overflow = FALSE;
     if (b->capacity < 2) { b->overflow = TRUE; return; }
-    b->buf[b->pos++] = PROTO_BA_PKT_START;
+    b->buf[b->pos++] = PROTO_ORION_PKT_START;
 }
 
-static void builderAddTLV(ProtoBA_Builder_t *b, uint16_t tag,
+static void builderAddTLV(OrionTLV_Builder_t *b, uint16_t tag,
                            const uint8_t *val, uint16_t valLen)
 {
     if (b->overflow) return;
@@ -137,36 +137,36 @@ static void builderAddTLV(ProtoBA_Builder_t *b, uint16_t tag,
     }
 }
 
-void protoBA_AddString(ProtoBA_Builder_t *b, uint16_t tag, const char *str)
+void orionTLV_AddString(OrionTLV_Builder_t *b, uint16_t tag, const char *str)
 {
     uint16_t len = (str != NULL) ? (uint16_t)strlen(str) : 0;
     builderAddTLV(b, tag, (const uint8_t *)str, len);
 }
 
-void protoBA_AddStringN(ProtoBA_Builder_t *b, uint16_t tag, const char *str, uint16_t len)
+void orionTLV_AddStringN(OrionTLV_Builder_t *b, uint16_t tag, const char *str, uint16_t len)
 {
     builderAddTLV(b, tag, (const uint8_t *)str, len);
 }
 
-void protoBA_AddBool(ProtoBA_Builder_t *b, uint16_t tag, BOOL val)
+void orionTLV_AddBool(OrionTLV_Builder_t *b, uint16_t tag, BOOL val)
 {
     uint8_t v = val ? 0x01 : 0x00;
     builderAddTLV(b, tag, &v, 1);
 }
 
-void protoBA_AddUint8(ProtoBA_Builder_t *b, uint16_t tag, uint8_t val)
+void orionTLV_AddUint8(OrionTLV_Builder_t *b, uint16_t tag, uint8_t val)
 {
     builderAddTLV(b, tag, &val, 1);
 }
 
-void protoBA_AddUint16(ProtoBA_Builder_t *b, uint16_t tag, uint16_t val)
+void orionTLV_AddUint16(OrionTLV_Builder_t *b, uint16_t tag, uint16_t val)
 {
     uint8_t tmp[2];
     writeU16BE(tmp, val);
     builderAddTLV(b, tag, tmp, 2);
 }
 
-void protoBA_AddUint32(ProtoBA_Builder_t *b, uint16_t tag, uint32_t val)
+void orionTLV_AddUint32(OrionTLV_Builder_t *b, uint16_t tag, uint32_t val)
 {
     uint8_t tmp[4];
     tmp[0] = (uint8_t)(val >> 24);
@@ -176,42 +176,42 @@ void protoBA_AddUint32(ProtoBA_Builder_t *b, uint16_t tag, uint32_t val)
     builderAddTLV(b, tag, tmp, 4);
 }
 
-void protoBA_AddInt16(ProtoBA_Builder_t *b, uint16_t tag, int16_t val)
+void orionTLV_AddInt16(OrionTLV_Builder_t *b, uint16_t tag, int16_t val)
 {
-    protoBA_AddUint16(b, tag, (uint16_t)val);
+    orionTLV_AddUint16(b, tag, (uint16_t)val);
 }
 
-void protoBA_AddRaw(ProtoBA_Builder_t *b, uint16_t tag,
+void orionTLV_AddRaw(OrionTLV_Builder_t *b, uint16_t tag,
                      const uint8_t *data, uint16_t len)
 {
     builderAddTLV(b, tag, data, len);
 }
 
-uint16_t protoBA_PacketEnd(ProtoBA_Builder_t *b)
+uint16_t orionTLV_PacketEnd(OrionTLV_Builder_t *b)
 {
     if (b->overflow) return 0;
     if (b->pos >= b->capacity) { b->overflow = TRUE; return 0; }
-    b->buf[b->pos++] = PROTO_BA_PKT_END;
+    b->buf[b->pos++] = PROTO_ORION_PKT_END;
     return b->pos;
 }
 
-void protoBA_AddDeviceHeader(ProtoBA_Builder_t *b)
+void orionTLV_AddDeviceHeader(OrionTLV_Builder_t *b)
 {
-    protoBA_AddString(b, TAG_FLAG, PROTO_BA_FLAG);
-    protoBA_AddString(b, TAG_SERIAL_NUMBER, gs_serialNumber);
+    orionTLV_AddString(b, TAG_FLAG, PROTO_ORION_FLAG);
+    orionTLV_AddString(b, TAG_SERIAL_NUMBER, gs_serialNumber);
 }
 
 /* ================================================================== */
 /*                         TLV PARSER                                 */
 /* ================================================================== */
 
-BOOL protoBA_ParserInit(ProtoBA_Parser_t *p, const uint8_t *raw, uint16_t rawLen)
+BOOL orionTLV_ParserInit(OrionTLV_Parser_t *p, const uint8_t *raw, uint16_t rawLen)
 {
     if (raw == NULL || rawLen < 2) return FALSE;
 
     /* find '$' */
     uint16_t start = 0;
-    while (start < rawLen && raw[start] != PROTO_BA_PKT_START)
+    while (start < rawLen && raw[start] != PROTO_ORION_PKT_START)
         start++;
 
     if (start >= rawLen) return FALSE;
@@ -221,7 +221,7 @@ BOOL protoBA_ParserInit(ProtoBA_Parser_t *p, const uint8_t *raw, uint16_t rawLen
     uint16_t end = rawLen;
     for (uint16_t i = end; i > start; i--)
     {
-        if (raw[i - 1] == PROTO_BA_PKT_END) { end = i - 1; break; }
+        if (raw[i - 1] == PROTO_ORION_PKT_END) { end = i - 1; break; }
     }
     if (end <= start) return FALSE;
 
@@ -231,12 +231,12 @@ BOOL protoBA_ParserInit(ProtoBA_Parser_t *p, const uint8_t *raw, uint16_t rawLen
     return TRUE;
 }
 
-void protoBA_ParserReset(ProtoBA_Parser_t *p)
+void orionTLV_ParserReset(OrionTLV_Parser_t *p)
 {
     p->cursor = 0;
 }
 
-BOOL protoBA_ParserNext(ProtoBA_Parser_t *p, uint16_t *tag,
+BOOL orionTLV_ParserNext(OrionTLV_Parser_t *p, uint16_t *tag,
                          const uint8_t **value, uint16_t *valueLen)
 {
     if (p->cursor + TLV_HEADER_SIZE > p->length)
@@ -256,7 +256,7 @@ BOOL protoBA_ParserNext(ProtoBA_Parser_t *p, uint16_t *tag,
 }
 
 /* Search by tag (resets cursor, scans all TLVs) */
-static BOOL findTag(ProtoBA_Parser_t *p, uint16_t wantTag,
+static BOOL findTag(OrionTLV_Parser_t *p, uint16_t wantTag,
                      const uint8_t **value, uint16_t *valueLen)
 {
     uint16_t savedCursor = p->cursor;
@@ -265,7 +265,7 @@ static BOOL findTag(ProtoBA_Parser_t *p, uint16_t wantTag,
     uint16_t tag;
     const uint8_t *v;
     uint16_t vl;
-    while (protoBA_ParserNext(p, &tag, &v, &vl))
+    while (orionTLV_ParserNext(p, &tag, &v, &vl))
     {
         if (tag == wantTag)
         {
@@ -279,7 +279,7 @@ static BOOL findTag(ProtoBA_Parser_t *p, uint16_t wantTag,
     return FALSE;
 }
 
-BOOL protoBA_GetString(ProtoBA_Parser_t *p, uint16_t tag, char *out, uint16_t outSz)
+BOOL orionTLV_GetString(OrionTLV_Parser_t *p, uint16_t tag, char *out, uint16_t outSz)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl)) return FALSE;
@@ -289,7 +289,7 @@ BOOL protoBA_GetString(ProtoBA_Parser_t *p, uint16_t tag, char *out, uint16_t ou
     return TRUE;
 }
 
-BOOL protoBA_GetBool(ProtoBA_Parser_t *p, uint16_t tag, BOOL *out)
+BOOL orionTLV_GetBool(OrionTLV_Parser_t *p, uint16_t tag, BOOL *out)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl) || vl < 1) return FALSE;
@@ -297,7 +297,7 @@ BOOL protoBA_GetBool(ProtoBA_Parser_t *p, uint16_t tag, BOOL *out)
     return TRUE;
 }
 
-BOOL protoBA_GetUint8(ProtoBA_Parser_t *p, uint16_t tag, uint8_t *out)
+BOOL orionTLV_GetUint8(OrionTLV_Parser_t *p, uint16_t tag, uint8_t *out)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl) || vl < 1) return FALSE;
@@ -305,7 +305,7 @@ BOOL protoBA_GetUint8(ProtoBA_Parser_t *p, uint16_t tag, uint8_t *out)
     return TRUE;
 }
 
-BOOL protoBA_GetUint16(ProtoBA_Parser_t *p, uint16_t tag, uint16_t *out)
+BOOL orionTLV_GetUint16(OrionTLV_Parser_t *p, uint16_t tag, uint16_t *out)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl) || vl < 2) return FALSE;
@@ -313,7 +313,7 @@ BOOL protoBA_GetUint16(ProtoBA_Parser_t *p, uint16_t tag, uint16_t *out)
     return TRUE;
 }
 
-BOOL protoBA_GetUint32(ProtoBA_Parser_t *p, uint16_t tag, uint32_t *out)
+BOOL orionTLV_GetUint32(OrionTLV_Parser_t *p, uint16_t tag, uint32_t *out)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl) || vl < 4) return FALSE;
@@ -322,19 +322,19 @@ BOOL protoBA_GetUint32(ProtoBA_Parser_t *p, uint16_t tag, uint32_t *out)
     return TRUE;
 }
 
-BOOL protoBA_GetInt16(ProtoBA_Parser_t *p, uint16_t tag, int16_t *out)
+BOOL orionTLV_GetInt16(OrionTLV_Parser_t *p, uint16_t tag, int16_t *out)
 {
     uint16_t tmp;
-    if (!protoBA_GetUint16(p, tag, &tmp)) return FALSE;
+    if (!orionTLV_GetUint16(p, tag, &tmp)) return FALSE;
     *out = (int16_t)tmp;
     return TRUE;
 }
 
-BOOL protoBA_GetFunction(ProtoBA_Parser_t *p, ProtoBA_Function_t *out)
+BOOL orionTLV_GetFunction(OrionTLV_Parser_t *p, OrionTLV_Function_t *out)
 {
     uint8_t v;
-    if (!protoBA_GetUint8(p, TAG_FUNCTION, &v)) return FALSE;
-    *out = (ProtoBA_Function_t)v;
+    if (!orionTLV_GetUint8(p, TAG_FUNCTION, &v)) return FALSE;
+    *out = (OrionTLV_Function_t)v;
     return TRUE;
 }
 
@@ -344,7 +344,7 @@ BOOL protoBA_GetFunction(ProtoBA_Parser_t *p, ProtoBA_Function_t *out)
 
 static BOOL registerStateLoad(void)
 {
-    FsFile *f = fsOpenFile((char_t *)PROTO_BA_REGISTER_FILE, FS_FILE_MODE_READ);
+    FsFile *f = fsOpenFile((char_t *)PROTO_ORION_REGISTER_FILE, FS_FILE_MODE_READ);
     if (f == NULL) return FALSE;
 
     U8 val = 0;
@@ -356,7 +356,7 @@ static BOOL registerStateLoad(void)
 
 static void registerStateSave(BOOL reg)
 {
-    FsFile *f = fsOpenFile((char_t *)PROTO_BA_REGISTER_FILE,
+    FsFile *f = fsOpenFile((char_t *)PROTO_ORION_REGISTER_FILE,
                            FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
     if (f == NULL) return;
     U8 val = reg ? 1 : 0;
@@ -371,7 +371,7 @@ static void registerStateSave(BOOL reg)
 static BOOL serverConfigLoad(char *ip, size_t ipSz, int *port)
 {
     ServerConfig_t cfg;
-    FsFile *f = fsOpenFile((char_t *)PROTO_BA_SERVER_FILE, FS_FILE_MODE_READ);
+    FsFile *f = fsOpenFile((char_t *)PROTO_ORION_SERVER_FILE, FS_FILE_MODE_READ);
     if (f == NULL) return FALSE;
 
     size_t got = 0;
@@ -392,7 +392,7 @@ static void serverConfigSave(const char *ip, int port)
     strncpy(cfg.ip, ip, sizeof(cfg.ip) - 1);
     cfg.port = port;
 
-    FsFile *f = fsOpenFile((char_t *)PROTO_BA_SERVER_FILE,
+    FsFile *f = fsOpenFile((char_t *)PROTO_ORION_SERVER_FILE,
                            FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
     if (f == NULL) return;
     (void)fsWriteFile(f, &cfg, sizeof(cfg));
@@ -425,13 +425,13 @@ static void getDeviceDateStr(char *buf, size_t bufSz)
 
 static uint16_t buildAckNack(uint8_t *buf, uint16_t sz, BOOL isAck)
 {
-    ProtoBA_Builder_t b;
-    protoBA_BuilderInit(&b, buf, sz);
-    protoBA_PacketBegin(&b);
-    protoBA_AddDeviceHeader(&b);
-    protoBA_AddUint8(&b, TAG_FUNCTION, isAck ? FUNC_ACK : FUNC_NACK);
-    protoBA_AddBool(&b, TAG_ACK_STATUS, isAck);
-    return protoBA_PacketEnd(&b);
+    OrionTLV_Builder_t b;
+    orionTLV_BuilderInit(&b, buf, sz);
+    orionTLV_PacketBegin(&b);
+    orionTLV_AddDeviceHeader(&b);
+    orionTLV_AddUint8(&b, TAG_FUNCTION, isAck ? FUNC_ACK : FUNC_NACK);
+    orionTLV_AddBool(&b, TAG_ACK_STATUS, isAck);
+    return orionTLV_PacketEnd(&b);
 }
 
 static uint16_t buildIdentMsg(uint8_t *buf, uint16_t sz)
@@ -439,18 +439,18 @@ static uint16_t buildIdentMsg(uint8_t *buf, uint16_t sz)
     char dateStr[24];
     getDeviceDateStr(dateStr, sizeof(dateStr));
 
-    ProtoBA_Builder_t b;
-    protoBA_BuilderInit(&b, buf, sz);
-    protoBA_PacketBegin(&b);
-    protoBA_AddDeviceHeader(&b);
-    protoBA_AddUint8(&b, TAG_FUNCTION, FUNC_IDENT);
-    protoBA_AddBool(&b, TAG_REGISTERED, gs_registered);
-    protoBA_AddString(&b, TAG_DEVICE_BRAND, PROTO_BA_BRAND);
-    protoBA_AddString(&b, TAG_DEVICE_MODEL, PROTO_BA_MODEL);
-    protoBA_AddString(&b, TAG_DEVICE_DATE, dateStr);
-    protoBA_AddString(&b, TAG_PULL_IP, gs_deviceIP);
-    protoBA_AddUint16(&b, TAG_PULL_PORT, (uint16_t)gs_pullPort);
-    return protoBA_PacketEnd(&b);
+    OrionTLV_Builder_t b;
+    orionTLV_BuilderInit(&b, buf, sz);
+    orionTLV_PacketBegin(&b);
+    orionTLV_AddDeviceHeader(&b);
+    orionTLV_AddUint8(&b, TAG_FUNCTION, FUNC_IDENT);
+    orionTLV_AddBool(&b, TAG_REGISTERED, gs_registered);
+    orionTLV_AddString(&b, TAG_DEVICE_BRAND, PROTO_ORION_BRAND);
+    orionTLV_AddString(&b, TAG_DEVICE_MODEL, PROTO_ORION_MODEL);
+    orionTLV_AddString(&b, TAG_DEVICE_DATE, dateStr);
+    orionTLV_AddString(&b, TAG_PULL_IP, gs_deviceIP);
+    orionTLV_AddUint16(&b, TAG_PULL_PORT, (uint16_t)gs_pullPort);
+    return orionTLV_PacketEnd(&b);
 }
 
 static uint16_t buildAliveMsg(uint8_t *buf, uint16_t sz)
@@ -458,61 +458,61 @@ static uint16_t buildAliveMsg(uint8_t *buf, uint16_t sz)
     char dateStr[24];
     getDeviceDateStr(dateStr, sizeof(dateStr));
 
-    ProtoBA_Builder_t b;
-    protoBA_BuilderInit(&b, buf, sz);
-    protoBA_PacketBegin(&b);
-    protoBA_AddDeviceHeader(&b);
-    protoBA_AddUint8(&b, TAG_FUNCTION, FUNC_ALIVE);
-    protoBA_AddString(&b, TAG_DEVICE_DATE, dateStr);
-    return protoBA_PacketEnd(&b);
+    OrionTLV_Builder_t b;
+    orionTLV_BuilderInit(&b, buf, sz);
+    orionTLV_PacketBegin(&b);
+    orionTLV_AddDeviceHeader(&b);
+    orionTLV_AddUint8(&b, TAG_FUNCTION, FUNC_ALIVE);
+    orionTLV_AddString(&b, TAG_DEVICE_DATE, dateStr);
+    return orionTLV_PacketEnd(&b);
 }
 
 static uint16_t buildLogPacket(uint8_t *buf, uint16_t sz,
                                 const char *logData,
                                 int packetNum, BOOL stream)
 {
-    ProtoBA_Builder_t b;
-    protoBA_BuilderInit(&b, buf, sz);
-    protoBA_PacketBegin(&b);
-    protoBA_AddDeviceHeader(&b);
-    protoBA_AddUint8(&b, TAG_FUNCTION, FUNC_LOG);
-    protoBA_AddUint16(&b, TAG_PACKET_NUM, (uint16_t)packetNum);
-    protoBA_AddBool(&b, TAG_PACKET_STREAM, stream);
-    protoBA_AddString(&b, TAG_LOG_DATA, logData);
-    return protoBA_PacketEnd(&b);
+    OrionTLV_Builder_t b;
+    orionTLV_BuilderInit(&b, buf, sz);
+    orionTLV_PacketBegin(&b);
+    orionTLV_AddDeviceHeader(&b);
+    orionTLV_AddUint8(&b, TAG_FUNCTION, FUNC_LOG);
+    orionTLV_AddUint16(&b, TAG_PACKET_NUM, (uint16_t)packetNum);
+    orionTLV_AddBool(&b, TAG_PACKET_STREAM, stream);
+    orionTLV_AddString(&b, TAG_LOG_DATA, logData);
+    return orionTLV_PacketEnd(&b);
 }
 
 static uint16_t buildDataPacket(uint8_t *buf, uint16_t sz,
-                                 ProtoBA_Function_t func,
+                                 OrionTLV_Function_t func,
                                  const char *meterId,
                                  const char *data,
                                  int packetNum, BOOL stream)
 {
-    ProtoBA_Builder_t b;
-    protoBA_BuilderInit(&b, buf, sz);
-    protoBA_PacketBegin(&b);
-    protoBA_AddDeviceHeader(&b);
-    protoBA_AddUint8(&b, TAG_FUNCTION, (uint8_t)func);
-    protoBA_AddUint16(&b, TAG_PACKET_NUM, (uint16_t)packetNum);
-    protoBA_AddBool(&b, TAG_PACKET_STREAM, stream);
-    protoBA_AddString(&b, TAG_METER_ID, meterId);
-    protoBA_AddString(&b, TAG_READOUT_DATA, data);
-    return protoBA_PacketEnd(&b);
+    OrionTLV_Builder_t b;
+    orionTLV_BuilderInit(&b, buf, sz);
+    orionTLV_PacketBegin(&b);
+    orionTLV_AddDeviceHeader(&b);
+    orionTLV_AddUint8(&b, TAG_FUNCTION, (uint8_t)func);
+    orionTLV_AddUint16(&b, TAG_PACKET_NUM, (uint16_t)packetNum);
+    orionTLV_AddBool(&b, TAG_PACKET_STREAM, stream);
+    orionTLV_AddString(&b, TAG_METER_ID, meterId);
+    orionTLV_AddString(&b, TAG_READOUT_DATA, data);
+    return orionTLV_PacketEnd(&b);
 }
 
 static uint16_t buildDirectivePacket(uint8_t *buf, uint16_t sz,
                                       const char *directive,
                                       int packetNum, BOOL stream)
 {
-    ProtoBA_Builder_t b;
-    protoBA_BuilderInit(&b, buf, sz);
-    protoBA_PacketBegin(&b);
-    protoBA_AddDeviceHeader(&b);
-    protoBA_AddUint8(&b, TAG_FUNCTION, FUNC_DIRECTIVE_LIST);
-    protoBA_AddUint16(&b, TAG_PACKET_NUM, (uint16_t)packetNum);
-    protoBA_AddBool(&b, TAG_PACKET_STREAM, stream);
-    protoBA_AddString(&b, TAG_DIRECTIVE_DATA, directive);
-    return protoBA_PacketEnd(&b);
+    OrionTLV_Builder_t b;
+    orionTLV_BuilderInit(&b, buf, sz);
+    orionTLV_PacketBegin(&b);
+    orionTLV_AddDeviceHeader(&b);
+    orionTLV_AddUint8(&b, TAG_FUNCTION, FUNC_DIRECTIVE_LIST);
+    orionTLV_AddUint16(&b, TAG_PACKET_NUM, (uint16_t)packetNum);
+    orionTLV_AddBool(&b, TAG_PACKET_STREAM, stream);
+    orionTLV_AddString(&b, TAG_DIRECTIVE_DATA, directive);
+    return orionTLV_PacketEnd(&b);
 }
 
 /* ================================================================== */
@@ -521,10 +521,10 @@ static uint16_t buildDirectivePacket(uint8_t *buf, uint16_t sz,
 
 static void sendLogPackets(void)
 {
-    char curBuf[PROTO_BA_DATA_CHUNK_SIZE + 1];
-    char nxtBuf[PROTO_BA_DATA_CHUNK_SIZE + 1];
+    char curBuf[PROTO_ORION_DATA_CHUNK_SIZE + 1];
+    char nxtBuf[PROTO_ORION_DATA_CHUNK_SIZE + 1];
 
-    S32 curLen = appLogRecRead(g_sysLoggerID, curBuf, PROTO_BA_DATA_CHUNK_SIZE);
+    S32 curLen = appLogRecRead(g_sysLoggerID, curBuf, PROTO_ORION_DATA_CHUNK_SIZE);
 
     if (curLen <= 0)
     {
@@ -539,7 +539,7 @@ static void sendLogPackets(void)
         curBuf[curLen] = '\0';
         packetNum++;
 
-        S32 nxtLen = appLogRecRead(g_sysLoggerID, nxtBuf, PROTO_BA_DATA_CHUNK_SIZE);
+        S32 nxtLen = appLogRecRead(g_sysLoggerID, nxtBuf, PROTO_ORION_DATA_CHUNK_SIZE);
         BOOL hasMore = (nxtLen > 0);
 
         uint16_t sz = buildLogPacket(gs_txBuf, sizeof(gs_txBuf), curBuf, packetNum, hasMore);
@@ -553,20 +553,20 @@ static void sendLogPackets(void)
 }
 
 static void sendFilePacketised(const char *channel,
-                                ProtoBA_Function_t func,
+                                OrionTLV_Function_t func,
                                 const char *meterId,
                                 const char *filePath)
 {
     FsFile *f = fsOpenFile((char_t *)filePath, FS_FILE_MODE_READ);
     if (f == NULL) return;
 
-    char bufA[PROTO_BA_DATA_CHUNK_SIZE + 1];
-    char bufB[PROTO_BA_DATA_CHUNK_SIZE + 1];
+    char bufA[PROTO_ORION_DATA_CHUNK_SIZE + 1];
+    char bufB[PROTO_ORION_DATA_CHUNK_SIZE + 1];
     char *cur = bufA;
     char *nxt = bufB;
 
     size_t curLen = 0;
-    (void)fsReadFile(f, cur, PROTO_BA_DATA_CHUNK_SIZE, &curLen);
+    (void)fsReadFile(f, cur, PROTO_ORION_DATA_CHUNK_SIZE, &curLen);
     if (curLen == 0) { fsCloseFile(f); return; }
 
     int packetNum = 0;
@@ -576,7 +576,7 @@ static void sendFilePacketised(const char *channel,
         packetNum++;
 
         size_t nxtLen = 0;
-        (void)fsReadFile(f, nxt, PROTO_BA_DATA_CHUNK_SIZE, &nxtLen);
+        (void)fsReadFile(f, nxt, PROTO_ORION_DATA_CHUNK_SIZE, &nxtLen);
         BOOL hasMore = (nxtLen > 0);
 
         uint16_t sz = buildDataPacket(gs_txBuf, sizeof(gs_txBuf),
@@ -724,21 +724,21 @@ static int pendingJobAllocSlot(S32 taskId, BOOL isLoadProfile)
 /* ---- Log ---- */
 static void handleLogRequest(void)
 {
-    DEBUG_INFO("->[I] ProtoBA: log request received");
+    DEBUG_INFO("->[I] OrionTLV: log request received");
     sendLogPackets();
 }
 
 /* ---- Setting ---- */
-static void handleSettingRequest(ProtoBA_Parser_t *parser)
+static void handleSettingRequest(OrionTLV_Parser_t *parser)
 {
-    DEBUG_INFO("->[I] ProtoBA: setting request received");
+    DEBUG_INFO("->[I] OrionTLV: setting request received");
     BOOL success = TRUE;
 
     /* Server IP / Port update */
     char newIP[20] = {0};
     uint16_t newPort = 0;
-    BOOL hasIP   = protoBA_GetString(parser, TAG_SERVER_IP, newIP, sizeof(newIP));
-    BOOL hasPort = protoBA_GetUint16(parser, TAG_SERVER_PORT, &newPort);
+    BOOL hasIP   = orionTLV_GetString(parser, TAG_SERVER_IP, newIP, sizeof(newIP));
+    BOOL hasPort = orionTLV_GetUint16(parser, TAG_SERVER_PORT, &newPort);
 
     if (hasIP && newIP[0] != '\0' && hasPort && newPort > 0)
     {
@@ -748,17 +748,17 @@ static void handleSettingRequest(ProtoBA_Parser_t *parser)
 
         appTcpConnManagerStop();
         zosDelayTask(500);
-        appTcpConnManagerStart(gs_serverIP, gs_serverPort, gs_pullPort, appProtocolBAPutIncomingMessage);
+        appTcpConnManagerStart(gs_serverIP, gs_serverPort, gs_pullPort, appProtocolOrionTLVPutIncomingMessage);
         appTcpConnManagerRequestConnect();
 
-        DEBUG_INFO("->[I] ProtoBA: server address updated to %s:%d", gs_serverIP, gs_serverPort);
+        DEBUG_INFO("->[I] OrionTLV: server address updated to %s:%d", gs_serverIP, gs_serverPort);
         APP_LOG_REC(g_sysLoggerID, "Server address updated");
     }
 
     /* Meter operations — iterate TAG_METER_INDEX occurrences.
      * Each METER_INDEX marks the start of a new meter entry;
      * fields following it (until next METER_INDEX or packet end) belong to that meter. */
-    protoBA_ParserReset(parser);
+    orionTLV_ParserReset(parser);
 
     uint16_t tag; const uint8_t *val; uint16_t vLen;
     BOOL inMeter = FALSE;
@@ -766,7 +766,7 @@ static void handleSettingRequest(ProtoBA_Parser_t *parser)
     char operation[16] = {0};
     MeterData_t md;
 
-    while (protoBA_ParserNext(parser, &tag, &val, &vLen))
+    while (orionTLV_ParserNext(parser, &tag, &val, &vLen))
     {
         if (tag == TAG_METER_INDEX)
         {
@@ -884,12 +884,12 @@ static void handleSettingRequest(ProtoBA_Parser_t *parser)
 }
 
 /* ---- FW Update ---- */
-static void handleFwUpdateRequest(ProtoBA_Parser_t *parser)
+static void handleFwUpdateRequest(OrionTLV_Parser_t *parser)
 {
-    DEBUG_INFO("->[I] ProtoBA: fwUpdate request received");
+    DEBUG_INFO("->[I] OrionTLV: fwUpdate request received");
 
     char address[192] = {0};
-    if (!protoBA_GetString(parser, TAG_FW_ADDRESS, address, sizeof(address)) || address[0] == '\0')
+    if (!orionTLV_GetString(parser, TAG_FW_ADDRESS, address, sizeof(address)) || address[0] == '\0')
     {
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE);
         appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
@@ -907,20 +907,20 @@ static void handleFwUpdateRequest(ProtoBA_Parser_t *parser)
                     path, sizeof(path)))
     {
         AppSwUpdateInit(host, port, user, pass, path, FW_LOCAL_PATH);
-        DEBUG_INFO("->[I] ProtoBA: FW update started from %s", host);
+        DEBUG_INFO("->[I] OrionTLV: FW update started from %s", host);
         APP_LOG_REC(g_sysLoggerID, "FW update started");
     }
     else
     {
-        DEBUG_ERROR("->[E] ProtoBA: FTP URL parse failed");
+        DEBUG_ERROR("->[E] OrionTLV: FTP URL parse failed");
         APP_LOG_REC(g_sysLoggerID, "FTP URL parse failed");
     }
 }
 
 /* ---- Readout ---- */
-static void handleReadoutRequest(ProtoBA_Parser_t *parser)
+static void handleReadoutRequest(OrionTLV_Parser_t *parser)
 {
-    DEBUG_INFO("->[I] ProtoBA: readout request received");
+    DEBUG_INFO("->[I] OrionTLV: readout request received");
 
     /* Rebuild a minimal JSON request string for AppMeterOperations,
        which expects JSON-formatted request data */
@@ -928,8 +928,8 @@ static void handleReadoutRequest(ProtoBA_Parser_t *parser)
     char directive[64] = {0};
     char meterSn[20] = {0};
 
-    protoBA_GetString(parser, TAG_DIRECTIVE_NAME, directive, sizeof(directive));
-    protoBA_GetString(parser, TAG_METER_SERIAL_NUM, meterSn, sizeof(meterSn));
+    orionTLV_GetString(parser, TAG_DIRECTIVE_NAME, directive, sizeof(directive));
+    orionTLV_GetString(parser, TAG_METER_SERIAL_NUM, meterSn, sizeof(meterSn));
 
     snprintf(reqBuf, sizeof(reqBuf),
              "{\"directive\":\"%s\",\"parameters\":{\"METERSERIALNUMBER\":\"%s\"}}",
@@ -956,19 +956,19 @@ static void handleReadoutRequest(ProtoBA_Parser_t *parser)
 }
 
 /* ---- Load Profile ---- */
-static void handleLoadProfileRequest(ProtoBA_Parser_t *parser)
+static void handleLoadProfileRequest(OrionTLV_Parser_t *parser)
 {
-    DEBUG_INFO("->[I] ProtoBA: loadprofile request received");
+    DEBUG_INFO("->[I] OrionTLV: loadprofile request received");
 
     char directive[64] = {0};
     char meterSn[20]   = {0};
     char startDate[24] = {0};
     char endDate[24]   = {0};
 
-    protoBA_GetString(parser, TAG_DIRECTIVE_NAME, directive, sizeof(directive));
-    protoBA_GetString(parser, TAG_METER_SERIAL_NUM, meterSn, sizeof(meterSn));
-    protoBA_GetString(parser, TAG_START_DATE, startDate, sizeof(startDate));
-    protoBA_GetString(parser, TAG_END_DATE, endDate, sizeof(endDate));
+    orionTLV_GetString(parser, TAG_DIRECTIVE_NAME, directive, sizeof(directive));
+    orionTLV_GetString(parser, TAG_METER_SERIAL_NUM, meterSn, sizeof(meterSn));
+    orionTLV_GetString(parser, TAG_START_DATE, startDate, sizeof(startDate));
+    orionTLV_GetString(parser, TAG_END_DATE, endDate, sizeof(endDate));
 
     char reqBuf[320];
     snprintf(reqBuf, sizeof(reqBuf),
@@ -997,12 +997,12 @@ static void handleLoadProfileRequest(ProtoBA_Parser_t *parser)
 }
 
 /* ---- Directive List ---- */
-static void handleDirectiveListRequest(ProtoBA_Parser_t *parser)
+static void handleDirectiveListRequest(OrionTLV_Parser_t *parser)
 {
-    DEBUG_INFO("->[I] ProtoBA: directiveList request received");
+    DEBUG_INFO("->[I] OrionTLV: directiveList request received");
 
     char filterId[64] = {0};
-    protoBA_GetString(parser, TAG_DIRECTIVE_ID, filterId, sizeof(filterId));
+    orionTLV_GetString(parser, TAG_DIRECTIVE_ID, filterId, sizeof(filterId));
 
     BOOL sendAll = (filterId[0] == '\0' || (filterId[0] == '*' && filterId[1] == '\0'));
 
@@ -1014,7 +1014,7 @@ static void handleDirectiveListRequest(ProtoBA_Parser_t *parser)
         return;
     }
 
-    char dirBuf[PROTO_BA_PACKET_MAX_SIZE];
+    char dirBuf[PROTO_ORION_PACKET_MAX_SIZE];
     int totalToSend = 0;
 
     if (sendAll) { totalToSend = (int)count; }
@@ -1058,12 +1058,12 @@ static void handleDirectiveListRequest(ProtoBA_Parser_t *parser)
 }
 
 /* ---- Directive Add ---- */
-static void handleDirectiveAddRequest(ProtoBA_Parser_t *parser)
+static void handleDirectiveAddRequest(OrionTLV_Parser_t *parser)
 {
-    DEBUG_INFO("->[I] ProtoBA: directiveAdd request received");
+    DEBUG_INFO("->[I] OrionTLV: directiveAdd request received");
 
-    char dirData[PROTO_BA_PACKET_MAX_SIZE] = {0};
-    if (!protoBA_GetString(parser, TAG_DIRECTIVE_DATA, dirData, sizeof(dirData)) || dirData[0] == '\0')
+    char dirData[PROTO_ORION_PACKET_MAX_SIZE] = {0};
+    if (!orionTLV_GetString(parser, TAG_DIRECTIVE_DATA, dirData, sizeof(dirData)) || dirData[0] == '\0')
     {
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE);
         appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
@@ -1078,12 +1078,12 @@ static void handleDirectiveAddRequest(ProtoBA_Parser_t *parser)
 }
 
 /* ---- Directive Delete ---- */
-static void handleDirectiveDeleteRequest(ProtoBA_Parser_t *parser)
+static void handleDirectiveDeleteRequest(OrionTLV_Parser_t *parser)
 {
-    DEBUG_INFO("->[I] ProtoBA: directiveDelete request received");
+    DEBUG_INFO("->[I] OrionTLV: directiveDelete request received");
 
     char filterId[64] = {0};
-    if (!protoBA_GetString(parser, TAG_DIRECTIVE_ID, filterId, sizeof(filterId)) || filterId[0] == '\0')
+    if (!orionTLV_GetString(parser, TAG_DIRECTIVE_ID, filterId, sizeof(filterId)) || filterId[0] == '\0')
     {
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE);
         appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
@@ -1102,19 +1102,19 @@ static void handleDirectiveDeleteRequest(ProtoBA_Parser_t *parser)
 
 static void processPullMessage(const uint8_t *raw, uint16_t rawLen)
 {
-    ProtoBA_Parser_t parser;
-    if (!protoBA_ParserInit(&parser, raw, rawLen))
+    OrionTLV_Parser_t parser;
+    if (!orionTLV_ParserInit(&parser, raw, rawLen))
     {
-        DEBUG_WARNING("->[W] ProtoBA: invalid packet on pull");
+        DEBUG_WARNING("->[W] OrionTLV: invalid packet on pull");
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE);
         appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
         return;
     }
 
-    ProtoBA_Function_t func;
-    if (!protoBA_GetFunction(&parser, &func))
+    OrionTLV_Function_t func;
+    if (!orionTLV_GetFunction(&parser, &func))
     {
-        DEBUG_WARNING("->[W] ProtoBA: no FUNCTION tag in pull packet");
+        DEBUG_WARNING("->[W] OrionTLV: no FUNCTION tag in pull packet");
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE);
         appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
         return;
@@ -1131,7 +1131,7 @@ static void processPullMessage(const uint8_t *raw, uint16_t rawLen)
         case FUNC_DIRECTIVE_ADD:  handleDirectiveAddRequest(&parser);    break;
         case FUNC_DIRECTIVE_DEL:  handleDirectiveDeleteRequest(&parser); break;
         default:
-            DEBUG_WARNING("->[W] ProtoBA: unknown pull function 0x%02X", (unsigned)func);
+            DEBUG_WARNING("->[W] OrionTLV: unknown pull function 0x%02X", (unsigned)func);
             {
                 uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE);
                 appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
@@ -1158,7 +1158,7 @@ static void cleanupMeterFiles(S32 taskId)
 static void deliverMeterData(int jobIdx)
 {
     PendingJob_t *job = &gs_pendingJobs[jobIdx];
-    ProtoBA_Function_t func = job->isLoadProfile ? FUNC_LOADPROFILE : FUNC_READOUT;
+    OrionTLV_Function_t func = job->isLoadProfile ? FUNC_LOADPROFILE : FUNC_READOUT;
 
     char meterId[128] = {0};
     char idPath[MAX_PATH_LEN];
@@ -1181,14 +1181,14 @@ static void deliverMeterData(int jobIdx)
     {
         appTcpConnManagerRequestPushConnect();
         U32 t0 = osGetSystemTime();
-        while ((osGetSystemTime() - t0) < PROTO_BA_CONNECT_TIMEOUT_MS)
+        while ((osGetSystemTime() - t0) < PROTO_ORION_CONNECT_TIMEOUT_MS)
         {
             if (appTcpConnManagerIsConnectedPush()) break;
             zosDelayTask(100);
         }
         if (!appTcpConnManagerIsConnectedPush())
         {
-            DEBUG_ERROR("->[E] ProtoBA: push connect timeout, data delivery skipped");
+            DEBUG_ERROR("->[E] OrionTLV: push connect timeout, data delivery skipped");
             return;
         }
     }
@@ -1197,7 +1197,7 @@ static void deliverMeterData(int jobIdx)
 
     gs_pushRx.ready = FALSE;
     U32 t0 = osGetSystemTime();
-    while ((osGetSystemTime() - t0) < PROTO_BA_ACK_TIMEOUT_MS)
+    while ((osGetSystemTime() - t0) < PROTO_ORION_ACK_TIMEOUT_MS)
     {
         if (gs_pushRx.ready) { gs_pushRx.ready = FALSE; break; }
         zosDelayTask(100);
@@ -1217,7 +1217,7 @@ static void processPendingMeterJobs(void)
         }
         else
         {
-            DEBUG_WARNING("->[W] ProtoBA: meter task %d failed (err %d)",
+            DEBUG_WARNING("->[W] OrionTLV: meter task %d failed (err %d)",
                           gs_pendingJobs[i].taskId, gs_pendingJobs[i].result);
         }
 
@@ -1235,15 +1235,15 @@ static void processPendingMeterJobs(void)
 static void protocolTaskFunc(void *arg)
 {
     (void)arg;
-    DEBUG_INFO("->[I] %s task started", BA_TASK_NAME);
+    DEBUG_INFO("->[I] %s task started", ORION_TASK_NAME);
     appTskMngImOK(gs_taskId);
 
     /* --- Start TCP --- */
     if (0 != appTcpConnManagerStart(gs_serverIP, gs_serverPort,
-                                     gs_pullPort, appProtocolBAPutIncomingMessage))
+                                     gs_pullPort, appProtocolOrionTLVPutIncomingMessage))
     {
-        DEBUG_ERROR("->[E] ProtoBA: TCP conn manager start failed");
-        APP_LOG_REC(g_sysLoggerID, "ProtoBA: TCP start fail");
+        DEBUG_ERROR("->[E] OrionTLV: TCP conn manager start failed");
+        APP_LOG_REC(g_sysLoggerID, "OrionTLV: TCP start fail");
         gs_running = FALSE;
         return;
     }
@@ -1255,14 +1255,14 @@ static void protocolTaskFunc(void *arg)
 
     if (!gs_registered)
     {
-        DEBUG_INFO("->[I] ProtoBA: device not registered, starting ident");
+        DEBUG_INFO("->[I] OrionTLV: device not registered, starting ident");
 
         while (gs_running && !gs_registered)
         {
             appTcpConnManagerRequestPushConnect();
 
             U32 t0 = osGetSystemTime();
-            while ((osGetSystemTime() - t0) < PROTO_BA_CONNECT_TIMEOUT_MS && gs_running)
+            while ((osGetSystemTime() - t0) < PROTO_ORION_CONNECT_TIMEOUT_MS && gs_running)
             {
                 if (appTcpConnManagerIsConnectedPush()) break;
                 zosDelayTask(100);
@@ -1271,8 +1271,8 @@ static void protocolTaskFunc(void *arg)
 
             if (!appTcpConnManagerIsConnectedPush())
             {
-                DEBUG_WARNING("->[W] ProtoBA: push connect timeout, retrying in %d s", PROTO_BA_REGISTER_RETRY_S);
-                for (int w = 0; w < PROTO_BA_REGISTER_RETRY_S * 10 && gs_running; w++)
+                DEBUG_WARNING("->[W] OrionTLV: push connect timeout, retrying in %d s", PROTO_ORION_REGISTER_RETRY_S);
+                for (int w = 0; w < PROTO_ORION_REGISTER_RETRY_S * 10 && gs_running; w++)
                 {
                     zosDelayTask(100);
                     appTskMngImOK(gs_taskId);
@@ -1283,27 +1283,27 @@ static void protocolTaskFunc(void *arg)
             /* Send ident */
             uint16_t sz = buildIdentMsg(gs_txBuf, sizeof(gs_txBuf));
             appTcpConnManagerSend(PUSH_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
-            DEBUG_DEBUG("->[D] ProtoBA: ident sent (%u bytes)", (unsigned)sz);
+            DEBUG_DEBUG("->[D] OrionTLV: ident sent (%u bytes)", (unsigned)sz);
 
             /* Wait for server response */
             gs_pushRx.ready = FALSE;
             t0 = osGetSystemTime();
-            while ((osGetSystemTime() - t0) < (U32)PROTO_BA_REGISTER_RETRY_S * 1000U && gs_running)
+            while ((osGetSystemTime() - t0) < (U32)PROTO_ORION_REGISTER_RETRY_S * 1000U && gs_running)
             {
                 if (gs_pushRx.ready)
                 {
-                    ProtoBA_Parser_t rp;
-                    if (protoBA_ParserInit(&rp, gs_pushRx.data, (uint16_t)gs_pushRx.length))
+                    OrionTLV_Parser_t rp;
+                    if (orionTLV_ParserInit(&rp, gs_pushRx.data, (uint16_t)gs_pushRx.length))
                     {
-                        ProtoBA_Function_t rFunc;
-                        if (protoBA_GetFunction(&rp, &rFunc) && rFunc == FUNC_IDENT)
+                        OrionTLV_Function_t rFunc;
+                        if (orionTLV_GetFunction(&rp, &rFunc) && rFunc == FUNC_IDENT)
                         {
                             BOOL regVal = FALSE;
-                            if (protoBA_GetBool(&rp, TAG_REGISTER, &regVal) && regVal)
+                            if (orionTLV_GetBool(&rp, TAG_REGISTER, &regVal) && regVal)
                             {
                                 gs_registered = TRUE;
                                 registerStateSave(TRUE);
-                                DEBUG_INFO("->[I] ProtoBA: device registered successfully");
+                                DEBUG_INFO("->[I] OrionTLV: device registered successfully");
                                 APP_LOG_REC(g_sysLoggerID, "Device registered");
                             }
                         }
@@ -1318,8 +1318,8 @@ static void protocolTaskFunc(void *arg)
             if (!gs_registered)
             {
                 appTcpConnManagerRequestPushDisconnect();
-                DEBUG_DEBUG("->[D] ProtoBA: registration attempt failed, retrying");
-                for (int w = 0; w < PROTO_BA_REGISTER_RETRY_S * 10 && gs_running; w++)
+                DEBUG_DEBUG("->[D] OrionTLV: registration attempt failed, retrying");
+                for (int w = 0; w < PROTO_ORION_REGISTER_RETRY_S * 10 && gs_running; w++)
                 {
                     zosDelayTask(100);
                     appTskMngImOK(gs_taskId);
@@ -1329,7 +1329,7 @@ static void protocolTaskFunc(void *arg)
     }
     else
     {
-        DEBUG_INFO("->[I] ProtoBA: device already registered");
+        DEBUG_INFO("->[I] OrionTLV: device already registered");
     }
 
     /* --- Main loop (registered) --- */
@@ -1344,13 +1344,13 @@ static void protocolTaskFunc(void *arg)
 
         /* ---- Alive ---- */
         U32 now = osGetSystemTime();
-        if ((now - aliveTimer) >= (U32)PROTO_BA_ALIVE_INTERVAL_S * 1000U)
+        if ((now - aliveTimer) >= (U32)PROTO_ORION_ALIVE_INTERVAL_S * 1000U)
         {
             if (appTcpConnManagerIsConnectedPush())
             {
                 uint16_t sz = buildAliveMsg(gs_txBuf, sizeof(gs_txBuf));
                 appTcpConnManagerSend(PUSH_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
-                DEBUG_DEBUG("->[D] ProtoBA: alive sent");
+                DEBUG_DEBUG("->[D] OrionTLV: alive sent");
             }
             aliveTimer = now;
         }
@@ -1373,14 +1373,14 @@ static void protocolTaskFunc(void *arg)
     }
 
     appTcpConnManagerStop();
-    DEBUG_INFO("->[I] %s task stopped", BA_TASK_NAME);
+    DEBUG_INFO("->[I] %s task stopped", ORION_TASK_NAME);
 }
 
 /* ================================================================== */
 /*                       PUBLIC FUNCTIONS                             */
 /* ================================================================== */
 
-RETURN_STATUS appProtocolBAInit(const char *serialNumber,
+RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber,
                                 const char *serverIP, int serverPort,
                                 const char *deviceIP, int pullPort)
 {
@@ -1413,7 +1413,7 @@ RETURN_STATUS appProtocolBAInit(const char *serialNumber,
     return SUCCESS;
 }
 
-RETURN_STATUS appProtocolBAStart(void)
+RETURN_STATUS appProtocolOrionTLVStart(void)
 {
     if (gs_running) return SUCCESS;
 
@@ -1421,23 +1421,23 @@ RETURN_STATUS appProtocolBAStart(void)
 
     ZOsTaskParameters taskParam;
     taskParam.priority  = ZOS_TASK_PRIORITY_LOW;
-    taskParam.stackSize = BA_TASK_STACK_SIZE;
+    taskParam.stackSize = ORION_TASK_STACK_SIZE;
 
-    gs_taskId = appTskMngCreate(BA_TASK_NAME, protocolTaskFunc, NULL, &taskParam);
+    gs_taskId = appTskMngCreate(ORION_TASK_NAME, protocolTaskFunc, NULL, &taskParam);
     if (OS_INVALID_TASK_ID == gs_taskId)
     {
         gs_running = FALSE;
-        DEBUG_ERROR("->[E] ProtoBA: task creation failed");
-        APP_LOG_REC(g_sysLoggerID, "ProtoBA task creation failed");
+        DEBUG_ERROR("->[E] OrionTLV: task creation failed");
+        APP_LOG_REC(g_sysLoggerID, "OrionTLV task creation failed");
         return FAILURE;
     }
 
-    DEBUG_INFO("->[I] Protocol BA started");
-    APP_LOG_REC(g_sysLoggerID, "Protocol BA started");
+    DEBUG_INFO("->[I] Protocol OrionTLV started");
+    APP_LOG_REC(g_sysLoggerID, "Protocol OrionTLV started");
     return SUCCESS;
 }
 
-RETURN_STATUS appProtocolBAStop(void)
+RETURN_STATUS appProtocolOrionTLVStop(void)
 {
     if (!gs_running) return SUCCESS;
 
@@ -1450,20 +1450,20 @@ RETURN_STATUS appProtocolBAStop(void)
         gs_taskId = OS_INVALID_TASK_ID;
     }
 
-    DEBUG_INFO("->[I] Protocol BA stopped");
-    APP_LOG_REC(g_sysLoggerID, "Protocol BA stopped");
+    DEBUG_INFO("->[I] Protocol OrionTLV stopped");
+    APP_LOG_REC(g_sysLoggerID, "Protocol OrionTLV stopped");
     return SUCCESS;
 }
 
-void appProtocolBAPutIncomingMessage(const char *channel,
+void appProtocolOrionTLVPutIncomingMessage(const char *channel,
                                      const char *data,
                                      unsigned int dataLength)
 {
     if (channel == NULL || data == NULL || dataLength == 0)
         return;
 
-    if (dataLength > PROTO_BA_PACKET_MAX_SIZE)
-        dataLength = PROTO_BA_PACKET_MAX_SIZE;
+    if (dataLength > PROTO_ORION_PACKET_MAX_SIZE)
+        dataLength = PROTO_ORION_PACKET_MAX_SIZE;
 
     if (0 == strcmp(channel, PUSH_TCP_SOCK_NAME))
     {
