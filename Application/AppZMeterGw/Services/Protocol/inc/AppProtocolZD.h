@@ -73,15 +73,15 @@ RETURN_STATUS appProtocolZDStart(void);
 RETURN_STATUS appProtocolZDStop(void);
 
 /**
- * @brief  Incoming TCP data callback – called by AppTcpConnManager from its
- *         network thread.  Thread-safe; data is copied into an internal buffer.
- * @param  channel     PUSH_TCP_SOCK_NAME or PULL_TCP_SOCK_NAME
- * @param  data        Raw received bytes
- * @param  dataLength  Number of bytes received
+ * \brief   put incoming message
+ * \param   channel: PUSH_TCP_SOCK_NAME or PULL_TCP_SOCK_NAME
+ * \param   data: raw received bytes
+ * \param   dataLength: number of bytes received
+ * \return  void
  */
-void appTCPConnectionPutIncomingMessage(const char *channel,
-                                         const char *data,
-                                         unsigned int dataLength);
+void appProtocolZDPutIncomingMessage(const char *channel,
+                                     const char *data,
+                                     unsigned int dataLength);
 
 #endif /* __APP_PROTOCOL_ZD_H__ */
 

@@ -597,7 +597,7 @@ static void handleSettingRequest(const char *json)
 
             appTcpConnManagerStop();
             zosDelayTask(500);
-            appTcpConnManagerStart(gs_serverIP, gs_serverPort, gs_pullPort);
+            appTcpConnManagerStart(gs_serverIP, gs_serverPort, gs_pullPort, appProtocolZDPutIncomingMessage);
             appTcpConnManagerRequestConnect();
 
             DEBUG_INFO("->[I] Proto: server address updated to %s:%d", gs_serverIP, gs_serverPort);
@@ -1064,7 +1064,7 @@ static void protocolTaskFunc(void *arg)
     appTskMngImOK(gs_taskId);
 
     /* --- Start TCP --- */
-    if (0 != appTcpConnManagerStart(gs_serverIP, gs_serverPort, gs_pullPort))
+    if (0 != appTcpConnManagerStart(gs_serverIP, gs_serverPort, gs_pullPort, appProtocolZDPutIncomingMessage))
     {
         DEBUG_ERROR("->[E] Proto: TCP conn manager start failed");
         APP_LOG_REC(g_sysLoggerID, "Proto: TCP start fail");
@@ -1293,7 +1293,7 @@ RETURN_STATUS appProtocolZDStop(void)
 /*          Incoming TCP data callback (called from TCP thread)       */
 /* ------------------------------------------------------------------ */
 
-void appTCPConnectionPutIncomingMessage(const char *channel,
+void appProtocolZDPutIncomingMessage(const char *channel,
                                          const char *data,
                                          unsigned int dataLength)
 {

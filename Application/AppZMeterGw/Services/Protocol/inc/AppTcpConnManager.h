@@ -19,6 +19,7 @@
 
 #define MAX_PULL_CLIENT_NUMBER  (1)
 /*******************************TYPE DEFINITIONS ******************************/
+typedef void (*IncomingMsngCb_t)(const char *channel, const char *data, unsigned int dataLength);
 
 /************************* GLOBAL VARIBALE REFERENCES *************************/
 
@@ -29,10 +30,11 @@
  * \param   serverIP: server IP address
  * \param   serverPort: server port
  * \param   pullPort: pull port
+ * \param   incomingMsngCb: incoming message callback
  * \return  if everything is OK, return 0
  *          otherwise return -1
  */
-int appTcpConnManagerStart(const char *serverIP, int serverPort, int pullPort);
+int appTcpConnManagerStart(const char *serverIP, int serverPort, int pullPort, IncomingMsngCb_t incomingMsngCb);
 
 /**
  * \brief   stop TCP connection
