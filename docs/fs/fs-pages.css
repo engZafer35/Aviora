@@ -1,0 +1,8 @@
+/* Shared FS documentation: full-bleed footer band on every page */
+body.fs-docs > footer.protocol-global-footer {
+  width: 100% !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box;
+}

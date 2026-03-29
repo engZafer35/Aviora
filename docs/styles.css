@@ -186,7 +186,7 @@ pre.fallback{
   color:#d9e6ff;
 }
 
-footer{
+footer:not(.protocol-global-footer){
   max-width:1150px;
   margin:0 auto 35px auto;
   padding:0 18px;
@@ -206,6 +206,9 @@ code{background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-size:0.9e
 .hero-img{
   width:100%;
   max-width:900px;
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
   border-radius:12px;
   border:1px solid var(--line);
 }
@@ -299,11 +302,17 @@ code{background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-size:0.9e
   max-width:100%;
 }
 
-/* Protocol docs — full-width footer (viewport-centered text, below sidebar + main) */
+/* Protocol + FS docs — full viewport-width bar (below sidebar + main) */
+footer.protocol-global-footer,
 .protocol-global-footer{
-  width: 100%;
+  display: block;
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0;
   box-sizing: border-box;
-  margin: 0;
+  margin: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
   padding: 22px 18px 32px;
   border-top: 1px solid var(--line);
   background: rgba(8, 13, 27, 0.35);
@@ -311,6 +320,7 @@ code{background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-size:0.9e
   font-size: 13px;
   color: #8a9cc7;
   letter-spacing: 0.04em;
+  clear: both;
 }
 .protocol-global-footer p{
   margin: 0 auto;
@@ -324,5 +334,10 @@ code{background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-size:0.9e
   color: #9fb1dd;
   text-align: center;
   font-size: 14px;
+}
+
+/* FS pages: avoid forcing layout to ~100vh — otherwise footer sits always below first screen */
+body.fs-docs .layout-with-sidebar{
+  min-height: 0;
 }
 

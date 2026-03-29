@@ -6,16 +6,25 @@
   <title>README — Aviora FS Framework</title>
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="./readme.css" />
+  <link rel="stylesheet" href="../docs-wide.css" />
+  <link rel="stylesheet" href="./fs-pages.css" />
   <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>
     if (window.mermaid) {
-      mermaid.initialize({ startOnLoad: false, theme: "dark" });
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: "dark",
+        themeVariables: {
+          fontSize: "18px",
+          primaryTextColor: "#eaf0ff"
+        }
+      });
     }
   </script>
   <script defer src="../app.js"></script>
 </head>
-<body>
+<body class="docs-wide fs-readme fs-docs">
   <div class="topbar">
     <div class="topbar-inner">
       <div class="brand">🛰️Zafer Satılmış -Aviora</div>
@@ -52,6 +61,10 @@
   </main>
     </div>
   </div>
+
+  <footer class="protocol-global-footer">
+    <p>Designed by Zafer SATILMIS | Aviora File System Framework</p>
+  </footer>
 
   <script>
     (function() {
