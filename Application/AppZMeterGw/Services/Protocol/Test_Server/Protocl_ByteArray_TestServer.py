@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """
-AVI Protocol Test Server
-JSON-over-TCP protocol test server for IoT meter gateway.
+AVI ByteArray Protocol Test Server
+Binary TLV-over-TCP protocol test server for IoT meter gateway.
 
 Usage:
-    python server.py [port]
-    python server.py 8722
+    python Protocl_ByteArray_TestServer.py [port]
+    python Protocl_ByteArray_TestServer.py 8723
 """
 
 import sys
 import os
-import json
+import struct
 import socket
 import threading
 import queue
+import json
 import time
 import argparse
 from datetime import datetime
@@ -23,18 +24,287 @@ from tkinter import ttk, scrolledtext, messagebox
 
 RECV_BUF = 4096
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_PORT = 8722
+DEFAULT_PORT = 8723
+
+# ═══════════════════════════════════════════════════════════════
+#                    TAG / Function definitions
+# ═══════════════════════════════════════════════════════════════
+
+PKT_START = ord('$')   # 0x24
+PKT_END   = ord('#')   # 0x23
+
+# Common
+TAG_FLAG            = 0x0001
+TAG_SERIAL_NUMBER   = 0x0002
+TAG_FUNCTION        = 0x0003
+
+# Ident / Alive
+TAG_REGISTERED      = 0x0101
+TAG_DEVICE_BRAND    = 0x0102
+TAG_DEVICE_MODEL    = 0x0103
+TAG_DEVICE_DATE     = 0x0104
+TAG_PULL_IP         = 0x0105
+TAG_PULL_PORT       = 0x0106
+TAG_REGISTER        = 0x0107
+
+# Packet streaming
+TAG_PACKET_NUM      = 0x0201
+TAG_PACKET_STREAM   = 0x0202
+
+# ACK / NACK
+TAG_ACK_STATUS      = 0x0301
+
+# Log
+TAG_LOG_DATA        = 0x0401
+
+# Meter
+TAG_METER_OPERATION   = 0x0501
+TAG_METER_PROTOCOL    = 0x0502
+TAG_METER_TYPE        = 0x0503
+TAG_METER_BRAND       = 0x0504
+TAG_METER_SERIAL_NUM  = 0x0505
+TAG_METER_SERIAL_PORT = 0x0506
+TAG_METER_INIT_BAUD   = 0x0507
+TAG_METER_FIX_BAUD    = 0x0508
+TAG_METER_FRAME       = 0x0509
+TAG_METER_CUSTOMER_NUM = 0x050A
+TAG_METER_INDEX       = 0x050B
+
+# Server config
+TAG_SERVER_IP       = 0x0601
+TAG_SERVER_PORT     = 0x0602
+
+# Readout / Load profile
+TAG_METER_ID        = 0x0701
+TAG_READOUT_DATA    = 0x0702
+TAG_DIRECTIVE_NAME  = 0x0703
+TAG_START_DATE      = 0x0704
+TAG_END_DATE        = 0x0705
+
+# Directive
+TAG_DIRECTIVE_ID    = 0x0801
+TAG_DIRECTIVE_DATA  = 0x0802
+
+# FW Update
+TAG_FW_ADDRESS      = 0x0901
+
+# Error
+TAG_ERROR_CODE      = 0x0A01
+
+# Function enum
+FUNC_IDENT          = 0x01
+FUNC_ALIVE          = 0x02
+FUNC_ACK            = 0x03
+FUNC_NACK           = 0x04
+FUNC_LOG            = 0x05
+FUNC_SETTING        = 0x06
+FUNC_FW_UPDATE      = 0x07
+FUNC_READOUT        = 0x08
+FUNC_LOADPROFILE    = 0x09
+FUNC_DIRECTIVE_LIST = 0x0A
+FUNC_DIRECTIVE_ADD  = 0x0B
+FUNC_DIRECTIVE_DEL  = 0x0C
+
+TAG_NAMES = {
+    TAG_FLAG: "FLAG", TAG_SERIAL_NUMBER: "SERIAL_NUMBER", TAG_FUNCTION: "FUNCTION",
+    TAG_REGISTERED: "REGISTERED", TAG_DEVICE_BRAND: "DEVICE_BRAND",
+    TAG_DEVICE_MODEL: "DEVICE_MODEL", TAG_DEVICE_DATE: "DEVICE_DATE",
+    TAG_PULL_IP: "PULL_IP", TAG_PULL_PORT: "PULL_PORT", TAG_REGISTER: "REGISTER",
+    TAG_PACKET_NUM: "PACKET_NUM", TAG_PACKET_STREAM: "PACKET_STREAM",
+    TAG_ACK_STATUS: "ACK_STATUS", TAG_LOG_DATA: "LOG_DATA",
+    TAG_METER_OPERATION: "METER_OPERATION", TAG_METER_PROTOCOL: "METER_PROTOCOL",
+    TAG_METER_TYPE: "METER_TYPE", TAG_METER_BRAND: "METER_BRAND",
+    TAG_METER_SERIAL_NUM: "METER_SERIAL_NUM", TAG_METER_SERIAL_PORT: "METER_SERIAL_PORT",
+    TAG_METER_INIT_BAUD: "METER_INIT_BAUD", TAG_METER_FIX_BAUD: "METER_FIX_BAUD",
+    TAG_METER_FRAME: "METER_FRAME", TAG_METER_CUSTOMER_NUM: "METER_CUSTOMER_NUM",
+    TAG_METER_INDEX: "METER_INDEX",
+    TAG_SERVER_IP: "SERVER_IP", TAG_SERVER_PORT: "SERVER_PORT",
+    TAG_METER_ID: "METER_ID", TAG_READOUT_DATA: "READOUT_DATA",
+    TAG_DIRECTIVE_NAME: "DIRECTIVE_NAME", TAG_START_DATE: "START_DATE",
+    TAG_END_DATE: "END_DATE",
+    TAG_DIRECTIVE_ID: "DIRECTIVE_ID", TAG_DIRECTIVE_DATA: "DIRECTIVE_DATA",
+    TAG_FW_ADDRESS: "FW_ADDRESS", TAG_ERROR_CODE: "ERROR_CODE",
+}
+
+FUNC_NAMES = {
+    FUNC_IDENT: "IDENT", FUNC_ALIVE: "ALIVE", FUNC_ACK: "ACK", FUNC_NACK: "NACK",
+    FUNC_LOG: "LOG", FUNC_SETTING: "SETTING", FUNC_FW_UPDATE: "FW_UPDATE",
+    FUNC_READOUT: "READOUT", FUNC_LOADPROFILE: "LOADPROFILE",
+    FUNC_DIRECTIVE_LIST: "DIRECTIVE_LIST", FUNC_DIRECTIVE_ADD: "DIRECTIVE_ADD",
+    FUNC_DIRECTIVE_DEL: "DIRECTIVE_DEL",
+}
+
+
+# ═══════════════════════════════════════════════════════════════
+#                  TLV Builder / Parser helpers
+# ═══════════════════════════════════════════════════════════════
+
+class PacketBuilder:
+    """Build a $...# TLV packet."""
+
+    def __init__(self):
+        self._buf = bytearray()
+        self._buf.append(PKT_START)
+
+    def add_string(self, tag, val):
+        data = val.encode("ascii", errors="replace") if val else b""
+        self._add_tlv(tag, data)
+
+    def add_bool(self, tag, val):
+        self._add_tlv(tag, bytes([0x01 if val else 0x00]))
+
+    def add_uint8(self, tag, val):
+        self._add_tlv(tag, bytes([val & 0xFF]))
+
+    def add_uint16(self, tag, val):
+        self._add_tlv(tag, struct.pack("!H", val & 0xFFFF))
+
+    def add_uint32(self, tag, val):
+        self._add_tlv(tag, struct.pack("!I", val & 0xFFFFFFFF))
+
+    def add_int16(self, tag, val):
+        self._add_tlv(tag, struct.pack("!h", val))
+
+    def add_raw(self, tag, data):
+        self._add_tlv(tag, data)
+
+    def add_device_header(self, flag, serial):
+        self.add_string(TAG_FLAG, flag)
+        self.add_string(TAG_SERIAL_NUMBER, serial)
+
+    def finish(self):
+        self._buf.append(PKT_END)
+        return bytes(self._buf)
+
+    def _add_tlv(self, tag, data):
+        self._buf += struct.pack("!HH", tag, len(data))
+        self._buf += data
+
+
+def parse_packet(raw):
+    """
+    Parse a $...# packet into list of (tag, value_bytes) tuples.
+    Returns None if invalid.
+    """
+    if not raw or raw[0] != PKT_START or raw[-1] != PKT_END:
+        return None
+
+    payload = raw[1:-1]
+    fields = []
+    pos = 0
+    while pos + 4 <= len(payload):
+        tag, length = struct.unpack_from("!HH", payload, pos)
+        pos += 4
+        if pos + length > len(payload):
+            break
+        val = payload[pos:pos + length]
+        fields.append((tag, val))
+        pos += length
+    return fields
+
+
+def find_tag(fields, tag):
+    """Return the first value bytes for the given tag, or None."""
+    for t, v in fields:
+        if t == tag:
+            return v
+    return None
+
+
+def get_string(fields, tag, default=""):
+    v = find_tag(fields, tag)
+    return v.decode("ascii", errors="replace") if v else default
+
+
+def get_uint8(fields, tag, default=0):
+    v = find_tag(fields, tag)
+    return v[0] if v and len(v) >= 1 else default
+
+
+def get_uint16(fields, tag, default=0):
+    v = find_tag(fields, tag)
+    return struct.unpack("!H", v)[0] if v and len(v) >= 2 else default
+
+
+def get_uint32(fields, tag, default=0):
+    v = find_tag(fields, tag)
+    return struct.unpack("!I", v)[0] if v and len(v) >= 4 else default
+
+
+def get_bool(fields, tag, default=False):
+    v = find_tag(fields, tag)
+    return (v[0] != 0) if v and len(v) >= 1 else default
+
+
+def get_function(fields):
+    return get_uint8(fields, TAG_FUNCTION, 0)
+
+
+def format_tlv_fields(fields):
+    """Pretty-print TLV fields for the log panel."""
+    lines = []
+    for tag, val in fields:
+        tag_name = TAG_NAMES.get(tag, f"0x{tag:04X}")
+
+        if tag == TAG_FUNCTION:
+            fname = FUNC_NAMES.get(val[0], f"0x{val[0]:02X}") if len(val) == 1 else val.hex()
+            lines.append(f"  {tag_name:22s}  = {fname}")
+        elif tag in (TAG_REGISTERED, TAG_REGISTER, TAG_PACKET_STREAM,
+                     TAG_ACK_STATUS, TAG_METER_FIX_BAUD):
+            bval = (val[0] != 0) if val else False
+            lines.append(f"  {tag_name:22s}  = {bval}")
+        elif tag in (TAG_PULL_PORT, TAG_SERVER_PORT, TAG_PACKET_NUM):
+            num = struct.unpack("!H", val)[0] if len(val) == 2 else int.from_bytes(val, "big")
+            lines.append(f"  {tag_name:22s}  = {num}")
+        elif tag == TAG_METER_INIT_BAUD:
+            num = struct.unpack("!I", val)[0] if len(val) == 4 else int.from_bytes(val, "big")
+            lines.append(f"  {tag_name:22s}  = {num}")
+        elif tag == TAG_METER_INDEX:
+            lines.append(f"  {tag_name:22s}  = {val[0] if val else '?'}")
+        elif tag == TAG_ERROR_CODE:
+            num = struct.unpack("!h", val)[0] if len(val) == 2 else 0
+            lines.append(f"  {tag_name:22s}  = {num}")
+        else:
+            try:
+                s = val.decode("ascii")
+                if len(s) > 80:
+                    s = s[:77] + "..."
+                lines.append(f"  {tag_name:22s}  = \"{s}\"")
+            except UnicodeDecodeError:
+                lines.append(f"  {tag_name:22s}  = [{val.hex()}]")
+    return "\n".join(lines)
+
+
+def extract_packets(buf):
+    """
+    Extract all complete $...# packets from buffer.
+    Returns (list_of_packets, remaining_buffer).
+    """
+    packets = []
+    while True:
+        start = buf.find(bytes([PKT_START]))
+        if start < 0:
+            buf = b""
+            break
+        end = buf.find(bytes([PKT_END]), start + 1)
+        if end < 0:
+            buf = buf[start:]
+            break
+        packets.append(buf[start:end + 1])
+        buf = buf[end + 1:]
+    return packets, buf
+
 
 # ═══════════════════════════════════════════════════════════════
 #                    Protocol Test Server
 # ═══════════════════════════════════════════════════════════════
 
-class ProtocolTestServer:
+class ByteArrayTestServer:
 
     def __init__(self, root, push_port):
         self.root = root
-        self.root.title("AVI Protocol Test Sunucusu")
-        self.root.geometry("1200x750")
+        self.root.title("Protocol ByteArray Test Server")
+        self.root.geometry("1200x780")
         self.root.minsize(1000, 600)
 
         self.push_port = push_port
@@ -62,7 +332,7 @@ class ProtocolTestServer:
 
         # ── logging ──
         self.log_queue = queue.Queue()
-        log_name = f"server_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        log_name = f"ba_server_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
         self.log_file_path = os.path.join(SCRIPT_DIR, log_name)
         self.log_file = open(self.log_file_path, "a", encoding="utf-8")
 
@@ -91,7 +361,7 @@ class ProtocolTestServer:
         paned.add(left, weight=0)
 
         # --- Sunucu ---
-        sf = ttk.LabelFrame(left, text=" Sunucu ", padding=6)
+        sf = ttk.LabelFrame(left, text=" Sunucu (ByteArray) ", padding=6)
         sf.pack(fill="x", padx=4, pady=(0, 4))
 
         row = ttk.Frame(sf)
@@ -172,7 +442,7 @@ class ProtocolTestServer:
         right = ttk.Frame(paned)
         paned.add(right, weight=1)
 
-        ttk.Label(right, text="Mesaj Logları",
+        ttk.Label(right, text="Mesaj Logları (Binary TLV)",
                   font=("Segoe UI", 11, "bold")).pack(anchor="w", padx=6, pady=(0, 2))
 
         log_frame = ttk.Frame(right)
@@ -195,6 +465,7 @@ class ProtocolTestServer:
         self.log_text.tag_configure("recv",  foreground="#569CD6")
         self.log_text.tag_configure("info",  foreground="#808080")
         self.log_text.tag_configure("error", foreground="#F44747")
+        self.log_text.tag_configure("hex",   foreground="#CE9178")
 
     # ───────────────────── Server lifecycle ─────────────────────
 
@@ -287,29 +558,18 @@ class ProtocolTestServer:
                 break
 
     def _push_reader(self, conn):
-        buffer = ""
-        decoder = json.JSONDecoder()
+        buf = b""
 
         while self.running:
             try:
                 data = conn.recv(RECV_BUF)
                 if not data:
                     break
-                buffer += data.decode("utf-8", errors="replace")
+                buf += data
 
-                pos = 0
-                while pos < len(buffer):
-                    while pos < len(buffer) and buffer[pos] in " \t\r\n":
-                        pos += 1
-                    if pos >= len(buffer):
-                        break
-                    try:
-                        obj, end = decoder.raw_decode(buffer, pos)
-                        pos = end
-                        self._handle_push_msg(obj)
-                    except json.JSONDecodeError:
-                        break
-                buffer = buffer[pos:]
+                packets, buf = extract_packets(buf)
+                for pkt in packets:
+                    self._handle_push_packet(pkt)
 
             except socket.timeout:
                 continue
@@ -327,25 +587,26 @@ class ProtocolTestServer:
 
     # ───────────────── Push message handling ─────────────────
 
-    def _handle_push_msg(self, msg):
-        pretty = json.dumps(msg, indent=2, ensure_ascii=False)
-        self._log("recv", pretty, "PUSH")
+    def _handle_push_packet(self, raw):
+        fields = parse_packet(raw)
+        if fields is None:
+            self._log("error", f"Geçersiz paket: {raw.hex()}")
+            return
 
-        func = msg.get("function", "")
+        hex_dump = raw.hex().upper()
+        pretty = format_tlv_fields(fields)
+        self._log("recv", f"HEX: {hex_dump}\n{pretty}", "PUSH")
 
-        # extract device info
-        dev = msg.get("device", {})
-        sn = dev.get("serialNumber", "")
+        func = get_function(fields)
+        sn = get_string(fields, TAG_SERIAL_NUMBER)
         if sn:
             self.device_serial.set(sn)
 
-        if func == "ident":
-            resp = msg.get("response", {})
-            pull_ip = resp.get("pullIP", "")
-            pull_port = resp.get("pullPort", 0)
+        if func == FUNC_IDENT:
+            pull_ip = get_string(fields, TAG_PULL_IP)
+            pull_port = get_uint16(fields, TAG_PULL_PORT)
+            registered = get_bool(fields, TAG_REGISTERED)
 
-            # Use the actual TCP connection source IP instead of the
-            # device-reported pullIP (which may be 127.0.0.1 / 0.0.0.0).
             conn_ip = ""
             with self.lock:
                 if self.device_addr:
@@ -363,36 +624,51 @@ class ProtocolTestServer:
 
             self.device_identified = True
 
+            brand = get_string(fields, TAG_DEVICE_BRAND)
+            model = get_string(fields, TAG_DEVICE_MODEL)
+            date = get_string(fields, TAG_DEVICE_DATE)
+
             self._log("info",
-                      f"Ident alındı – SN:{sn}  registered:{resp.get('registered')}"
-                      f"  pullIP:{effective_ip} (cihaz bildirdi:{pull_ip})"
+                      f"Ident alındı – SN:{sn}  registered:{registered}"
+                      f"  brand:{brand}  model:{model}  date:{date}"
+                      f"  pullIP:{effective_ip} (cihaz:{pull_ip})"
                       f"  pullPort:{pull_port}")
 
-            # Enable pull command buttons
             self.root.after(0, self._enable_pull_buttons)
 
             if self.auto_ident.get():
-                ack = self._device_header()
-                ack["function"] = "ident"
-                ack["response"] = {"register": True}
-                self._send_push(ack)
+                pb = PacketBuilder()
+                pb.add_device_header(self.device_flag, sn)
+                pb.add_uint8(TAG_FUNCTION, FUNC_IDENT)
+                pb.add_bool(TAG_REGISTER, True)
+                self._send_push_raw(pb.finish())
 
-        elif func == "alive":
-            self._log("info", "Alive alındı")
+        elif func == FUNC_ALIVE:
+            date = get_string(fields, TAG_DEVICE_DATE)
+            self._log("info", f"Alive alındı – date:{date}")
             if self.auto_alive.get():
-                ack = self._device_header()
-                ack["function"] = "ack"
-                self._send_push(ack)
+                pb = PacketBuilder()
+                pb.add_device_header(self.device_flag, self.device_serial.get())
+                pb.add_uint8(TAG_FUNCTION, FUNC_ACK)
+                pb.add_bool(TAG_ACK_STATUS, True)
+                self._send_push_raw(pb.finish())
 
-        elif func in ("readout", "loadprofile"):
-            pnum = msg.get("packetNum", 0)
-            pstream = msg.get("packetStream", False)
-            self._log("info",
-                      f"{func} verisi alındı – paket:{pnum}  stream:{pstream}")
+        elif func in (FUNC_READOUT, FUNC_LOADPROFILE):
+            pnum = get_uint16(fields, TAG_PACKET_NUM)
+            pstream = get_bool(fields, TAG_PACKET_STREAM)
+            fname = FUNC_NAMES.get(func, "?")
+            self._log("info", f"{fname} verisi alındı – paket:{pnum}  stream:{pstream}")
             if not pstream and self.auto_data_ack.get():
-                ack = self._device_header()
-                ack["function"] = "ack"
-                self._send_push(ack)
+                pb = PacketBuilder()
+                pb.add_device_header(self.device_flag, self.device_serial.get())
+                pb.add_uint8(TAG_FUNCTION, FUNC_ACK)
+                pb.add_bool(TAG_ACK_STATUS, True)
+                self._send_push_raw(pb.finish())
+
+        elif func == FUNC_ACK:
+            self._log("info", "ACK alındı (push)")
+        elif func == FUNC_NACK:
+            self._log("info", "NACK alındı (push)")
 
     def _enable_pull_buttons(self):
         for btn in self.pull_buttons:
@@ -407,22 +683,24 @@ class ProtocolTestServer:
         self.pull_info_lbl.config(text="⚠ Ident bekleniyor...", foreground="orange")
         self.device_identified = False
 
-    def _send_push(self, msg_dict):
+    def _send_push_raw(self, packet_bytes):
         with self.lock:
             conn = self.device_conn
         if conn is None:
             self._log("error", "Push gönderim hatası: cihaz bağlı değil")
             return
         try:
-            raw = json.dumps(msg_dict, ensure_ascii=False)
-            conn.sendall(raw.encode("utf-8"))
-            self._log("sent", json.dumps(msg_dict, indent=2, ensure_ascii=False), "PUSH")
+            conn.sendall(packet_bytes)
+            fields = parse_packet(packet_bytes)
+            hex_dump = packet_bytes.hex().upper()
+            pretty = format_tlv_fields(fields) if fields else ""
+            self._log("sent", f"HEX: {hex_dump}\n{pretty}", "PUSH")
         except OSError as e:
             self._log("error", f"Push gönderim hatası: {e}")
 
     # ──────────────── Pull command sender ────────────────
 
-    def _send_pull(self, msg_dict, expect_stream=False):
+    def _send_pull(self, packet_bytes, expect_stream=False):
         if not self.device_identified:
             self._log("error", "Pull gönderilemez: henüz ident alınmadı")
             return
@@ -440,40 +718,32 @@ class ProtocolTestServer:
                 sock.settimeout(10)
                 sock.connect((ip, port))
 
-                raw = json.dumps(msg_dict, ensure_ascii=False)
-                sock.sendall(raw.encode("utf-8"))
-                self._log("sent", json.dumps(msg_dict, indent=2, ensure_ascii=False), "PULL")
+                sock.sendall(packet_bytes)
+                fields = parse_packet(packet_bytes)
+                hex_dump = packet_bytes.hex().upper()
+                pretty = format_tlv_fields(fields) if fields else ""
+                self._log("sent", f"HEX: {hex_dump}\n{pretty}", "PULL")
 
-                buffer = ""
-                decoder = json.JSONDecoder()
-
+                buf = b""
                 while True:
                     try:
                         chunk = sock.recv(RECV_BUF)
                         if not chunk:
                             break
-                        buffer += chunk.decode("utf-8", errors="replace")
+                        buf += chunk
 
-                        pos = 0
-                        while pos < len(buffer):
-                            while pos < len(buffer) and buffer[pos] in " \t\r\n":
-                                pos += 1
-                            if pos >= len(buffer):
-                                break
-                            try:
-                                obj, end = decoder.raw_decode(buffer, pos)
-                                pos = end
-                                pretty = json.dumps(obj, indent=2, ensure_ascii=False)
-                                self._log("recv", pretty, "PULL")
+                        packets, buf = extract_packets(buf)
+                        for pkt in packets:
+                            pkt_fields = parse_packet(pkt)
+                            if pkt_fields:
+                                hex_d = pkt.hex().upper()
+                                pr = format_tlv_fields(pkt_fields)
+                                self._log("recv", f"HEX: {hex_d}\n{pr}", "PULL")
 
-                                stream = obj.get("packetStream", False)
+                                stream = get_bool(pkt_fields, TAG_PACKET_STREAM)
                                 if not expect_stream or not stream:
-                                    buffer = buffer[pos:]
                                     sock.close()
                                     return
-                            except json.JSONDecodeError:
-                                break
-                        buffer = buffer[pos:]
 
                     except socket.timeout:
                         break
@@ -491,25 +761,19 @@ class ProtocolTestServer:
 
     # ──────────────── Helper builders ────────────────
 
-    def _device_header(self):
-        return {
-            "device": {
-                "flag": self.device_flag,
-                "serialNumber": self.device_serial.get(),
-            }
-        }
-
-    def _build_pull_msg(self, function, **extra):
-        msg = self._device_header()
-        msg["function"] = function
-        msg.update(extra)
-        return msg
+    def _build_pull_packet(self, func_id, extra_fn=None):
+        pb = PacketBuilder()
+        pb.add_device_header(self.device_flag, self.device_serial.get())
+        pb.add_uint8(TAG_FUNCTION, func_id)
+        if extra_fn:
+            extra_fn(pb)
+        return pb.finish()
 
     # ──────────────── Command handlers ────────────────
 
     def cmd_log_request(self):
-        msg = self._build_pull_msg("log")
-        self._send_pull(msg, expect_stream=True)
+        pkt = self._build_pull_packet(FUNC_LOG)
+        self._send_pull(pkt, expect_stream=True)
 
     def cmd_setting_server(self):
         vals = self._show_dialog("Sunucu Ayarla", [
@@ -518,13 +782,13 @@ class ProtocolTestServer:
         ])
         if not vals:
             return
-        msg = self._build_pull_msg("setting", request={
-            "Server": {
-                "ip": vals["IP"],
-                "port": int(vals["Port"]),
-            }
-        })
-        self._send_pull(msg)
+
+        def extra(pb):
+            pb.add_string(TAG_SERVER_IP, vals["IP"])
+            pb.add_uint16(TAG_SERVER_PORT, int(vals["Port"]))
+
+        pkt = self._build_pull_packet(FUNC_SETTING, extra)
+        self._send_pull(pkt)
 
     def cmd_add_meter(self):
         vals = self._show_dialog("Sayaç Ekle", [
@@ -539,20 +803,21 @@ class ProtocolTestServer:
         ])
         if not vals:
             return
-        meter = {
-            "protocol":     vals["protocol"],
-            "type":         vals["type"],
-            "brand":        vals["brand"],
-            "serialNumber": vals["serialNumber"],
-            "serialPort":   vals["serialPort"],
-            "initBaud":     int(vals["initBaud"]),
-            "fixBaud":      vals["fixBaud"],
-            "frame":        vals["frame"],
-        }
-        msg = self._build_pull_msg("setting", request={
-            "meters": [{"operation": "add", "meter": meter}]
-        })
-        self._send_pull(msg)
+
+        def extra(pb):
+            pb.add_uint8(TAG_METER_INDEX, 0)
+            pb.add_string(TAG_METER_OPERATION, "add")
+            pb.add_string(TAG_METER_PROTOCOL, vals["protocol"])
+            pb.add_string(TAG_METER_TYPE, vals["type"])
+            pb.add_string(TAG_METER_BRAND, vals["brand"])
+            pb.add_string(TAG_METER_SERIAL_NUM, vals["serialNumber"])
+            pb.add_string(TAG_METER_SERIAL_PORT, vals["serialPort"])
+            pb.add_uint32(TAG_METER_INIT_BAUD, int(vals["initBaud"]))
+            pb.add_bool(TAG_METER_FIX_BAUD, vals["fixBaud"])
+            pb.add_string(TAG_METER_FRAME, vals["frame"])
+
+        pkt = self._build_pull_packet(FUNC_SETTING, extra)
+        self._send_pull(pkt)
 
     def cmd_remove_meter(self):
         vals = self._show_dialog("Sayaç Sil", [
@@ -561,16 +826,15 @@ class ProtocolTestServer:
         ])
         if not vals:
             return
-        msg = self._build_pull_msg("setting", request={
-            "meters": [{
-                "operation": "remove",
-                "meter": {
-                    "brand": vals["brand"],
-                    "serialNumber": vals["serialNumber"],
-                }
-            }]
-        })
-        self._send_pull(msg)
+
+        def extra(pb):
+            pb.add_uint8(TAG_METER_INDEX, 0)
+            pb.add_string(TAG_METER_OPERATION, "remove")
+            pb.add_string(TAG_METER_BRAND, vals["brand"])
+            pb.add_string(TAG_METER_SERIAL_NUM, vals["serialNumber"])
+
+        pkt = self._build_pull_packet(FUNC_SETTING, extra)
+        self._send_pull(pkt)
 
     def cmd_fw_update(self):
         vals = self._show_dialog("Firmware Güncelle", [
@@ -578,10 +842,12 @@ class ProtocolTestServer:
         ])
         if not vals:
             return
-        msg = self._build_pull_msg("fwUpdate", request={
-            "address": vals["FTP Adresi"]
-        })
-        self._send_pull(msg)
+
+        def extra(pb):
+            pb.add_string(TAG_FW_ADDRESS, vals["FTP Adresi"])
+
+        pkt = self._build_pull_packet(FUNC_FW_UPDATE, extra)
+        self._send_pull(pkt)
 
     def cmd_readout(self):
         vals = self._show_dialog("Readout İste", [
@@ -590,13 +856,13 @@ class ProtocolTestServer:
         ])
         if not vals:
             return
-        msg = self._build_pull_msg("readout", request={
-            "directive": vals["Directive"],
-            "parameters": {
-                "meterSerialNumber": vals["Meter Serial No"],
-            }
-        })
-        self._send_pull(msg)
+
+        def extra(pb):
+            pb.add_string(TAG_DIRECTIVE_NAME, vals["Directive"])
+            pb.add_string(TAG_METER_SERIAL_NUM, vals["Meter Serial No"])
+
+        pkt = self._build_pull_packet(FUNC_READOUT, extra)
+        self._send_pull(pkt)
 
     def cmd_loadprofile(self):
         vals = self._show_dialog("Load Profile İste", [
@@ -607,13 +873,15 @@ class ProtocolTestServer:
         ])
         if not vals:
             return
-        msg = self._build_pull_msg("loadprofile", request={
-            "directive":         vals["Directive"],
-            "METERSERIALNUMBER": vals["Meter Serial No"],
-            "startDate":         vals["Başlangıç"],
-            "endDate":           vals["Bitiş"],
-        })
-        self._send_pull(msg)
+
+        def extra(pb):
+            pb.add_string(TAG_DIRECTIVE_NAME, vals["Directive"])
+            pb.add_string(TAG_METER_SERIAL_NUM, vals["Meter Serial No"])
+            pb.add_string(TAG_START_DATE, vals["Başlangıç"])
+            pb.add_string(TAG_END_DATE, vals["Bitiş"])
+
+        pkt = self._build_pull_packet(FUNC_LOADPROFILE, extra)
+        self._send_pull(pkt)
 
     def cmd_directive_list(self):
         vals = self._show_dialog("Directive Listele", [
@@ -621,10 +889,12 @@ class ProtocolTestServer:
         ])
         if not vals:
             return
-        msg = self._build_pull_msg("directiveList", request={
-            "filter": {"id": vals["Filtre ID (* = tümü)"]}
-        })
-        self._send_pull(msg, expect_stream=True)
+
+        def extra(pb):
+            pb.add_string(TAG_DIRECTIVE_ID, vals["Filtre ID (* = tümü)"])
+
+        pkt = self._build_pull_packet(FUNC_DIRECTIVE_LIST, extra)
+        self._send_pull(pkt, expect_stream=True)
 
     def cmd_directive_add(self):
         default_dir = json.dumps({
@@ -643,20 +913,16 @@ class ProtocolTestServer:
         }, indent=2, ensure_ascii=False)
 
         vals = self._show_dialog("Directive Ekle", [
-            ("Directive (JSON)", default_dir, "text"),
+            ("Directive (JSON blob)", default_dir, "text"),
         ])
         if not vals:
             return
-        try:
-            dir_obj = json.loads(vals["Directive (JSON)"])
-        except json.JSONDecodeError as e:
-            messagebox.showerror("JSON Hatası", f"Geçersiz JSON:\n{e}")
-            return
 
-        msg = self._build_pull_msg("directiveAdd", request={
-            "directive": dir_obj
-        })
-        self._send_pull(msg)
+        def extra(pb):
+            pb.add_string(TAG_DIRECTIVE_DATA, vals["Directive (JSON blob)"])
+
+        pkt = self._build_pull_packet(FUNC_DIRECTIVE_ADD, extra)
+        self._send_pull(pkt)
 
     def cmd_directive_delete(self):
         vals = self._show_dialog("Directive Sil", [
@@ -664,19 +930,16 @@ class ProtocolTestServer:
         ])
         if not vals:
             return
-        msg = self._build_pull_msg("directiveDelete", request={
-            "filter": {"id": vals["Directive ID (* = tümü)"]}
-        })
-        self._send_pull(msg)
+
+        def extra(pb):
+            pb.add_string(TAG_DIRECTIVE_ID, vals["Directive ID (* = tümü)"])
+
+        pkt = self._build_pull_packet(FUNC_DIRECTIVE_DEL, extra)
+        self._send_pull(pkt)
 
     # ──────────────── Input dialog ────────────────
 
     def _show_dialog(self, title, fields):
-        """
-        fields: list of (label, default_value, type)
-        type: 'str', 'bool', 'text'
-        Returns dict {label: value} or None.
-        """
         dlg = tk.Toplevel(self.root)
         dlg.title(title)
         dlg.transient(self.root)
@@ -733,7 +996,6 @@ class ProtocolTestServer:
         dlg.bind("<Return>", on_ok)
         dlg.bind("<Escape>", on_cancel)
 
-        # center on parent
         dlg.update_idletasks()
         pw = self.root.winfo_width()
         ph = self.root.winfo_height()
@@ -780,7 +1042,6 @@ class ProtocolTestServer:
             self.log_text.see("end")
             self.log_text.config(state="disabled")
 
-            # file
             try:
                 self.log_file.write(line)
                 self.log_file.flush()
@@ -809,14 +1070,14 @@ class ProtocolTestServer:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="AVI Protocol Test Sunucusu")
+        description="Protocol ByteArray Test Server (Binary TLV)")
     parser.add_argument(
         "port", type=int, nargs="?", default=DEFAULT_PORT,
         help=f"Push sunucu portu (varsayılan: {DEFAULT_PORT})")
     args = parser.parse_args()
 
     root = tk.Tk()
-    app = ProtocolTestServer(root, args.port)
+    app = ByteArrayTestServer(root, args.port)
     root.protocol("WM_DELETE_WINDOW", app.on_close)
     root.mainloop()
 
