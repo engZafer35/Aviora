@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Aviora — Test Server</title>
+  <title>🛰️Aviora-Protocol</title>
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="./protocol-docs.css" />
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
@@ -64,6 +64,7 @@
         <a href="tcp-conn.html">TCP Connection</a>
         <a href="meter-operations.html">Meter Operations</a>
         <a href="protocolzd.html">ProtocolZD</a>
+        <a href="protocolOrionTLV.html">ProtocolOrionTLV</a>
         <a href="test-server.html" class="active">Test Server</a>
         <a href="readme.html">README</a>
       </nav>
@@ -71,7 +72,7 @@
     <div class="main-with-sidebar">
       <section class="hero">
         <div class="hero-card">
-          <h1>Python test server (<code>server.py</code>)</h1>
+          <h1>AVIORA Protocol Test Server</h1>
           <p>
             Desktop Test Server application listens on the <strong>push</strong> port where the device connects,
             reads <code>pullIP</code> / <code>pullPort</code> from the first <strong>ident</strong> message (or uses the TCP source IP when needed) and sends pull commands to that address.
@@ -83,9 +84,13 @@
         <div class="grid">
           <article class="card col-12">
             <h2>How to run</h2>
-            <pre class="code-block">cd Application\AppZMeterGw\Services\Protocol\server
-python server.py          # default push port: 8722
-python server.py 9000     # custom port</pre>
+            <pre class="code-block">cd Application\AppZMeterGw\Services\Protocol\Test_Server
+
+python ProtocolZD_TestServer.py                 # default push port: 8722
+python ProtocolZD_TestServer.py 9000            # custom port
+
+python ProtocolOrionTLV_TestServer.py            # default push port: 8723
+python ProtocolOrionTLV_TestServer.py 9000      # custom port</pre>
             <p class="note">After the window opens, click <strong>Start</strong> to begin listening. The device must be configured to reach this machine’s IP and the same port.</p>
           </article>
 
@@ -142,7 +147,7 @@ python server.py 9000     # custom port</pre>
               <li><strong>Auto replies</strong> — Optional <code>register: true</code> for ident, <code>ack</code> for alive and end-of-data (can be disabled).</li>
               <li><strong>Pull client</strong> — Buttons stay disabled until ident; then connects to <code>pullIP:pullPort</code> and sends JSON.</li>
               <li><strong>Multi-packet</strong> — For log and directive list, reads until <code>packetStream</code> is false.</li>
-              <li><strong>File log</strong> — <code>server_log_YYYYMMDD_HHMMSS.txt</code> is created automatically.</li>
+              <li><strong>File log</strong> — <code>zd_server_log_YYYYMMDD_HHMMSS.txt</code> is created automatically.</li>
               <li><strong>Loopback fix</strong> — If the device reports <code>127.0.0.1</code>, the server can use the real TCP source IP as the pull target.</li>
             </ul>
           </article>
@@ -170,7 +175,7 @@ python server.py 9000     # custom port</pre>
             <h2>Sample scenarios</h2>
             <h3>Scenario A — First registration</h3>
             <ol>
-              <li>Run <code>python server.py 8722</code>, then click <strong>Start</strong>.</li>
+              <li>Run <code>python ProtocolZD_TestServer.py 8722</code>, then click <strong>Start</strong>.</li>
               <li>Configure the gateway push target as <code>this_PC_IP:8722</code>.</li>
               <li>Device sends ident; JSON appears in the log; optional auto <code>register: true</code> is sent back.</li>
               <li>Pull IP/port update; try <strong>Log request</strong> or <strong>Add meter</strong>.</li>
