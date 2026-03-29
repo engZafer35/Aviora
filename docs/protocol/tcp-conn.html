@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Aviora — Protocol — TCP Connection</title>
   <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="./protocol-docs.css" />
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
 </head>
-<body>
+<body class="protocol-docs">
   <div class="topbar">
     <div class="topbar-inner">
       <div class="brand">🛰️Zafer Satılmış - Aviora</div>
@@ -56,7 +57,7 @@
             <ul>
               <li><strong>Push</strong> (<code>PUSH_TCP_SOCK_NAME</code> = <code>"push"</code>): The device connects to the configured server IP/port; ident, alive, and outbound data use this channel. Server responses are read on the same socket.</li>
               <li><strong>Pull</strong> (<code>PULL_TCP_SOCK_NAME</code> = <code>"pull"</code>): The device <code>listen</code>s on a local port; the head-end (or test tool) connects and sends commands.</li>
-              <li>Incoming data is forwarded to the protocol layer via <code>appTCPConnectionPutIncomingMessage(channel, buf, len)</code> (<code>AppProtocolZD.c</code>).</li>
+              <li>Incoming data is delivered through the <strong><code>IncomingMsngCb_t</code></strong> callback passed to <code>appTcpConnManagerStart(..., incomingMsngCb)</code>. The ZMeter JSON stack uses <code>appProtocolZDPutIncomingMessage</code> from <code>AppProtocolZD.c</code>; another module can supply its own handler.</li>
             </ul>
           </article>
 
@@ -65,15 +66,15 @@
             <div class="diagram-wrap">
               <div class="diagram-head">Startup and task loop</div>
               <pre class="mermaid">flowchart TD
-  A[appTcpConnManagerStart] --> B[OS task: tcpConnectionThread]
+  A["appTcpConnManagerStart(..., incomingMsngCb)"] --> B[OS task: tcpConnectionThread]
   B --> C{taskKeepDisconnect?}
   C -->|optional| D[Close pull/push]
   C -->|no| E[taskPullSocCreat → createPullSocket]
   E --> F[taskConnectPush → connectPushSocket]
   B --> G[select: pull accept / client read]
   B --> H[select: push read / write ready]
-  G -->|data| I[appTCPConnectionPutIncomingMessage pull]
-  H -->|data| J[appTCPConnectionPutIncomingMessage push]</pre>
+  G -->|data| I["incomingMsngCb pull"]
+  H -->|data| J["incomingMsngCb push"]</pre>
             </div>
           </article>
 
@@ -81,7 +82,8 @@
             <h2>Key APIs</h2>
             <table style="width:100%;border-collapse:collapse;color:var(--muted);font-size:14px">
               <tr style="border-bottom:1px solid var(--line)"><th style="text-align:left;padding:8px">Function</th><th style="text-align:left;padding:8px">Description</th></tr>
-              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><code>appTcpConnManagerStart(ip, port, pullPort)</code></td><td style="padding:8px">Stores server address and local pull port; starts the TCP thread.</td></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><code>IncomingMsngCb_t</code></td><td style="padding:8px">Type of <code>incomingMsngCb</code>: <code>void (*)(const char *channel, const char *data, unsigned int dataLength)</code>. Channel is <code>"push"</code> or <code>"pull"</code>.</td></tr>
+              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><code>appTcpConnManagerStart(ip, port, pullPort, incomingMsngCb)</code></td><td style="padding:8px">Stores server address, local pull port, and the incoming-message callback; starts the TCP thread.</td></tr>
               <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><code>appTcpConnManagerRequestConnect</code></td><td style="padding:8px">Creates the pull socket; allows push to connect.</td></tr>
               <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><code>appTcpConnManagerRequestPushConnect</code></td><td style="padding:8px">Queues a push connection request.</td></tr>
               <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><code>appTcpConnManagerSend(ch, data, len)</code></td><td style="padding:8px">Send on <code>"push"</code> or <code>"pull"</code> channel.</td></tr>
@@ -95,10 +97,11 @@
               <div class="diagram-head">Inbound data</div>
               <pre class="mermaid">flowchart LR
   NET[TCP stack] --> TH[TcpConn thread]
-  TH -->|RECV push| PZ[AppProtocolZD push buffer]
-  TH -->|RECV pull client| PL[AppProtocolZD pull buffer]
-  PZ --> SM[Protocol state machine]
-  PL --> SM</pre>
+  TH -->|RECV push| CB1[incomingMsngCb push]
+  TH -->|RECV pull client| CB2[incomingMsngCb pull]
+  CB1 --> HND["Handler: appProtocolZDPutIncomingMessage"]
+  CB2 --> HND
+  HND --> SM[Parse JSON + state machine]</pre>
             </div>
             <p class="note">The push socket connects non-blocking first; after the connection completes it is switched to blocking mode.</p>
           </article>
@@ -107,7 +110,7 @@
     </div>
   </div>
   <footer class="protocol-global-footer">
-    <p>Aviora - Designed By Zafer SATILMIS</p>
+    <p>Designed by Zafer SATILMIS | Aviora Protocol Layer</p>
   </footer>
 </body>
 </html>
