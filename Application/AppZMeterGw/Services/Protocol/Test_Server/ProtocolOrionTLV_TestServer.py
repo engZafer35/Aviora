@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-AVI ByteArray Protocol Test Server
+AVI OrionTLV Protocol Test Server
 Binary TLV-over-TCP protocol test server for IoT meter gateway.
 
 Usage:
-    python Protocl_ByteArray_TestServer.py [port]
-    python Protocl_ByteArray_TestServer.py 8723
+    python ProtocolOrionTLV_TestServer.py [port]
+    python ProtocolOrionTLV_TestServer.py 8723
 """
 
 import sys
@@ -299,11 +299,11 @@ def extract_packets(buf):
 #                    Protocol Test Server
 # ═══════════════════════════════════════════════════════════════
 
-class ByteArrayTestServer:
+class OrionTLVTestServer:
 
     def __init__(self, root, push_port):
         self.root = root
-        self.root.title("Protocol ByteArray Test Server")
+        self.root.title("Protocol OrionTLV Test Server")
         self.root.geometry("1200x780")
         self.root.minsize(1000, 600)
 
@@ -361,7 +361,7 @@ class ByteArrayTestServer:
         paned.add(left, weight=0)
 
         # --- Sunucu ---
-        sf = ttk.LabelFrame(left, text=" Sunucu (ByteArray) ", padding=6)
+        sf = ttk.LabelFrame(left, text=" Sunucu (OrionTLV) ", padding=6)
         sf.pack(fill="x", padx=4, pady=(0, 4))
 
         row = ttk.Frame(sf)
@@ -1070,14 +1070,14 @@ class ByteArrayTestServer:
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Protocol ByteArray Test Server (Binary TLV)")
+        description="Protocol OrionTLV Test Server (Binary TLV)")
     parser.add_argument(
         "port", type=int, nargs="?", default=DEFAULT_PORT,
         help=f"Push sunucu portu (varsayılan: {DEFAULT_PORT})")
     args = parser.parse_args()
 
     root = tk.Tk()
-    app = ByteArrayTestServer(root, args.port)
+    app = OrionTLVTestServer(root, args.port)
     root.protocol("WM_DELETE_WINDOW", app.on_close)
     root.mainloop()
 

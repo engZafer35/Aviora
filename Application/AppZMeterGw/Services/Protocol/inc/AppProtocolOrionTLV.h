@@ -2,11 +2,11 @@
 * #Author       : Zafer Satılmış
 * #Revision     : 1.0
 * #Date         : Mar 29, 2026
-* #File Name    : AppProtocolByteArray.h
+* #File Name    : AppProtocolOrionTLV.h
 *******************************************************************************/
 
 /******************************************************************************
-* Binary TLV-over-TCP protocol handler for IoT meter gateway.
+* OrionTLV TLV-over-TCP protocol handler for IoT meter gateway.
 *
 * Wire format
 * ───────────
@@ -47,31 +47,31 @@
 *                loadprofile request, directive CRUD)
 ******************************************************************************/
 /******************************IFNDEF & DEFINE********************************/
-#ifndef __APP_PROTOCOL_BYTE_ARRAY_H__
-#define __APP_PROTOCOL_BYTE_ARRAY_H__
+#ifndef __APP_PROTOCOL_ORION_TLV_H__
+#define __APP_PROTOCOL_ORION_TLV_H__
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
 #include <stdint.h>
 
 /******************************MACRO DEFINITIONS*******************************/
 
-#define PROTO_BA_FLAG                "AVI"
-#define PROTO_BA_BRAND               "AVI"
-#define PROTO_BA_MODEL               "AVIO2622"
+#define PROTO_ORION_FLAG                "AVI"
+#define PROTO_ORION_BRAND               "AVI"
+#define PROTO_ORION_MODEL               "AVIO2622"
 
-#define PROTO_BA_PACKET_MAX_SIZE     (1024)
-#define PROTO_BA_DATA_CHUNK_SIZE     (700)
+#define PROTO_ORION_PACKET_MAX_SIZE     (1024)
+#define PROTO_ORION_DATA_CHUNK_SIZE     (700)
 
-#define PROTO_BA_ALIVE_INTERVAL_S    (300)     /* 5 min */
-#define PROTO_BA_REGISTER_RETRY_S    (30)      /* 30 s  */
-#define PROTO_BA_ACK_TIMEOUT_MS      (10000)   /* 10 s  */
-#define PROTO_BA_CONNECT_TIMEOUT_MS  (10000)   /* 10 s  */
+#define PROTO_ORION_ALIVE_INTERVAL_S    (300)     /* 5 min */
+#define PROTO_ORION_REGISTER_RETRY_S    (30)      /* 30 s  */
+#define PROTO_ORION_ACK_TIMEOUT_MS      (10000)   /* 10 s  */
+#define PROTO_ORION_CONNECT_TIMEOUT_MS  (10000)   /* 10 s  */
 
-#define PROTO_BA_REGISTER_FILE       "protoba_register.dat"
-#define PROTO_BA_SERVER_FILE         "protoba_server.dat"
+#define PROTO_ORION_REGISTER_FILE       "oriontlv_register.dat"
+#define PROTO_ORION_SERVER_FILE         "oriontlv_server.dat"
 
-#define PROTO_BA_PKT_START           '$'       /* 0x24 */
-#define PROTO_BA_PKT_END             '#'       /* 0x23 */
+#define PROTO_ORION_PKT_START           '$'       /* 0x24 */
+#define PROTO_ORION_PKT_END             '#'       /* 0x23 */
 
 /* ─── TAG Definitions ─────────────────────────────────────────────────────
  *  0x00XX  Common / header
@@ -90,7 +90,7 @@
 /* ── Common ── */
 #define TAG_FLAG                0x0001  /* string  "AVI"                      */
 #define TAG_SERIAL_NUMBER       0x0002  /* string  device serial              */
-#define TAG_FUNCTION            0x0003  /* uint8   ProtoBA_Function_t enum    */
+#define TAG_FUNCTION            0x0003  /* uint8   OrionTLV_Function_t enum    */
 
 /* ── Ident / Alive ── */
 #define TAG_REGISTERED          0x0101  /* bool    device → srv (current)     */
@@ -162,7 +162,7 @@ typedef enum
     FUNC_DIRECTIVE_LIST  = 0x0A,
     FUNC_DIRECTIVE_ADD   = 0x0B,
     FUNC_DIRECTIVE_DEL   = 0x0C,
-} ProtoBA_Function_t;
+} OrionTLV_Function_t;
 
 /* ── Packet Builder ────────────────────────────────────────────────────── */
 
@@ -172,7 +172,7 @@ typedef struct
     uint16_t  capacity;
     uint16_t  pos;
     BOOL      overflow;
-} ProtoBA_Builder_t;
+} OrionTLV_Builder_t;
 
 /* ── Packet Parser (iterates TLV fields inside a received packet) ────── */
 
@@ -181,40 +181,40 @@ typedef struct
     const uint8_t *data;    /* points after '$' */
     uint16_t       length;  /* bytes between '$' and '#' */
     uint16_t       cursor;
-} ProtoBA_Parser_t;
+} OrionTLV_Parser_t;
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
 
 /* ── Builder API ── */
-void     protoBA_BuilderInit  (ProtoBA_Builder_t *b, uint8_t *buf, uint16_t capacity);
-void     protoBA_PacketBegin  (ProtoBA_Builder_t *b);
-void     protoBA_AddString    (ProtoBA_Builder_t *b, uint16_t tag, const char *str);
-void     protoBA_AddStringN   (ProtoBA_Builder_t *b, uint16_t tag, const char *str, uint16_t len);
-void     protoBA_AddBool      (ProtoBA_Builder_t *b, uint16_t tag, BOOL val);
-void     protoBA_AddUint8     (ProtoBA_Builder_t *b, uint16_t tag, uint8_t val);
-void     protoBA_AddUint16    (ProtoBA_Builder_t *b, uint16_t tag, uint16_t val);
-void     protoBA_AddUint32    (ProtoBA_Builder_t *b, uint16_t tag, uint32_t val);
-void     protoBA_AddInt16     (ProtoBA_Builder_t *b, uint16_t tag, int16_t val);
-void     protoBA_AddRaw       (ProtoBA_Builder_t *b, uint16_t tag, const uint8_t *data, uint16_t len);
-uint16_t protoBA_PacketEnd    (ProtoBA_Builder_t *b);
-void     protoBA_AddDeviceHeader(ProtoBA_Builder_t *b);
+void     orionTLV_BuilderInit  (OrionTLV_Builder_t *b, uint8_t *buf, uint16_t capacity);
+void     orionTLV_PacketBegin  (OrionTLV_Builder_t *b);
+void     orionTLV_AddString    (OrionTLV_Builder_t *b, uint16_t tag, const char *str);
+void     orionTLV_AddStringN   (OrionTLV_Builder_t *b, uint16_t tag, const char *str, uint16_t len);
+void     orionTLV_AddBool      (OrionTLV_Builder_t *b, uint16_t tag, BOOL val);
+void     orionTLV_AddUint8     (OrionTLV_Builder_t *b, uint16_t tag, uint8_t val);
+void     orionTLV_AddUint16    (OrionTLV_Builder_t *b, uint16_t tag, uint16_t val);
+void     orionTLV_AddUint32    (OrionTLV_Builder_t *b, uint16_t tag, uint32_t val);
+void     orionTLV_AddInt16     (OrionTLV_Builder_t *b, uint16_t tag, int16_t val);
+void     orionTLV_AddRaw       (OrionTLV_Builder_t *b, uint16_t tag, const uint8_t *data, uint16_t len);
+uint16_t orionTLV_PacketEnd    (OrionTLV_Builder_t *b);
+void     orionTLV_AddDeviceHeader(OrionTLV_Builder_t *b);
 
 /* ── Parser API ── */
-BOOL     protoBA_ParserInit   (ProtoBA_Parser_t *p, const uint8_t *raw, uint16_t rawLen);
-void     protoBA_ParserReset  (ProtoBA_Parser_t *p);
-BOOL     protoBA_ParserNext   (ProtoBA_Parser_t *p, uint16_t *tag, const uint8_t **value, uint16_t *valueLen);
-BOOL     protoBA_GetString    (ProtoBA_Parser_t *p, uint16_t tag, char *out, uint16_t outSz);
-BOOL     protoBA_GetBool      (ProtoBA_Parser_t *p, uint16_t tag, BOOL *out);
-BOOL     protoBA_GetUint8     (ProtoBA_Parser_t *p, uint16_t tag, uint8_t *out);
-BOOL     protoBA_GetUint16    (ProtoBA_Parser_t *p, uint16_t tag, uint16_t *out);
-BOOL     protoBA_GetUint32    (ProtoBA_Parser_t *p, uint16_t tag, uint32_t *out);
-BOOL     protoBA_GetInt16     (ProtoBA_Parser_t *p, uint16_t tag, int16_t *out);
-BOOL     protoBA_GetFunction  (ProtoBA_Parser_t *p, ProtoBA_Function_t *out);
+BOOL     orionTLV_ParserInit   (OrionTLV_Parser_t *p, const uint8_t *raw, uint16_t rawLen);
+void     orionTLV_ParserReset  (OrionTLV_Parser_t *p);
+BOOL     orionTLV_ParserNext   (OrionTLV_Parser_t *p, uint16_t *tag, const uint8_t **value, uint16_t *valueLen);
+BOOL     orionTLV_GetString    (OrionTLV_Parser_t *p, uint16_t tag, char *out, uint16_t outSz);
+BOOL     orionTLV_GetBool      (OrionTLV_Parser_t *p, uint16_t tag, BOOL *out);
+BOOL     orionTLV_GetUint8     (OrionTLV_Parser_t *p, uint16_t tag, uint8_t *out);
+BOOL     orionTLV_GetUint16    (OrionTLV_Parser_t *p, uint16_t tag, uint16_t *out);
+BOOL     orionTLV_GetUint32    (OrionTLV_Parser_t *p, uint16_t tag, uint32_t *out);
+BOOL     orionTLV_GetInt16     (OrionTLV_Parser_t *p, uint16_t tag, int16_t *out);
+BOOL     orionTLV_GetFunction  (OrionTLV_Parser_t *p, OrionTLV_Function_t *out);
 
 /* ── Protocol life-cycle ── */
 
 /**
- * @brief  Initialise the byte-array protocol module.
+ * @brief  Initialise the OrionTLV protocol module.
  * @param  serialNumber  Device serial number (null-terminated, max 16 chars)
  * @param  serverIP      Default push-server IP  (null-terminated)
  * @param  serverPort    Default push-server port
@@ -222,7 +222,7 @@ BOOL     protoBA_GetFunction  (ProtoBA_Parser_t *p, ProtoBA_Function_t *out);
  * @param  pullPort      TCP-server port opened on this device (pull)
  * @return SUCCESS / FAILURE
  */
-RETURN_STATUS appProtocolBAInit(const char *serialNumber,
+RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber,
                                 const char *serverIP, int serverPort,
                                 const char *deviceIP, int pullPort);
 
@@ -230,13 +230,13 @@ RETURN_STATUS appProtocolBAInit(const char *serialNumber,
  * @brief  Start the protocol task (creates TCP connections, enters state machine).
  * @return SUCCESS / FAILURE
  */
-RETURN_STATUS appProtocolBAStart(void);
+RETURN_STATUS appProtocolOrionTLVStart(void);
 
 /**
  * @brief  Stop the protocol task and close TCP connections.
  * @return SUCCESS / FAILURE
  */
-RETURN_STATUS appProtocolBAStop(void);
+RETURN_STATUS appProtocolOrionTLVStop(void);
 
 /**
  * @brief   Feed raw bytes received from a TCP channel.
@@ -244,10 +244,10 @@ RETURN_STATUS appProtocolBAStop(void);
  * @param   data        raw received bytes
  * @param   dataLength  number of bytes received
  */
-void appProtocolBAPutIncomingMessage(const char *channel,
+void appProtocolOrionTLVPutIncomingMessage(const char *channel,
                                      const char *data,
                                      unsigned int dataLength);
 
-#endif /* __APP_PROTOCOL_BYTE_ARRAY_H__ */
+#endif /* __APP_PROTOCOL_ORION_TLV_H__ */
 
 /********************************* End Of File ********************************/
