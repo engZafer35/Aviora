@@ -560,4 +560,4 @@ flowchart LR
 
 ---
 
-*Designed by Zafer Satılmış | Aviora File System Framework*
+*Designed by Zafer SATILMIS | Aviora File System Framework*

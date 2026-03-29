@@ -1,0 +1,162 @@
+/* Wide layout: docs home (index) + FS README — matches protocol ~1820px feel */
+
+body.docs-wide .topbar-inner,
+body.docs-wide .hero,
+body.docs-wide .container {
+  max-width: min(1820px, 100%);
+}
+
+/* docs/index.html only — slightly narrower “frame” than full docs-wide */
+body.docs-home .topbar-inner,
+body.docs-home .hero,
+body.docs-home .container {
+  max-width: min(1180px, 100%);
+}
+
+body.docs-home footer {
+  max-width: min(1180px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+body.docs-wide .topbar-inner,
+body.docs-wide .hero,
+body.docs-wide .container {
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+
+body.docs-wide .hero p {
+  max-width: none;
+}
+
+/* Do not cap footer width — must span full viewport like protocol pages */
+body.docs-wide footer.protocol-global-footer {
+  width: 100% !important;
+  max-width: none !important;
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+
+/* FS README: markdown column uses main width */
+body.docs-wide .readme-container {
+  width: 100%;
+  max-width: none;
+}
+
+body.docs-wide .readme-container .markdown-body {
+  max-width: min(1520px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+  padding: clamp(18px, 2.8vw, 40px) clamp(14px, 3.5vw, 48px);
+  box-sizing: border-box;
+}
+
+body.docs-wide .readme-container .markdown-body pre.mermaid,
+body.docs-wide .readme-container .markdown-body pre.mermaid svg {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+body.docs-wide .readme-container .markdown-body pre.mermaid svg {
+  height: auto;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 480px) {
+  body.docs-wide .hero,
+  body.docs-wide .container,
+  body.docs-wide footer.protocol-global-footer {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  body.docs-wide .readme-container .markdown-body {
+    padding: 14px 12px;
+  }
+}
+
+/* ─── FS README (fs/readme.html): full main width + large centered Mermaid ─── */
+body.fs-readme .layout-with-sidebar {
+  max-width: min(1820px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+body.fs-readme .main-with-sidebar {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+
+body.fs-readme main.readme-container.container {
+  max-width: 100% !important;
+  width: 100%;
+  flex: 1;
+}
+
+/* Beat readme.css .markdown-body { max-width: 980px } */
+body.fs-readme #readme-content.markdown-body,
+body.fs-readme .readme-container > article.markdown-body {
+  max-width: min(1680px, 100%) !important;
+  width: 100%;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: clamp(22px, 3vw, 52px) clamp(16px, 3.5vw, 56px) !important;
+  box-sizing: border-box;
+}
+
+body.fs-readme #readme-content.markdown-body h1 {
+  font-size: clamp(1.75em, 2.5vw, 2.25em);
+}
+
+body.fs-readme #readme-content pre.mermaid {
+  width: 100%;
+  max-width: 100%;
+  margin: 28px auto;
+  padding: 22px 20px;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.32);
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  box-sizing: border-box;
+}
+
+body.fs-readme #readme-content pre.mermaid svg {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+@media (max-width: 900px) {
+  body.fs-readme .layout-with-sidebar {
+    flex-direction: column;
+  }
+
+  body.fs-readme .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+
+  body.fs-readme .sidebar-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  body.fs-readme #readme-content.markdown-body {
+    padding: 18px 14px !important;
+  }
+
+  body.fs-readme #readme-content pre.mermaid {
+    padding: 16px 12px;
+    margin: 20px auto;
+  }
+}

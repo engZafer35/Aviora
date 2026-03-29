@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Aviora — Protocol</title>
   <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="./protocol-docs.css" />
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
 </head>
-<body>
+<body class="protocol-docs">
   <div class="topbar">
     <div class="topbar-inner">
       <div class="brand">🛰️Zafer Satılmış - Aviora</div>
@@ -44,7 +45,7 @@
           <h1>Aviora — Protocol Layer</h1>
           <p>
             <strong>JSON-over-TCP</strong> between the device and the central server:
-            <strong>AppTcpConnManager</strong> (push/pull sockets),
+            <strong>AppTcpConnManager</strong> (push/pull sockets; received bytes are passed to the protocol via <code>IncomingMsngCb_t</code> at <code>appTcpConnManagerStart</code>),
             <strong>AppMeterOperations</strong> (meter and directive jobs),
             <strong>AppProtocolZD</strong> (message flow and state machine),
             and a <strong>Python test server</strong> for development.
@@ -121,7 +122,7 @@
             <h2>Page guide</h2>
             <ul>
               <li><a href="readme.html">README</a> — full protocol documentation (Markdown + Mermaid diagrams)</li>
-              <li><a href="tcp-conn.html">TCP Connection</a> — socket tasks, thread, incoming-data callback</li>
+              <li><a href="tcp-conn.html">TCP Connection</a> — socket tasks, thread, <code>IncomingMsngCb_t</code> registration</li>
               <li><a href="meter-operations.html">Meter Operations</a> — meter registry, directives, readout/profile jobs</li>
               <li><a href="protocolzd.html">ProtocolZD</a> — all JSON message types, examples, response pairing, state diagram</li>
               <li><a href="test-server.html">Test Server</a> — Python UI, usage, flows, sample scenarios</li>
@@ -133,7 +134,7 @@
     </div>
   </div>
   <footer class="protocol-global-footer">
-    <p>Aviora - Designed By Zafer SATILMIS</p>
+    <p>Designed by Zafer SATILMIS | Aviora Protocol Layer</p>
   </footer>
 </body>
 </html>

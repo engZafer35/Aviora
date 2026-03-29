@@ -1,0 +1,184 @@
+/* Protocol docs: wide content, centered diagrams in README, mobile-friendly */
+
+body.protocol-docs .topbar-inner {
+  max-width: min(1820px, 100%);
+  padding-left: max(14px, env(safe-area-inset-left));
+  padding-right: max(14px, env(safe-area-inset-right));
+}
+
+body.protocol-docs .hero {
+  max-width: min(1820px, 100%);
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+
+body.protocol-docs .hero p {
+  max-width: none;
+}
+
+body.protocol-docs .container {
+  max-width: min(1820px, 100%);
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+  margin-bottom: 48px;
+}
+
+body.protocol-docs .card {
+  padding: 22px 26px;
+  border-radius: 16px;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.22);
+}
+
+body.protocol-docs .hero-card {
+  padding: 28px 32px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+
+body.protocol-docs .hero h1 {
+  font-size: clamp(1.5rem, 2.5vw, 2rem);
+}
+
+body.protocol-docs h2 {
+  font-size: clamp(1.15rem, 1.8vw, 1.35rem);
+}
+
+body.protocol-docs .main-with-sidebar .hero,
+body.protocol-docs .main-with-sidebar .container {
+  width: 100%;
+}
+
+/* Mermaid: full content width (fit-content was shrinking diagrams) */
+body.protocol-docs .diagram-wrap pre.mermaid,
+body.protocol-docs .markdown-body pre.mermaid {
+  min-height: 0;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+
+body.protocol-docs .diagram-wrap pre.mermaid svg,
+body.protocol-docs .markdown-body pre.mermaid svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* README page: use almost full main width, prose centered */
+body.protocol-docs .readme-container {
+  width: 100%;
+  max-width: none;
+  padding-left: 0;
+  padding-right: 0;
+  box-sizing: border-box;
+}
+
+body.protocol-docs .readme-container .markdown-body {
+  max-width: min(1520px, 100%);
+  margin-left: auto;
+  margin-right: auto;
+  padding: clamp(18px, 2.8vw, 42px) clamp(14px, 3.5vw, 52px);
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ordinary code blocks stay left-aligned for reading */
+body.protocol-docs .markdown-body pre:not(.mermaid) {
+  margin-left: 0;
+  margin-right: 0;
+  width: 100%;
+  text-align: left;
+}
+
+/* Images in README: centered, capped width on large screens */
+body.protocol-docs .markdown-body img {
+  display: block;
+  margin: 1.25rem auto;
+  max-width: min(100%, 960px);
+  height: auto;
+}
+
+body.protocol-docs .protocol-footer-note {
+  max-width: min(1820px, 100%);
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+
+@media (max-width: 900px) {
+  body.protocol-docs .layout-with-sidebar {
+    flex-direction: column;
+  }
+
+  body.protocol-docs .sidebar {
+    width: 100%;
+    flex-shrink: 0;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    padding: 12px 10px 10px;
+  }
+
+  body.protocol-docs .sidebar-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: flex-start;
+  }
+
+  body.protocol-docs .sidebar-nav a {
+    padding: 10px 14px;
+    font-size: 14px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  body.protocol-docs .card {
+    padding: 16px 14px;
+    border-radius: 14px;
+  }
+
+  body.protocol-docs .hero-card {
+    padding: 20px 16px;
+  }
+
+  body.protocol-docs .hero p,
+  body.protocol-docs .card p,
+  body.protocol-docs .card li {
+    font-size: 16px;
+    line-height: 1.62;
+  }
+
+  body.protocol-docs .readme-container .markdown-body {
+    font-size: 17px;
+    line-height: 1.65;
+    padding: 16px 12px;
+  }
+
+  body.protocol-docs .markdown-body pre.mermaid {
+    padding: 14px 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  body.protocol-docs .container {
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+
+  body.protocol-docs .hero {
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+
+  body.protocol-docs .readme-container .markdown-body {
+    font-size: 16px;
+    padding: 14px 10px;
+  }
+}

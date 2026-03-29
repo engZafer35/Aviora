@@ -71,7 +71,7 @@ flowchart TB
   TCP -->|outbound JSON| SP
   SP -->|inbound JSON| TCP
   PC -->|commands JSON| TCP
-  TCP -->|to PZD| PZD
+  TCP -->|IncomingMsngCb_t| PZD
 ```
 
 ---
@@ -108,15 +108,17 @@ Every JSON message includes a **device header**:
 
 The TCP thread multiplexes pull listener, pull client sockets, and push client with `select()`.
 
+`appTcpConnManagerStart(serverIP, serverPort, pullPort, incomingMsngCb)` stores the callback **`IncomingMsngCb_t`**: `void (*IncomingMsngCb_t)(const char *channel, const char *data, unsigned int dataLength)`. On each receive, the thread calls `incomingMsngCb` with channel `"push"` or `"pull"` (`PUSH_TCP_SOCK_NAME` / `PULL_TCP_SOCK_NAME`). **AppProtocolZD** passes `appProtocolZDPutIncomingMessage`; any other protocol module can register its own handler the same way.
+
 ```mermaid
 flowchart TD
-  START[appTcpConnManagerStart] --> THREAD[tcpConnectionThread loop]
+  START["appTcpConnManagerStart(..., incomingMsngCb)"] --> THREAD[tcpConnectionThread loop]
   THREAD --> PULL_CREATE[taskPullSocCreat → listen on pullPort]
   THREAD --> PUSH_REQ[taskConnectPush → connect push socket]
   THREAD --> SEL[select on fds]
   SEL -->|pull listen readable| ACC[accept client]
-  SEL -->|pull client readable| RECV_PULL[recv → appTCPConnectionPutIncomingMessage pull]
-  SEL -->|push readable| RECV_PUSH[recv → appTCPConnectionPutIncomingMessage push]
+  SEL -->|pull client readable| RECV_PULL["recv → incomingMsngCb pull"]
+  SEL -->|push readable| RECV_PUSH["recv → incomingMsngCb push"]
   SEL -->|push writable| HANDSHAKE[complete non-blocking connect]
 ```
 
@@ -408,7 +410,7 @@ flowchart TB
 | Page | Focus |
 |------|--------|
 | [Overview](index.html) | Short intro and push/pull table |
-| [TCP Connection](tcp-conn.html) | Socket manager APIs |
+| [TCP Connection](tcp-conn.html) | Socket manager APIs, `IncomingMsngCb_t` at start |
 | [Meter Operations](meter-operations.html) | Registry and jobs |
 | [ProtocolZD](protocolzd.html) | Message dictionary with examples |
 | [Test Server](test-server.html) | UI and scenarios |
@@ -425,6 +427,7 @@ flowchart TB
 | **Alive** | Periodic keep-alive |
 | **Readout** | Meter reading result packaged as JSON |
 | **Load profile** | Profile window read from `_payload.txt` |
+| **IncomingMsngCb_t** | Callback registered with `appTcpConnManagerStart`; receives `channel`, `data`, `dataLength` for each TCP recv |
 
 ---
 
@@ -474,7 +477,3 @@ gantt
   section Steady
   Alive every 5 min   :c1, after b3, 3d
 ```
-
----
-
-*Aviora — Designed By Zafer SATILMIS*
