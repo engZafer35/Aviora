@@ -57,6 +57,7 @@ static struct
 static const char *gs_serverIP;
 static int gs_serverPort;
 static int gs_pullPort;
+static IncomingMsngCb_t gs_incomingMsngCb;
 
 static OsTaskId gs_tcpTaskId;
 
@@ -343,7 +344,7 @@ static void tcpConnectionThread(void *arg)
                             gs_connInfo.clietKeepAliveCounter[i] = 0;
                             DEBUG_DEBUG("->[D] Pull Socket, Data received from Client- %d. Data size: %d", i, rcvSize);
 
-                            appTCPConnectionPutIncomingMessage(PULL_TCP_SOCK_NAME, ls_tmpRcvbuff, rcvSize);
+                            gs_incomingMsngCb(PULL_TCP_SOCK_NAME, ls_tmpRcvbuff, rcvSize);
                         }
                     }
                 }
@@ -428,7 +429,7 @@ static void tcpConnectionThread(void *arg)
                     {
                         DEBUG_DEBUG("->[D] Push Socket, Data received. Data size: %d", rcvSize);
 
-                        appTCPConnectionPutIncomingMessage(PUSH_TCP_SOCK_NAME, ls_tmpRcvbuff, (unsigned int)rcvSize);
+                        gs_incomingMsngCb(PUSH_TCP_SOCK_NAME, ls_tmpRcvbuff, (unsigned int)rcvSize);
                     }
                 }
             }
@@ -445,7 +446,7 @@ static void tcpConnectionThread(void *arg)
     }
 }
 /***************************** PUBLIC FUNCTIONS  ******************************/
-int appTcpConnManagerStart(const char *serverIP, int serverPort, int pullPort)
+int appTcpConnManagerStart(const char *serverIP, int serverPort, int pullPort, IncomingMsngCb_t incomingMsngCb)
 {
     int retVal = RET_SUCCESS;
 
@@ -454,6 +455,7 @@ int appTcpConnManagerStart(const char *serverIP, int serverPort, int pullPort)
     gs_serverIP   = serverIP;
     gs_serverPort = serverPort;
     gs_pullPort   = pullPort;
+    gs_incomingMsngCb = incomingMsngCb;
 
     ZOsTaskParameters taskParam;
     taskParam.priority  = ZOS_TASK_PRIORITY_LOW;
@@ -469,10 +471,13 @@ int appTcpConnManagerStart(const char *serverIP, int serverPort, int pullPort)
         gs_serverIP   = NULL;
         gs_serverPort = 0;
         gs_pullPort   = 0;
+        gs_incomingMsngCb = NULL;
     }
-
-    DEBUG_INFO("TCP Connection started");
-    APP_LOG_REC(g_sysLoggerID, "TCP Connection started");
+    else
+    {
+        DEBUG_INFO("TCP Connection task created !");
+        APP_LOG_REC(g_sysLoggerID, "TCP Connection task created !");
+    }
 
     return retVal;
 }
