@@ -52,7 +52,7 @@
         <a href="tcp-conn.html">TCP Connection</a>
         <a href="meter-operations.html">Meter Operations</a>
         <a href="protocolzd.html">ProtocolZD</a>
-        <a href="protocolOrionTLV.html" class="active">ProtocolOrionTLV</a>
+        <a href="protocolMetallixTLV.html" class="active">ProtocolMetallixTLV</a>
         <a href="test-server.html">Test Server</a>
         <a href="readme.html">README</a>
       </nav>
@@ -60,7 +60,7 @@
     <div class="main-with-sidebar">
       <section class="hero">
         <div class="hero-card">
-          <h1>AppProtocolOrionTLV — Binary TLV Protocol</h1>
+          <h1>AppProtocolMetallixTLV — Binary TLV Protocol</h1>
           <p>
             Lightweight binary protocol for IoT communication. Every packet is delimited by <code>$</code> … <code>#</code> and contains
             one or more flat <strong>TLV</strong> (Tag-Length-Value) fields. No nesting — each tag carries exactly one piece of data.
@@ -122,7 +122,7 @@
             <div class="diagram-wrap">
               <div class="diagram-head">Registration → alive → pull handling</div>
               <pre class="mermaid">stateDiagram-v2
-  [*] --> Init: appProtocolOrionTLVStart
+  [*] --> Init: appProtocolMetallixTLVStart
   Init --> ConnectPush: create TCP task
   ConnectPush --> SendIdent: push connected
   ConnectPush --> ConnectPush: timeout → retry 30s
@@ -132,7 +132,7 @@
   Registered --> Registered: alive every 5 min (push)
   Registered --> Registered: handle pull requests
   Registered --> Registered: deliver meter data (push)
-  Registered --> [*]: appProtocolOrionTLVStop</pre>
+  Registered --> [*]: appProtocolMetallixTLVStop</pre>
             </div>
           </article>
 
@@ -146,7 +146,7 @@
               <tr class="group-row"><td colspan="4">0x00XX — Common / Header</td></tr>
               <tr><td><code>0x0001</code></td><td>FLAG</td><td>string</td><td>Product flag, e.g. "AVI"</td></tr>
               <tr><td><code>0x0002</code></td><td>SERIAL_NUMBER</td><td>string</td><td>Device serial number</td></tr>
-              <tr><td><code>0x0003</code></td><td>FUNCTION</td><td>uint8</td><td>Message type (OrionTLV_Function_t enum)</td></tr>
+              <tr><td><code>0x0003</code></td><td>FUNCTION</td><td>uint8</td><td>Message type (MetallixTLV_Function_t enum)</td></tr>
 
               <tr class="group-row"><td colspan="4">0x01XX — Ident / Alive</td></tr>
               <tr><td><code>0x0101</code></td><td>REGISTERED</td><td>bool</td><td>Device → server: current registration state</td></tr>
@@ -234,15 +234,15 @@
     PC["Pull client\n(server connects)"]
   end
   subgraph Device["Gateway device"]
-    ORION["AppProtocolOrionTLV\n(state machine + TLV builder/parser)"]
+    METALLIX["AppProtocolMetallixTLV\n(state machine + TLV builder/parser)"]
     TCP["AppTcpConnManager\n(push + pull sockets)"]
     MTR["AppMeterOperations\n(meter CRUD, readout jobs)"]
     FS["File System\n(register, server config)"]
-    ORION -->|"build packet, send"| TCP
-    TCP -->|"raw bytes callback"| ORION
-    ORION -->|"add/remove meter\nreadout/profile task"| MTR
-    MTR -->|"callback: task done"| ORION
-    ORION -->|"persist state"| FS
+    METALLIX -->|"build packet, send"| TCP
+    TCP -->|"raw bytes callback"| METALLIX
+    METALLIX -->|"add/remove meter\nreadout/profile task"| MTR
+    MTR -->|"callback: task done"| METALLIX
+    METALLIX -->|"persist state"| FS
     TCP -->|"push: device connects"| SP
     PC -->|"pull: server connects to device"| TCP
   end</pre>
@@ -274,7 +274,7 @@
   0003 0001 01                        TAG_FUNCTION = FUNC_IDENT
   0107 0001 01                        TAG_REGISTER = true
 #</pre>
-              <p><code>TAG_REGISTER = 0x01</code> means the server accepts the device. State is saved to <code>oriontlv_register.dat</code>.</p>
+              <p><code>TAG_REGISTER = 0x01</code> means the server accepts the device. State is saved to <code>metallixtlv_register.dat</code>.</p>
             </div>
 
             <div class="diagram-wrap">
@@ -445,7 +445,7 @@ $  0001 0003 "AVI"  0002 000F "…"  0003 0001 04  0301 0001 00  #</pre>
               <pre class="mermaid">sequenceDiagram
   participant S as Server
   participant Pull as Device pull :2622
-  participant OT as OrionTLV
+  participant OT as MetallixTLV
   participant MO as MeterOps
   participant Push as Device push→server
 
@@ -506,17 +506,17 @@ $  0001 0003 "AVI"  0002 000F "…"  0003 0001 04  0301 0001 00  #</pre>
 
           <!-- ═══════════ COMPARISON ═══════════ -->
           <article class="card col-12">
-            <h2>ProtocolZD (JSON) vs ProtocolOrionTLV (TLV) Comparison</h2>
+            <h2>ProtocolZD (JSON) vs ProtocolMetallixTLV (TLV) Comparison</h2>
             <div class="diagram-wrap">
               <div class="diagram-head">Same Ident Message — Size Comparison</div>
               <pre class="mermaid">xychart-beta
   title "Ident packet size (bytes)"
-  x-axis ["ProtocolZD\n(JSON)", "ProtocolOrionTLV\n(TLV)"]
+  x-axis ["ProtocolZD\n(JSON)", "ProtocolMetallixTLV\n(TLV)"]
   y-axis "Bytes" 0 --> 300
   bar [247, 79]</pre>
             </div>
             <table class="tag-table" style="margin-top:12px">
-              <tr><th>Aspect</th><th>ProtocolZD (JSON)</th><th>ProtocolOrionTLV (TLV)</th></tr>
+              <tr><th>Aspect</th><th>ProtocolZD (JSON)</th><th>ProtocolMetallixTLV (TLV)</th></tr>
               <tr><td>Format</td><td>JSON text</td><td>Binary TLV</td></tr>
               <tr><td>Human readable</td><td>Yes</td><td>No (hex dump needed)</td></tr>
               <tr><td>Parsing cost</td><td>String scanning, key lookup</td><td>Direct offset reads, O(n) tag scan</td></tr>
@@ -532,39 +532,39 @@ $  0001 0003 "AVI"  0002 000F "…"  0003 0001 04  0301 0001 00  #</pre>
             <h2>Builder &amp; Parser C API</h2>
             <div class="msg-block">
               <h3>Building a Packet</h3>
-              <pre class="code-block hex">OrionTLV_Builder_t b;
+              <pre class="code-block hex">MetallixTLV_Builder_t b;
 uint8_t buf[256];
 
-orionTLV_BuilderInit(&b, buf, sizeof(buf));
-orionTLV_PacketBegin(&b);                        // writes '$'
-orionTLV_AddDeviceHeader(&b);                    // FLAG + SERIAL_NUMBER
-orionTLV_AddUint8(&b, TAG_FUNCTION, FUNC_ALIVE);
-orionTLV_AddString(&b, TAG_DEVICE_DATE, "2026-03-29 14:30:00");
-uint16_t len = orionTLV_PacketEnd(&b);           // writes '#', returns total
+metallixTLV_BuilderInit(&b, buf, sizeof(buf));
+metallixTLV_PacketBegin(&b);                        // writes '$'
+metallixTLV_AddDeviceHeader(&b);                    // FLAG + SERIAL_NUMBER
+metallixTLV_AddUint8(&b, TAG_FUNCTION, FUNC_ALIVE);
+metallixTLV_AddString(&b, TAG_DEVICE_DATE, "2026-03-29 14:30:00");
+uint16_t len = metallixTLV_PacketEnd(&b);           // writes '#', returns total
 
 appTcpConnManagerSend(PUSH_TCP_SOCK_NAME, (char *)buf, len);</pre>
             </div>
             <div class="msg-block">
               <h3>Parsing a Received Packet</h3>
-              <pre class="code-block hex">OrionTLV_Parser_t p;
-if (orionTLV_ParserInit(&p, rawData, rawLen))
+              <pre class="code-block hex">MetallixTLV_Parser_t p;
+if (metallixTLV_ParserInit(&p, rawData, rawLen))
 {
-    OrionTLV_Function_t func;
-    orionTLV_GetFunction(&p, &func);     // reads TAG_FUNCTION
+    MetallixTLV_Function_t func;
+    metallixTLV_GetFunction(&p, &func);     // reads TAG_FUNCTION
 
     char sn[20];
-    orionTLV_GetString(&p, TAG_SERIAL_NUMBER, sn, sizeof(sn));
+    metallixTLV_GetString(&p, TAG_SERIAL_NUMBER, sn, sizeof(sn));
 
     BOOL regVal;
-    orionTLV_GetBool(&p, TAG_REGISTER, &regVal);
+    metallixTLV_GetBool(&p, TAG_REGISTER, &regVal);
 
     uint16_t port;
-    orionTLV_GetUint16(&p, TAG_PULL_PORT, &port);
+    metallixTLV_GetUint16(&p, TAG_PULL_PORT, &port);
 
     // or iterate all TLVs:
     uint16_t tag; const uint8_t *val; uint16_t vLen;
-    orionTLV_ParserReset(&p);
-    while (orionTLV_ParserNext(&p, &tag, &val, &vLen)) { … }
+    metallixTLV_ParserReset(&p);
+    while (metallixTLV_ParserNext(&p, &tag, &val, &vLen)) { … }
 }</pre>
             </div>
           </article>
@@ -576,12 +576,12 @@ if (orionTLV_ParserInit(&p, rawData, rawLen))
               <div class="diagram-head">From boot to steady-state operation</div>
               <pre class="mermaid">sequenceDiagram
   participant App as Application
-  participant OT as OrionTLV
+  participant OT as MetallixTLV
   participant TCP as TcpConnManager
   participant S as Server
 
-  App->>OT: appProtocolOrionTLVInit(serial, serverIP, port, deviceIP, pullPort)
-  App->>OT: appProtocolOrionTLVStart()
+  App->>OT: appProtocolMetallixTLVInit(serial, serverIP, port, deviceIP, pullPort)
+  App->>OT: appProtocolMetallixTLVStart()
   OT->>TCP: appTcpConnManagerStart()
   OT->>TCP: requestConnect()
 
@@ -612,7 +612,7 @@ if (orionTLV_ParserInit(&p, rawData, rawLen))
     OT->>S: $ FUNC_READOUT + data packets #
   end
 
-  App->>OT: appProtocolOrionTLVStop()
+  App->>OT: appProtocolMetallixTLVStop()
   OT->>TCP: appTcpConnManagerStop()</pre>
             </div>
           </article>

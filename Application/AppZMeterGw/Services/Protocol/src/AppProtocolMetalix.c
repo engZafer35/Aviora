@@ -55,7 +55,111 @@
 #define SFUNC_PUSH_IDENT        (0xF0)
 #define SFUNC_ALIVE             (0xF1)
 
+
+/* ─── TAG Definitions ─────────────────────────────────────────────────────
+ *  0x00XX  Common / header
+ *  0x01XX  Ident / alive
+ *  0x02XX  Packet streaming
+ *  0x03XX  ACK / NACK
+ *  0x04XX  Log
+ *  0x05XX  Meter fields
+ *  0x06XX  Server config
+ *  0x07XX  Readout / loadprofile
+ *  0x08XX  Directive
+ *  0x09XX  FW update
+ *  0x0AXX  Error
+ * ──────────────────────────────────────────────────────────────────────── */
+/* ── Common ── */
+#define MTLX_TAG_FLAG                0x0001
+#define MTLX_TAG_SERIAL_NUMBER       0x0002
+#define MTLX_TAG_FUNCTION            0x0003
+#define MTLX_TAG_TRANS_NUMBER        0x00FF
+
+/* ── Ident / Alive ── */
+#define MTLX_TAG_REGISTERED          0x0101
+#define MTLX_TAG_DEVICE_BRAND        0x0102
+#define MTLX_TAG_DEVICE_MODEL        0x0103
+#define MTLX_TAG_DEVICE_DATE         0x0104
+#define MTLX_TAG_PULL_IP             0x0105
+#define MTLX_TAG_PULL_PORT           0x0106
+#define MTLX_TAG_REGISTER            0x0107
+
+/* ── Packet Streaming ── */
+#define MTLX_TAG_PACKET_NUM          0x0201
+#define MTLX_TAG_PACKET_STREAM       0x0202
+
+/* ── ACK / NACK ── */
+#define MTLX_TAG_ACK_STATUS          0x0301
+
+/* ── Log ── */
+#define MTLX_TAG_LOG_DATA            0x0401
+
+/* ── Meter Fields ── */
+#define MTLX_TAG_METER_OPERATION     0x0501
+#define MTLX_TAG_METER_PROTOCOL      0x0502
+#define MTLX_TAG_METER_TYPE          0x0503
+#define MTLX_TAG_METER_BRAND         0x0504
+#define MTLX_TAG_METER_SERIAL_NUM    0x0505
+#define MTLX_TAG_METER_SERIAL_PORT   0x0506
+#define MTLX_TAG_METER_INIT_BAUD     0x0507
+#define MTLX_TAG_METER_FIX_BAUD      0x0508
+#define MTLX_TAG_METER_FRAME         0x0509
+#define MTLX_TAG_METER_CUSTOMER_NUM  0x050A
+#define MTLX_TAG_METER_INDEX         0x050B
+
+/* ── Server Config ── */
+#define MTLX_TAG_SERVER_IP           0x0601
+#define MTLX_TAG_SERVER_PORT         0x0602
+
+/* ── Readout / LoadProfile ── */
+#define MTLX_TAG_METER_ID            0x0701
+#define MTLX_TAG_READOUT_DATA        0x0702
+#define MTLX_TAG_DIRECTIVE_NAME      0x0703
+#define MTLX_TAG_START_DATE          0x0704
+#define MTLX_TAG_END_DATE            0x0705
+
+/* ── Directive ── */
+#define MTLX_TAG_DIRECTIVE_ID        0x0801
+#define MTLX_TAG_DIRECTIVE_DATA      0x0802
+
+/* ── FW Update ── */
+#define MTLX_TAG_FW_ADDRESS          0x0901
+
+/* ── Error ── */
+#define MTLX_TAG_ERROR_CODE          0x0A01
+
 /******************************* TYPE DEFINITIONS *****************************/
+
+typedef enum
+{
+    MTLX_FUNC_IDENT          = 0x01,
+    MTLX_FUNC_ALIVE          = 0x02,
+    MTLX_FUNC_ACK            = 0x03,
+    MTLX_FUNC_NACK           = 0x04,
+    MTLX_FUNC_LOG            = 0x05,
+    MTLX_FUNC_SETTING        = 0x06,
+    MTLX_FUNC_FW_UPDATE      = 0x07,
+    MTLX_FUNC_READOUT        = 0x08,
+    MTLX_FUNC_LOADPROFILE    = 0x09,
+    MTLX_FUNC_DIRECTIVE_LIST = 0x0A,
+    MTLX_FUNC_DIRECTIVE_ADD  = 0x0B,
+    MTLX_FUNC_DIRECTIVE_DEL  = 0x0C,
+} MtlxFunction_t;
+
+typedef struct
+{
+    uint8_t  *buf;
+    uint16_t  capacity;
+    uint16_t  pos;
+    BOOL      overflow;
+} MtlxBuilder_t;
+
+typedef struct
+{
+    const uint8_t *data;
+    uint16_t       length;
+    uint16_t       cursor;
+} MtlxParser_t;
 
 typedef struct
 {
@@ -211,7 +315,7 @@ static BOOL inQueuePop(MtlxIncomingMsg_t *out)
 /*                       TLV BUILDER                                  */
 /* ================================================================== */
 
-void mtlxBuilderInit(MtlxBuilder_t *b, uint8_t *buf, uint16_t capacity)
+static void mtlxBuilderInit(MtlxBuilder_t *b, uint8_t *buf, uint16_t capacity)
 {
     b->buf      = buf;
     b->capacity = capacity;
@@ -219,7 +323,7 @@ void mtlxBuilderInit(MtlxBuilder_t *b, uint8_t *buf, uint16_t capacity)
     b->overflow = FALSE;
 }
 
-void mtlxPacketBegin(MtlxBuilder_t *b)
+static void mtlxPacketBegin(MtlxBuilder_t *b)
 {
     b->pos      = 0;
     b->overflow = FALSE;
@@ -245,31 +349,31 @@ static void builderAddTLV(MtlxBuilder_t *b, uint16_t tag,
     }
 }
 
-void mtlxAddString(MtlxBuilder_t *b, uint16_t tag, const char *str)
+static void mtlxAddString(MtlxBuilder_t *b, uint16_t tag, const char *str)
 {
     uint16_t len = (str != NULL) ? (uint16_t)strlen(str) : 0;
     builderAddTLV(b, tag, (const uint8_t *)str, len);
 }
 
-void mtlxAddBool(MtlxBuilder_t *b, uint16_t tag, BOOL val)
+static void mtlxAddBool(MtlxBuilder_t *b, uint16_t tag, BOOL val)
 {
     uint8_t v = val ? 0x01 : 0x00;
     builderAddTLV(b, tag, &v, 1);
 }
 
-void mtlxAddUint8(MtlxBuilder_t *b, uint16_t tag, uint8_t val)
+static void mtlxAddUint8(MtlxBuilder_t *b, uint16_t tag, uint8_t val)
 {
     builderAddTLV(b, tag, &val, 1);
 }
 
-void mtlxAddUint16(MtlxBuilder_t *b, uint16_t tag, uint16_t val)
+static void mtlxAddUint16(MtlxBuilder_t *b, uint16_t tag, uint16_t val)
 {
     uint8_t tmp[2];
     writeU16BE(tmp, val);
     builderAddTLV(b, tag, tmp, 2);
 }
 
-void mtlxAddUint32(MtlxBuilder_t *b, uint16_t tag, uint32_t val)
+static void mtlxAddUint32(MtlxBuilder_t *b, uint16_t tag, uint32_t val)
 {
     uint8_t tmp[4];
     tmp[0] = (uint8_t)(val >> 24);
@@ -279,12 +383,12 @@ void mtlxAddUint32(MtlxBuilder_t *b, uint16_t tag, uint32_t val)
     builderAddTLV(b, tag, tmp, 4);
 }
 
-void mtlxAddRaw(MtlxBuilder_t *b, uint16_t tag, const uint8_t *data, uint16_t len)
+static void mtlxAddRaw(MtlxBuilder_t *b, uint16_t tag, const uint8_t *data, uint16_t len)
 {
     builderAddTLV(b, tag, data, len);
 }
 
-uint16_t mtlxPacketEnd(MtlxBuilder_t *b)
+static uint16_t mtlxPacketEnd(MtlxBuilder_t *b)
 {
     if (b->overflow) return 0;
     if (b->pos >= b->capacity) { b->overflow = TRUE; return 0; }
@@ -296,7 +400,7 @@ uint16_t mtlxPacketEnd(MtlxBuilder_t *b)
 /*                         TLV PARSER                                 */
 /* ================================================================== */
 
-BOOL mtlxParserInit(MtlxParser_t *p, const uint8_t *raw, uint16_t rawLen)
+static BOOL mtlxParserInit(MtlxParser_t *p, const uint8_t *raw, uint16_t rawLen)
 {
     if (raw == NULL || rawLen < 2) return FALSE;
 
@@ -319,12 +423,12 @@ BOOL mtlxParserInit(MtlxParser_t *p, const uint8_t *raw, uint16_t rawLen)
     return TRUE;
 }
 
-void mtlxParserReset(MtlxParser_t *p)
+static void mtlxParserReset(MtlxParser_t *p)
 {
     p->cursor = 0;
 }
 
-BOOL mtlxParserNext(MtlxParser_t *p, uint16_t *tag,
+static BOOL mtlxParserNext(MtlxParser_t *p, uint16_t *tag,
                     const uint8_t **value, uint16_t *valueLen)
 {
     if (p->cursor + TLV_HEADER_SIZE > p->length) return FALSE;
@@ -357,7 +461,7 @@ static BOOL findTag(MtlxParser_t *p, uint16_t wantTag,
     return FALSE;
 }
 
-BOOL mtlxGetString(MtlxParser_t *p, uint16_t tag, char *out, uint16_t outSz)
+static BOOL mtlxGetString(MtlxParser_t *p, uint16_t tag, char *out, uint16_t outSz)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl)) return FALSE;
@@ -367,7 +471,7 @@ BOOL mtlxGetString(MtlxParser_t *p, uint16_t tag, char *out, uint16_t outSz)
     return TRUE;
 }
 
-BOOL mtlxGetBool(MtlxParser_t *p, uint16_t tag, BOOL *out)
+static BOOL mtlxGetBool(MtlxParser_t *p, uint16_t tag, BOOL *out)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl) || vl < 1) return FALSE;
@@ -375,7 +479,7 @@ BOOL mtlxGetBool(MtlxParser_t *p, uint16_t tag, BOOL *out)
     return TRUE;
 }
 
-BOOL mtlxGetUint8(MtlxParser_t *p, uint16_t tag, uint8_t *out)
+static BOOL mtlxGetUint8(MtlxParser_t *p, uint16_t tag, uint8_t *out)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl) || vl < 1) return FALSE;
@@ -383,7 +487,7 @@ BOOL mtlxGetUint8(MtlxParser_t *p, uint16_t tag, uint8_t *out)
     return TRUE;
 }
 
-BOOL mtlxGetUint16(MtlxParser_t *p, uint16_t tag, uint16_t *out)
+static BOOL mtlxGetUint16(MtlxParser_t *p, uint16_t tag, uint16_t *out)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl) || vl < 2) return FALSE;
@@ -391,7 +495,7 @@ BOOL mtlxGetUint16(MtlxParser_t *p, uint16_t tag, uint16_t *out)
     return TRUE;
 }
 
-BOOL mtlxGetUint32(MtlxParser_t *p, uint16_t tag, uint32_t *out)
+static BOOL mtlxGetUint32(MtlxParser_t *p, uint16_t tag, uint32_t *out)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl) || vl < 4) return FALSE;
