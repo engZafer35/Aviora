@@ -2,11 +2,11 @@
 * #Author       : Zafer Satılmış
 * #Revision     : 1.0
 * #Date         : Mar 29, 2026
-* #File Name    : AppProtocolOrionTLV.h
+* #File Name    : AppProtocolMetallixTLV.h
 *******************************************************************************/
 
 /******************************************************************************
-* OrionTLV TLV-over-TCP protocol handler for IoT meter gateway.
+* Metallix TLV-over-TCP protocol handler for IoT meter gateway.
 *
 * Wire format
 * ───────────
@@ -47,31 +47,31 @@
 *                loadprofile request, directive CRUD)
 ******************************************************************************/
 /******************************IFNDEF & DEFINE********************************/
-#ifndef __APP_PROTOCOL_ORION_TLV_H__
-#define __APP_PROTOCOL_ORION_TLV_H__
+#ifndef __APP_PROTOCOL_METALLIX_TLV_H__
+#define __APP_PROTOCOL_METALLIX_TLV_H__
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
 #include <stdint.h>
 
 /******************************MACRO DEFINITIONS*******************************/
 
-#define PROTO_ORION_FLAG                "AVI"
-#define PROTO_ORION_BRAND               "AVI"
-#define PROTO_ORION_MODEL               "AVIO2622"
+#define PROTO_METLLX_FLAG                "AVI"
+#define PROTO_METLLX_BRAND               "AVI"
+#define PROTO_METLLX_MODEL               "AVIO2622"
 
-#define PROTO_ORION_PACKET_MAX_SIZE     (1024)
-#define PROTO_ORION_DATA_CHUNK_SIZE     (700)
+#define PROTO_METLLX_PACKET_MAX_SIZE     (1024)
+#define PROTO_METLLX_DATA_CHUNK_SIZE     (700)
 
-#define PROTO_ORION_ALIVE_INTERVAL_S    (300)     /* 5 min */
-#define PROTO_ORION_REGISTER_RETRY_S    (30)      /* 30 s  */
-#define PROTO_ORION_ACK_TIMEOUT_MS      (10000)   /* 10 s  */
-#define PROTO_ORION_CONNECT_TIMEOUT_MS  (10000)   /* 10 s  */
+#define PROTO_METLLX_ALIVE_INTERVAL_S    (300)     /* 5 min */
+#define PROTO_METLLX_REGISTER_RETRY_S    (30)      /* 30 s  */
+#define PROTO_METLLX_ACK_TIMEOUT_MS      (10000)   /* 10 s  */
+#define PROTO_METLLX_CONNECT_TIMEOUT_MS  (10000)   /* 10 s  */
 
-#define PROTO_ORION_REGISTER_FILE       "oriontlv_register.dat"
-#define PROTO_ORION_SERVER_FILE         "oriontlv_server.dat"
+#define PROTO_METLLX_REGISTER_FILE       "metallixtlv_register.dat"
+#define PROTO_METLLX_SERVER_FILE         "metallixtlv_server.dat"
 
-#define PROTO_ORION_PKT_START           '$'       /* 0x24 */
-#define PROTO_ORION_PKT_END             '#'       /* 0x23 */
+#define PROTO_METLLX_PKT_START           '$'       /* 0x24 */
+#define PROTO_METLLX_PKT_END             '#'       /* 0x23 */
 
 /* ─── TAG Definitions ─────────────────────────────────────────────────────
  *  0x00XX  Common / header
@@ -90,7 +90,7 @@
 /* ── Common ── */
 #define TAG_FLAG                0x0001  /* string  "AVI"                      */
 #define TAG_SERIAL_NUMBER       0x0002  /* string  device serial              */
-#define TAG_FUNCTION            0x0003  /* uint8   OrionTLV_Function_t enum    */
+#define TAG_FUNCTION            0x0003  /* uint8   MetallixTLV_Function_t enum    */
 
 /* ── Ident / Alive ── */
 #define TAG_REGISTERED          0x0101  /* bool    device → srv (current)     */
@@ -162,7 +162,7 @@ typedef enum
     FUNC_DIRECTIVE_LIST  = 0x0A,
     FUNC_DIRECTIVE_ADD   = 0x0B,
     FUNC_DIRECTIVE_DEL   = 0x0C,
-} OrionTLV_Function_t;
+} MetallixTLV_Function_t;
 
 /* ── Packet Builder ────────────────────────────────────────────────────── */
 
@@ -172,7 +172,7 @@ typedef struct
     uint16_t  capacity;
     uint16_t  pos;
     BOOL      overflow;
-} OrionTLV_Builder_t;
+} MetallixTLV_Builder_t;
 
 /* ── Packet Parser (iterates TLV fields inside a received packet) ────── */
 
@@ -181,40 +181,40 @@ typedef struct
     const uint8_t *data;    /* points after '$' */
     uint16_t       length;  /* bytes between '$' and '#' */
     uint16_t       cursor;
-} OrionTLV_Parser_t;
+} MetallixTLV_Parser_t;
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
 
 /* ── Builder API ── */
-void     orionTLV_BuilderInit  (OrionTLV_Builder_t *b, uint8_t *buf, uint16_t capacity);
-void     orionTLV_PacketBegin  (OrionTLV_Builder_t *b);
-void     orionTLV_AddString    (OrionTLV_Builder_t *b, uint16_t tag, const char *str);
-void     orionTLV_AddStringN   (OrionTLV_Builder_t *b, uint16_t tag, const char *str, uint16_t len);
-void     orionTLV_AddBool      (OrionTLV_Builder_t *b, uint16_t tag, BOOL val);
-void     orionTLV_AddUint8     (OrionTLV_Builder_t *b, uint16_t tag, uint8_t val);
-void     orionTLV_AddUint16    (OrionTLV_Builder_t *b, uint16_t tag, uint16_t val);
-void     orionTLV_AddUint32    (OrionTLV_Builder_t *b, uint16_t tag, uint32_t val);
-void     orionTLV_AddInt16     (OrionTLV_Builder_t *b, uint16_t tag, int16_t val);
-void     orionTLV_AddRaw       (OrionTLV_Builder_t *b, uint16_t tag, const uint8_t *data, uint16_t len);
-uint16_t orionTLV_PacketEnd    (OrionTLV_Builder_t *b);
-void     orionTLV_AddDeviceHeader(OrionTLV_Builder_t *b);
+void     metallixTLV_BuilderInit  (MetallixTLV_Builder_t *b, uint8_t *buf, uint16_t capacity);
+void     metallixTLV_PacketBegin  (MetallixTLV_Builder_t *b);
+void     metallixTLV_AddString    (MetallixTLV_Builder_t *b, uint16_t tag, const char *str);
+void     metallixTLV_AddStringN   (MetallixTLV_Builder_t *b, uint16_t tag, const char *str, uint16_t len);
+void     metallixTLV_AddBool      (MetallixTLV_Builder_t *b, uint16_t tag, BOOL val);
+void     metallixTLV_AddUint8     (MetallixTLV_Builder_t *b, uint16_t tag, uint8_t val);
+void     metallixTLV_AddUint16    (MetallixTLV_Builder_t *b, uint16_t tag, uint16_t val);
+void     metallixTLV_AddUint32    (MetallixTLV_Builder_t *b, uint16_t tag, uint32_t val);
+void     metallixTLV_AddInt16     (MetallixTLV_Builder_t *b, uint16_t tag, int16_t val);
+void     metallixTLV_AddRaw       (MetallixTLV_Builder_t *b, uint16_t tag, const uint8_t *data, uint16_t len);
+uint16_t metallixTLV_PacketEnd    (MetallixTLV_Builder_t *b);
+void     metallixTLV_AddDeviceHeader(MetallixTLV_Builder_t *b);
 
 /* ── Parser API ── */
-BOOL     orionTLV_ParserInit   (OrionTLV_Parser_t *p, const uint8_t *raw, uint16_t rawLen);
-void     orionTLV_ParserReset  (OrionTLV_Parser_t *p);
-BOOL     orionTLV_ParserNext   (OrionTLV_Parser_t *p, uint16_t *tag, const uint8_t **value, uint16_t *valueLen);
-BOOL     orionTLV_GetString    (OrionTLV_Parser_t *p, uint16_t tag, char *out, uint16_t outSz);
-BOOL     orionTLV_GetBool      (OrionTLV_Parser_t *p, uint16_t tag, BOOL *out);
-BOOL     orionTLV_GetUint8     (OrionTLV_Parser_t *p, uint16_t tag, uint8_t *out);
-BOOL     orionTLV_GetUint16    (OrionTLV_Parser_t *p, uint16_t tag, uint16_t *out);
-BOOL     orionTLV_GetUint32    (OrionTLV_Parser_t *p, uint16_t tag, uint32_t *out);
-BOOL     orionTLV_GetInt16     (OrionTLV_Parser_t *p, uint16_t tag, int16_t *out);
-BOOL     orionTLV_GetFunction  (OrionTLV_Parser_t *p, OrionTLV_Function_t *out);
+BOOL     metallixTLV_ParserInit   (MetallixTLV_Parser_t *p, const uint8_t *raw, uint16_t rawLen);
+void     metallixTLV_ParserReset  (MetallixTLV_Parser_t *p);
+BOOL     metallixTLV_ParserNext   (MetallixTLV_Parser_t *p, uint16_t *tag, const uint8_t **value, uint16_t *valueLen);
+BOOL     metallixTLV_GetString    (MetallixTLV_Parser_t *p, uint16_t tag, char *out, uint16_t outSz);
+BOOL     metallixTLV_GetBool      (MetallixTLV_Parser_t *p, uint16_t tag, BOOL *out);
+BOOL     metallixTLV_GetUint8     (MetallixTLV_Parser_t *p, uint16_t tag, uint8_t *out);
+BOOL     metallixTLV_GetUint16    (MetallixTLV_Parser_t *p, uint16_t tag, uint16_t *out);
+BOOL     metallixTLV_GetUint32    (MetallixTLV_Parser_t *p, uint16_t tag, uint32_t *out);
+BOOL     metallixTLV_GetInt16     (MetallixTLV_Parser_t *p, uint16_t tag, int16_t *out);
+BOOL     metallixTLV_GetFunction  (MetallixTLV_Parser_t *p, MetallixTLV_Function_t *out);
 
 /* ── Protocol life-cycle ── */
 
 /**
- * @brief  Initialise the OrionTLV protocol module.
+ * @brief  Initialise the MetallixTLV protocol module.
  * @param  serialNumber  Device serial number (null-terminated, max 16 chars)
  * @param  serverIP      Default push-server IP  (null-terminated)
  * @param  serverPort    Default push-server port
@@ -222,7 +222,7 @@ BOOL     orionTLV_GetFunction  (OrionTLV_Parser_t *p, OrionTLV_Function_t *out);
  * @param  pullPort      TCP-server port opened on this device (pull)
  * @return SUCCESS / FAILURE
  */
-RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber,
+RETURN_STATUS appProtocolMetallixTLVInit(const char *serialNumber,
                                 const char *serverIP, int serverPort,
                                 const char *deviceIP, int pullPort);
 
@@ -230,13 +230,13 @@ RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber,
  * @brief  Start the protocol task (creates TCP connections, enters state machine).
  * @return SUCCESS / FAILURE
  */
-RETURN_STATUS appProtocolOrionTLVStart(void);
+RETURN_STATUS appProtocolMetallixTLVStart(void);
 
 /**
  * @brief  Stop the protocol task and close TCP connections.
  * @return SUCCESS / FAILURE
  */
-RETURN_STATUS appProtocolOrionTLVStop(void);
+RETURN_STATUS appProtocolMetallixTLVStop(void);
 
 /**
  * @brief   Feed raw bytes received from a TCP channel.
@@ -244,10 +244,10 @@ RETURN_STATUS appProtocolOrionTLVStop(void);
  * @param   data        raw received bytes
  * @param   dataLength  number of bytes received
  */
-void appProtocolOrionTLVPutIncomingMessage(const char *channel,
+void appProtocolMetallixTLVPutIncomingMessage(const char *channel,
                                      const char *data,
                                      unsigned int dataLength);
 
-#endif /* __APP_PROTOCOL_ORION_TLV_H__ */
+#endif /* __APP_PROTOCOL_METALLIX_TLV_H__ */
 
 /********************************* End Of File ********************************/

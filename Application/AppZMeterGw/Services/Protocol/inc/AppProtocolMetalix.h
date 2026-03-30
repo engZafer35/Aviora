@@ -91,99 +91,7 @@
  *  0x0AXX  Error
  * ──────────────────────────────────────────────────────────────────────── */
 
-/* ── Common ── */
-#define MTLX_TAG_FLAG                0x0001  /* string  "AVI"                   */
-#define MTLX_TAG_SERIAL_NUMBER       0x0002  /* string  device serial           */
-#define MTLX_TAG_FUNCTION            0x0003  /* uint8   MtlxFunction_t enum     */
-#define MTLX_TAG_TRANS_NUMBER        0x00FF  /* uint16  session transaction num */
-
-/* ── Ident / Alive ── */
-#define MTLX_TAG_REGISTERED          0x0101  /* bool  device → srv (current)    */
-#define MTLX_TAG_DEVICE_BRAND        0x0102  /* string  "AVI"                   */
-#define MTLX_TAG_DEVICE_MODEL        0x0103  /* string  "AVIO2622"              */
-#define MTLX_TAG_DEVICE_DATE         0x0104  /* string  "YYYY-MM-DD HH:MM:SS"  */
-#define MTLX_TAG_PULL_IP             0x0105  /* string  device IP               */
-#define MTLX_TAG_PULL_PORT           0x0106  /* uint16  pull-server port        */
-#define MTLX_TAG_REGISTER            0x0107  /* bool  srv → device (register ok)*/
-
-/* ── Packet Streaming ── */
-#define MTLX_TAG_PACKET_NUM          0x0201  /* uint16  sequential packet num   */
-#define MTLX_TAG_PACKET_STREAM       0x0202  /* bool    more packets follow?    */
-
-/* ── ACK / NACK ── */
-#define MTLX_TAG_ACK_STATUS          0x0301  /* bool  true=ACK  false=NACK      */
-
-/* ── Log ── */
-#define MTLX_TAG_LOG_DATA            0x0401  /* string  log text chunk          */
-
-/* ── Meter Fields ── */
-#define MTLX_TAG_METER_OPERATION     0x0501  /* string  "add" / "remove"        */
-#define MTLX_TAG_METER_PROTOCOL      0x0502  /* string  "IEC62056"              */
-#define MTLX_TAG_METER_TYPE          0x0503  /* string  "electricity"           */
-#define MTLX_TAG_METER_BRAND         0x0504  /* string  "MKL"                   */
-#define MTLX_TAG_METER_SERIAL_NUM    0x0505  /* string  meter serial            */
-#define MTLX_TAG_METER_SERIAL_PORT   0x0506  /* string  "port-1"               */
-#define MTLX_TAG_METER_INIT_BAUD     0x0507  /* uint32  baud rate               */
-#define MTLX_TAG_METER_FIX_BAUD      0x0508  /* bool    fixed baud?             */
-#define MTLX_TAG_METER_FRAME         0x0509  /* string  "7E1"                   */
-#define MTLX_TAG_METER_CUSTOMER_NUM  0x050A  /* string  customer number         */
-#define MTLX_TAG_METER_INDEX         0x050B  /* uint8   separator, multi-meter  */
-
-/* ── Server Config (setting request) ── */
-#define MTLX_TAG_SERVER_IP           0x0601  /* string  new server IP           */
-#define MTLX_TAG_SERVER_PORT         0x0602  /* uint16  new server port         */
-
-/* ── Readout / LoadProfile ── */
-#define MTLX_TAG_METER_ID            0x0701  /* string  meter identification    */
-#define MTLX_TAG_READOUT_DATA        0x0702  /* string  readout / LP data chunk */
-#define MTLX_TAG_DIRECTIVE_NAME      0x0703  /* string  directive name          */
-#define MTLX_TAG_START_DATE          0x0704  /* string  LP start date           */
-#define MTLX_TAG_END_DATE            0x0705  /* string  LP end date             */
-
-/* ── Directive ── */
-#define MTLX_TAG_DIRECTIVE_ID        0x0801  /* string  directive ID            */
-#define MTLX_TAG_DIRECTIVE_DATA      0x0802  /* string  raw directive body      */
-
-/* ── FW Update ── */
-#define MTLX_TAG_FW_ADDRESS          0x0901  /* string  FTP URL                 */
-
-/* ── Error ── */
-#define MTLX_TAG_ERROR_CODE          0x0A01  /* uint16  error code              */
-
-/*******************************TYPE DEFINITIONS ******************************/
-
-typedef enum
-{
-    MTLX_FUNC_IDENT          = 0x01,
-    MTLX_FUNC_ALIVE          = 0x02,
-    MTLX_FUNC_ACK            = 0x03,
-    MTLX_FUNC_NACK           = 0x04,
-    MTLX_FUNC_LOG            = 0x05,
-    MTLX_FUNC_SETTING        = 0x06,
-    MTLX_FUNC_FW_UPDATE      = 0x07,
-    MTLX_FUNC_READOUT        = 0x08,
-    MTLX_FUNC_LOADPROFILE    = 0x09,
-    MTLX_FUNC_DIRECTIVE_LIST = 0x0A,
-    MTLX_FUNC_DIRECTIVE_ADD  = 0x0B,
-    MTLX_FUNC_DIRECTIVE_DEL  = 0x0C,
-} MtlxFunction_t;
-
-/* ── Packet Builder ── */
-typedef struct
-{
-    uint8_t  *buf;
-    uint16_t  capacity;
-    uint16_t  pos;
-    BOOL      overflow;
-} MtlxBuilder_t;
-
-/* ── Packet Parser ── */
-typedef struct
-{
-    const uint8_t *data;
-    uint16_t       length;
-    uint16_t       cursor;
-} MtlxParser_t;
+/* Internal TLV tags and parser/builder types are kept in .c file. */
 
 /* ── Event types ── */
 typedef enum
@@ -193,27 +101,6 @@ typedef enum
 } MtlxEventType_t;
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
-
-/* ── Builder API ── */
-void     mtlxBuilderInit  (MtlxBuilder_t *b, uint8_t *buf, uint16_t capacity);
-void     mtlxPacketBegin  (MtlxBuilder_t *b);
-void     mtlxAddString    (MtlxBuilder_t *b, uint16_t tag, const char *str);
-void     mtlxAddBool      (MtlxBuilder_t *b, uint16_t tag, BOOL val);
-void     mtlxAddUint8     (MtlxBuilder_t *b, uint16_t tag, uint8_t val);
-void     mtlxAddUint16    (MtlxBuilder_t *b, uint16_t tag, uint16_t val);
-void     mtlxAddUint32    (MtlxBuilder_t *b, uint16_t tag, uint32_t val);
-void     mtlxAddRaw       (MtlxBuilder_t *b, uint16_t tag, const uint8_t *data, uint16_t len);
-uint16_t mtlxPacketEnd    (MtlxBuilder_t *b);
-
-/* ── Parser API ── */
-BOOL     mtlxParserInit   (MtlxParser_t *p, const uint8_t *raw, uint16_t rawLen);
-void     mtlxParserReset  (MtlxParser_t *p);
-BOOL     mtlxParserNext   (MtlxParser_t *p, uint16_t *tag, const uint8_t **value, uint16_t *valueLen);
-BOOL     mtlxGetString    (MtlxParser_t *p, uint16_t tag, char *out, uint16_t outSz);
-BOOL     mtlxGetBool      (MtlxParser_t *p, uint16_t tag, BOOL *out);
-BOOL     mtlxGetUint8     (MtlxParser_t *p, uint16_t tag, uint8_t *out);
-BOOL     mtlxGetUint16    (MtlxParser_t *p, uint16_t tag, uint16_t *out);
-BOOL     mtlxGetUint32    (MtlxParser_t *p, uint16_t tag, uint32_t *out);
 
 /* ── Protocol life-cycle ── */
 
