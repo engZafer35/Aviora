@@ -2,10 +2,10 @@
 * #Author       : Zafer Satılmış
 * #Revision     : 1.0
 * #Date         : Mar 30, 2026
-* #File Name    : AppProtocolMetalix.c
+* #File Name    : AppProtocolOrionTLV.c
 *******************************************************************************/
 /******************************************************************************
-* Metalix TLV-over-TCP protocol service with session management.
+* OrionTLV TLV-over-TCP protocol service with session management.
 *
 * Architecture :
 *   - Every operation (ident, alive, pull-request, meter-data delivery) is
@@ -22,7 +22,7 @@
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 
 /********************************* INCLUDES ***********************************/
-#include "AppProtocolMetalix.h"
+#include "AppProtocolOrionTLV.h"
 #include "MiddEventTimer.h"
 #include "AppTcpConnManager.h"
 #include "AppMeterOperations.h"
@@ -38,8 +38,8 @@
 #include <stdlib.h>
 
 /****************************** MACRO DEFINITIONS *****************************/
-#define MTLX_TASK_STACK_SIZE    (4096U)
-#define MTLX_TASK_NAME          "MtlxSess"
+#define ORION_TASK_STACK_SIZE    (4096U)
+#define ORION_TASK_NAME          "OrionSess"
 
 #define MAX_PENDING_JOBS        (4)
 #define MAX_PATH_LEN            (96)
@@ -48,9 +48,9 @@
 #define FTP_DEFAULT_PORT        (21)
 #define FW_LOCAL_PATH           "/tmp/firmware.bin"
 
-#define TLV_HEADER_SIZE         (4)   /* 2 tag + 2 len */
+#define ORION_TLV_HEADER_SIZE         (4)   /* 2 tag + 2 len */
 
-#define MTLX_EVENT_Q_DEPTH     (8)
+#define ORION_EVENT_Q_DEPTH     (8)
 
 #define SFUNC_PUSH_IDENT        (0xF0)
 #define SFUNC_ALIVE             (0xF1)
@@ -70,81 +70,81 @@
  *  0x0AXX  Error
  * ──────────────────────────────────────────────────────────────────────── */
 /* ── Common ── */
-#define MTLX_TAG_FLAG                0x0001
-#define MTLX_TAG_SERIAL_NUMBER       0x0002
-#define MTLX_TAG_FUNCTION            0x0003
-#define MTLX_TAG_TRANS_NUMBER        0x00FF
+#define ORION_TAG_FLAG                0x0001
+#define ORION_TAG_SERIAL_NUMBER       0x0002
+#define ORION_TAG_FUNCTION            0x0003
+#define ORION_TAG_TRANS_NUMBER        0x00FF
 
 /* ── Ident / Alive ── */
-#define MTLX_TAG_REGISTERED          0x0101
-#define MTLX_TAG_DEVICE_BRAND        0x0102
-#define MTLX_TAG_DEVICE_MODEL        0x0103
-#define MTLX_TAG_DEVICE_DATE         0x0104
-#define MTLX_TAG_PULL_IP             0x0105
-#define MTLX_TAG_PULL_PORT           0x0106
-#define MTLX_TAG_REGISTER            0x0107
+#define ORION_TAG_REGISTERED          0x0101
+#define ORION_TAG_DEVICE_BRAND        0x0102
+#define ORION_TAG_DEVICE_MODEL        0x0103
+#define ORION_TAG_DEVICE_DATE         0x0104
+#define ORION_TAG_PULL_IP             0x0105
+#define ORION_TAG_PULL_PORT           0x0106
+#define ORION_TAG_REGISTER            0x0107
 
 /* ── Packet Streaming ── */
-#define MTLX_TAG_PACKET_NUM          0x0201
-#define MTLX_TAG_PACKET_STREAM       0x0202
+#define ORION_TAG_PACKET_NUM          0x0201
+#define ORION_TAG_PACKET_STREAM       0x0202
 
 /* ── ACK / NACK ── */
-#define MTLX_TAG_ACK_STATUS          0x0301
+#define ORION_TAG_ACK_STATUS          0x0301
 
 /* ── Log ── */
-#define MTLX_TAG_LOG_DATA            0x0401
+#define ORION_TAG_LOG_DATA            0x0401
 
 /* ── Meter Fields ── */
-#define MTLX_TAG_METER_OPERATION     0x0501
-#define MTLX_TAG_METER_PROTOCOL      0x0502
-#define MTLX_TAG_METER_TYPE          0x0503
-#define MTLX_TAG_METER_BRAND         0x0504
-#define MTLX_TAG_METER_SERIAL_NUM    0x0505
-#define MTLX_TAG_METER_SERIAL_PORT   0x0506
-#define MTLX_TAG_METER_INIT_BAUD     0x0507
-#define MTLX_TAG_METER_FIX_BAUD      0x0508
-#define MTLX_TAG_METER_FRAME         0x0509
-#define MTLX_TAG_METER_CUSTOMER_NUM  0x050A
-#define MTLX_TAG_METER_INDEX         0x050B
+#define ORION_TAG_METER_OPERATION     0x0501
+#define ORION_TAG_METER_PROTOCOL      0x0502
+#define ORION_TAG_METER_TYPE          0x0503
+#define ORION_TAG_METER_BRAND         0x0504
+#define ORION_TAG_METER_SERIAL_NUM    0x0505
+#define ORION_TAG_METER_SERIAL_PORT   0x0506
+#define ORION_TAG_METER_INIT_BAUD     0x0507
+#define ORION_TAG_METER_FIX_BAUD      0x0508
+#define ORION_TAG_METER_FRAME         0x0509
+#define ORION_TAG_METER_CUSTOMER_NUM  0x050A
+#define ORION_TAG_METER_INDEX         0x050B
 
 /* ── Server Config ── */
-#define MTLX_TAG_SERVER_IP           0x0601
-#define MTLX_TAG_SERVER_PORT         0x0602
+#define ORION_TAG_SERVER_IP           0x0601
+#define ORION_TAG_SERVER_PORT         0x0602
 
 /* ── Readout / LoadProfile ── */
-#define MTLX_TAG_METER_ID            0x0701
-#define MTLX_TAG_READOUT_DATA        0x0702
-#define MTLX_TAG_DIRECTIVE_NAME      0x0703
-#define MTLX_TAG_START_DATE          0x0704
-#define MTLX_TAG_END_DATE            0x0705
+#define ORION_TAG_METER_ID            0x0701
+#define ORION_TAG_READOUT_DATA        0x0702
+#define ORION_TAG_DIRECTIVE_NAME      0x0703
+#define ORION_TAG_START_DATE          0x0704
+#define ORION_TAG_END_DATE            0x0705
 
 /* ── Directive ── */
-#define MTLX_TAG_DIRECTIVE_ID        0x0801
-#define MTLX_TAG_DIRECTIVE_DATA      0x0802
+#define ORION_TAG_DIRECTIVE_ID        0x0801
+#define ORION_TAG_DIRECTIVE_DATA      0x0802
 
 /* ── FW Update ── */
-#define MTLX_TAG_FW_ADDRESS          0x0901
+#define ORION_TAG_FW_ADDRESS          0x0901
 
 /* ── Error ── */
-#define MTLX_TAG_ERROR_CODE          0x0A01
+#define ORION_TAG_ERROR_CODE          0x0A01
 
 /******************************* TYPE DEFINITIONS *****************************/
 
 typedef enum
 {
-    MTLX_FUNC_IDENT          = 0x01,
-    MTLX_FUNC_ALIVE          = 0x02,
-    MTLX_FUNC_ACK            = 0x03,
-    MTLX_FUNC_NACK           = 0x04,
-    MTLX_FUNC_LOG            = 0x05,
-    MTLX_FUNC_SETTING        = 0x06,
-    MTLX_FUNC_FW_UPDATE      = 0x07,
-    MTLX_FUNC_READOUT        = 0x08,
-    MTLX_FUNC_LOADPROFILE    = 0x09,
-    MTLX_FUNC_DIRECTIVE_LIST = 0x0A,
-    MTLX_FUNC_DIRECTIVE_ADD  = 0x0B,
-    MTLX_FUNC_DIRECTIVE_DEL  = 0x0C,
-} MtlxFunction_t;
+    ORION_FUNC_IDENT          = 0x01,
+    ORION_FUNC_ALIVE          = 0x02,
+    ORION_FUNC_ACK            = 0x03,
+    ORION_FUNC_NACK           = 0x04,
+    ORION_FUNC_LOG            = 0x05,
+    ORION_FUNC_SETTING        = 0x06,
+    ORION_FUNC_FW_UPDATE      = 0x07,
+    ORION_FUNC_READOUT        = 0x08,
+    ORION_FUNC_LOADPROFILE    = 0x09,
+    ORION_FUNC_DIRECTIVE_LIST = 0x0A,
+    ORION_FUNC_DIRECTIVE_ADD  = 0x0B,
+    ORION_FUNC_DIRECTIVE_DEL  = 0x0C,
+} OrionFunction_t;
 
 typedef struct
 {
@@ -152,21 +152,21 @@ typedef struct
     uint16_t  capacity;
     uint16_t  pos;
     BOOL      overflow;
-} MtlxBuilder_t;
+} OrionBuilder_t;
 
 typedef struct
 {
     const uint8_t *data;
     uint16_t       length;
     uint16_t       cursor;
-} MtlxParser_t;
+} OrionParser_t;
 
 typedef struct
 {
     char     ch[16];
-    uint8_t  payload[MTLX_PACKET_MAX_SIZE];
+    uint8_t  payload[ORION_PACKET_MAX_SIZE];
     uint16_t length;
-} MtlxIncomingMsg_t;
+} OrionIncomingMsg_t;
 
 typedef struct
 {
@@ -184,10 +184,10 @@ typedef struct
 
 typedef enum
 {
-    MTLX_SESS_DONE = 0,
-    MTLX_SESS_ERROR,
-    MTLX_SESS_TIMEOUT,
-} MtlxSessState_t;
+    ORION_SESS_DONE = 0,
+    ORION_SESS_ERROR,
+    ORION_SESS_TIMEOUT,
+} OrionSessState_t;
 
 typedef struct
 {
@@ -202,17 +202,17 @@ typedef struct
     uint32_t    retryIntervalMs;
     uint32_t    retryCount;
 
-    uint8_t     rxBuf[MTLX_PACKET_MAX_SIZE];
+    uint8_t     rxBuf[ORION_PACKET_MAX_SIZE];
     uint16_t    rxLen;
     volatile BOOL rxReady;
 
     int         pendingJobIdx;
-} MtlxSession_t;
+} OrionSession_t;
 
 typedef struct
 {
-    MtlxEventType_t type;
-} MtlxEventMsg_t;
+    OrionEventType_t type;
+} OrionEventMsg_t;
 
 /********************************** VARIABLES *********************************/
 
@@ -228,18 +228,18 @@ static OsTaskId gs_taskId = OS_INVALID_TASK_ID;
 
 static PendingJob_t gs_pendingJobs[MAX_PENDING_JOBS];
 
-static uint8_t gs_txBuf[MTLX_PACKET_MAX_SIZE];
+static uint8_t gs_txBuf[ORION_PACKET_MAX_SIZE];
 
-static MtlxSession_t gs_sessionTable[MTLX_SESSION_MAX];
+static OrionSession_t gs_sessionTable[ORION_SESSION_MAX];
 
 /* Incoming message ring buffer (replaces single gs_pushRx/gs_pullRx buffers) */
-#define MTLX_INMSG_Q_DEPTH   (8)
-static MtlxIncomingMsg_t gs_inQ[MTLX_INMSG_Q_DEPTH];
+#define ORION_INMSG_Q_DEPTH   (8)
+static OrionIncomingMsg_t gs_inQ[ORION_INMSG_Q_DEPTH];
 static volatile uint8_t gs_inHead;
 static volatile uint8_t gs_inTail;
 static volatile uint8_t gs_inCount;
 
-static MtlxEventMsg_t gs_eventQ[MTLX_EVENT_Q_DEPTH];
+static OrionEventMsg_t gs_eventQ[ORION_EVENT_Q_DEPTH];
 static uint8_t gs_evHead;
 static uint8_t gs_evTail;
 static uint8_t gs_evCount;
@@ -279,13 +279,13 @@ static BOOL inQueuePush(const char *ch, const uint8_t *payload, uint16_t len)
     if (payload == NULL || len == 0)
         return FALSE;
 
-    if (len > MTLX_PACKET_MAX_SIZE)
-        len = MTLX_PACKET_MAX_SIZE;
+    if (len > ORION_PACKET_MAX_SIZE)
+        len = ORION_PACKET_MAX_SIZE;
 
-    if (gs_inCount >= MTLX_INMSG_Q_DEPTH)
+    if (gs_inCount >= ORION_INMSG_Q_DEPTH)
         return FALSE;
 
-    MtlxIncomingMsg_t *it = &gs_inQ[gs_inTail];
+    OrionIncomingMsg_t *it = &gs_inQ[gs_inTail];
     memset(it, 0, sizeof(*it));
     if (ch != NULL)
     {
@@ -295,18 +295,18 @@ static BOOL inQueuePush(const char *ch, const uint8_t *payload, uint16_t len)
     memcpy(it->payload, payload, len);
     it->length = len;
 
-    gs_inTail = (uint8_t)((gs_inTail + 1U) % MTLX_INMSG_Q_DEPTH);
+    gs_inTail = (uint8_t)((gs_inTail + 1U) % ORION_INMSG_Q_DEPTH);
     gs_inCount++;
     return TRUE;
 }
 
-static BOOL inQueuePop(MtlxIncomingMsg_t *out)
+static BOOL inQueuePop(OrionIncomingMsg_t *out)
 {
     if (out == NULL || gs_inCount == 0U)
         return FALSE;
 
     *out = gs_inQ[gs_inHead];
-    gs_inHead = (uint8_t)((gs_inHead + 1U) % MTLX_INMSG_Q_DEPTH);
+    gs_inHead = (uint8_t)((gs_inHead + 1U) % ORION_INMSG_Q_DEPTH);
     gs_inCount--;
     return TRUE;
 }
@@ -315,7 +315,7 @@ static BOOL inQueuePop(MtlxIncomingMsg_t *out)
 /*                       TLV BUILDER                                  */
 /* ================================================================== */
 
-static void mtlxBuilderInit(MtlxBuilder_t *b, uint8_t *buf, uint16_t capacity)
+static void mtlxBuilderInit(OrionBuilder_t *b, uint8_t *buf, uint16_t capacity)
 {
     b->buf      = buf;
     b->capacity = capacity;
@@ -323,19 +323,19 @@ static void mtlxBuilderInit(MtlxBuilder_t *b, uint8_t *buf, uint16_t capacity)
     b->overflow = FALSE;
 }
 
-static void mtlxPacketBegin(MtlxBuilder_t *b)
+static void mtlxPacketBegin(OrionBuilder_t *b)
 {
     b->pos      = 0;
     b->overflow = FALSE;
     if (b->capacity < 2) { b->overflow = TRUE; return; }
-    b->buf[b->pos++] = MTLX_PKT_START;
+    b->buf[b->pos++] = ORION_PKT_START;
 }
 
-static void builderAddTLV(MtlxBuilder_t *b, uint16_t tag,
+static void builderAddTLV(OrionBuilder_t *b, uint16_t tag,
                            const uint8_t *val, uint16_t valLen)
 {
     if (b->overflow) return;
-    if ((uint32_t)b->pos + TLV_HEADER_SIZE + valLen + 1 > b->capacity)
+    if ((uint32_t)b->pos + ORION_TLV_HEADER_SIZE + valLen + 1 > b->capacity)
     {
         b->overflow = TRUE;
         return;
@@ -349,31 +349,31 @@ static void builderAddTLV(MtlxBuilder_t *b, uint16_t tag,
     }
 }
 
-static void mtlxAddString(MtlxBuilder_t *b, uint16_t tag, const char *str)
+static void mtlxAddString(OrionBuilder_t *b, uint16_t tag, const char *str)
 {
     uint16_t len = (str != NULL) ? (uint16_t)strlen(str) : 0;
     builderAddTLV(b, tag, (const uint8_t *)str, len);
 }
 
-static void mtlxAddBool(MtlxBuilder_t *b, uint16_t tag, BOOL val)
+static void mtlxAddBool(OrionBuilder_t *b, uint16_t tag, BOOL val)
 {
     uint8_t v = val ? 0x01 : 0x00;
     builderAddTLV(b, tag, &v, 1);
 }
 
-static void mtlxAddUint8(MtlxBuilder_t *b, uint16_t tag, uint8_t val)
+static void mtlxAddUint8(OrionBuilder_t *b, uint16_t tag, uint8_t val)
 {
     builderAddTLV(b, tag, &val, 1);
 }
 
-static void mtlxAddUint16(MtlxBuilder_t *b, uint16_t tag, uint16_t val)
+static void mtlxAddUint16(OrionBuilder_t *b, uint16_t tag, uint16_t val)
 {
     uint8_t tmp[2];
     writeU16BE(tmp, val);
     builderAddTLV(b, tag, tmp, 2);
 }
 
-static void mtlxAddUint32(MtlxBuilder_t *b, uint16_t tag, uint32_t val)
+static void mtlxAddUint32(OrionBuilder_t *b, uint16_t tag, uint32_t val)
 {
     uint8_t tmp[4];
     tmp[0] = (uint8_t)(val >> 24);
@@ -383,16 +383,16 @@ static void mtlxAddUint32(MtlxBuilder_t *b, uint16_t tag, uint32_t val)
     builderAddTLV(b, tag, tmp, 4);
 }
 
-static void mtlxAddRaw(MtlxBuilder_t *b, uint16_t tag, const uint8_t *data, uint16_t len)
+static void mtlxAddRaw(OrionBuilder_t *b, uint16_t tag, const uint8_t *data, uint16_t len)
 {
     builderAddTLV(b, tag, data, len);
 }
 
-static uint16_t mtlxPacketEnd(MtlxBuilder_t *b)
+static uint16_t mtlxPacketEnd(OrionBuilder_t *b)
 {
     if (b->overflow) return 0;
     if (b->pos >= b->capacity) { b->overflow = TRUE; return 0; }
-    b->buf[b->pos++] = MTLX_PKT_END;
+    b->buf[b->pos++] = ORION_PKT_END;
     return b->pos;
 }
 
@@ -400,12 +400,12 @@ static uint16_t mtlxPacketEnd(MtlxBuilder_t *b)
 /*                         TLV PARSER                                 */
 /* ================================================================== */
 
-static BOOL mtlxParserInit(MtlxParser_t *p, const uint8_t *raw, uint16_t rawLen)
+static BOOL mtlxParserInit(OrionParser_t *p, const uint8_t *raw, uint16_t rawLen)
 {
     if (raw == NULL || rawLen < 2) return FALSE;
 
     uint16_t start = 0;
-    while (start < rawLen && raw[start] != MTLX_PKT_START)
+    while (start < rawLen && raw[start] != ORION_PKT_START)
         start++;
     if (start >= rawLen) return FALSE;
     start++;
@@ -413,7 +413,7 @@ static BOOL mtlxParserInit(MtlxParser_t *p, const uint8_t *raw, uint16_t rawLen)
     uint16_t end = rawLen;
     for (uint16_t i = end; i > start; i--)
     {
-        if (raw[i - 1] == MTLX_PKT_END) { end = i - 1; break; }
+        if (raw[i - 1] == ORION_PKT_END) { end = i - 1; break; }
     }
     if (end <= start) return FALSE;
 
@@ -423,15 +423,15 @@ static BOOL mtlxParserInit(MtlxParser_t *p, const uint8_t *raw, uint16_t rawLen)
     return TRUE;
 }
 
-static void mtlxParserReset(MtlxParser_t *p)
+static void mtlxParserReset(OrionParser_t *p)
 {
     p->cursor = 0;
 }
 
-static BOOL mtlxParserNext(MtlxParser_t *p, uint16_t *tag,
+static BOOL mtlxParserNext(OrionParser_t *p, uint16_t *tag,
                     const uint8_t **value, uint16_t *valueLen)
 {
-    if (p->cursor + TLV_HEADER_SIZE > p->length) return FALSE;
+    if (p->cursor + ORION_TLV_HEADER_SIZE > p->length) return FALSE;
     *tag      = readU16BE(p->data + p->cursor);       p->cursor += 2;
     *valueLen = readU16BE(p->data + p->cursor);       p->cursor += 2;
     if (p->cursor + *valueLen > p->length) { p->cursor = p->length; return FALSE; }
@@ -440,7 +440,7 @@ static BOOL mtlxParserNext(MtlxParser_t *p, uint16_t *tag,
     return TRUE;
 }
 
-static BOOL findTag(MtlxParser_t *p, uint16_t wantTag,
+static BOOL findTag(OrionParser_t *p, uint16_t wantTag,
                     const uint8_t **value, uint16_t *valueLen)
 {
     uint16_t saved = p->cursor;
@@ -461,7 +461,7 @@ static BOOL findTag(MtlxParser_t *p, uint16_t wantTag,
     return FALSE;
 }
 
-static BOOL mtlxGetString(MtlxParser_t *p, uint16_t tag, char *out, uint16_t outSz)
+static BOOL mtlxGetString(OrionParser_t *p, uint16_t tag, char *out, uint16_t outSz)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl)) return FALSE;
@@ -471,7 +471,7 @@ static BOOL mtlxGetString(MtlxParser_t *p, uint16_t tag, char *out, uint16_t out
     return TRUE;
 }
 
-static BOOL mtlxGetBool(MtlxParser_t *p, uint16_t tag, BOOL *out)
+static BOOL mtlxGetBool(OrionParser_t *p, uint16_t tag, BOOL *out)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl) || vl < 1) return FALSE;
@@ -479,7 +479,7 @@ static BOOL mtlxGetBool(MtlxParser_t *p, uint16_t tag, BOOL *out)
     return TRUE;
 }
 
-static BOOL mtlxGetUint8(MtlxParser_t *p, uint16_t tag, uint8_t *out)
+static BOOL mtlxGetUint8(OrionParser_t *p, uint16_t tag, uint8_t *out)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl) || vl < 1) return FALSE;
@@ -487,7 +487,7 @@ static BOOL mtlxGetUint8(MtlxParser_t *p, uint16_t tag, uint8_t *out)
     return TRUE;
 }
 
-static BOOL mtlxGetUint16(MtlxParser_t *p, uint16_t tag, uint16_t *out)
+static BOOL mtlxGetUint16(OrionParser_t *p, uint16_t tag, uint16_t *out)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl) || vl < 2) return FALSE;
@@ -495,7 +495,7 @@ static BOOL mtlxGetUint16(MtlxParser_t *p, uint16_t tag, uint16_t *out)
     return TRUE;
 }
 
-static BOOL mtlxGetUint32(MtlxParser_t *p, uint16_t tag, uint32_t *out)
+static BOOL mtlxGetUint32(OrionParser_t *p, uint16_t tag, uint32_t *out)
 {
     const uint8_t *v; uint16_t vl;
     if (!findTag(p, tag, &v, &vl) || vl < 4) return FALSE;
@@ -510,7 +510,7 @@ static BOOL mtlxGetUint32(MtlxParser_t *p, uint16_t tag, uint32_t *out)
 
 static BOOL registerStateLoad(void)
 {
-    FsFile *f = fsOpenFile((char_t *)MTLX_REGISTER_FILE, FS_FILE_MODE_READ);
+    FsFile *f = fsOpenFile((char_t *)ORION_REGISTER_FILE, FS_FILE_MODE_READ);
     if (f == NULL) return FALSE;
     U8 val = 0; size_t got = 0;
     (void)fsReadFile(f, &val, 1, &got);
@@ -520,7 +520,7 @@ static BOOL registerStateLoad(void)
 
 static void registerStateSave(BOOL reg)
 {
-    FsFile *f = fsOpenFile((char_t *)MTLX_REGISTER_FILE,
+    FsFile *f = fsOpenFile((char_t *)ORION_REGISTER_FILE,
                            FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
     if (f == NULL) return;
     U8 val = reg ? 1 : 0;
@@ -535,7 +535,7 @@ static void registerStateSave(BOOL reg)
 static BOOL serverConfigLoad(char *ip, size_t ipSz, int *port)
 {
     ServerConfig_t cfg;
-    FsFile *f = fsOpenFile((char_t *)MTLX_SERVER_FILE, FS_FILE_MODE_READ);
+    FsFile *f = fsOpenFile((char_t *)ORION_SERVER_FILE, FS_FILE_MODE_READ);
     if (f == NULL) return FALSE;
     size_t got = 0;
     (void)fsReadFile(f, &cfg, sizeof(cfg), &got);
@@ -552,7 +552,7 @@ static void serverConfigSave(const char *ip, int port)
     memset(&cfg, 0, sizeof(cfg));
     strncpy(cfg.ip, ip, sizeof(cfg.ip) - 1);
     cfg.port = port;
-    FsFile *f = fsOpenFile((char_t *)MTLX_SERVER_FILE,
+    FsFile *f = fsOpenFile((char_t *)ORION_SERVER_FILE,
                            FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
     if (f == NULL) return;
     (void)fsWriteFile(f, &cfg, sizeof(cfg));
@@ -583,21 +583,21 @@ static void getDeviceDateStr(char *buf, size_t bufSz)
 /*                    Packet builder helpers                           */
 /* ================================================================== */
 
-static void addPacketHeader(MtlxBuilder_t *b, uint16_t transNum, uint8_t func)
+static void addPacketHeader(OrionBuilder_t *b, uint16_t transNum, uint8_t func)
 {
-    mtlxAddUint16(b, MTLX_TAG_TRANS_NUMBER, transNum);
-    mtlxAddString(b, MTLX_TAG_FLAG, MTLX_FLAG);
-    mtlxAddString(b, MTLX_TAG_SERIAL_NUMBER, gs_serialNumber);
-    mtlxAddUint8(b, MTLX_TAG_FUNCTION, func);
+    mtlxAddUint16(b, ORION_TAG_TRANS_NUMBER, transNum);
+    mtlxAddString(b, ORION_TAG_FLAG, ORION_FLAG);
+    mtlxAddString(b, ORION_TAG_SERIAL_NUMBER, gs_serialNumber);
+    mtlxAddUint8(b, ORION_TAG_FUNCTION, func);
 }
 
 static uint16_t buildAckNack(uint8_t *buf, uint16_t sz, BOOL isAck, uint16_t transNum)
 {
-    MtlxBuilder_t b;
+    OrionBuilder_t b;
     mtlxBuilderInit(&b, buf, sz);
     mtlxPacketBegin(&b);
-    addPacketHeader(&b, transNum, isAck ? MTLX_FUNC_ACK : MTLX_FUNC_NACK);
-    mtlxAddBool(&b, MTLX_TAG_ACK_STATUS, isAck);
+    addPacketHeader(&b, transNum, isAck ? ORION_FUNC_ACK : ORION_FUNC_NACK);
+    mtlxAddBool(&b, ORION_TAG_ACK_STATUS, isAck);
     return mtlxPacketEnd(&b);
 }
 
@@ -606,16 +606,16 @@ static uint16_t buildIdentMsg(uint8_t *buf, uint16_t sz, uint16_t transNum)
     char dateStr[24];
     getDeviceDateStr(dateStr, sizeof(dateStr));
 
-    MtlxBuilder_t b;
+    OrionBuilder_t b;
     mtlxBuilderInit(&b, buf, sz);
     mtlxPacketBegin(&b);
-    addPacketHeader(&b, transNum, MTLX_FUNC_IDENT);
-    mtlxAddBool(&b, MTLX_TAG_REGISTERED, gs_registered);
-    mtlxAddString(&b, MTLX_TAG_DEVICE_BRAND, MTLX_BRAND);
-    mtlxAddString(&b, MTLX_TAG_DEVICE_MODEL, MTLX_MODEL);
-    mtlxAddString(&b, MTLX_TAG_DEVICE_DATE, dateStr);
-    mtlxAddString(&b, MTLX_TAG_PULL_IP, gs_deviceIP);
-    mtlxAddUint16(&b, MTLX_TAG_PULL_PORT, (uint16_t)gs_pullPort);
+    addPacketHeader(&b, transNum, ORION_FUNC_IDENT);
+    mtlxAddBool(&b, ORION_TAG_REGISTERED, gs_registered);
+    mtlxAddString(&b, ORION_TAG_DEVICE_BRAND, ORION_BRAND);
+    mtlxAddString(&b, ORION_TAG_DEVICE_MODEL, ORION_MODEL);
+    mtlxAddString(&b, ORION_TAG_DEVICE_DATE, dateStr);
+    mtlxAddString(&b, ORION_TAG_PULL_IP, gs_deviceIP);
+    mtlxAddUint16(&b, ORION_TAG_PULL_PORT, (uint16_t)gs_pullPort);
     return mtlxPacketEnd(&b);
 }
 
@@ -624,11 +624,11 @@ static uint16_t buildAliveMsg(uint8_t *buf, uint16_t sz, uint16_t transNum)
     char dateStr[24];
     getDeviceDateStr(dateStr, sizeof(dateStr));
 
-    MtlxBuilder_t b;
+    OrionBuilder_t b;
     mtlxBuilderInit(&b, buf, sz);
     mtlxPacketBegin(&b);
-    addPacketHeader(&b, transNum, MTLX_FUNC_ALIVE);
-    mtlxAddString(&b, MTLX_TAG_DEVICE_DATE, dateStr);
+    addPacketHeader(&b, transNum, ORION_FUNC_ALIVE);
+    mtlxAddString(&b, ORION_TAG_DEVICE_DATE, dateStr);
     return mtlxPacketEnd(&b);
 }
 
@@ -636,13 +636,13 @@ static uint16_t buildLogPacket(uint8_t *buf, uint16_t sz,
                                 const char *logData, int packetNum,
                                 BOOL stream, uint16_t transNum)
 {
-    MtlxBuilder_t b;
+    OrionBuilder_t b;
     mtlxBuilderInit(&b, buf, sz);
     mtlxPacketBegin(&b);
-    addPacketHeader(&b, transNum, MTLX_FUNC_LOG);
-    mtlxAddUint16(&b, MTLX_TAG_PACKET_NUM, (uint16_t)packetNum);
-    mtlxAddBool(&b, MTLX_TAG_PACKET_STREAM, stream);
-    mtlxAddString(&b, MTLX_TAG_LOG_DATA, logData);
+    addPacketHeader(&b, transNum, ORION_FUNC_LOG);
+    mtlxAddUint16(&b, ORION_TAG_PACKET_NUM, (uint16_t)packetNum);
+    mtlxAddBool(&b, ORION_TAG_PACKET_STREAM, stream);
+    mtlxAddString(&b, ORION_TAG_LOG_DATA, logData);
     return mtlxPacketEnd(&b);
 }
 
@@ -651,14 +651,14 @@ static uint16_t buildDataPacket(uint8_t *buf, uint16_t sz,
                                  const char *data, int packetNum,
                                  BOOL stream, uint16_t transNum)
 {
-    MtlxBuilder_t b;
+    OrionBuilder_t b;
     mtlxBuilderInit(&b, buf, sz);
     mtlxPacketBegin(&b);
     addPacketHeader(&b, transNum, func);
-    mtlxAddUint16(&b, MTLX_TAG_PACKET_NUM, (uint16_t)packetNum);
-    mtlxAddBool(&b, MTLX_TAG_PACKET_STREAM, stream);
-    mtlxAddString(&b, MTLX_TAG_METER_ID, meterId);
-    mtlxAddString(&b, MTLX_TAG_READOUT_DATA, data);
+    mtlxAddUint16(&b, ORION_TAG_PACKET_NUM, (uint16_t)packetNum);
+    mtlxAddBool(&b, ORION_TAG_PACKET_STREAM, stream);
+    mtlxAddString(&b, ORION_TAG_METER_ID, meterId);
+    mtlxAddString(&b, ORION_TAG_READOUT_DATA, data);
     return mtlxPacketEnd(&b);
 }
 
@@ -667,13 +667,13 @@ static uint16_t buildDirectivePacket(uint8_t *buf, uint16_t sz,
                                       int packetNum, BOOL stream,
                                       uint16_t transNum)
 {
-    MtlxBuilder_t b;
+    OrionBuilder_t b;
     mtlxBuilderInit(&b, buf, sz);
     mtlxPacketBegin(&b);
-    addPacketHeader(&b, transNum, MTLX_FUNC_DIRECTIVE_LIST);
-    mtlxAddUint16(&b, MTLX_TAG_PACKET_NUM, (uint16_t)packetNum);
-    mtlxAddBool(&b, MTLX_TAG_PACKET_STREAM, stream);
-    mtlxAddString(&b, MTLX_TAG_DIRECTIVE_DATA, directive);
+    addPacketHeader(&b, transNum, ORION_FUNC_DIRECTIVE_LIST);
+    mtlxAddUint16(&b, ORION_TAG_PACKET_NUM, (uint16_t)packetNum);
+    mtlxAddBool(&b, ORION_TAG_PACKET_STREAM, stream);
+    mtlxAddString(&b, ORION_TAG_DIRECTIVE_DATA, directive);
     return mtlxPacketEnd(&b);
 }
 
@@ -683,10 +683,10 @@ static uint16_t buildDirectivePacket(uint8_t *buf, uint16_t sz,
 
 static void sendLogPackets(uint16_t transNum)
 {
-    char curBuf[MTLX_DATA_CHUNK_SIZE + 1];
-    char nxtBuf[MTLX_DATA_CHUNK_SIZE + 1];
+    char curBuf[ORION_DATA_CHUNK_SIZE + 1];
+    char nxtBuf[ORION_DATA_CHUNK_SIZE + 1];
 
-    S32 curLen = appLogRecRead(g_sysLoggerID, curBuf, MTLX_DATA_CHUNK_SIZE);
+    S32 curLen = appLogRecRead(g_sysLoggerID, curBuf, ORION_DATA_CHUNK_SIZE);
     if (curLen <= 0)
     {
         uint16_t sz = buildLogPacket(gs_txBuf, sizeof(gs_txBuf), "NO-LOG", 1, FALSE, transNum);
@@ -699,7 +699,7 @@ static void sendLogPackets(uint16_t transNum)
     {
         curBuf[curLen] = '\0';
         packetNum++;
-        S32 nxtLen = appLogRecRead(g_sysLoggerID, nxtBuf, MTLX_DATA_CHUNK_SIZE);
+        S32 nxtLen = appLogRecRead(g_sysLoggerID, nxtBuf, ORION_DATA_CHUNK_SIZE);
         BOOL hasMore = (nxtLen > 0);
 
         uint16_t sz = buildLogPacket(gs_txBuf, sizeof(gs_txBuf), curBuf, packetNum, hasMore, transNum);
@@ -718,12 +718,12 @@ static void sendFilePacketised(const char *channel, uint8_t func,
     FsFile *f = fsOpenFile((char_t *)filePath, FS_FILE_MODE_READ);
     if (f == NULL) return;
 
-    char bufA[MTLX_DATA_CHUNK_SIZE + 1];
-    char bufB[MTLX_DATA_CHUNK_SIZE + 1];
+    char bufA[ORION_DATA_CHUNK_SIZE + 1];
+    char bufB[ORION_DATA_CHUNK_SIZE + 1];
     char *cur = bufA, *nxt = bufB;
 
     size_t curLen = 0;
-    (void)fsReadFile(f, cur, MTLX_DATA_CHUNK_SIZE, &curLen);
+    (void)fsReadFile(f, cur, ORION_DATA_CHUNK_SIZE, &curLen);
     if (curLen == 0) { fsCloseFile(f); return; }
 
     int packetNum = 0;
@@ -732,7 +732,7 @@ static void sendFilePacketised(const char *channel, uint8_t func,
         cur[curLen] = '\0';
         packetNum++;
         size_t nxtLen = 0;
-        (void)fsReadFile(f, nxt, MTLX_DATA_CHUNK_SIZE, &nxtLen);
+        (void)fsReadFile(f, nxt, ORION_DATA_CHUNK_SIZE, &nxtLen);
         BOOL hasMore = (nxtLen > 0);
 
         uint16_t sz = buildDataPacket(gs_txBuf, sizeof(gs_txBuf),
@@ -876,7 +876,7 @@ static void cleanupMeterFiles(S32 taskId)
 static void deliverMeterData(int jobIdx, uint16_t transNum)
 {
     PendingJob_t *job = &gs_pendingJobs[jobIdx];
-    uint8_t func = job->isLoadProfile ? MTLX_FUNC_LOADPROFILE : MTLX_FUNC_READOUT;
+    uint8_t func = job->isLoadProfile ? ORION_FUNC_LOADPROFILE : ORION_FUNC_READOUT;
 
     char meterId[128] = {0};
     char idPath[MAX_PATH_LEN];
@@ -899,14 +899,14 @@ static void deliverMeterData(int jobIdx, uint16_t transNum)
     {
         appTcpConnManagerRequestPushConnect();
         U32 t0 = osGetSystemTime();
-        while ((osGetSystemTime() - t0) < MTLX_CONNECT_TIMEOUT_MS)
+        while ((osGetSystemTime() - t0) < ORION_CONNECT_TIMEOUT_MS)
         {
             if (appTcpConnManagerIsConnectedPush()) break;
             zosDelayTask(100);
         }
         if (!appTcpConnManagerIsConnectedPush())
         {
-            DEBUG_ERROR("->[E] MtlxSess: push connect timeout, data delivery skipped");
+            DEBUG_ERROR("->[E] OrionSess: push connect timeout, data delivery skipped");
             return;
         }
     }
@@ -915,7 +915,7 @@ static void deliverMeterData(int jobIdx, uint16_t transNum)
 
     gs_pushRx.ready = FALSE;
     U32 t0 = osGetSystemTime();
-    while ((osGetSystemTime() - t0) < MTLX_ACK_TIMEOUT_MS)
+    while ((osGetSystemTime() - t0) < ORION_ACK_TIMEOUT_MS)
     {
         if (gs_pushRx.ready) { gs_pushRx.ready = FALSE; break; }
         zosDelayTask(100);
@@ -926,20 +926,20 @@ static void deliverMeterData(int jobIdx, uint16_t transNum)
 /*           Session management                                       */
 /* ================================================================== */
 
-static void sessionDelete(MtlxSession_t *s)
+static void sessionDelete(OrionSession_t *s)
 {
     if (s != NULL)
-        memset(s, 0, sizeof(MtlxSession_t));
+        memset(s, 0, sizeof(OrionSession_t));
 }
 
-static MtlxSession_t *sessionCreate(uint8_t function, const char *channel,
+static OrionSession_t *sessionCreate(uint8_t function, const char *channel,
                                      uint16_t transNum)
 {
-    for (unsigned int i = 0; i < MTLX_SESSION_MAX; i++)
+    for (unsigned int i = 0; i < ORION_SESSION_MAX; i++)
     {
         if (gs_sessionTable[i].inUse == FALSE)
         {
-            MtlxSession_t *s = &gs_sessionTable[i];
+            OrionSession_t *s = &gs_sessionTable[i];
             memset(s, 0, sizeof(*s));
             s->inUse            = TRUE;
             s->function         = function;
@@ -948,7 +948,7 @@ static MtlxSession_t *sessionCreate(uint8_t function, const char *channel,
             s->timeoutGobackStep = 0;
             s->timeCnt          = 0;
             s->retryIntervalMs  = 0;
-            s->retryCount       = MTLX_SESSION_RETRY_MAX;
+            s->retryCount       = ORION_SESSION_RETRY_MAX;
             s->pendingJobIdx    = -1;
             s->rxReady          = FALSE;
             s->rxLen            = 0;
@@ -964,9 +964,9 @@ static MtlxSession_t *sessionCreate(uint8_t function, const char *channel,
     return NULL;
 }
 
-static MtlxSession_t *findSessionByTransNumber(uint16_t transNum)
+static OrionSession_t *findSessionByTransNumber(uint16_t transNum)
 {
-    for (unsigned int i = 0; i < MTLX_SESSION_MAX; i++)
+    for (unsigned int i = 0; i < ORION_SESSION_MAX; i++)
     {
         if (gs_sessionTable[i].inUse && gs_sessionTable[i].transNumber == transNum)
             return &gs_sessionTable[i];
@@ -974,11 +974,11 @@ static MtlxSession_t *findSessionByTransNumber(uint16_t transNum)
     return NULL;
 }
 
-static BOOL sessionSetIncoming(MtlxSession_t *s, const MtlxIncomingMsg_t *msg)
+static BOOL sessionSetIncoming(OrionSession_t *s, const OrionIncomingMsg_t *msg)
 {
     if (s == NULL || msg == NULL)
         return FALSE;
-    if (msg->length == 0 || msg->length > MTLX_PACKET_MAX_SIZE)
+    if (msg->length == 0 || msg->length > ORION_PACKET_MAX_SIZE)
         return FALSE;
 
     memcpy(s->rxBuf, msg->payload, msg->length);
@@ -993,7 +993,7 @@ static BOOL sessionSetIncoming(MtlxSession_t *s, const MtlxIncomingMsg_t *msg)
     return TRUE;
 }
 
-static BOOL sessionGetParser(MtlxSession_t *s, MtlxParser_t *p)
+static BOOL sessionGetParser(OrionSession_t *s, OrionParser_t *p)
 {
     if (s == NULL || p == NULL)
         return FALSE;
@@ -1004,22 +1004,22 @@ static BOOL sessionGetParser(MtlxSession_t *s, MtlxParser_t *p)
     return TRUE;
 }
 
-static BOOL mtlxReceiveEvent(MtlxEventMsg_t *msg)
+static BOOL mtlxReceiveEvent(OrionEventMsg_t *msg)
 {
     if (msg == NULL || gs_evCount == 0U) return FALSE;
     *msg = gs_eventQ[gs_evHead];
-    gs_evHead = (uint8_t)((gs_evHead + 1U) % MTLX_EVENT_Q_DEPTH);
+    gs_evHead = (uint8_t)((gs_evHead + 1U) % ORION_EVENT_Q_DEPTH);
     gs_evCount--;
     return TRUE;
 }
 
 static void checkAllSessionTimeouts(void)
 {
-    for (unsigned int i = 0; i < MTLX_SESSION_MAX; i++)
+    for (unsigned int i = 0; i < ORION_SESSION_MAX; i++)
     {
         if (gs_sessionTable[i].inUse == FALSE) continue;
 
-        MtlxSession_t *s = &gs_sessionTable[i];
+        OrionSession_t *s = &gs_sessionTable[i];
         s->timeCnt += 1000U;
 
         if (s->retryIntervalMs == 0U) continue;
@@ -1028,7 +1028,7 @@ static void checkAllSessionTimeouts(void)
         s->retryCount--;
         if (s->retryCount == 0U)
         {
-            DEBUG_WARNING("->[W] MtlxSess: session timeout (func 0x%02X, trans %u)",
+            DEBUG_WARNING("->[W] OrionSess: session timeout (func 0x%02X, trans %u)",
                           s->function, s->transNumber);
             sessionDelete(s);
         }
@@ -1045,7 +1045,7 @@ static void periodicTimerCb(void)
     checkAllSessionTimeouts();
 
     gs_aliveCnt++;
-    if (gs_aliveCnt >= (uint32_t)MTLX_ALIVE_INTERVAL_S)
+    if (gs_aliveCnt >= (uint32_t)ORION_ALIVE_INTERVAL_S)
     {
         gs_sendAlive = TRUE;
         gs_aliveCnt  = 0;
@@ -1057,14 +1057,14 @@ static void periodicTimerCb(void)
 /* ================================================================== */
 
 /* ── Push Ident (registration) ── */
-static void processIdentSession(MtlxSession_t *session)
+static void processIdentSession(OrionSession_t *session)
 {
     switch (session->step)
     {
         case 0:
             appTcpConnManagerRequestPushConnect();
-            session->retryIntervalMs   = MTLX_CONNECT_TIMEOUT_MS;
-            session->retryCount        = MTLX_SESSION_RETRY_MAX;
+            session->retryIntervalMs   = ORION_CONNECT_TIMEOUT_MS;
+            session->retryCount        = ORION_SESSION_RETRY_MAX;
             session->timeoutGobackStep = 0;
             session->timeCnt           = 0;
             session->step              = 1;
@@ -1082,11 +1082,11 @@ static void processIdentSession(MtlxSession_t *session)
         {
             uint16_t sz = buildIdentMsg(gs_txBuf, sizeof(gs_txBuf), session->transNumber);
             appTcpConnManagerSend(PUSH_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
-            DEBUG_DEBUG("->[D] MtlxSess: ident sent (trans %u, %u bytes)",
+            DEBUG_DEBUG("->[D] OrionSess: ident sent (trans %u, %u bytes)",
                         session->transNumber, (unsigned)sz);
 
-            session->retryIntervalMs   = (uint32_t)MTLX_REGISTER_RETRY_S * 1000U;
-            session->retryCount        = MTLX_SESSION_RETRY_MAX;
+            session->retryIntervalMs   = (uint32_t)ORION_REGISTER_RETRY_S * 1000U;
+            session->retryCount        = ORION_SESSION_RETRY_MAX;
             session->timeoutGobackStep = 0;
             session->timeCnt           = 0;
             session->step              = 3;
@@ -1096,24 +1096,24 @@ static void processIdentSession(MtlxSession_t *session)
         case 3:
             if (session->rxReady)
             {
-                MtlxParser_t rp;
+                OrionParser_t rp;
                 if (sessionGetParser(session, &rp))
                 {
                     uint16_t rxTrans = 0;
-                    mtlxGetUint16(&rp, MTLX_TAG_TRANS_NUMBER, &rxTrans);
+                    mtlxGetUint16(&rp, ORION_TAG_TRANS_NUMBER, &rxTrans);
 
                     if (rxTrans == session->transNumber)
                     {
                         uint8_t rFunc = 0;
-                        if (mtlxGetUint8(&rp, MTLX_TAG_FUNCTION, &rFunc)
-                            && rFunc == MTLX_FUNC_IDENT)
+                        if (mtlxGetUint8(&rp, ORION_TAG_FUNCTION, &rFunc)
+                            && rFunc == ORION_FUNC_IDENT)
                         {
                             BOOL regVal = FALSE;
-                            if (mtlxGetBool(&rp, MTLX_TAG_REGISTER, &regVal) && regVal)
+                            if (mtlxGetBool(&rp, ORION_TAG_REGISTER, &regVal) && regVal)
                             {
                                 gs_registered = TRUE;
                                 registerStateSave(TRUE);
-                                DEBUG_INFO("->[I] MtlxSess: device registered");
+                                DEBUG_INFO("->[I] OrionSess: device registered");
                                 APP_LOG_REC(g_sysLoggerID, "Device registered");
                             }
                         }
@@ -1142,30 +1142,30 @@ static void processIdentSession(MtlxSession_t *session)
 }
 
 /* ── Alive ── */
-static void processAliveSession(MtlxSession_t *session)
+static void processAliveSession(OrionSession_t *session)
 {
     if (appTcpConnManagerIsConnectedPush())
     {
         uint16_t sz = buildAliveMsg(gs_txBuf, sizeof(gs_txBuf), session->transNumber);
         appTcpConnManagerSend(PUSH_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
-        DEBUG_DEBUG("->[D] MtlxSess: alive sent (trans %u)", session->transNumber);
+        DEBUG_DEBUG("->[D] OrionSess: alive sent (trans %u)", session->transNumber);
     }
     sessionDelete(session);
 }
 
 /* ── Pull-socket request handlers ── */
 
-static void processLogSession(MtlxSession_t *session)
+static void processLogSession(OrionSession_t *session)
 {
-    DEBUG_INFO("->[I] MtlxSess: log request (trans %u)", session->transNumber);
+    DEBUG_INFO("->[I] OrionSess: log request (trans %u)", session->transNumber);
     sendLogPackets(session->transNumber);
     sessionDelete(session);
 }
 
-static void processSettingSession(MtlxSession_t *session)
+static void processSettingSession(OrionSession_t *session)
 {
-    DEBUG_INFO("->[I] MtlxSess: setting request (trans %u)", session->transNumber);
-    MtlxParser_t parser;
+    DEBUG_INFO("->[I] OrionSess: setting request (trans %u)", session->transNumber);
+    OrionParser_t parser;
     if (!sessionGetParser(session, &parser))
     {
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
@@ -1177,8 +1177,8 @@ static void processSettingSession(MtlxSession_t *session)
 
     char newIP[20] = {0};
     uint16_t newPort = 0;
-    BOOL hasIP   = mtlxGetString(&parser, MTLX_TAG_SERVER_IP, newIP, sizeof(newIP));
-    BOOL hasPort = mtlxGetUint16(&parser, MTLX_TAG_SERVER_PORT, &newPort);
+    BOOL hasIP   = mtlxGetString(&parser, ORION_TAG_SERVER_IP, newIP, sizeof(newIP));
+    BOOL hasPort = mtlxGetUint16(&parser, ORION_TAG_SERVER_PORT, &newPort);
 
     if (hasIP && newIP[0] != '\0' && hasPort && newPort > 0)
     {
@@ -1189,23 +1189,23 @@ static void processSettingSession(MtlxSession_t *session)
         appTcpConnManagerStop();
         zosDelayTask(500);
         appTcpConnManagerStart(gs_serverIP, gs_serverPort,
-                               gs_pullPort, appProtocolMetalixPutIncomingMessage);
+                               gs_pullPort, appProtocolOrionTLVPutIncomingMessage);
         appTcpConnManagerRequestConnect();
 
-        DEBUG_INFO("->[I] MtlxSess: server updated to %s:%d", gs_serverIP, gs_serverPort);
+        DEBUG_INFO("->[I] OrionSess: server updated to %s:%d", gs_serverIP, gs_serverPort);
         APP_LOG_REC(g_sysLoggerID, "Server address updated");
     }
 
-    mtlxParserReset(&parser);
+    orionParserReset(&parser);
 
     uint16_t tag; const uint8_t *val; uint16_t vLen;
     BOOL inMeter = FALSE;
     char operation[16] = {0};
     MeterData_t md;
 
-    while (mtlxParserNext(&parser, &tag, &val, &vLen))
+    while (orionParserNext(&parser, &tag, &val, &vLen))
     {
-        if (tag == MTLX_TAG_METER_INDEX)
+        if (tag == ORION_TAG_METER_INDEX)
         {
             if (inMeter)
             {
@@ -1223,25 +1223,25 @@ static void processSettingSession(MtlxSession_t *session)
 
         switch (tag)
         {
-            case MTLX_TAG_METER_OPERATION:
+            case ORION_TAG_METER_OPERATION:
             { uint16_t cp = vLen < sizeof(operation)-1 ? vLen : (uint16_t)(sizeof(operation)-1); memcpy(operation, val, cp); operation[cp]='\0'; break; }
-            case MTLX_TAG_METER_PROTOCOL:
+            case ORION_TAG_METER_PROTOCOL:
             { uint16_t cp = vLen < sizeof(md.protocol)-1 ? vLen : (uint16_t)(sizeof(md.protocol)-1); memcpy(md.protocol, val, cp); md.protocol[cp]='\0'; break; }
-            case MTLX_TAG_METER_TYPE:
+            case ORION_TAG_METER_TYPE:
             { uint16_t cp = vLen < sizeof(md.type)-1 ? vLen : (uint16_t)(sizeof(md.type)-1); memcpy(md.type, val, cp); md.type[cp]='\0'; break; }
-            case MTLX_TAG_METER_BRAND:
+            case ORION_TAG_METER_BRAND:
             { uint16_t cp = vLen < sizeof(md.brand)-1 ? vLen : (uint16_t)(sizeof(md.brand)-1); memcpy(md.brand, val, cp); md.brand[cp]='\0'; break; }
-            case MTLX_TAG_METER_SERIAL_NUM:
+            case ORION_TAG_METER_SERIAL_NUM:
             { uint16_t cp = vLen < sizeof(md.serialNumber)-1 ? vLen : (uint16_t)(sizeof(md.serialNumber)-1); memcpy(md.serialNumber, val, cp); md.serialNumber[cp]='\0'; break; }
-            case MTLX_TAG_METER_SERIAL_PORT:
+            case ORION_TAG_METER_SERIAL_PORT:
             { uint16_t cp = vLen < sizeof(md.serialPort)-1 ? vLen : (uint16_t)(sizeof(md.serialPort)-1); memcpy(md.serialPort, val, cp); md.serialPort[cp]='\0'; break; }
-            case MTLX_TAG_METER_INIT_BAUD:
+            case ORION_TAG_METER_INIT_BAUD:
             { if (vLen >= 4) md.initBaud = (int)(((uint32_t)val[0]<<24)|((uint32_t)val[1]<<16)|((uint32_t)val[2]<<8)|val[3]); break; }
-            case MTLX_TAG_METER_FIX_BAUD:
+            case ORION_TAG_METER_FIX_BAUD:
                 md.fixBaud = (vLen >= 1 && val[0] != 0) ? TRUE : FALSE; break;
-            case MTLX_TAG_METER_FRAME:
+            case ORION_TAG_METER_FRAME:
             { uint16_t cp = vLen < sizeof(md.frame)-1 ? vLen : (uint16_t)(sizeof(md.frame)-1); memcpy(md.frame, val, cp); md.frame[cp]='\0'; break; }
-            case MTLX_TAG_METER_CUSTOMER_NUM:
+            case ORION_TAG_METER_CUSTOMER_NUM:
             { uint16_t cp = vLen < sizeof(md.customerNumber)-1 ? vLen : (uint16_t)(sizeof(md.customerNumber)-1); memcpy(md.customerNumber, val, cp); md.customerNumber[cp]='\0'; break; }
             default: break;
         }
@@ -1263,10 +1263,10 @@ static void processSettingSession(MtlxSession_t *session)
     sessionDelete(session);
 }
 
-static void processFwUpdateSession(MtlxSession_t *session)
+static void processFwUpdateSession(OrionSession_t *session)
 {
-    DEBUG_INFO("->[I] MtlxSess: fwUpdate request (trans %u)", session->transNumber);
-    MtlxParser_t parser;
+    DEBUG_INFO("->[I] OrionSess: fwUpdate request (trans %u)", session->transNumber);
+    OrionParser_t parser;
     if (!sessionGetParser(session, &parser))
     {
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
@@ -1276,7 +1276,7 @@ static void processFwUpdateSession(MtlxSession_t *session)
     }
 
     char address[192] = {0};
-    if (!mtlxGetString(&parser, MTLX_TAG_FW_ADDRESS, address, sizeof(address)) || address[0] == '\0')
+    if (!mtlxGetString(&parser, ORION_TAG_FW_ADDRESS, address, sizeof(address)) || address[0] == '\0')
     {
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
         appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
@@ -1293,7 +1293,7 @@ static void processFwUpdateSession(MtlxSession_t *session)
                     path, sizeof(path)))
     {
         AppSwUpdateInit(host, port, user, pass, path, FW_LOCAL_PATH);
-        DEBUG_INFO("->[I] MtlxSess: FW update started from %s", host);
+        DEBUG_INFO("->[I] OrionSess: FW update started from %s", host);
         APP_LOG_REC(g_sysLoggerID, "FW update started");
     }
 
@@ -1303,15 +1303,15 @@ static void processFwUpdateSession(MtlxSession_t *session)
 }
 
 /* ── Readout — multi-step ── */
-static void processReadoutSession(MtlxSession_t *session)
+static void processReadoutSession(OrionSession_t *session)
 {
-    MtlxParser_t parser;
+    OrionParser_t parser;
 
     switch (session->step)
     {
         case 0:
         {
-            DEBUG_INFO("->[I] MtlxSess: readout request (trans %u)", session->transNumber);
+            DEBUG_INFO("->[I] OrionSess: readout request (trans %u)", session->transNumber);
             if (!sessionGetParser(session, &parser))
             {
                 uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
@@ -1320,8 +1320,8 @@ static void processReadoutSession(MtlxSession_t *session)
                 return;
             }
             char directive[64] = {0}, meterSn[20] = {0};
-            mtlxGetString(&parser, MTLX_TAG_DIRECTIVE_NAME, directive, sizeof(directive));
-            mtlxGetString(&parser, MTLX_TAG_METER_SERIAL_NUM, meterSn, sizeof(meterSn));
+            mtlxGetString(&parser, ORION_TAG_DIRECTIVE_NAME, directive, sizeof(directive));
+            mtlxGetString(&parser, ORION_TAG_METER_SERIAL_NUM, meterSn, sizeof(meterSn));
 
             char reqBuf[320];
             snprintf(reqBuf, sizeof(reqBuf),
@@ -1366,7 +1366,7 @@ static void processReadoutSession(MtlxSession_t *session)
                 if (gs_pendingJobs[session->pendingJobIdx].result == EN_ERR_CODE_SUCCESS)
                     deliverMeterData(session->pendingJobIdx, session->transNumber);
                 else
-                    DEBUG_WARNING("->[W] MtlxSess: readout task failed (err %d)",
+                    DEBUG_WARNING("->[W] OrionSess: readout task failed (err %d)",
                                   gs_pendingJobs[session->pendingJobIdx].result);
 
                 cleanupMeterFiles(gs_pendingJobs[session->pendingJobIdx].taskId);
@@ -1385,15 +1385,15 @@ static void processReadoutSession(MtlxSession_t *session)
 }
 
 /* ── Load Profile — multi-step ── */
-static void processLoadProfileSession(MtlxSession_t *session)
+static void processLoadProfileSession(OrionSession_t *session)
 {
-    MtlxParser_t parser;
+    OrionParser_t parser;
 
     switch (session->step)
     {
         case 0:
         {
-            DEBUG_INFO("->[I] MtlxSess: loadprofile request (trans %u)", session->transNumber);
+            DEBUG_INFO("->[I] OrionSess: loadprofile request (trans %u)", session->transNumber);
             if (!sessionGetParser(session, &parser))
             {
                 uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
@@ -1404,10 +1404,10 @@ static void processLoadProfileSession(MtlxSession_t *session)
             char directive[64] = {0}, meterSn[20] = {0};
             char startDate[24] = {0}, endDate[24] = {0};
 
-            mtlxGetString(&parser, MTLX_TAG_DIRECTIVE_NAME, directive, sizeof(directive));
-            mtlxGetString(&parser, MTLX_TAG_METER_SERIAL_NUM, meterSn, sizeof(meterSn));
-            mtlxGetString(&parser, MTLX_TAG_START_DATE, startDate, sizeof(startDate));
-            mtlxGetString(&parser, MTLX_TAG_END_DATE, endDate, sizeof(endDate));
+            mtlxGetString(&parser, ORION_TAG_DIRECTIVE_NAME, directive, sizeof(directive));
+            mtlxGetString(&parser, ORION_TAG_METER_SERIAL_NUM, meterSn, sizeof(meterSn));
+            mtlxGetString(&parser, ORION_TAG_START_DATE, startDate, sizeof(startDate));
+            mtlxGetString(&parser, ORION_TAG_END_DATE, endDate, sizeof(endDate));
 
             char reqBuf[384];
             snprintf(reqBuf, sizeof(reqBuf),
@@ -1453,7 +1453,7 @@ static void processLoadProfileSession(MtlxSession_t *session)
                 if (gs_pendingJobs[session->pendingJobIdx].result == EN_ERR_CODE_SUCCESS)
                     deliverMeterData(session->pendingJobIdx, session->transNumber);
                 else
-                    DEBUG_WARNING("->[W] MtlxSess: LP task failed (err %d)",
+                    DEBUG_WARNING("->[W] OrionSess: LP task failed (err %d)",
                                   gs_pendingJobs[session->pendingJobIdx].result);
 
                 cleanupMeterFiles(gs_pendingJobs[session->pendingJobIdx].taskId);
@@ -1471,10 +1471,10 @@ static void processLoadProfileSession(MtlxSession_t *session)
     }
 }
 
-static void processDirectiveListSession(MtlxSession_t *session)
+static void processDirectiveListSession(OrionSession_t *session)
 {
-    DEBUG_INFO("->[I] MtlxSess: directiveList request (trans %u)", session->transNumber);
-    MtlxParser_t parser;
+    DEBUG_INFO("->[I] OrionSess: directiveList request (trans %u)", session->transNumber);
+    OrionParser_t parser;
     if (!sessionGetParser(session, &parser))
     {
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
@@ -1484,7 +1484,7 @@ static void processDirectiveListSession(MtlxSession_t *session)
     }
 
     char filterId[64] = {0};
-    mtlxGetString(&parser, MTLX_TAG_DIRECTIVE_ID, filterId, sizeof(filterId));
+    mtlxGetString(&parser, ORION_TAG_DIRECTIVE_ID, filterId, sizeof(filterId));
 
     BOOL sendAll = (filterId[0] == '\0' || (filterId[0] == '*' && filterId[1] == '\0'));
 
@@ -1496,7 +1496,7 @@ static void processDirectiveListSession(MtlxSession_t *session)
         sessionDelete(session); return;
     }
 
-    char dirBuf[MTLX_PACKET_MAX_SIZE];
+    char dirBuf[ORION_PACKET_MAX_SIZE];
     int totalToSend = 0;
     if (sendAll) totalToSend = (int)count;
     else { if (SUCCESS == appMeterOperationsGetDirective(filterId, dirBuf, sizeof(dirBuf))) totalToSend = 1; }
@@ -1536,10 +1536,10 @@ static void processDirectiveListSession(MtlxSession_t *session)
     sessionDelete(session);
 }
 
-static void processDirectiveAddSession(MtlxSession_t *session)
+static void processDirectiveAddSession(OrionSession_t *session)
 {
-    DEBUG_INFO("->[I] MtlxSess: directiveAdd request (trans %u)", session->transNumber);
-    MtlxParser_t parser;
+    DEBUG_INFO("->[I] OrionSess: directiveAdd request (trans %u)", session->transNumber);
+    OrionParser_t parser;
     if (!sessionGetParser(session, &parser))
     {
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
@@ -1548,8 +1548,8 @@ static void processDirectiveAddSession(MtlxSession_t *session)
         return;
     }
 
-    char dirObj[MTLX_PACKET_MAX_SIZE];
-    if (!mtlxGetString(&parser, MTLX_TAG_DIRECTIVE_DATA, dirObj, sizeof(dirObj)))
+    char dirObj[ORION_PACKET_MAX_SIZE];
+    if (!mtlxGetString(&parser, ORION_TAG_DIRECTIVE_DATA, dirObj, sizeof(dirObj)))
     {
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
         appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
@@ -1565,10 +1565,10 @@ static void processDirectiveAddSession(MtlxSession_t *session)
     sessionDelete(session);
 }
 
-static void processDirectiveDeleteSession(MtlxSession_t *session)
+static void processDirectiveDeleteSession(OrionSession_t *session)
 {
-    DEBUG_INFO("->[I] MtlxSess: directiveDelete request (trans %u)", session->transNumber);
-    MtlxParser_t parser;
+    DEBUG_INFO("->[I] OrionSess: directiveDelete request (trans %u)", session->transNumber);
+    OrionParser_t parser;
     if (!sessionGetParser(session, &parser))
     {
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
@@ -1578,7 +1578,7 @@ static void processDirectiveDeleteSession(MtlxSession_t *session)
     }
 
     char filterId[64] = {0};
-    mtlxGetString(&parser, MTLX_TAG_DIRECTIVE_ID, filterId, sizeof(filterId));
+    mtlxGetString(&parser, ORION_TAG_DIRECTIVE_ID, filterId, sizeof(filterId));
 
     if (filterId[0] == '\0')
     {
@@ -1600,22 +1600,22 @@ static void processDirectiveDeleteSession(MtlxSession_t *session)
 /*          Session dispatcher                                        */
 /* ================================================================== */
 
-static void processSessionMessage(MtlxSession_t *session)
+static void processSessionMessage(OrionSession_t *session)
 {
     switch (session->function)
     {
         case SFUNC_PUSH_IDENT:    processIdentSession(session);           break;
         case SFUNC_ALIVE:         processAliveSession(session);           break;
-        case MTLX_FUNC_LOG:       processLogSession(session);            break;
-        case MTLX_FUNC_SETTING:   processSettingSession(session);        break;
-        case MTLX_FUNC_FW_UPDATE: processFwUpdateSession(session);       break;
-        case MTLX_FUNC_READOUT:   processReadoutSession(session);        break;
-        case MTLX_FUNC_LOADPROFILE: processLoadProfileSession(session);  break;
-        case MTLX_FUNC_DIRECTIVE_LIST: processDirectiveListSession(session); break;
-        case MTLX_FUNC_DIRECTIVE_ADD:  processDirectiveAddSession(session);  break;
-        case MTLX_FUNC_DIRECTIVE_DEL:  processDirectiveDeleteSession(session); break;
+        case ORION_FUNC_LOG:       processLogSession(session);            break;
+        case ORION_FUNC_SETTING:   processSettingSession(session);        break;
+        case ORION_FUNC_FW_UPDATE: processFwUpdateSession(session);       break;
+        case ORION_FUNC_READOUT:   processReadoutSession(session);        break;
+        case ORION_FUNC_LOADPROFILE: processLoadProfileSession(session);  break;
+        case ORION_FUNC_DIRECTIVE_LIST: processDirectiveListSession(session); break;
+        case ORION_FUNC_DIRECTIVE_ADD:  processDirectiveAddSession(session);  break;
+        case ORION_FUNC_DIRECTIVE_DEL:  processDirectiveDeleteSession(session); break;
         default:
-            DEBUG_WARNING("->[W] MtlxSess: unknown func 0x%02X", session->function);
+            DEBUG_WARNING("->[W] OrionSess: unknown func 0x%02X", session->function);
             {
                 uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
                 appTcpConnManagerSend(session->channel, (char *)gs_txBuf, (unsigned int)sz);
@@ -1629,12 +1629,12 @@ static void processSessionMessage(MtlxSession_t *session)
 /*          Incoming message handlers                                 */
 /* ================================================================== */
 
-static void dispatchIncomingMessage(const MtlxIncomingMsg_t *msg)
+static void dispatchIncomingMessage(const OrionIncomingMsg_t *msg)
 {
     if (msg == NULL || msg->length == 0)
         return;
 
-    MtlxParser_t parser;
+    OrionParser_t parser;
     if (!mtlxParserInit(&parser, msg->payload, msg->length))
     {
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, 0);
@@ -1645,16 +1645,16 @@ static void dispatchIncomingMessage(const MtlxIncomingMsg_t *msg)
     uint8_t func = 0;
     uint16_t transNum = 0;
 
-    if (!mtlxGetUint8(&parser, MTLX_TAG_FUNCTION, &func))
+    if (!mtlxGetUint8(&parser, ORION_TAG_FUNCTION, &func))
     {
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, 0);
         appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
         return;
     }
-    mtlxGetUint16(&parser, MTLX_TAG_TRANS_NUMBER, &transNum);
+    mtlxGetUint16(&parser, ORION_TAG_TRANS_NUMBER, &transNum);
 
     /* if transNum belongs to an active session, route it */
-    MtlxSession_t *session = (transNum != 0) ? findSessionByTransNumber(transNum) : NULL;
+    OrionSession_t *session = (transNum != 0) ? findSessionByTransNumber(transNum) : NULL;
     if (session)
     {
         (void)sessionSetIncoming(session, msg);
@@ -1672,21 +1672,21 @@ static void dispatchIncomingMessage(const MtlxIncomingMsg_t *msg)
     }
     else
     {
-        DEBUG_WARNING("->[W] MtlxSess: too many sessions");
+        DEBUG_WARNING("->[W] OrionSess: too many sessions");
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, transNum);
         appTcpConnManagerSend(ch, (char *)gs_txBuf, (unsigned int)sz);
     }
 }
 
-static void handleEvent(MtlxEventMsg_t *evt)
+static void handleEvent(OrionEventMsg_t *evt)
 {
     switch (evt->type)
     {
-        case MTLX_EVENT_FW_UPGRADE_SUCCESS:
+        case ORION_EVENT_FW_UPGRADE_SUCCESS:
             gs_sendIdent = TRUE;
             break;
 
-        case MTLX_EVENT_ALIVE:
+        case ORION_EVENT_ALIVE:
             gs_sendAlive = TRUE;
             break;
 
@@ -1702,14 +1702,14 @@ static void handleEvent(MtlxEventMsg_t *evt)
 static void protocolTaskFunc(void *arg)
 {
     (void)arg;
-    DEBUG_INFO("->[I] %s task started", MTLX_TASK_NAME);
+    DEBUG_INFO("->[I] %s task started", ORION_TASK_NAME);
     appTskMngImOK(gs_taskId);
 
     if (0 != appTcpConnManagerStart(gs_serverIP, gs_serverPort,
-                                     gs_pullPort, appProtocolMetalixPutIncomingMessage))
+                                     gs_pullPort, appProtocolOrionTLVPutIncomingMessage))
     {
-        DEBUG_ERROR("->[E] MtlxSess: TCP start failed");
-        APP_LOG_REC(g_sysLoggerID, "Metalix: TCP start fail");
+        DEBUG_ERROR("->[E] OrionSess: TCP start failed");
+        APP_LOG_REC(g_sysLoggerID, "OrionTLV: TCP start fail");
         gs_running = FALSE;
         return;
     }
@@ -1720,12 +1720,12 @@ static void protocolTaskFunc(void *arg)
 
     if (!gs_registered)
     {
-        DEBUG_INFO("->[I] MtlxSess: not registered, starting ident session");
+        DEBUG_INFO("->[I] OrionSess: not registered, starting ident session");
         gs_sendIdent = TRUE;
     }
     else
     {
-        DEBUG_INFO("->[I] MtlxSess: already registered");
+        DEBUG_INFO("->[I] OrionSess: already registered");
     }
 
     while (gs_running)
@@ -1734,20 +1734,20 @@ static void protocolTaskFunc(void *arg)
 
         /* 1. Incoming messages (push + pull) */
         {
-            MtlxIncomingMsg_t in;
+            OrionIncomingMsg_t in;
             while (inQueuePop(&in))
                 dispatchIncomingMessage(&in);
         }
 
         /* 2. Events */
         {
-            MtlxEventMsg_t evMsg;
+            OrionEventMsg_t evMsg;
             while (mtlxReceiveEvent(&evMsg))
                 handleEvent(&evMsg);
         }
 
         /* 3. Process all active sessions */
-        for (unsigned int i = 0; i < MTLX_SESSION_MAX; i++)
+        for (unsigned int i = 0; i < ORION_SESSION_MAX; i++)
         {
             if (gs_sessionTable[i].inUse)
                 processSessionMessage(&gs_sessionTable[i]);
@@ -1774,14 +1774,14 @@ static void protocolTaskFunc(void *arg)
     }
 
     appTcpConnManagerStop();
-    DEBUG_INFO("->[I] %s task stopped", MTLX_TASK_NAME);
+    DEBUG_INFO("->[I] %s task stopped", ORION_TASK_NAME);
 }
 
 /* ================================================================== */
 /*                       PUBLIC FUNCTIONS                             */
 /* ================================================================== */
 
-RETURN_STATUS appProtocolMetalixInit(const char *serialNumber,
+RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber,
                                      const char *serverIP, int serverPort,
                                      const char *deviceIP, int pullPort)
 {
@@ -1822,7 +1822,7 @@ RETURN_STATUS appProtocolMetalixInit(const char *serialNumber,
     return SUCCESS;
 }
 
-RETURN_STATUS appProtocolMetalixStart(void)
+RETURN_STATUS appProtocolOrionTLVStart(void)
 {
     if (gs_running) return SUCCESS;
 
@@ -1830,14 +1830,14 @@ RETURN_STATUS appProtocolMetalixStart(void)
 
     ZOsTaskParameters taskParam;
     taskParam.priority  = ZOS_TASK_PRIORITY_LOW;
-    taskParam.stackSize = MTLX_TASK_STACK_SIZE;
+    taskParam.stackSize = ORION_TASK_STACK_SIZE;
 
-    gs_taskId = appTskMngCreate(MTLX_TASK_NAME, protocolTaskFunc, NULL, &taskParam);
+    gs_taskId = appTskMngCreate(ORION_TASK_NAME, protocolTaskFunc, NULL, &taskParam);
     if (OS_INVALID_TASK_ID == gs_taskId)
     {
         gs_running = FALSE;
-        DEBUG_ERROR("->[E] MtlxSess: task creation failed");
-        APP_LOG_REC(g_sysLoggerID, "Metalix task creation failed");
+        DEBUG_ERROR("->[E] OrionSess: task creation failed");
+        APP_LOG_REC(g_sysLoggerID, "OrionTLV task creation failed");
         return FAILURE;
     }
 
@@ -1846,18 +1846,18 @@ RETURN_STATUS appProtocolMetalixStart(void)
         if (middEventTimerRegister(&gs_periodicTimerId, periodicTimerCb,
                                    1000U, TRUE) != SUCCESS)
         {
-            DEBUG_WARNING("->[W] MtlxSess: periodic timer register failed");
+            DEBUG_WARNING("->[W] OrionSess: periodic timer register failed");
         }
     }
     if (gs_periodicTimerId >= 0)
         (void)middEventTimerStart(gs_periodicTimerId);
 
-    DEBUG_INFO("->[I] MtlxSess: started");
-    APP_LOG_REC(g_sysLoggerID, "Protocol Metalix started");
+    DEBUG_INFO("->[I] OrionSess: started");
+    APP_LOG_REC(g_sysLoggerID, "Protocol OrionTLV started");
     return SUCCESS;
 }
 
-RETURN_STATUS appProtocolMetalixStop(void)
+RETURN_STATUS appProtocolOrionTLVStop(void)
 {
     if (!gs_running) return SUCCESS;
 
@@ -1877,12 +1877,12 @@ RETURN_STATUS appProtocolMetalixStop(void)
         gs_taskId = OS_INVALID_TASK_ID;
     }
 
-    DEBUG_INFO("->[I] MtlxSess: stopped");
-    APP_LOG_REC(g_sysLoggerID, "Protocol Metalix stopped");
+    DEBUG_INFO("->[I] OrionSess: stopped");
+    APP_LOG_REC(g_sysLoggerID, "Protocol OrionTLV stopped");
     return SUCCESS;
 }
 
-void appProtocolMetalixPutIncomingMessage(const char *channel,
+void appProtocolOrionTLVPutIncomingMessage(const char *channel,
                                           const char *data,
                                           unsigned int dataLength)
 {
@@ -1892,12 +1892,12 @@ void appProtocolMetalixPutIncomingMessage(const char *channel,
     (void)inQueuePush(channel, (const uint8_t *)data, (uint16_t)dataLength);
 }
 
-BOOL appProtocolMetalixSendEvent(MtlxEventType_t type)
+BOOL appProtocolOrionTLVSendEvent(OrionEventType_t type)
 {
-    if (gs_evCount >= MTLX_EVENT_Q_DEPTH)
+    if (gs_evCount >= ORION_EVENT_Q_DEPTH)
         return FALSE;
     gs_eventQ[gs_evTail].type = type;
-    gs_evTail = (uint8_t)((gs_evTail + 1U) % MTLX_EVENT_Q_DEPTH);
+    gs_evTail = (uint8_t)((gs_evTail + 1U) % ORION_EVENT_Q_DEPTH);
     gs_evCount++;
     return TRUE;
 }

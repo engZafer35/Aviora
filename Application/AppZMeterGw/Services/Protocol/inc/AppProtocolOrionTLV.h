@@ -2,11 +2,11 @@
 * #Author       : Zafer Satılmış
 * #Revision     : 1.0
 * #Date         : Mar 30, 2026
-* #File Name    : AppProtocolMetalix.h
+* #File Name    : AppProtocolOrionTLV.h
 *******************************************************************************/
 
 /******************************************************************************
-* Metalix TLV-over-TCP protocol handler for IoT meter gateway.
+* OrionTLV TLV-over-TCP protocol handler for IoT meter gateway.
 *
 * Wire format
 * ───────────
@@ -18,7 +18,7 @@
 *                 + VALUE(LEN bytes).
 *  - Multiple TLV fields can appear in a single packet.
 *  - No nesting: every tag carries exactly one piece of data.
-*  - Every message carries MTLX_TAG_TRANS_NUMBER for session tracking.
+*  - Every message carries ORION_TAG_TRANS_NUMBER for session tracking.
 *    The initiator generates the number; all messages in the same session
 *    reuse it.  Range 1..0xFFFF, wraps back to 1.
 *
@@ -34,7 +34,7 @@
 *   $ 00FF 0002 002D                      // TRANS_NUMBER = 45
 *     0001 0003 "AVI"                     // FLAG
 *     0002 000F "0123456789ABCDE"         // SERIAL_NUMBER
-*     0003 0001 01                        // FUNCTION = MTLX_FUNC_IDENT
+*     0003 0001 01                        // FUNCTION = ORION_FUNC_IDENT
 *     0101 0001 00                        // REGISTERED = false
 *     0102 0003 "AVI"                     // DEVICE_BRAND
 *     0103 0008 "AVIO2622"               // DEVICE_MODEL
@@ -48,34 +48,34 @@
 *                loadprofile request, directive CRUD)
 ******************************************************************************/
 /******************************IFNDEF & DEFINE********************************/
-#ifndef __APP_PROTOCOL_METALIX_H__
-#define __APP_PROTOCOL_METALIX_H__
+#ifndef __APP_PROTOCOL_ORION_TLV_H__
+#define __APP_PROTOCOL_ORION_TLV_H__
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
 #include <stdint.h>
 
 /******************************MACRO DEFINITIONS*******************************/
 
-#define MTLX_FLAG                    "AVI"
-#define MTLX_BRAND                   "AVI"
-#define MTLX_MODEL                   "AVIO2622"
+#define ORION_FLAG                    "AVI"
+#define ORION_BRAND                   "AVI"
+#define ORION_MODEL                   "AVIO2622"
 
-#define MTLX_PACKET_MAX_SIZE         (1024)
-#define MTLX_DATA_CHUNK_SIZE         (700)
+#define ORION_PACKET_MAX_SIZE         (1024)
+#define ORION_DATA_CHUNK_SIZE         (700)
 
-#define MTLX_ALIVE_INTERVAL_S        (300)     /* 5 min */
-#define MTLX_REGISTER_RETRY_S        (30)      /* 30 s  */
-#define MTLX_ACK_TIMEOUT_MS          (10000)   /* 10 s  */
-#define MTLX_CONNECT_TIMEOUT_MS      (10000)   /* 10 s  */
+#define ORION_ALIVE_INTERVAL_S        (300)     /* 5 min */
+#define ORION_REGISTER_RETRY_S        (30)      /* 30 s  */
+#define ORION_ACK_TIMEOUT_MS          (10000)   /* 10 s  */
+#define ORION_CONNECT_TIMEOUT_MS      (10000)   /* 10 s  */
 
-#define MTLX_REGISTER_FILE           "metalix_register.dat"
-#define MTLX_SERVER_FILE             "metalix_server.dat"
+#define ORION_REGISTER_FILE           "orion_register.dat"
+#define ORION_SERVER_FILE             "orion_server.dat"
 
-#define MTLX_PKT_START               '$'       /* 0x24 */
-#define MTLX_PKT_END                 '#'       /* 0x23 */
+#define ORION_PKT_START               '$'       /* 0x24 */
+#define ORION_PKT_END                 '#'       /* 0x23 */
 
-#define MTLX_SESSION_MAX             (8)
-#define MTLX_SESSION_RETRY_MAX       (3)
+#define ORION_SESSION_MAX             (8)
+#define ORION_SESSION_RETRY_MAX       (3)
 
 /* ─── TAG Definitions ─────────────────────────────────────────────────────
  *  0x00XX  Common / header
@@ -96,16 +96,16 @@
 /* ── Event types ── */
 typedef enum
 {
-    MTLX_EVENT_ALIVE,
-    MTLX_EVENT_FW_UPGRADE_SUCCESS,
-} MtlxEventType_t;
+    ORION_EVENT_ALIVE,
+    ORION_EVENT_FW_UPGRADE_SUCCESS,
+} OrionEventType_t;
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
 
 /* ── Protocol life-cycle ── */
 
 /**
- * @brief  Initialise the Metalix protocol module.
+ * @brief  Initialise the OrionTLV protocol module.
  * @param  serialNumber  Device serial number (null-terminated, max 16 chars)
  * @param  serverIP      Default push-server IP  (null-terminated)
  * @param  serverPort    Default push-server port
@@ -113,7 +113,7 @@ typedef enum
  * @param  pullPort      TCP-server port opened on this device (pull)
  * @return SUCCESS / FAILURE
  */
-RETURN_STATUS appProtocolMetalixInit(const char *serialNumber,
+RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber,
                                      const char *serverIP, int serverPort,
                                      const char *deviceIP, int pullPort);
 
@@ -121,13 +121,13 @@ RETURN_STATUS appProtocolMetalixInit(const char *serialNumber,
  * @brief  Start the protocol task (creates TCP connections, enters state machine).
  * @return SUCCESS / FAILURE
  */
-RETURN_STATUS appProtocolMetalixStart(void);
+RETURN_STATUS appProtocolOrionTLVStart(void);
 
 /**
  * @brief  Stop the protocol task and close TCP connections.
  * @return SUCCESS / FAILURE
  */
-RETURN_STATUS appProtocolMetalixStop(void);
+RETURN_STATUS appProtocolOrionTLVStop(void);
 
 /**
  * @brief   Feed raw bytes received from a TCP channel.
@@ -135,7 +135,7 @@ RETURN_STATUS appProtocolMetalixStop(void);
  * @param   data        raw received bytes
  * @param   dataLength  number of bytes received
  */
-void appProtocolMetalixPutIncomingMessage(const char *channel,
+void appProtocolOrionTLVPutIncomingMessage(const char *channel,
                                           const char *data,
                                           unsigned int dataLength);
 
@@ -144,8 +144,8 @@ void appProtocolMetalixPutIncomingMessage(const char *channel,
  * @param   type   event type
  * @return  TRUE if queued, FALSE if queue full
  */
-BOOL appProtocolMetalixSendEvent(MtlxEventType_t type);
+BOOL appProtocolOrionTLVSendEvent(OrionEventType_t type);
 
-#endif /* __APP_PROTOCOL_METALIX_H__ */
+#endif /* __APP_PROTOCOL_ORION_TLV_H__ */
 
 /********************************* End Of File ********************************/
