@@ -39,7 +39,7 @@
 
 /****************************** MACRO DEFINITIONS *****************************/
 #define ORION_TASK_STACK_SIZE    (4096U)
-#define ORION_TASK_NAME          "OrionSess"
+#define ORION_TASK_NAME          "OrionTLV"
 
 #define MAX_PENDING_JOBS        (4)
 #define MAX_PATH_LEN            (96)
@@ -54,6 +54,7 @@
 
 #define SFUNC_PUSH_IDENT        (0xF0)
 #define SFUNC_ALIVE             (0xF1)
+#define SFUNC_PUSH_METER_DATA   (0xF2)
 
 
 /* ─── TAG Definitions ─────────────────────────────────────────────────────
@@ -184,10 +185,12 @@ typedef struct
 
 typedef enum
 {
-    ORION_SESS_DONE = 0,
-    ORION_SESS_ERROR,
-    ORION_SESS_TIMEOUT,
-} OrionSessState_t;
+    SESSION_DONE = 0,
+    SESSION_ERROR,
+    SESSION_TIMEOUT,
+} OrionTLVState_t;
+
+typedef void (*SessionOnComplateCb)(Session *session, SessionState state, void *arg);
 
 typedef struct
 {
@@ -204,6 +207,7 @@ typedef struct
     volatile BOOL rxReady;
 
     int         pendingJobIdx;
+    SessionOnComplateCb onComplateFunc;
 } OrionSession_t;
 
 typedef struct
@@ -712,6 +716,8 @@ static void sendLogPackets(uint16_t transNum)
     {
         uint16_t sz = buildLogPacket(gs_txBuf, sizeof(gs_txBuf), "NO-LOG", 1, FALSE, transNum);
         appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
+
+        DEBUG_DEBUG("->[D] OrionTLV: no log packets to send (trans %u)", transNum);
         return;
     }
 
@@ -732,12 +738,13 @@ static void sendLogPackets(uint16_t transNum)
     }
 }
 
-static void sendFilePacketised(const char *channel, uint8_t func,
-                                const char *meterId, const char *filePath,
-                                uint16_t transNum)
+static RETURN_STATUS sendFilePacketised(const char *channel, uint8_t func,
+                                        const char *meterId, const char *filePath,
+                                        uint16_t transNum)
 {
     FsFile *f = fsOpenFile((char_t *)filePath, FS_FILE_MODE_READ);
-    if (f == NULL) return;
+    if (f == NULL)
+        return FAILURE;
 
     char bufA[ORION_DATA_CHUNK_SIZE + 1];
     char bufB[ORION_DATA_CHUNK_SIZE + 1];
@@ -745,7 +752,11 @@ static void sendFilePacketised(const char *channel, uint8_t func,
 
     size_t curLen = 0;
     (void)fsReadFile(f, cur, ORION_DATA_CHUNK_SIZE, &curLen);
-    if (curLen == 0) { fsCloseFile(f); return; }
+    if (curLen == 0)
+    {
+        fsCloseFile(f);
+        return FAILURE;
+    }
 
     int packetNum = 0;
     while (curLen > 0)
@@ -758,13 +769,23 @@ static void sendFilePacketised(const char *channel, uint8_t func,
 
         uint16_t sz = buildDataPacket(gs_txBuf, sizeof(gs_txBuf),
                                        func, meterId, cur, packetNum, hasMore, transNum);
-        appTcpConnManagerSend(channel, (char *)gs_txBuf, (unsigned int)sz);
+        if (sz == 0)
+        {
+            fsCloseFile(f);
+            return FAILURE;
+        }
+        if (SUCCESS != appTcpConnManagerSend(channel, (char *)gs_txBuf, (unsigned int)sz))
+        {
+            fsCloseFile(f);
+            return FAILURE;
+        }
 
         if (!hasMore) break;
         char *tmp = cur; cur = nxt; nxt = tmp;
         curLen = nxtLen;
     }
     fsCloseFile(f);
+    return SUCCESS;
 }
 
 /* ================================================================== */
@@ -858,7 +879,7 @@ static void meterTaskCallback(S32 taskID, ERR_CODE_T status)
 {
     for (int i = 0; i < MAX_PENDING_JOBS; i++)
     {
-        if (gs_pendingJobs[i].taskId == taskID)
+        if (taskID == gs_pendingJobs[i].taskId)
         {
             gs_pendingJobs[i].result    = status;
             gs_pendingJobs[i].completed = TRUE;
@@ -894,14 +915,54 @@ static void cleanupMeterFiles(S32 taskId)
     (void)fsDeleteFile((char_t *)path);
 }
 
-static void deliverMeterData(int jobIdx, uint16_t transNum)
+/**
+ * Start a push session to send readout/loadprofile file chunks to the server.
+ * Owns gs_pendingJobs[jobIdx] until send + ACK wait completes (or timeout).
+ */
+static RETURN_STATUS startPushMeterDataSession(int jobIdx, uint16_t transNum)
 {
+    if (jobIdx < 0 || jobIdx >= MAX_PENDING_JOBS)
+        return FAILURE;
+
+    OrionSession_t *s = sessionCreate(SFUNC_PUSH_METER_DATA, PUSH_TCP_SOCK_NAME, transNum, meterOprsOnComplete);
+    if (NULL == s)
+        return FAILURE;
+
+    s->pendingJobIdx = jobIdx;
+    s->step          = 0;
+    s->timeCnt       = 0;
+    
+    return SUCCESS;
+}
+
+/**
+ * Push meter data over TCP — non-blocking steps (like processAliveSession).
+ * step 0: wait for push socket
+ * step 1: send packetised file
+ * step 2: wait for server ACK on push (same transactionNumber routes via dispatch)
+ */
+static void processPushMeterDataSession(OrionSession_t *session)
+{
+    int jobIdx = session->pendingJobIdx;
+    if (jobIdx < 0 || jobIdx >= MAX_PENDING_JOBS)
+    {
+        sessionDelete(session);
+        return;
+    }
+
     PendingJob_t *job = &gs_pendingJobs[jobIdx];
+    S32 taskId = job->taskId;
+    if (taskId == 0)
+    {
+        sessionDelete(session);
+        return;
+    }
+
     uint8_t func = job->isLoadProfile ? ORION_FUNC_LOADPROFILE : ORION_FUNC_READOUT;
 
     char meterId[128] = {0};
     char idPath[MAX_PATH_LEN];
-    snprintf(idPath, sizeof(idPath), "%s%d_meterID.txt", METER_DATA_OUTPUT_DIR, (int)job->taskId);
+    snprintf(idPath, sizeof(idPath), "%s%d_meterID.txt", METER_DATA_OUTPUT_DIR, (int)taskId);
 
     size_t got = 0;
     if (SUCCESS != readWholeText(idPath, meterId, sizeof(meterId), &got) || got == 0)
@@ -912,34 +973,70 @@ static void deliverMeterData(int jobIdx, uint16_t transNum)
 
     char dataPath[MAX_PATH_LEN];
     if (job->isLoadProfile)
-        snprintf(dataPath, sizeof(dataPath), "%s%d_payload.txt", METER_DATA_OUTPUT_DIR, (int)job->taskId);
+        snprintf(dataPath, sizeof(dataPath), "%s%d_payload.txt", METER_DATA_OUTPUT_DIR, (int)taskId);
     else
-        snprintf(dataPath, sizeof(dataPath), "%s%d_readout.txt", METER_DATA_OUTPUT_DIR, (int)job->taskId);
+        snprintf(dataPath, sizeof(dataPath), "%s%d_readout.txt", METER_DATA_OUTPUT_DIR, (int)taskId);
 
-    if (!appTcpConnManagerIsConnectedPush())
+    switch (session->step)
     {
-        appTcpConnManagerRequestPushConnect();
-        U32 t0 = osGetSystemTime();
-        while ((osGetSystemTime() - t0) < ORION_CONNECT_TIMEOUT_MS)
+        case 0:
         {
-            if (appTcpConnManagerIsConnectedPush()) break;
-            zosDelayTask(100);
+            if (CONN_TYPE_TCP == gsFlagList.connType)
+            {
+                if ((FALSE == gsFlagList.tcpPushInUse) && (FALSE == appTcpConnManagerIsConnectedPush()))
+                {
+                    gsFlagList.tcpPushInUse = TRUE;
+                    appTcpConnManagerRequestPushConnect();
+
+                    session->timeCnt = 0; //clear next step timeout counter
+                    session->step    = 1;
+
+                    DEBUG_INFO("->[I] OrionTLV: Push Socket is used in PushIdent Session");                
+                }
+
+                zosDelayTask(1000);
+                break;
+            }
+            /* !< don't add a break here. in the MQTT connection, there is no need to check the push socket. jump to next step */
         }
-        if (!appTcpConnManagerIsConnectedPush())
+        case 1:
         {
-            DEBUG_ERROR("->[E] OrionSess: push connect timeout, data delivery skipped");
-            return;
+            if ((CONN_TYPE_TCP == gsFlagList.connType) && (FALSE == appTcpConnManagerIsConnectedPush()))
+            {
+                appTcpConnManagerRequestPushConnect();
+                break;
+            }
+
+            if (SUCCESS != sendFilePacketised(PUSH_TCP_SOCK_NAME, func, meterId, dataPath, session->transNumber))
+            {
+                DEBUG_ERROR("->[E] OrionTLV: sendFilePacketised failed (trans %u) for meter task %d", session->transNumber, taskId);
+
+                completeSession(session, SESSION_ERROR, NULL);
+                sessionDelete(session);
+                break;
+            }
+            session->rxReady = FALSE;
+            session->rxLen   = 0;
+            session->timeCnt = 0; //clear next step timeout counter
+            session->step    = 2;
+            break;
         }
-    }
+        case 2:
+        {
+            if (session->rxReady)
+            {
+                session->rxReady = FALSE;
+                session->rxLen   = 0;
+                
+                completeSession(session, SESSION_DONE, NULL);
+                sessionDelete(session);
+            }
+            /* timeout will be handled by the session timeout handler 
+            * we dont need to call sessionDelete here, it will be called
+            * by the session timeout handler */
 
-    sendFilePacketised(PUSH_TCP_SOCK_NAME, func, meterId, dataPath, transNum);
-
-    gs_pushRx.ready = FALSE;
-    U32 t0 = osGetSystemTime();
-    while ((osGetSystemTime() - t0) < ORION_ACK_TIMEOUT_MS)
-    {
-        if (gs_pushRx.ready) { gs_pushRx.ready = FALSE; break; }
-        zosDelayTask(100);
+            break;
+        }
     }
 }
 
@@ -947,8 +1044,36 @@ static void deliverMeterData(int jobIdx, uint16_t transNum)
 /*           Session management                                       */
 /* ================================================================== */
 
+static void meterOprsOnComplete(OrionSession_t* session, OrionTLVState_t state, void *arg)
+{    
+    //if (SESSION_DONE == state)
+    {
+        f ((session->pendingJobIdx >= 0) || (session->pendingJobIdx < MAX_PENDING_JOBS))
+        {
+            PendingJob_t *job = &gs_pendingJobs[session->pendingJobIdx];
+            
+            cleanupMeterFiles(job->taskId);
+            appMeterOperationsTaskIDFree(job->taskId);
+
+            memset(job, 0, sizeof(*job));
+            session->pendingJobIdx = -1;
+        }
+    }
+}
+
+static void completeSession(OrionSession_t* session, OrionTLVState_t state, void *arg)
+{
+    if (session->onComplateFunc) //check null
+    {
+        session->onComplete(session, state, arg);
+    }
+}
+
 static void sessionDelete(OrionSession_t *s)
 {
+    if (s == NULL)
+        return;    
+
     if (0 == strcmp(PUSH_TCP_SOCK_NAME, s->channel))
     {
         appTcpConnManagerRequestPushDisconnect();
@@ -956,12 +1081,12 @@ static void sessionDelete(OrionSession_t *s)
         DEBUG_INFO("->[I] sessionDelete push socket disconnected, Nightwish");
         zosDelayTask(1000);
     }
-    
-    memset(s, 0, sizeof(OrionSession_t));    
+
+    memset(s, 0, sizeof(OrionSession_t));
 }
 
 static OrionSession_t *sessionCreate(uint8_t function, const char *channel,
-                                     uint16_t transNum)
+                                     uint16_t transNum, SessionOnComplateCb onComplate)
 {
     for (unsigned int i = 0; i < ORION_SESSION_MAX; i++)
     {
@@ -977,6 +1102,7 @@ static OrionSession_t *sessionCreate(uint8_t function, const char *channel,
             s->pendingJobIdx    = -1;
             s->rxReady          = FALSE;
             s->rxLen            = 0;
+            s->onComplateFunc   = onComplate; 
 
             if (channel != NULL)
             {
@@ -1049,8 +1175,10 @@ static void checkAllSessionTimeouts(void)
 
             if (s->timeCnt > ORION_SESSION_TIMEOUT)
             {
-                DEBUG_WARNING("->[W] OrionSess: session timeout (func 0x%02X, trans %u)",
+                DEBUG_WARNING("->[W] OrionTLV: session timeout (func 0x%02X, trans %u)",
                             s->function, s->transNumber);
+                
+                completeSession(s, SESSION_TIMEOUT, NULL);
                 sessionDelete(s);
             }
         }
@@ -1082,7 +1210,7 @@ static void processIdentSession(OrionSession_t *session)
         {
             if (CONN_TYPE_TCP == gsFlagList.connType)
             {
-                if ( && (FALSE == gsFlagList.tcpPushInUse) && (FALSE == appTcpConnManagerIsConnectedPush()))
+                if ((FALSE == gsFlagList.tcpPushInUse) && (FALSE == appTcpConnManagerIsConnectedPush()))
                 {
                     gsFlagList.tcpPushInUse = TRUE;
                     appTcpConnManagerRequestPushConnect();
@@ -1109,14 +1237,14 @@ static void processIdentSession(OrionSession_t *session)
             uint16_t sz = buildIdentMsg(gs_txBuf, sizeof(gs_txBuf), session->transNumber);
             if (SUCCESS != appTcpConnManagerSend(PUSH_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz))
             {
-                DEBUG_WARNING("->[W] OrionSess: pushident send failed");
+                DEBUG_WARNING("->[W] OrionTLV: pushident send failed");
                 APP_LOG_REC(g_sysLoggerID, "Pushident send failed");
                 
                 sessionDelete(session);
                 break;
             }
 
-            DEBUG_INFO("->[I] OrionSess: pushident sent tarnsNum: %d", session->transNumber);
+            DEBUG_INFO("->[I] OrionTLV: pushident sent tarnsNum: %d", session->transNumber);
 
             session->timeCnt = 0;
             session->step    = 2;
@@ -1144,7 +1272,7 @@ static void processIdentSession(OrionSession_t *session)
                             {
                                 gs_registered = TRUE;
                                 registerStateSave(TRUE);
-                                DEBUG_INFO("->[I] OrionSess: device registered");
+                                DEBUG_INFO("->[I] OrionTLV: device registered");
                                 APP_LOG_REC(g_sysLoggerID, "Device registered");
                             }
                         }
@@ -1169,7 +1297,7 @@ static void processAliveSession(OrionSession_t *session)
         {
             if (CONN_TYPE_TCP == gsFlagList.connType)
             {
-                if ( && (FALSE == gsFlagList.tcpPushInUse) && (FALSE == appTcpConnManagerIsConnectedPush()))
+                if ((FALSE == gsFlagList.tcpPushInUse) && (FALSE == appTcpConnManagerIsConnectedPush()))
                 {
                     gsFlagList.tcpPushInUse = TRUE;
                     appTcpConnManagerRequestPushConnect();
@@ -1197,7 +1325,7 @@ static void processAliveSession(OrionSession_t *session)
 
             if(SUCCESS != appTcpConnManagerSend(PUSH_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz))
             {
-                DEBUG_WARNING("->[W] OrionSess: alive send failed (trans %u)", session->transNumber);
+                DEBUG_WARNING("->[W] OrionTLV: alive send failed (trans %u)", session->transNumber);
                 APP_LOG_REC(g_sysLoggerID, "Alive send failed");
                 
                 session->timeCnt = 0;
@@ -1205,29 +1333,27 @@ static void processAliveSession(OrionSession_t *session)
             }
             else 
             {
-                DEBUG_DEBUG("->[D] OrionSess: alive sent (trans %u)", session->transNumber);
+                DEBUG_DEBUG("->[D] OrionTLV: alive sent (trans %u)", session->transNumber);
             }       
 
             sessionDelete(session);
             break;
         }
-    }
-
-    
+    }    
 }
 
 /* ── Pull-socket request handlers ── */
-
 static void processLogSession(OrionSession_t *session)
 {
-    DEBUG_INFO("->[I] OrionSess: log request (trans %u)", session->transNumber);
+    DEBUG_INFO("->[I] OrionTLV: log request (trans %u)", session->transNumber);
+
     sendLogPackets(session->transNumber);
     sessionDelete(session);
 }
 
 static void processSettingSession(OrionSession_t *session)
 {
-    DEBUG_INFO("->[I] OrionSess: setting request (trans %u)", session->transNumber);
+    DEBUG_INFO("->[I] OrionTLV: setting request (trans %u)", session->transNumber);
     OrionParser_t parser;
     if (!sessionGetParser(session, &parser))
     {
@@ -1255,7 +1381,7 @@ static void processSettingSession(OrionSession_t *session)
                                gs_pullPort, appProtocolOrionTLVPutIncomingMessage);
         appTcpConnManagerRequestConnect();
 
-        DEBUG_INFO("->[I] OrionSess: server updated to %s:%d", gs_serverIP, gs_serverPort);
+        DEBUG_INFO("->[I] OrionTLV: server updated to %s:%d", gs_serverIP, gs_serverPort);
         APP_LOG_REC(g_sysLoggerID, "Server address updated");
     }
 
@@ -1273,10 +1399,18 @@ static void processSettingSession(OrionSession_t *session)
             if (inMeter)
             {
                 if (0 == strcmp(operation, "add"))
-                { if (SUCCESS != appMeterOperationsAddMeter(&md)) success = FALSE; }
+                { 
+                    if (SUCCESS != appMeterOperationsAddMeter(&md)) success = FALSE; 
+                }
                 else if (0 == strcmp(operation, "remove"))
-                { if (md.serialNumber[0] != '\0') if (SUCCESS != appMeterOperationsDeleteMeter(md.serialNumber)) success = FALSE; }
+                { 
+                    if (md.serialNumber[0] != '\0') 
+                    {
+                        if (SUCCESS != appMeterOperationsDeleteMeter(md.serialNumber)) success = FALSE; 
+                    }
+                }
             }
+
             inMeter = TRUE;
             memset(&md, 0, sizeof(md));
             memset(operation, 0, sizeof(operation));
@@ -1287,25 +1421,63 @@ static void processSettingSession(OrionSession_t *session)
         switch (tag)
         {
             case ORION_TAG_METER_OPERATION:
-            { uint16_t cp = vLen < sizeof(operation)-1 ? vLen : (uint16_t)(sizeof(operation)-1); memcpy(operation, val, cp); operation[cp]='\0'; break; }
+            { 
+                uint16_t cp = vLen < sizeof(operation)-1 ? vLen : (uint16_t)(sizeof(operation)-1);
+                memcpy(operation, val, cp); operation[cp]='\0'; 
+                break; 
+            }
             case ORION_TAG_METER_PROTOCOL:
-            { uint16_t cp = vLen < sizeof(md.protocol)-1 ? vLen : (uint16_t)(sizeof(md.protocol)-1); memcpy(md.protocol, val, cp); md.protocol[cp]='\0'; break; }
+            { 
+                uint16_t cp = vLen < sizeof(md.protocol)-1 ? vLen : (uint16_t)(sizeof(md.protocol)-1); 
+                memcpy(md.protocol, val, cp); md.protocol[cp]='\0';
+                break;
+            }
             case ORION_TAG_METER_TYPE:
-            { uint16_t cp = vLen < sizeof(md.type)-1 ? vLen : (uint16_t)(sizeof(md.type)-1); memcpy(md.type, val, cp); md.type[cp]='\0'; break; }
+            { 
+                uint16_t cp = vLen < sizeof(md.type)-1 ? vLen : (uint16_t)(sizeof(md.type)-1);
+                memcpy(md.type, val, cp); md.type[cp]='\0';
+                break;
+            }
             case ORION_TAG_METER_BRAND:
-            { uint16_t cp = vLen < sizeof(md.brand)-1 ? vLen : (uint16_t)(sizeof(md.brand)-1); memcpy(md.brand, val, cp); md.brand[cp]='\0'; break; }
+            { 
+                uint16_t cp = vLen < sizeof(md.brand)-1 ? vLen : (uint16_t)(sizeof(md.brand)-1);
+                memcpy(md.brand, val, cp); md.brand[cp]='\0';
+                break;
+            }
             case ORION_TAG_METER_SERIAL_NUM:
-            { uint16_t cp = vLen < sizeof(md.serialNumber)-1 ? vLen : (uint16_t)(sizeof(md.serialNumber)-1); memcpy(md.serialNumber, val, cp); md.serialNumber[cp]='\0'; break; }
+            { 
+                uint16_t cp = vLen < sizeof(md.serialNumber)-1 ? vLen : (uint16_t)(sizeof(md.serialNumber)-1);
+                memcpy(md.serialNumber, val, cp); md.serialNumber[cp]='\0';
+                break;
+            }
             case ORION_TAG_METER_SERIAL_PORT:
-            { uint16_t cp = vLen < sizeof(md.serialPort)-1 ? vLen : (uint16_t)(sizeof(md.serialPort)-1); memcpy(md.serialPort, val, cp); md.serialPort[cp]='\0'; break; }
+            { 
+                uint16_t cp = vLen < sizeof(md.serialPort)-1 ? vLen : (uint16_t)(sizeof(md.serialPort)-1); 
+                memcpy(md.serialPort, val, cp); md.serialPort[cp]='\0';
+                break;
+            }
             case ORION_TAG_METER_INIT_BAUD:
-            { if (vLen >= 4) md.initBaud = (int)(((uint32_t)val[0]<<24)|((uint32_t)val[1]<<16)|((uint32_t)val[2]<<8)|val[3]); break; }
+            { 
+                if (vLen >= 4) md.initBaud = (int)(((uint32_t)val[0]<<24)|((uint32_t)val[1]<<16)|((uint32_t)val[2]<<8)|val[3]);
+                break;
+            }
             case ORION_TAG_METER_FIX_BAUD:
-                md.fixBaud = (vLen >= 1 && val[0] != 0) ? TRUE : FALSE; break;
+            {
+                md.fixBaud = (vLen >= 1 && val[0] != 0) ? TRUE : FALSE;
+                break;
+            }
             case ORION_TAG_METER_FRAME:
-            { uint16_t cp = vLen < sizeof(md.frame)-1 ? vLen : (uint16_t)(sizeof(md.frame)-1); memcpy(md.frame, val, cp); md.frame[cp]='\0'; break; }
+            { 
+                uint16_t cp = vLen < sizeof(md.frame)-1 ? vLen : (uint16_t)(sizeof(md.frame)-1);
+                memcpy(md.frame, val, cp); md.frame[cp]='\0';
+                break;
+            }
             case ORION_TAG_METER_CUSTOMER_NUM:
-            { uint16_t cp = vLen < sizeof(md.customerNumber)-1 ? vLen : (uint16_t)(sizeof(md.customerNumber)-1); memcpy(md.customerNumber, val, cp); md.customerNumber[cp]='\0'; break; }
+            { 
+                uint16_t cp = vLen < sizeof(md.customerNumber)-1 ? vLen : (uint16_t)(sizeof(md.customerNumber)-1);
+                memcpy(md.customerNumber, val, cp); md.customerNumber[cp]='\0';
+                break;
+            }
             default: break;
         }
     }
@@ -1313,9 +1485,13 @@ static void processSettingSession(OrionSession_t *session)
     if (inMeter)
     {
         if (0 == strcmp(operation, "add"))
-        { if (SUCCESS != appMeterOperationsAddMeter(&md)) success = FALSE; }
+        { 
+            if (SUCCESS != appMeterOperationsAddMeter(&md)) success = FALSE; 
+        }
         else if (0 == strcmp(operation, "remove"))
-        { if (md.serialNumber[0] != '\0') if (SUCCESS != appMeterOperationsDeleteMeter(md.serialNumber)) success = FALSE; }
+        { 
+            if (md.serialNumber[0] != '\0') if (SUCCESS != appMeterOperationsDeleteMeter(md.serialNumber)) success = FALSE; 
+        }
     }
 
     uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), success, session->transNumber);
@@ -1328,7 +1504,7 @@ static void processSettingSession(OrionSession_t *session)
 
 static void processFwUpdateSession(OrionSession_t *session)
 {
-    DEBUG_INFO("->[I] OrionSess: fwUpdate request (trans %u)", session->transNumber);
+    DEBUG_INFO("->[I] OrionTLV: fwUpdate request (trans %u)", session->transNumber);
     OrionParser_t parser;
     if (!sessionGetParser(session, &parser))
     {
@@ -1356,7 +1532,7 @@ static void processFwUpdateSession(OrionSession_t *session)
                     path, sizeof(path)))
     {
         AppSwUpdateInit(host, port, user, pass, path, FW_LOCAL_PATH);
-        DEBUG_INFO("->[I] OrionSess: FW update started from %s", host);
+        DEBUG_INFO("->[I] OrionTLV: FW update started from %s", host);
         APP_LOG_REC(g_sysLoggerID, "FW update started");
     }
 
@@ -1374,10 +1550,12 @@ static void processReadoutSession(OrionSession_t *session)
     {
         case 0:
         {
-            DEBUG_INFO("->[I] OrionSess: readout request (trans %u)", session->transNumber);
+            uint16_t sz;
+
+            DEBUG_INFO("->[I] OrionTLV: readout request (trans %u)", session->transNumber);
             if (!sessionGetParser(session, &parser))
             {
-                uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
+                sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
                 appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
                 sessionDelete(session);
                 return;
@@ -1394,45 +1572,69 @@ static void processReadoutSession(OrionSession_t *session)
             S32 tid = appMeterOperationsAddReadoutTask(reqBuf, meterTaskCallback);
             if (tid <= 0)
             {
-                uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
+                DEBUG_ERROR("->[E] OrionTLV: meter oprs READOUT task add failed tranN %u", session->transNumber);
+                APP_LOG_REC(g_sysLoggerID, "OrionTLV: meter oprs READOUT task add failed tranN %u", session->transNumber);
+
+                sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
                 appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
-                sessionDelete(session); return;
+                sessionDelete(session); 
+                return;
             }
 
             int slot = pendingJobAllocSlot(tid, FALSE);
             if (slot < 0)
             {
                 appMeterOperationsTaskIDFree(tid);
-                uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
+                sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
+                
                 appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
-                sessionDelete(session); return;
+                sessionDelete(session);
+                return;
             }
 
-            session->pendingJobIdx     = slot;
-            session->timeCnt           = 0;
+            session->pendingJobIdx = slot;            
 
-            uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), TRUE, session->transNumber);
+            sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), TRUE, session->transNumber);
             appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
+            
             session->step = 1;
+            session->timeCnt = 0; //clear next step timeout counter
+            
             session->rxReady = FALSE;
             session->rxLen = 0;
             break;
         }
 
         case 1:
-            if (session->pendingJobIdx >= 0 &&
-                gs_pendingJobs[session->pendingJobIdx].completed)
+            if ((session->pendingJobIdx >= 0) && (gs_pendingJobs[session->pendingJobIdx].completed))
             {
-                if (gs_pendingJobs[session->pendingJobIdx].result == EN_ERR_CODE_SUCCESS)
-                    deliverMeterData(session->pendingJobIdx, session->transNumber);
-                else
-                    DEBUG_WARNING("->[W] OrionSess: readout task failed (err %d)",
-                                  gs_pendingJobs[session->pendingJobIdx].result);
+                int idx = session->pendingJobIdx;
+                S32 tid = gs_pendingJobs[idx].taskId;
+                ERR_CODE_T res = gs_pendingJobs[idx].result;
 
-                cleanupMeterFiles(gs_pendingJobs[session->pendingJobIdx].taskId);
-                appMeterOperationsTaskIDFree(gs_pendingJobs[session->pendingJobIdx].taskId);
-                gs_pendingJobs[session->pendingJobIdx].taskId    = 0;
-                gs_pendingJobs[session->pendingJobIdx].completed = FALSE;
+                if (res == EN_ERR_CODE_SUCCESS)
+                {
+                    if (FAILURE == startPushMeterDataSession(idx, session->transNumber))
+                    {
+                        DEBUG_ERROR("->[E] OrionTLV: push meter data session start failed tranN %u", session->transNumber);
+                        APP_LOG_REC(g_sysLoggerID, "Push meter data session start failed tranN %u", session->transNumber);
+                        cleanupMeterFiles(tid);
+                        appMeterOperationsTaskIDFree(tid);
+                        memset(&gs_pendingJobs[idx], 0, sizeof(gs_pendingJobs[idx]));
+                    }
+                }
+                else
+                {
+                    DEBUG_WARNING("->[W] OrionTLV: readout task failed tranN %u, tid %d, err %d",
+                                  session->transNumber, (int)tid, (int)res);
+
+                    APP_LOG_REC(g_sysLoggerID, "Readout task failed tranN %u, tid: %d, err: %d",
+                                session->transNumber, (int)tid, (int)res);
+
+                    cleanupMeterFiles(tid);
+                    appMeterOperationsTaskIDFree(tid);
+                    memset(&gs_pendingJobs[idx], 0, sizeof(gs_pendingJobs[idx]));
+                }
 
                 sessionDelete(session);
             }
@@ -1453,10 +1655,12 @@ static void processLoadProfileSession(OrionSession_t *session)
     {
         case 0:
         {
-            DEBUG_INFO("->[I] OrionSess: loadprofile request (trans %u)", session->transNumber);
+            uint16_t sz;
+
+            DEBUG_INFO("->[I] OrionTLV: loadprofile request (trans %u)", session->transNumber);
             if (!sessionGetParser(session, &parser))
             {
-                uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
+                sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
                 appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
                 sessionDelete(session);
                 return;
@@ -1478,7 +1682,10 @@ static void processLoadProfileSession(OrionSession_t *session)
             S32 tid = appMeterOperationsAddProfileTask(reqBuf, meterTaskCallback);
             if (tid <= 0)
             {
-                uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
+                DEBUG_ERROR("->[E] OrionTLV: meter oprs PROFILE task add failed tranN %u", session->transNumber);
+                APP_LOG_REC(g_sysLoggerID, "OrionTLV: meter oprs PROFILE task add failed tranN %u", session->transNumber);
+
+                sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
                 appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
                 sessionDelete(session); return;
             }
@@ -1486,55 +1693,72 @@ static void processLoadProfileSession(OrionSession_t *session)
             int slot = pendingJobAllocSlot(tid, TRUE);
             if (slot < 0)
             {
+                DEBUG_ERROR("->[E] OrionTLV: meter oprs LP task slot allocation failed tranN %u", session->transNumber);
+                APP_LOG_REC(g_sysLoggerID, "OrionTLV: meter oprs LP task slot allocation failed tranN %u", session->transNumber);
+
                 appMeterOperationsTaskIDFree(tid);
-                uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
+                sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
                 appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
                 sessionDelete(session); return;
             }
 
             session->pendingJobIdx = slot;
-            session->timeCnt       = 0;
 
-            uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), TRUE, session->transNumber);
+            sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), TRUE, session->transNumber);
             appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
+            
             session->step = 1;
+            session->timeCnt = 0; //clear next step timeout counter
+
             session->rxReady = FALSE;
             session->rxLen = 0;
             break;
         }
-
         case 1:
-            if (session->pendingJobIdx >= 0 &&
-                gs_pendingJobs[session->pendingJobIdx].completed)
+        {
+            if (TRUE == gs_pendingJobs[session->pendingJobIdx].completed) //check if the task is completed
             {
-                if (gs_pendingJobs[session->pendingJobIdx].result == EN_ERR_CODE_SUCCESS)
-                    deliverMeterData(session->pendingJobIdx, session->transNumber);
-                else
-                    DEBUG_WARNING("->[W] OrionSess: LP task failed (err %d)",
-                                  gs_pendingJobs[session->pendingJobIdx].result);
+                int idx = session->pendingJobIdx;
+                S32 tid = gs_pendingJobs[idx].taskId;
+                ERR_CODE_T res = gs_pendingJobs[idx].result;
 
-                cleanupMeterFiles(gs_pendingJobs[session->pendingJobIdx].taskId);
-                appMeterOperationsTaskIDFree(gs_pendingJobs[session->pendingJobIdx].taskId);
-                gs_pendingJobs[session->pendingJobIdx].taskId    = 0;
-                gs_pendingJobs[session->pendingJobIdx].completed = FALSE;
+                if (res == EN_ERR_CODE_SUCCESS)
+                {
+                    if (FAILURE == startPushMeterDataSession(idx, session->transNumber))
+                    {
+                        DEBUG_ERROR("->[E] OrionTLV: LP, push meter data session start failed tranN %u",
+                                    session->transNumber);
+                        APP_LOG_REC(g_sysLoggerID, "OrionTLV: LP, push meter data session start failed tranN %u", session->transNumber);
+                        cleanupMeterFiles(tid);
+                        appMeterOperationsTaskIDFree(tid);
+                        memset(&gs_pendingJobs[idx], 0, sizeof(gs_pendingJobs[idx]));
+                    }
+                }
+                else
+                {
+                    DEBUG_WARNING("->[W] OrionTLV: LP task failed (err %d)", (int)res);
+                    cleanupMeterFiles(tid);
+                    appMeterOperationsTaskIDFree(tid);
+                    memset(&gs_pendingJobs[idx], 0, sizeof(gs_pendingJobs[idx]));
+                }
 
                 sessionDelete(session);
             }
             break;
-
-        default:
-            sessionDelete(session);
-            break;
+        }
     }
 }
 
 static void processDirectiveListSession(OrionSession_t *session)
 {
-    DEBUG_INFO("->[I] OrionSess: directiveList request (trans %u)", session->transNumber);
     OrionParser_t parser;
+    uint16_t sz;
+    
+    DEBUG_INFO("->[I] OrionTLV: directiveList request (trans %u)", session->transNumber);
+    
     if (!sessionGetParser(session, &parser))
     {
-        uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
+        sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
         appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
         sessionDelete(session);
         return;
@@ -1548,7 +1772,7 @@ static void processDirectiveListSession(OrionSession_t *session)
     U32 count = appMeterOperationsGetDirectiveCount();
     if (count == 0)
     {
-        uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), TRUE, session->transNumber);
+        sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), TRUE, session->transNumber);
         appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
         sessionDelete(session); return;
     }
@@ -1560,7 +1784,7 @@ static void processDirectiveListSession(OrionSession_t *session)
 
     if (totalToSend == 0)
     {
-        uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), TRUE, session->transNumber);
+        sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), TRUE, session->transNumber);
         appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
         sessionDelete(session); return;
     }
@@ -1573,7 +1797,7 @@ static void processDirectiveListSession(OrionSession_t *session)
             if (SUCCESS != appMeterOperationsGetDirectiveByIndex(i, dirBuf, sizeof(dirBuf)))
                 continue;
             sent++; packetNum++;
-            uint16_t sz = buildDirectivePacket(gs_txBuf, sizeof(gs_txBuf), dirBuf,
+            sz = buildDirectivePacket(gs_txBuf, sizeof(gs_txBuf), dirBuf,
                                                packetNum, (sent < totalToSend), session->transNumber);
             appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
         }
@@ -1582,7 +1806,7 @@ static void processDirectiveListSession(OrionSession_t *session)
     {
         if (SUCCESS == appMeterOperationsGetDirective(filterId, dirBuf, sizeof(dirBuf)))
         {
-            uint16_t sz = buildDirectivePacket(gs_txBuf, sizeof(gs_txBuf), dirBuf,
+            sz = buildDirectivePacket(gs_txBuf, sizeof(gs_txBuf), dirBuf,
                                                1, FALSE, session->transNumber);
             appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
         }
@@ -1595,7 +1819,7 @@ static void processDirectiveListSession(OrionSession_t *session)
 
 static void processDirectiveAddSession(OrionSession_t *session)
 {
-    DEBUG_INFO("->[I] OrionSess: directiveAdd request (trans %u)", session->transNumber);
+    DEBUG_INFO("->[I] OrionTLV: directiveAdd request (trans %u)", session->transNumber);
     OrionParser_t parser;
     if (!sessionGetParser(session, &parser))
     {
@@ -1624,7 +1848,7 @@ static void processDirectiveAddSession(OrionSession_t *session)
 
 static void processDirectiveDeleteSession(OrionSession_t *session)
 {
-    DEBUG_INFO("->[I] OrionSess: directiveDelete request (trans %u)", session->transNumber);
+    DEBUG_INFO("->[I] OrionTLV: directiveDelete request (trans %u)", session->transNumber);
     OrionParser_t parser;
     if (!sessionGetParser(session, &parser))
     {
@@ -1663,6 +1887,7 @@ static void processSessionMessage(OrionSession_t *session)
     {
         case SFUNC_PUSH_IDENT:    processIdentSession(session);           break;
         case SFUNC_ALIVE:         processAliveSession(session);           break;
+        case SFUNC_PUSH_METER_DATA: processPushMeterDataSession(session); break;
         case ORION_FUNC_LOG:       processLogSession(session);            break;
         case ORION_FUNC_SETTING:   processSettingSession(session);        break;
         case ORION_FUNC_FW_UPDATE: processFwUpdateSession(session);       break;
@@ -1672,7 +1897,7 @@ static void processSessionMessage(OrionSession_t *session)
         case ORION_FUNC_DIRECTIVE_ADD:  processDirectiveAddSession(session);  break;
         case ORION_FUNC_DIRECTIVE_DEL:  processDirectiveDeleteSession(session); break;
         default:
-            DEBUG_WARNING("->[W] OrionSess: unknown func 0x%02X", session->function);
+            DEBUG_WARNING("->[W] OrionTLV: unknown func 0x%02X", session->function);
             {
                 uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
                 appTcpConnManagerSend(session->channel, (char *)gs_txBuf, (unsigned int)sz);
@@ -1721,7 +1946,7 @@ static void dispatchIncomingMessage(const OrionIncomingMsg_t *msg)
 
     /* start new session */
     const char *ch = (msg->ch[0] != '\0') ? msg->ch : PULL_TCP_SOCK_NAME;
-    session = sessionCreate(func, ch, transNum);
+    session = sessionCreate(func, ch, transNum, NULL);
     if (session)
     {
         (void)sessionSetIncoming(session, msg);
@@ -1729,7 +1954,7 @@ static void dispatchIncomingMessage(const OrionIncomingMsg_t *msg)
     }
     else
     {
-        DEBUG_WARNING("->[W] OrionSess: too many sessions");
+        DEBUG_WARNING("->[W] OrionTLV: too many sessions");
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, transNum);
         appTcpConnManagerSend(ch, (char *)gs_txBuf, (unsigned int)sz);
     }
@@ -1765,7 +1990,7 @@ static void protocolTaskFunc(void *arg)
     if (0 != appTcpConnManagerStart(gs_serverIP, gs_serverPort,
                                      gs_pullPort, appProtocolOrionTLVPutIncomingMessage))
     {
-        DEBUG_ERROR("->[E] OrionSess: TCP start failed");
+        DEBUG_ERROR("->[E] OrionTLV: TCP start failed");
         APP_LOG_REC(g_sysLoggerID, "OrionTLV: TCP start fail");
         gs_running = FALSE;
         return;
@@ -1777,12 +2002,12 @@ static void protocolTaskFunc(void *arg)
 
     if (!gs_registered)
     {
-        DEBUG_INFO("->[I] OrionSess: not registered, starting ident session");
+        DEBUG_INFO("->[I] OrionTLV: not registered, starting ident session");
         gs_sendIdent = TRUE;
     }
     else
     {
-        DEBUG_INFO("->[I] OrionSess: already registered");
+        DEBUG_INFO("->[I] OrionTLV: already registered");
     }
 
     while (gs_running)
@@ -1817,13 +2042,13 @@ static void protocolTaskFunc(void *arg)
         /* 5. Task flags */
         if (gs_sendIdent)
         {
-            if (sessionCreate(SFUNC_PUSH_IDENT, PUSH_TCP_SOCK_NAME, nextTransNumber()) != NULL)
+            if (sessionCreate(SFUNC_PUSH_IDENT, PUSH_TCP_SOCK_NAME, nextTransNumber(), NULL) != NULL)
                 gs_sendIdent = FALSE;
         }
 
         if (gs_sendAlive && gs_registered)
         {
-            if (sessionCreate(SFUNC_ALIVE, PUSH_TCP_SOCK_NAME, nextTransNumber()) != NULL)
+            if (sessionCreate(SFUNC_ALIVE, PUSH_TCP_SOCK_NAME, nextTransNumber(), NULL) != NULL)
                 gs_sendAlive = FALSE;
         }
 
@@ -1893,7 +2118,7 @@ RETURN_STATUS appProtocolOrionTLVStart(void)
     if (OS_INVALID_TASK_ID == gs_taskId)
     {
         gs_running = FALSE;
-        DEBUG_ERROR("->[E] OrionSess: task creation failed");
+        DEBUG_ERROR("->[E] OrionTLV: task creation failed");
         APP_LOG_REC(g_sysLoggerID, "OrionTLV task creation failed");
         return FAILURE;
     }
@@ -1902,12 +2127,12 @@ RETURN_STATUS appProtocolOrionTLVStart(void)
     {
         if (SUCCESS == middEventTimerRegister(&gs_periodicTimerId, periodicTimerCb, TIME_OUT_1_SEC, TRUE))
         {
-            DEBUG_WARNING("->[W] OrionSess: periodic timer registered successfully");
+            DEBUG_WARNING("->[W] OrionTLV: periodic timer registered successfully");
             (void)middEventTimerStart(gs_periodicTimerId); //not needed to check the return value
         }
     }
   
-    DEBUG_INFO("->[I] OrionSess: started");
+    DEBUG_INFO("->[I] OrionTLV: started");
     APP_LOG_REC(g_sysLoggerID, "Protocol OrionTLV started");
   
     return SUCCESS;
@@ -1933,7 +2158,7 @@ RETURN_STATUS appProtocolOrionTLVStop(void)
         gs_taskId = OS_INVALID_TASK_ID;
     }
 
-    DEBUG_INFO("->[I] OrionSess: stopped");
+    DEBUG_INFO("->[I] OrionTLV: stopped");
     APP_LOG_REC(g_sysLoggerID, "Protocol OrionTLV stopped");
     return SUCCESS;
 }
