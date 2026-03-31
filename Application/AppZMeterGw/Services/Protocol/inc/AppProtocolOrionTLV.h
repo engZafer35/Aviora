@@ -75,7 +75,8 @@
 #define ORION_PKT_END                 '#'       /* 0x23 */
 
 #define ORION_SESSION_MAX             (8)
-#define ORION_SESSION_RETRY_MAX       (3)
+#define ORION_SESSION_TIMEOUT         (10000)   /* 10 s  */
+
 
 /* ─── TAG Definitions ─────────────────────────────────────────────────────
  *  0x00XX  Common / header

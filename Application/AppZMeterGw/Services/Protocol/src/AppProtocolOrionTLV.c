@@ -197,10 +197,7 @@ typedef struct
     uint16_t    transNumber;
 
     uint32_t    step;
-    uint32_t    timeoutGobackStep;
     uint32_t    timeCnt;
-    uint32_t    retryIntervalMs;
-    uint32_t    retryCount;
 
     uint8_t     rxBuf[ORION_PACKET_MAX_SIZE];
     uint16_t    rxLen;
@@ -215,6 +212,30 @@ typedef struct
 } OrionEventMsg_t;
 
 /********************************** VARIABLES *********************************/
+
+static union FlagList
+{
+#define MAX_INTERNAL_MAX_TASK_NUMBER    (32)  //each bit of unsigned int will be used as a task flag. so max 32 task for now
+
+    unsigned int listAll;
+    struct
+    {
+        unsigned int sendIdent      : 1;
+        unsigned int sendHeartbeat  : 1;
+
+        unsigned int tcpPushInUse   : 1;
+
+        /***************************************/
+        unsigned int connType :2;  // 0 no connection, 1 is tcp, 2 is mqtt
+        #define CONN_TYPE_NONE (0)
+        #define CONN_TYPE_MQTT (1)
+        #define CONN_TYPE_TCP  (2)
+        /***************************************/
+
+    };
+}gsFlagList;
+
+
 
 static char gs_serialNumber[20];
 static char gs_serverIP[20];
@@ -928,8 +949,15 @@ static void deliverMeterData(int jobIdx, uint16_t transNum)
 
 static void sessionDelete(OrionSession_t *s)
 {
-    if (s != NULL)
-        memset(s, 0, sizeof(OrionSession_t));
+    if (0 == strcmp(PUSH_TCP_SOCK_NAME, s->channel))
+    {
+        appTcpConnManagerRequestPushDisconnect();
+        gsFlagList.tcpPushInUse = FALSE;
+        DEBUG_INFO("->[I] sessionDelete push socket disconnected, Nightwish");
+        zosDelayTask(1000);
+    }
+    
+    memset(s, 0, sizeof(OrionSession_t));    
 }
 
 static OrionSession_t *sessionCreate(uint8_t function, const char *channel,
@@ -944,11 +972,8 @@ static OrionSession_t *sessionCreate(uint8_t function, const char *channel,
             s->inUse            = TRUE;
             s->function         = function;
             s->transNumber      = transNum;
-            s->step             = 0;
-            s->timeoutGobackStep = 0;
+            s->step             = 0;            
             s->timeCnt          = 0;
-            s->retryIntervalMs  = 0;
-            s->retryCount       = ORION_SESSION_RETRY_MAX;
             s->pendingJobIdx    = -1;
             s->rxReady          = FALSE;
             s->rxLen            = 0;
@@ -1017,25 +1042,17 @@ static void checkAllSessionTimeouts(void)
 {
     for (unsigned int i = 0; i < ORION_SESSION_MAX; i++)
     {
-        if (gs_sessionTable[i].inUse == FALSE) continue;
-
-        OrionSession_t *s = &gs_sessionTable[i];
-        s->timeCnt += 1000U;
-
-        if (s->retryIntervalMs == 0U) continue;
-        if (s->timeCnt < s->retryIntervalMs) continue;
-
-        s->retryCount--;
-        if (s->retryCount == 0U)
+        if (TRUE == gs_sessionTable[i].inUse)
         {
-            DEBUG_WARNING("->[W] OrionSess: session timeout (func 0x%02X, trans %u)",
-                          s->function, s->transNumber);
-            sessionDelete(s);
-        }
-        else
-        {
-            s->timeCnt = 0;
-            s->step = s->timeoutGobackStep;
+            OrionSession_t *s = &gs_sessionTable[i];
+            s->timeCnt += 1000U; //1 second
+
+            if (s->timeCnt > ORION_SESSION_TIMEOUT)
+            {
+                DEBUG_WARNING("->[W] OrionSess: session timeout (func 0x%02X, trans %u)",
+                            s->function, s->transNumber);
+                sessionDelete(s);
+            }
         }
     }
 }
@@ -1062,38 +1079,52 @@ static void processIdentSession(OrionSession_t *session)
     switch (session->step)
     {
         case 0:
-            appTcpConnManagerRequestPushConnect();
-            session->retryIntervalMs   = ORION_CONNECT_TIMEOUT_MS;
-            session->retryCount        = ORION_SESSION_RETRY_MAX;
-            session->timeoutGobackStep = 0;
-            session->timeCnt           = 0;
-            session->step              = 1;
-            break;
-
-        case 1:
-            if (appTcpConnManagerIsConnectedPush())
-            {
-                session->timeCnt = 0;
-                session->step    = 2;
-            }
-            break;
-
-        case 2:
         {
-            uint16_t sz = buildIdentMsg(gs_txBuf, sizeof(gs_txBuf), session->transNumber);
-            appTcpConnManagerSend(PUSH_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
-            DEBUG_DEBUG("->[D] OrionSess: ident sent (trans %u, %u bytes)",
-                        session->transNumber, (unsigned)sz);
+            if (CONN_TYPE_TCP == gsFlagList.connType)
+            {
+                if ( && (FALSE == gsFlagList.tcpPushInUse) && (FALSE == appTcpConnManagerIsConnectedPush()))
+                {
+                    gsFlagList.tcpPushInUse = TRUE;
+                    appTcpConnManagerRequestPushConnect();
 
-            session->retryIntervalMs   = (uint32_t)ORION_REGISTER_RETRY_S * 1000U;
-            session->retryCount        = ORION_SESSION_RETRY_MAX;
-            session->timeoutGobackStep = 0;
-            session->timeCnt           = 0;
-            session->step              = 3;
+                    session->timeCnt           = 0;
+                    session->step              = 1;
+
+                    DEBUG_INFO("->[I] OrionTLV: Push Socket is used in PushIdent Session");                
+                }
+
+                zosDelayTask(1000);
+                break;
+            }
+            /* !< don't add a break here. in the MQTT connection, there is no need to check the push socket. jump to next step */
+        }
+        case 1:
+        {
+            if ((CONN_TYPE_TCP == gsFlagList.connType) && (FALSE == appTcpConnManagerIsConnectedPush()))
+            {
+                appTcpConnManagerRequestPushConnect();
+                break;
+            }
+
+            uint16_t sz = buildIdentMsg(gs_txBuf, sizeof(gs_txBuf), session->transNumber);
+            if (SUCCESS != appTcpConnManagerSend(PUSH_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz))
+            {
+                DEBUG_WARNING("->[W] OrionSess: pushident send failed");
+                APP_LOG_REC(g_sysLoggerID, "Pushident send failed");
+                
+                sessionDelete(session);
+                break;
+            }
+
+            DEBUG_INFO("->[I] OrionSess: pushident sent tarnsNum: %d", session->transNumber);
+
+            session->timeCnt = 0;
+            session->step    = 2;
             break;
         }
 
-        case 3:
+        case 2:
+        {
             if (session->rxReady)
             {
                 OrionParser_t rp;
@@ -1121,36 +1152,68 @@ static void processIdentSession(OrionSession_t *session)
                 }
                 session->rxReady = FALSE;
                 session->rxLen = 0;
-
-                if (gs_registered)
-                {
-                    sessionDelete(session);
-                }
-                else
-                {
-                    appTcpConnManagerRequestPushDisconnect();
-                    session->step    = 0;
-                    session->timeCnt = 0;
-                }
+                sessionDelete(session);
             }
-            break;
 
-        default:
-            sessionDelete(session);
             break;
+        }            
     }
 }
 
 /* ── Alive ── */
 static void processAliveSession(OrionSession_t *session)
 {
-    if (appTcpConnManagerIsConnectedPush())
+    switch (session->step)
     {
-        uint16_t sz = buildAliveMsg(gs_txBuf, sizeof(gs_txBuf), session->transNumber);
-        appTcpConnManagerSend(PUSH_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
-        DEBUG_DEBUG("->[D] OrionSess: alive sent (trans %u)", session->transNumber);
+        case 0:
+        {
+            if (CONN_TYPE_TCP == gsFlagList.connType)
+            {
+                if ( && (FALSE == gsFlagList.tcpPushInUse) && (FALSE == appTcpConnManagerIsConnectedPush()))
+                {
+                    gsFlagList.tcpPushInUse = TRUE;
+                    appTcpConnManagerRequestPushConnect();
+
+                    session->timeCnt           = 0;
+                    session->step              = 1;
+
+                    DEBUG_INFO("->[I] OrionTLV: Push Socket is used in Alive Session");                
+                }
+
+                zosDelayTask(1000);
+                break;
+            }
+            /* !< don't add a break here. in the MQTT connection, there is no need to check the push socket. jump to next step */
+        }
+        case 1:
+        {
+            if ((CONN_TYPE_TCP == gsFlagList.connType) && (FALSE == appTcpConnManagerIsConnectedPush()))
+            {
+                appTcpConnManagerRequestPushConnect();
+                break;
+            }
+
+            uint16_t sz = buildAliveMsg(gs_txBuf, sizeof(gs_txBuf), session->transNumber);
+
+            if(SUCCESS != appTcpConnManagerSend(PUSH_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz))
+            {
+                DEBUG_WARNING("->[W] OrionSess: alive send failed (trans %u)", session->transNumber);
+                APP_LOG_REC(g_sysLoggerID, "Alive send failed");
+                
+                session->timeCnt = 0;
+                break;
+            }
+            else 
+            {
+                DEBUG_DEBUG("->[D] OrionSess: alive sent (trans %u)", session->transNumber);
+            }       
+
+            sessionDelete(session);
+            break;
+        }
     }
-    sessionDelete(session);
+
+    
 }
 
 /* ── Pull-socket request handlers ── */
@@ -1346,9 +1409,6 @@ static void processReadoutSession(OrionSession_t *session)
             }
 
             session->pendingJobIdx     = slot;
-            session->retryIntervalMs   = 120000U;
-            session->retryCount        = 1;
-            session->timeoutGobackStep = 1;
             session->timeCnt           = 0;
 
             uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), TRUE, session->transNumber);
@@ -1432,11 +1492,8 @@ static void processLoadProfileSession(OrionSession_t *session)
                 sessionDelete(session); return;
             }
 
-            session->pendingJobIdx     = slot;
-            session->retryIntervalMs   = 120000U;
-            session->retryCount        = 1;
-            session->timeoutGobackStep = 1;
-            session->timeCnt           = 0;
+            session->pendingJobIdx = slot;
+            session->timeCnt       = 0;
 
             uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), TRUE, session->transNumber);
             appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
@@ -1843,17 +1900,16 @@ RETURN_STATUS appProtocolOrionTLVStart(void)
 
     if (gs_periodicTimerId < 0)
     {
-        if (middEventTimerRegister(&gs_periodicTimerId, periodicTimerCb,
-                                   1000U, TRUE) != SUCCESS)
+        if (SUCCESS == middEventTimerRegister(&gs_periodicTimerId, periodicTimerCb, TIME_OUT_1_SEC, TRUE))
         {
-            DEBUG_WARNING("->[W] OrionSess: periodic timer register failed");
+            DEBUG_WARNING("->[W] OrionSess: periodic timer registered successfully");
+            (void)middEventTimerStart(gs_periodicTimerId); //not needed to check the return value
         }
     }
-    if (gs_periodicTimerId >= 0)
-        (void)middEventTimerStart(gs_periodicTimerId);
-
+  
     DEBUG_INFO("->[I] OrionSess: started");
     APP_LOG_REC(g_sysLoggerID, "Protocol OrionTLV started");
+  
     return SUCCESS;
 }
 
