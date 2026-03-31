@@ -36,6 +36,7 @@
         <a href="meter-operations.html">Meter Operations</a>
         <a href="protocolzd.html">ProtocolZD</a>
         <a href="protocolMetallixTLV.html">ProtocolMetallixTLV</a>
+        <a href="protocolOrionTLV.html">ProtocolOrionTLV</a>
         <a href="test-server.html">Test Server</a>
         <a href="readme.html">README</a>
       </nav>
@@ -45,11 +46,9 @@
         <div class="hero-card">
           <h1>Aviora — Protocol Layer</h1>
           <p>
-            Two protocol implementations over TCP between the device and the central server:
-            <strong>AppProtocolZD</strong> (JSON-over-TCP) and
-            <strong>AppProtocolMetallixTLV</strong> (binary TLV-over-TCP).
-            Both share <strong>AppTcpConnManager</strong> (push/pull sockets) and
-            <strong>AppMeterOperations</strong> (meter and directive jobs).
+            Gateway–sunucu TCP protokolleri: <strong>AppProtocolZD</strong> (JSON),
+            <strong>AppProtocolMetallixTLV</strong> ve <strong>AppProtocolOrionTLV</strong> (ikisi de binary TLV).
+            Hepsi <strong>AppTcpConnManager</strong> (push/pull) ve <strong>AppMeterOperations</strong> ile çalışır.
           </p>
           <div class="tag-row">
             <span class="tag highlight">JSON / TCP</span>
@@ -70,14 +69,18 @@
 │   ├── AppTcpConnManager.h
 │   ├── AppMeterOperations.h
 │   ├── AppProtocolZD.h
-│   └── AppProtocolMetallixTLV.h
+│   ├── AppProtocolMetallixTLV.h
+│   └── AppProtocolOrionTLV.h
 ├── src/
 │   ├── AppTcpConnManager.c
 │   ├── AppMeterOperations.c
 │   ├── AppProtocolZD.c
-│   └── AppProtocolMetallixTLV.c
-└── server/
-    └── server.py  </pre>
+│   ├── AppProtocolMetallixTLV.c
+│   └── AppProtocolOrionTLV.c
+└── Test_Server/
+    ├── ProtocolZD_TestServer.py
+    ├── ProtocolMetallixTLV_TestServer.py
+    └── ProtocolOrionTLV_TestServer.py</pre>
           </article>
 
           <article class="card col-12">
@@ -92,12 +95,15 @@
   subgraph Device["Gateway device"]
     PZD[AppProtocolZD]
     METALLIX[AppProtocolMetallixTLV]
+    ORION[AppProtocolOrionTLV]
     TCP[AppTcpConnManager]
     MTR[AppMeterOperations]
     PZD --> TCP
     PZD --> MTR
     METALLIX --> TCP
     METALLIX --> MTR
+    ORION --> TCP
+    ORION --> MTR
     TCP -->|push: device connects| SP
     PC -->|pull: server connects to device| TCP
   end</pre>
@@ -132,12 +138,13 @@
               <li><a href="tcp-conn.html">TCP Connection</a> — socket tasks, thread, <code>IncomingMsngCb_t</code> registration</li>
               <li><a href="meter-operations.html">Meter Operations</a> — meter registry, directives, readout/profile jobs</li>
               <li><a href="protocolzd.html">ProtocolZD</a> — all JSON message types, examples, response pairing, state diagram</li>
-              <li><a href="protocolMetallixTLV.html">ProtocolMetallixTLV</a> — binary TLV protocol: TAG table, wire format, packet examples</li>
+              <li><a href="protocolMetallixTLV.html">ProtocolMetallixTLV</a> — binary TLV (Metallix module): TAG table, wire format, packet examples</li>
+              <li><a href="protocolOrionTLV.html">ProtocolOrionTLV</a> — binary TLV (Orion module): <code>TRANS_NUMBER</code> (0x00FF), session queue, <code>AppProtocolOrionTLV.c</code> akışları, test sunucusu</li>
               <li><a href="test-server.html">Test Server</a> — Python UI, usage, flows, sample scenarios</li>
             </ul>
           </article>
         </div>
-        <p class="protocol-footer-note">JSON message dictionary → <a href="protocolzd.html">ProtocolZD</a> &nbsp;|&nbsp; Binary TLV protocol → <a href="protocolba.html">ProtocolMetallixTLV</a></p>
+        <p class="protocol-footer-note">JSON → <a href="protocolzd.html">ProtocolZD</a> &nbsp;|&nbsp; TLV (Metallix) → <a href="protocolMetallixTLV.html">ProtocolMetallixTLV</a> &nbsp;|&nbsp; TLV (Orion) → <a href="protocolOrionTLV.html">ProtocolOrionTLV</a></p>
       </main>
     </div>
   </div>
