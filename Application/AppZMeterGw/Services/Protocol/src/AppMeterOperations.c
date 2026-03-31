@@ -26,7 +26,7 @@
 #endif
 
 #define MAX_DIRECTIVES       (64)
-#define MAX_METER_TASKS      (16)
+#define MAX_METER_TASKS      (4)
 #define METER_OPS_QUEUE_DEPTH (16)
 #define DIRECTIVE_INDEX_FILE DIRECTIVE_MAIN_DIR "directive.idx"
 #define MAX_PATH_LEN         (96)
@@ -82,7 +82,7 @@ static U32 s_directiveCount = 0;
 
 /* Task slots */
 static TaskSlot_t s_taskSlots[MAX_METER_TASKS];
-static S32 s_nextTaskId = 1;
+static S32 s_nextTaskId = 0;
 
 /* Mutexes */
 static OsMutex s_meterRegMux;
@@ -119,8 +119,8 @@ static S32 taskSlotAlloc(void)
         if (s_taskSlots[i].phase == TASK_PHASE_FREE)
         {
             S32 id = s_nextTaskId++;
-            if (s_nextTaskId <= 0)
-                s_nextTaskId = 1;
+            if (s_nextTaskId < 0)
+                s_nextTaskId = 0;
             s_taskSlots[i].taskId = id;
             s_taskSlots[i].phase = TASK_PHASE_QUEUED;
             s_taskSlots[i].result = EN_ERR_CODE_PENDING;
