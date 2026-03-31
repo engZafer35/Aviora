@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ProtocolOrionTLV — Aviora</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="./protocol-docs.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
+  <style>
+    .msg-block{margin:14px 0;padding:12px;border:1px solid var(--line);border-radius:10px;background:rgba(0,0,0,0.2)}
+    .msg-block h3{margin-top:0;font-size:16px;color:var(--accent)}
+    pre.hex{font-size:11px;overflow:auto;margin:8px 0;line-height:1.5;word-break:break-all}
+    .tag-table{width:100%;border-collapse:collapse;color:var(--muted);font-size:13px}
+    .tag-table th,.tag-table td{padding:6px 10px;text-align:left;border-bottom:1px solid var(--line)}
+    .tag-table th{color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+    .tag-table tr:last-child td{border-bottom:none}
+    .tag-table code{background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:3px;font-size:12px}
+    .group-row td{background:rgba(100,150,255,0.06);font-weight:600;color:var(--accent);font-size:12px;letter-spacing:.4px}
+    .wire-box{display:flex;gap:0;align-items:stretch;margin:10px 0;flex-wrap:wrap}
+    .wire-cell{padding:6px 10px;text-align:center;font-family:monospace;font-size:12px;border:1px solid var(--line);background:rgba(0,0,0,0.2);line-height:1.3}
+    .wire-cell.start,.wire-cell.end{background:rgba(80,200,120,0.15);color:#6fdc6f;font-weight:700}
+    .wire-cell.tag-c{background:rgba(100,150,255,0.12);color:#89b4fa}
+    .wire-cell.len-c{background:rgba(250,180,80,0.12);color:#fab387}
+    .wire-cell.val-c{background:rgba(200,100,250,0.1);color:#cba6f7}
+    .wire-label{font-size:9px;display:block;opacity:0.6;margin-top:2px}
+    .doc-figure { margin: 18px 0; text-align: center; }
+    .doc-figure img { max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; background: rgba(0,0,0,0.25); }
+    .doc-figure figcaption { margin-top: 10px; font-size: 13px; color: var(--muted); line-height: 1.45; text-align: left; max-width: 720px; margin-left: auto; margin-right: auto; }
+    .figure-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 12px; }
+    .gif-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 14px 0;
+      align-items: start;
+    }
+    .gif-row figure { margin: 0; min-width: 0; }
+    .gif-row img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; display: block; }
+    .gif-row figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    @media (max-width: 640px) {
+      .gif-row { grid-template-columns: 1fr; }
+    }
+    .note-orion { border-left: 3px solid #d29922; padding: 8px 12px; margin: 12px 0; background: rgba(210,153,34,0.08); font-size: 14px; }
+  </style>
+</head>
+<body class="protocol-docs">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="index.html" class="active">Protocol</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Protocol</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="tcp-conn.html">TCP Connection</a>
+        <a href="meter-operations.html">Meter Operations</a>
+        <a href="protocolzd.html">ProtocolZD</a>
+        <a href="protocolMetallixTLV.html">ProtocolMetallixTLV</a>
+        <a href="protocolOrionTLV.html" class="active">ProtocolOrionTLV</a>
+        <a href="test-server.html">Test Server</a>
+        <a href="readme.html">README</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1>AppProtocolOrionTLV — Binary TLV</h1>
+          <p>
+            Frames use flat TLV fields between <code>$</code> … <code>#</code>, with a structure close to the same tag family as Metallix,
+            but <strong>every packet</strong> carries a transaction id in <code>0x00FF TRANS_NUMBER</code>. Incoming TCP data is handled through a
+            <strong>queue</strong> instead of a single buffer; sessions are correlated by <code>transNumber</code>.
+          </p>
+          <div class="tag-row">
+            <span class="tag">Binary TLV</span>
+            <span class="tag">TRANS_NUMBER 0x00FF</span>
+            <span class="tag">Push + Pull</span>
+            <span class="tag">Session + dispatch</span>
+          </div>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+
+          <article class="card col-12">
+            <h2>Message packet format</h2>
+            <p>A packet starts with <code>$</code> (0x24), contains one or more TLV fields, and ends with <code>#</code> (0x23). TLVs are not nested.</p>
+            <div class="wire-box">
+                <div class="wire-cell start">$<span class="wire-label">0x24</span></div>
+                <div class="wire-cell tag-c">TAG<span class="wire-label">2 bytes</span></div>
+                <div class="wire-cell len-c">LEN<span class="wire-label">2 bytes</span></div>
+                <div class="wire-cell val-c">VALUE<span class="wire-label">LEN bytes</span></div>
+                <div class="wire-cell tag-c">TAG<span class="wire-label">2 bytes</span></div>
+                <div class="wire-cell len-c">LEN<span class="wire-label">2 bytes</span></div>
+                <div class="wire-cell val-c">VALUE<span class="wire-label">LEN bytes</span></div>
+                <div class="wire-cell" style="opacity:.5">…</div>
+                <div class="wire-cell end">#<span class="wire-label">0x23</span></div>
+              </div>
+
+            <div class="note-orion">
+              Reply messages must include the <strong>same TRANSACTION NUMBER</strong>; otherwise the reply will not be processed correctly.
+            </div>
+            <h3 style="margin-top:16px">Data types and sizes</h3>
+            <table class="tag-table">
+              <tr><th>Type</th><th>Size</th><th>Description</th></tr>
+              <tr><td>String</td><td>N</td><td>Raw ASCII, no null terminator</td></tr>
+              <tr><td>Bool</td><td>1</td><td><code>0x01</code> true, <code>0x00</code> false</td></tr>
+              <tr><td>uint8 / uint16 / uint32</td><td>1 / 2 / 4</td><td>Big-endian</td></tr>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Session Model And Main Loop</h2>
+            <p>
+              Each operation runs in a <strong>session</strong>; the session id is derived from <code>TRANS_NUMBER</code> in the incoming packet.
+              Subsequent packets with the same id are handled for that session, so the device can manage multiple sessions concurrently.
+              For example, one session may be driven over the pull connection while another runs on the push connection at the same time.
+            </p>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Protocol Task</div>
+              <pre class="mermaid">flowchart LR
+  subgraph Loop["protocolTaskFunc ~100ms"]
+    Q[RX queue → dispatchIncomingMessage]
+    E[Event queue]
+    A[All sessions → processSessionMessage]
+    F[sendIdent / sendAlive flags]
+  end
+  Q --> A
+  E --> A
+  A --> F
+              </pre>
+            </div>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Incoming Packet Handling</div>
+              <pre class="mermaid">flowchart TD
+  R[Raw bytes] --> P[Read FUNCTION + TRANS_NUMBER]
+  P --> H{transNum != 0 and active session?}
+  H -->|yes| S[sessionSetIncoming + processSessionMessage]
+  H -->|no| N[sessionCreate + processSessionMessage]
+              </pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>TAG Table</h2>
+            <table class="tag-table">
+              <tr><th>TAG</th><th>Name</th><th>Type</th><th>Notes</th></tr>
+              <tr class="group-row"><td colspan="4">0x00XX — Common</td></tr>
+              <tr><td><code>0x00FF</code></td><td>TRANS_NUMBER</td><td>uint16</td><td>Session / reply correlation (required in Orion)</td></tr>
+              <tr><td><code>0x0001</code></td><td>FLAG</td><td>string</td><td>e.g. "AVI"</td></tr>
+              <tr><td><code>0x0002</code></td><td>SERIAL_NUMBER</td><td>string</td><td>Device serial number</td></tr>
+              <tr><td><code>0x0003</code></td><td>FUNCTION</td><td>uint8</td><td>Message type</td></tr>
+              <tr class="group-row"><td colspan="4">0x01XX — Ident / Alive</td></tr>
+              <tr><td><code>0x0101</code></td><td>REGISTERED</td><td>bool</td><td>Device → server (ident)</td></tr>
+              <tr><td><code>0x0102</code>–<code>0x0104</code></td><td>BRAND, MODEL, DATE</td><td>string</td><td></td></tr>
+              <tr><td><code>0x0105</code>, <code>0x0106</code></td><td>PULL_IP, PULL_PORT</td><td>string / uint16</td><td>Pull listener address</td></tr>
+              <tr><td><code>0x0107</code></td><td>REGISTER</td><td>bool</td><td>Server → device (ident reply)</td></tr>
+              <tr class="group-row"><td colspan="4">0x02XX — Streaming</td></tr>
+              <tr><td><code>0x0201</code></td><td>PACKET_NUM</td><td>uint16</td><td>Chunk sequence</td></tr>
+              <tr><td><code>0x0202</code></td><td>PACKET_STREAM</td><td>bool</td><td>More chunks follow</td></tr>
+              <tr class="group-row"><td colspan="4">0x03XX — ACK</td></tr>
+              <tr><td><code>0x0301</code></td><td>ACK_STATUS</td><td>bool</td><td></td></tr>
+              <tr class="group-row"><td colspan="4">0x04XX — Log</td></tr>
+              <tr><td><code>0x0401</code></td><td>LOG_DATA</td><td>string</td><td></td></tr>
+              <tr class="group-row"><td colspan="4">0x05XX — Meter (SETTING)</td></tr>
+              <tr><td><code>0x0501</code>–<code>0x050B</code></td><td>METER_*</td><td>various</td><td>Same meaning as Metallix</td></tr>
+              <tr class="group-row"><td colspan="4">0x06XX — Server</td></tr>
+              <tr><td><code>0x0601</code>, <code>0x0602</code></td><td>SERVER_IP, SERVER_PORT</td><td>string / uint16</td><td></td></tr>
+              <tr class="group-row"><td colspan="4">0x07XX — Readout / profile</td></tr>
+              <tr><td><code>0x0701</code>, <code>0x0702</code></td><td>METER_ID, READOUT_DATA</td><td>string</td><td>Push data chunks</td></tr>
+              <tr><td><code>0x0703</code>–<code>0x0705</code></td><td>DIRECTIVE_NAME, START_DATE, END_DATE</td><td>string</td><td>Pull requests</td></tr>
+              <tr class="group-row"><td colspan="4">0x08XX — Directive</td></tr>
+              <tr><td><code>0x0801</code>, <code>0x0802</code></td><td>DIRECTIVE_ID, DIRECTIVE_DATA</td><td>string</td><td></td></tr>
+              <tr class="group-row"><td colspan="4">0x09XX — Firmware</td></tr>
+              <tr><td><code>0x0901</code></td><td>FW_ADDRESS</td><td>string</td><td>FTP URL</td></tr>
+              <tr class="group-row"><td colspan="4">0x0AXX — Error</td></tr>
+              <tr><td><code>0x0A01</code></td><td>ERROR_CODE</td><td>int16</td><td></td></tr>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>FUNCTION Codes</h2>
+            <table class="tag-table">
+              <tr><th>Value</th><th>Name</th><th>Direction</th><th>Description</th></tr>
+              <tr><td>0x01</td><td>IDENT</td><td>Push</td><td>Used on first connection for the device to register with the server.</td></tr>
+              <tr><td>0x02</td><td>ALIVE</td><td>Push</td><td>Heartbeat to indicate the device is alive.</td></tr>
+              <tr><td>0x03</td><td>ACK</td><td>Both</td><td>In-session / reply acknowledgment.</td></tr>
+              <tr><td>0x04</td><td>NACK</td><td>Both</td><td>Negative acknowledgment on error.</td></tr>
+              <tr><td>0x05</td><td>LOG</td><td>Pull request</td><td>System log request.</td></tr>
+              <tr><td>0x06</td><td>SETTING</td><td>Pull</td><td>Server / meter configuration.</td></tr>
+              <tr><td>0x07</td><td>FW_UPDATE</td><td>Pull</td><td>Firmware update trigger.</td></tr>
+              <tr><td>0x08</td><td>READOUT</td><td>Pull + push</td><td>Meter readout request + data delivery.</td></tr>
+              <tr><td>0x09</td><td>LOADPROFILE</td><td>Pull + push</td><td>Load profile request + data delivery.</td></tr>
+              <tr><td>0x0A</td><td>DIRECTIVE_LIST</td><td>Pull</td><td>List stored directives.</td></tr>
+              <tr><td>0x0B</td><td>DIRECTIVE_ADD</td><td>Pull</td><td>Add a new directive.</td></tr>
+              <tr><td>0x0C</td><td>DIRECTIVE_DEL</td><td>Pull</td><td>Delete a directive.</td></tr>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Packet Flow Animations</h2>
+            <div class="gif-row">
+              <figure><img src="media/flow_ident.gif" alt="IDENT" /><figcaption>IDENT push: device → server, reply on the same channel</figcaption></figure>
+              <figure><img src="media/flow_pull.gif" alt="Pull" /><figcaption>Pull: server acts as TCP client to the device pull port</figcaption></figure>
+              <figure><img src="media/flow_push_data.gif" alt="Data push" /><figcaption>Readout/profile data and ACK (same transNo)</figcaption></figure>
+              <figure><img src="media/flow_dispatch.gif" alt="Dispatch" /><figcaption>RX queue → parse → session</figcaption></figure>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>1. IDENT Message</h2>
+            <table class="tag-table">
+              <tr><th>Direction</th><th>Channel</th><th>Summary</th></tr>
+              <tr><td>Outbound</td><td>Push</td><td>TRANS + FLAG + SN + FUNC_IDENT + REGISTERED + device info + PULL_IP + PULL_PORT</td></tr>
+              <tr><td>Inbound</td><td>Push</td><td>Same TRANS_NUMBER + FUNC_IDENT + REGISTER=true</td></tr>
+            </table>
+            <div class="msg-block">
+              <h3>Device → server (example trans=45, serial=0123456789ABCDE)</h3>
+              <pre class="code-block hex">$
+  00FF 0002 002D                    TRANS_NUMBER = 45
+  0001 0003 "AVI"                   FLAG
+  0002 000F "0123456789ABCDE"       SERIAL_NUMBER
+  0003 0001 01                      FUNCTION = IDENT
+  0101 0001 00                      REGISTERED = false
+  0102 0003 "AVI"                   DEVICE_BRAND
+  0103 0008 "AVIO2622"             DEVICE_MODEL
+  0104 0013 "2021-06-02 17:19:58"  DEVICE_DATE
+  0105 000C "192.168.1.10"         PULL_IP
+  0106 0002 0A3E                    PULL_PORT = 2622
+#</pre>
+              <p class="hex">Full packet (hex): 2400FF0002002D000100034156490002000F30313233343536373839414243444500030001010101
+                00010001020003415649010300084156494F3236323201040013323032312D30362D30322031373A31393A35380105000C3139322E3136382E312E3130010600020A3E23</p>
+              <h3>Server → device</h3>
+              <pre class="code-block hex">$
+  00FF 0002 002D                    TRANS_NUMBER = 45 (required)
+  0001 0003 "AVI"
+  0002 000F "0123456789ABCDE"
+  0003 0001 01                      FUNCTION = IDENT
+  0107 0001 01                      REGISTER = true
+#</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>2. ALIVE</h2>
+            <table class="tag-table">
+              <tr><th>Direction</th><th>Channel</th><th>Summary</th></tr>
+              <tr><td>Outbound</td><td>Push</td><td>TRANS + header + FUNC_ALIVE + DEVICE_DATE</td></tr>
+              <tr><td>Inbound</td><td>Push</td><td>Optional: FUNC_ACK + ACK_STATUS (same TRANS)</td></tr>
+            </table>
+            <div class="msg-block">
+              <h3>Device → server</h3>
+              <pre class="code-block hex">$
+  00FF 0002 00XX                    TRANS_NUMBER
+  0001 0003 "AVI"
+  0002 000F "0123456789ABCDE"
+  0003 0001 02                      FUNCTION = ALIVE
+  0104 0013 "2026-03-31 12:00:00"  DEVICE_DATE
+#</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>3. ACK / NACK</h2>
+            <table class="tag-table">
+              <tr><th>Direction</th><th>Channel</th><th>Summary</th></tr>
+              <tr><td>Outbound</td><td>Pull or push</td><td>TRANS + header + FUNC_ACK or NACK + ACK_STATUS</td></tr>
+            </table>
+            <div class="msg-block">
+              <h3>ACK example (trans=45)</h3>
+              <pre class="code-block hex">$
+  00FF 0002 002D
+  0001 0003 "AVI"
+  0002 000F "0123456789ABCDE"
+  0003 0001 03                      FUNCTION = ACK
+  0301 0001 01                      ACK_STATUS = true
+#</pre>
+              <p class="hex">2400FF0002002D000100034156490002000F3031323334353637383941424344450003000103030100010123</p>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>4. LOG (Pull Request → Pull Response)</h2>
+            <table class="tag-table">
+              <tr><th>Direction</th><th>Channel</th><th>Summary</th></tr>
+              <tr><td>Inbound (request)</td><td>Pull</td><td>Server: FUNC_LOG + TRANS</td></tr>
+              <tr><td>Outbound (response)</td><td>Pull</td><td>Device: FUNC_LOG + PACKET_NUM + STREAM + LOG_DATA (chunked)</td></tr>
+            </table>
+            <div class="msg-block">
+              <h3>Server → device (request)</h3>
+              <pre class="code-block hex">$
+  00FF 0002 00XX                    TRANS_NUMBER
+  0001 0003 "AVI"
+  0002 000F "0123456789ABCDE"
+  0003 0001 05                      FUNCTION = LOG
+#</pre>
+              <h3>Device → server (first chunk)</h3>
+              <pre class="code-block hex">$
+  00FF 0002 00XX
+  0001 0003 "AVI"
+  0002 000F "0123456789ABCDE"
+  0003 0001 05
+  0201 0002 0001                    PACKET_NUM = 1
+  0202 0001 01                      PACKET_STREAM = true
+  0401 02BC "…700 byte log…"       LOG_DATA
+#</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>5. SETTING</h2>
+            <table class="tag-table">
+              <tr><th>Direction</th><th>Channel</th><th>Summary</th></tr>
+              <tr><td>Inbound</td><td>Pull</td><td>FUNC_SETTING + optional SERVER_IP/PORT and one or more meter blocks (METER_INDEX separator)</td></tr>
+              <tr><td>Outbound</td><td>Pull</td><td>ACK or NACK (same TRANS)</td></tr>
+            </table>
+            <div class="msg-block">
+              <h3>Server → device (server address + add-meter example)</h3>
+              <pre class="code-block hex">$
+  00FF 0002 00XX                    TRANS_NUMBER
+  0001 0003 "AVI"
+  0002 000F "0123456789ABCDE"
+  0003 0001 06                      FUNCTION = SETTING
+  0601 000D "192.168.1.100"        SERVER_IP
+  0602 0002 2212                   SERVER_PORT = 8722
+  050B 0001 00                     METER_INDEX = 0
+  0501 0003 "add"                  METER_OPERATION
+  0502 0008 "IEC62056"             METER_PROTOCOL
+  0503 000B "electricity"          METER_TYPE
+  0504 0003 "MKL"                  METER_BRAND
+  0505 0008 "12345678"             METER_SERIAL_NUM
+  0506 0006 "port-1"               METER_SERIAL_PORT
+  0507 0004 0000012C               METER_INIT_BAUD = 300
+  0508 0001 00                     METER_FIX_BAUD = false
+  0509 0003 "7E1"                  METER_FRAME
+#</pre>
+              <h3>Device → server</h3>
+              <pre class="code-block hex">$
+  00FF 0002 00XX
+  0001 0003 "AVI"
+  0002 000F "0123456789ABCDE"
+  0003 0001 03
+  0301 0001 01
+#</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>6. Firmware Update</h2>
+            <table class="tag-table">
+              <tr><th>Direction</th><th>Channel</th><th>Summary</th></tr>
+              <tr><td>Inbound</td><td>Pull</td><td>FUNC_FW_UPDATE + FW_ADDRESS (ftp://…)</td></tr>
+              <tr><td>Outbound</td><td>Pull</td><td>ACK, then FTP download</td></tr>
+            </table>
+            <div class="msg-block">
+              <h3>Server → device</h3>
+              <pre class="code-block hex">$
+  00FF 0002 00XX
+  0001 0003 "AVI"
+  0002 000F "0123456789ABCDE"
+  0003 0001 07                      FUNCTION = FW_UPDATE
+  0901 002E "ftp://user:pass@192.168.1.50:21/fw/v2.bin"
+#</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>7. READOUT / LOADPROFILE</h2>
+            <div class="diagram-wrap">
+              <div class="diagram-head">End-to-End (Summary)</div>
+              <pre class="mermaid">sequenceDiagram
+  participant S as Server
+  participant Pull as Device pull
+  participant O as OrionTLV
+  participant M as MeterOps
+  participant Push as Device push
+  S->>Pull: READOUT / LP + TRANS + parameters
+  O->>S: ACK (pull)
+  O->>M: readout/profile job
+  M-->>O: callback
+  O->>Push: data packets (same transNo)
+  S->>Push: ACK
+              </pre>
+            </div>
+            <div class="msg-block">
+              <h3>READOUT Request - Server → Device</h3>
+              <pre class="code-block hex">$
+  00FF 0002 00XX
+  0001 0003 "AVI"
+  0002 000F "0123456789ABCDE"
+  0003 0001 08                      FUNCTION = READOUT
+  0703 0012 "ReadoutDirective1"    DIRECTIVE_NAME
+  0505 0008 "12345678"             METER_SERIAL_NUM
+#</pre>
+              <h3>Data Message - Device → Server</h3>
+              <pre class="code-block hex">$
+  00FF 0002 00XX                    same transaction as READOUT request
+  0001 0003 "AVI"
+  0002 000F "0123456789ABCDE"
+  0003 0001 08
+  0201 0002 0001
+  0202 0001 00
+  0701 00..                         METER_ID
+  0702 02BC "…"                     READOUT_DATA
+#</pre>
+              <h3>LOADPROFILE Extra Fields</h3>
+              <pre class="code-block hex">  0704 0013 "2021-06-22 00:00:00"   START_DATE
+  0705 0013 "2021-06-22 12:05:00"   END_DATE</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>8. DIRECTIVE LIST / ADD / DEL</h2>
+            <table class="tag-table">
+              <tr><th>Message</th><th>Direction</th><th>Key TLVs</th></tr>
+              <tr><td>LIST</td><td>Pull → / ←</td><td>DIRECTIVE_ID; replies use DIRECTIVE_DATA + PACKET_STREAM</td></tr>
+              <tr><td>ADD</td><td>Pull →</td><td>DIRECTIVE_DATA (JSON)</td></tr>
+              <tr><td>DEL</td><td>Pull →</td><td>DIRECTIVE_ID</td></tr>
+            </table>
+            <div class="msg-block">
+              <h3>LIST - Server → Device</h3>
+              <pre class="code-block hex">$
+  00FF 0002 00XX
+  0001 0003 "AVI"
+  0002 000F "0123456789ABCDE"
+  0003 0001 0A                     FUNCTION = DIRECTIVE_LIST
+  0801 0001 "*"                    DIRECTIVE_ID (all)
+#</pre>
+              <h3>ADD - Server → Device</h3>
+              <pre class="code-block hex">$
+  00FF 0002 00XX
+  0003 0001 0B                     FUNCTION = DIRECTIVE_ADD
+  0802 00A0 "{...JSON directive...}"
+#</pre>
+              <h3>DEL - Server → Device</h3>
+              <pre class="code-block hex">$
+  00FF 0002 00XX
+  0003 0001 0C                     FUNCTION = DIRECTIVE_DEL
+  0801 000F "ReadoutDirective1"   DIRECTIVE_ID
+#</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>9. Push Meter Data</h2>
+            <p>
+              A push connection is established before sending meter data. Payload is then sent in packets up to 1024 bytes.
+              When an ACK arrives from the server with the same <code>transNumber</code>, delivery is confirmed and the session is closed.
+            </p>
+            </article>
+
+          <article class="card col-12">
+            <h2>Test Server: ProtocolOrionTLV_TestServer.py</h2>
+            <p>
+              Default push port <strong>8723</strong>. Listens for push connections; after IDENT, sends pull commands to the reported pull IP/port.
+              Auto-replies echo the <strong>TRANS_NUMBER</strong> from the incoming packet (IDENT, Alive ACK, READOUT/LP last-chunk ACK).
+            </p>
+            <pre class="code-block">cd Application\AppZMeterGw\Services\Protocol\Test_Server
+python ProtocolOrionTLV_TestServer.py
+python ProtocolOrionTLV_TestServer.py 9000</pre>
+          </article>
+
+          <article class="card col-12">
+            <h2>Screenshots - Inbound/Outbound Log (Same Layout as Test Server)</h2>
+            <figure class="doc-figure">
+              <img src="images/test-server-main.svg" width="720" height="420" alt="Main window" />
+              <figcaption><strong>Main window.</strong> Push port, Start/Stop, device fields, auto-reply options, pull commands, message log on the right.</figcaption>
+            </figure>
+
+            <div class="figure-grid">
+              <figure class="doc-figure">
+                <img src="images/test-server-ident.svg" width="480" height="200" alt="Ident" />
+                <figcaption><strong>Ident flow.</strong> When the device connects, IDENT is received; pull IP/port are filled in.</figcaption>
+              </figure>
+              <figure class="doc-figure">
+                <img src="images/test-server-log-panel.svg" width="520" height="280" alt="Log" />
+                <figcaption><strong>Log panel.</strong> ← RECV / → SENT lines, hex and parsed TLV.</figcaption>
+              </figure>
+            </div>
+
+            <figure class="doc-figure">
+              <img src="images/test-server-pull-buttons.svg" width="220" height="380" alt="Pull commands" />
+              <figcaption><strong>Pull commands.</strong> Enabled after ident; each send uses a new TRANS_NUMBER (sequential on port 8723 test server).</figcaption>
+            </figure>
+
+            <h3>Sample Log Table (As Shown in the Panel)</h3>
+            <table class="tag-table">
+              <tr><th>Time</th><th>Dir</th><th>Channel</th><th>Summary</th><th>TRANS</th><th>FUNCTION</th></tr>
+              <tr><td>14:02:01.1</td><td>← RECV</td><td>PUSH</td><td>Device IDENT</td><td>45</td><td>IDENT</td></tr>
+              <tr><td>14:02:01.2</td><td>→ SENT</td><td>PUSH</td><td>Registration reply</td><td>45</td><td>IDENT + REGISTER</td></tr>
+              <tr><td>14:05:00.0</td><td>← RECV</td><td>PUSH</td><td>ALIVE</td><td>46</td><td>ALIVE</td></tr>
+              <tr><td>14:05:00.1</td><td>→ SENT</td><td>PUSH</td><td>ACK</td><td>46</td><td>ACK</td></tr>
+              <tr><td>14:10:22.0</td><td>→ SENT</td><td>PULL</td><td>READOUT request</td><td>1</td><td>READOUT</td></tr>
+              <tr><td>14:10:22.2</td><td>← RECV</td><td>PULL</td><td>ACK</td><td>1</td><td>ACK</td></tr>
+              <tr><td>14:10:25.0</td><td>← RECV</td><td>PUSH</td><td>Readout data (last chunk)</td><td>1</td><td>READOUT</td></tr>
+              <tr><td>14:10:25.1</td><td>→ SENT</td><td>PUSH</td><td>ACK</td><td>1</td><td>ACK</td></tr>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Public API (<code>AppProtocolOrionTLV.h</code>)</h2>
+            <pre class="code-block">appProtocolOrionTLVInit(serialNumber, serverIP, serverPort, deviceIP, pullPort);
+appProtocolOrionTLVStart();
+appProtocolOrionTLVStop();
+appProtocolOrionTLVPutIncomingMessage(channel, data, dataLength);  /* PUSH_ / PULL_ socket name */
+appProtocolOrionTLVSendEvent(ORION_EVENT_ALIVE | ORION_EVENT_FW_UPGRADE_SUCCESS);</pre>
+            <p>Constants: <code>ORION_PACKET_MAX_SIZE</code> 1024, <code>ORION_DATA_CHUNK_SIZE</code> 700, <code>ORION_SESSION_TIMEOUT</code> 10000 ms, <code>ORION_ALIVE_INTERVAL_S</code> 300 s.</p>
+          </article>
+
+        </div>
+      </main>
+    </div>
+  </div>
+  <footer class="protocol-global-footer">
+    <p>Designed by Zafer SATILMIS | AppProtocolOrionTLV</p>
+  </footer>
+</body>
+</html>
