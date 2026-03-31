@@ -224,8 +224,8 @@ static union FlagList
     unsigned int listAll;
     struct
     {
-        unsigned int sendIdent      : 1;
-        unsigned int sendHeartbeat  : 1;
+        unsigned int sendIdent  : 1;
+        unsigned int sendAlive  : 1;
 
         unsigned int tcpPushInUse   : 1;
 
@@ -239,8 +239,6 @@ static union FlagList
     };
 }gsFlagList;
 
-
-
 static char gs_serialNumber[20];
 static char gs_serverIP[20];
 static int  gs_serverPort;
@@ -248,7 +246,6 @@ static char gs_deviceIP[20];
 static int  gs_pullPort;
 
 static BOOL gs_registered = FALSE;
-static volatile BOOL gs_running = FALSE;
 static OsTaskId gs_taskId = OS_INVALID_TASK_ID;
 
 static PendingJob_t gs_pendingJobs[MAX_PENDING_JOBS];
@@ -271,8 +268,6 @@ static uint8_t gs_evCount;
 
 static S32 gs_periodicTimerId = -1;
 
-static volatile BOOL gs_sendIdent  = FALSE;
-static volatile BOOL gs_sendAlive  = FALSE;
 static volatile uint32_t gs_aliveCnt = 0;
 
 static uint16_t gs_localTransNum = 0;
@@ -356,8 +351,7 @@ static void mtlxPacketBegin(OrionBuilder_t *b)
     b->buf[b->pos++] = ORION_PKT_START;
 }
 
-static void builderAddTLV(OrionBuilder_t *b, uint16_t tag,
-                           const uint8_t *val, uint16_t valLen)
+static void builderAddTLV(OrionBuilder_t *b, uint16_t tag, const uint8_t *val, uint16_t valLen)
 {
     if (b->overflow) return;
     if ((uint32_t)b->pos + ORION_TLV_HEADER_SIZE + valLen + 1 > b->capacity)
@@ -453,8 +447,7 @@ static void mtlxParserReset(OrionParser_t *p)
     p->cursor = 0;
 }
 
-static BOOL mtlxParserNext(OrionParser_t *p, uint16_t *tag,
-                    const uint8_t **value, uint16_t *valueLen)
+static BOOL mtlxParserNext(OrionParser_t *p, uint16_t *tag, const uint8_t **value, uint16_t *valueLen)
 {
     if (p->cursor + ORION_TLV_HEADER_SIZE > p->length) return FALSE;
     *tag      = readU16BE(p->data + p->cursor);       p->cursor += 2;
@@ -465,8 +458,7 @@ static BOOL mtlxParserNext(OrionParser_t *p, uint16_t *tag,
     return TRUE;
 }
 
-static BOOL findTag(OrionParser_t *p, uint16_t wantTag,
-                    const uint8_t **value, uint16_t *valueLen)
+static BOOL findTag(OrionParser_t *p, uint16_t wantTag, const uint8_t **value, uint16_t *valueLen)
 {
     uint16_t saved = p->cursor;
     p->cursor = 0;
@@ -1192,7 +1184,7 @@ static void periodicTimerCb(void)
     gs_aliveCnt++;
     if (gs_aliveCnt >= (uint32_t)ORION_ALIVE_INTERVAL_S)
     {
-        gs_sendAlive = TRUE;
+        gsFlagList.sendAlive = TRUE;
         gs_aliveCnt  = 0;
     }
 }
@@ -1278,6 +1270,9 @@ static void processIdentSession(OrionSession_t *session)
                         }
                     }
                 }
+
+                gsFlagList.sendIdent = !gs_registered;
+
                 session->rxReady = FALSE;
                 session->rxLen = 0;
                 sessionDelete(session);
@@ -1885,16 +1880,16 @@ static void processSessionMessage(OrionSession_t *session)
 {
     switch (session->function)
     {
-        case SFUNC_PUSH_IDENT:    processIdentSession(session);           break;
-        case SFUNC_ALIVE:         processAliveSession(session);           break;
-        case SFUNC_PUSH_METER_DATA: processPushMeterDataSession(session); break;
-        case ORION_FUNC_LOG:       processLogSession(session);            break;
-        case ORION_FUNC_SETTING:   processSettingSession(session);        break;
-        case ORION_FUNC_FW_UPDATE: processFwUpdateSession(session);       break;
-        case ORION_FUNC_READOUT:   processReadoutSession(session);        break;
-        case ORION_FUNC_LOADPROFILE: processLoadProfileSession(session);  break;
-        case ORION_FUNC_DIRECTIVE_LIST: processDirectiveListSession(session); break;
-        case ORION_FUNC_DIRECTIVE_ADD:  processDirectiveAddSession(session);  break;
+        case SFUNC_PUSH_IDENT:          processIdentSession(session);           break;
+        case SFUNC_ALIVE:               processAliveSession(session);           break;
+        case SFUNC_PUSH_METER_DATA:     processPushMeterDataSession(session);   break;
+        case ORION_FUNC_LOG:            processLogSession(session);             break;
+        case ORION_FUNC_SETTING:        processSettingSession(session);         break;
+        case ORION_FUNC_FW_UPDATE:      processFwUpdateSession(session);        break;
+        case ORION_FUNC_READOUT:        processReadoutSession(session);         break;
+        case ORION_FUNC_LOADPROFILE:    processLoadProfileSession(session);     break;
+        case ORION_FUNC_DIRECTIVE_LIST: processDirectiveListSession(session);   break;
+        case ORION_FUNC_DIRECTIVE_ADD:  processDirectiveAddSession(session);    break;
         case ORION_FUNC_DIRECTIVE_DEL:  processDirectiveDeleteSession(session); break;
         default:
             DEBUG_WARNING("->[W] OrionTLV: unknown func 0x%02X", session->function);
@@ -1945,8 +1940,7 @@ static void dispatchIncomingMessage(const OrionIncomingMsg_t *msg)
     }
 
     /* start new session */
-    const char *ch = (msg->ch[0] != '\0') ? msg->ch : PULL_TCP_SOCK_NAME;
-    session = sessionCreate(func, ch, transNum, NULL);
+    session = sessionCreate(func, msg->ch, transNum, NULL);
     if (session)
     {
         (void)sessionSetIncoming(session, msg);
@@ -1965,11 +1959,11 @@ static void handleEvent(OrionEventMsg_t *evt)
     switch (evt->type)
     {
         case ORION_EVENT_FW_UPGRADE_SUCCESS:
-            gs_sendIdent = TRUE;
+            gsFlagList.sendIdent = TRUE;
             break;
 
         case ORION_EVENT_ALIVE:
-            gs_sendAlive = TRUE;
+            gsFlagList.sendAlive = TRUE;
             break;
 
         default:
@@ -1992,7 +1986,6 @@ static void protocolTaskFunc(void *arg)
     {
         DEBUG_ERROR("->[E] OrionTLV: TCP start failed");
         APP_LOG_REC(g_sysLoggerID, "OrionTLV: TCP start fail");
-        gs_running = FALSE;
         return;
     }
     appTcpConnManagerRequestConnect();
@@ -2003,14 +1996,14 @@ static void protocolTaskFunc(void *arg)
     if (!gs_registered)
     {
         DEBUG_INFO("->[I] OrionTLV: not registered, starting ident session");
-        gs_sendIdent = TRUE;
+        gsFlagList.sendIdent = TRUE;
     }
     else
     {
         DEBUG_INFO("->[I] OrionTLV: already registered");
     }
 
-    while (gs_running)
+    while (666)
     {
         appTskMngImOK(gs_taskId);
 
@@ -2035,21 +2028,17 @@ static void protocolTaskFunc(void *arg)
                 processSessionMessage(&gs_sessionTable[i]);
         }
 
-        /* 4. Push connect maintenance */
-        if (gs_registered && !appTcpConnManagerIsConnectedPush())
-            appTcpConnManagerRequestPushConnect();
-
-        /* 5. Task flags */
-        if (gs_sendIdent)
+        /* 4. Task flags */
+        if (gsFlagList.sendIdent)
         {
             if (sessionCreate(SFUNC_PUSH_IDENT, PUSH_TCP_SOCK_NAME, nextTransNumber(), NULL) != NULL)
-                gs_sendIdent = FALSE;
+                gsFlagList.sendIdent = FALSE;
         }
 
-        if (gs_sendAlive && gs_registered)
+        if (gsFlagList.sendAlive && gs_registered)
         {
             if (sessionCreate(SFUNC_ALIVE, PUSH_TCP_SOCK_NAME, nextTransNumber(), NULL) != NULL)
-                gs_sendAlive = FALSE;
+                gsFlagList.sendAlive = FALSE;
         }
 
         zosDelayTask(100);
@@ -2093,11 +2082,10 @@ RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber,
     gs_evHead = gs_evTail = gs_evCount = 0;
 
     gs_registered = FALSE;
-    gs_running    = FALSE;
     gs_taskId     = OS_INVALID_TASK_ID;
     gs_periodicTimerId = -1;
-    gs_sendIdent  = FALSE;
-    gs_sendAlive  = FALSE;
+    gsFlagList.sendIdent  = FALSE;
+    gsFlagList.sendAlive  = FALSE;
     gs_aliveCnt   = 0;
     gs_localTransNum = 0;
 
@@ -2106,10 +2094,6 @@ RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber,
 
 RETURN_STATUS appProtocolOrionTLVStart(void)
 {
-    if (gs_running) return SUCCESS;
-
-    gs_running = TRUE;
-
     ZOsTaskParameters taskParam;
     taskParam.priority  = ZOS_TASK_PRIORITY_LOW;
     taskParam.stackSize = ORION_TASK_STACK_SIZE;
@@ -2117,7 +2101,6 @@ RETURN_STATUS appProtocolOrionTLVStart(void)
     gs_taskId = appTskMngCreate(ORION_TASK_NAME, protocolTaskFunc, NULL, &taskParam);
     if (OS_INVALID_TASK_ID == gs_taskId)
     {
-        gs_running = FALSE;
         DEBUG_ERROR("->[E] OrionTLV: task creation failed");
         APP_LOG_REC(g_sysLoggerID, "OrionTLV task creation failed");
         return FAILURE;
@@ -2140,8 +2123,6 @@ RETURN_STATUS appProtocolOrionTLVStart(void)
 
 RETURN_STATUS appProtocolOrionTLVStop(void)
 {
-    if (!gs_running) return SUCCESS;
-
     if (gs_periodicTimerId >= 0)
     {
         (void)middEventTimerStop(gs_periodicTimerId);
@@ -2149,7 +2130,6 @@ RETURN_STATUS appProtocolOrionTLVStop(void)
         gs_periodicTimerId = -1;
     }
 
-    gs_running = FALSE;
     zosDelayTask(500);
 
     if (OS_INVALID_TASK_ID != gs_taskId)
