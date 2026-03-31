@@ -190,9 +190,11 @@ typedef enum
     SESSION_TIMEOUT,
 } OrionTLVState_t;
 
-typedef void (*SessionOnComplateCb)(Session *session, SessionState state, void *arg);
+typedef struct OrionSession_s OrionSession_t;
 
-typedef struct
+typedef void (*OrionSessionCompleteCb)(OrionSession_t *session, OrionTLVState_t state, void *arg);
+
+struct OrionSession_s
 {
     BOOL        inUse;
     uint8_t     function;
@@ -207,8 +209,8 @@ typedef struct
     volatile BOOL rxReady;
 
     int         pendingJobIdx;
-    SessionOnComplateCb onComplateFunc;
-} OrionSession_t;
+    OrionSessionCompleteCb onComplateFunc;
+};
 
 typedef struct
 {
@@ -1040,7 +1042,7 @@ static void meterOprsOnComplete(OrionSession_t* session, OrionTLVState_t state, 
 {    
     //if (SESSION_DONE == state)
     {
-        f ((session->pendingJobIdx >= 0) || (session->pendingJobIdx < MAX_PENDING_JOBS))
+        if ((session->pendingJobIdx >= 0) && (session->pendingJobIdx < MAX_PENDING_JOBS))
         {
             PendingJob_t *job = &gs_pendingJobs[session->pendingJobIdx];
             
@@ -1055,10 +1057,8 @@ static void meterOprsOnComplete(OrionSession_t* session, OrionTLVState_t state, 
 
 static void completeSession(OrionSession_t* session, OrionTLVState_t state, void *arg)
 {
-    if (session->onComplateFunc) //check null
-    {
-        session->onComplete(session, state, arg);
-    }
+    if (session->onComplateFunc)
+        session->onComplateFunc(session, state, arg);
 }
 
 static void sessionDelete(OrionSession_t *s)
@@ -1078,7 +1078,7 @@ static void sessionDelete(OrionSession_t *s)
 }
 
 static OrionSession_t *sessionCreate(uint8_t function, const char *channel,
-                                     uint16_t transNum, SessionOnComplateCb onComplate)
+                                     uint16_t transNum, OrionSessionCompleteCb onComplate)
 {
     for (unsigned int i = 0; i < ORION_SESSION_MAX; i++)
     {
@@ -1950,7 +1950,7 @@ static void dispatchIncomingMessage(const OrionIncomingMsg_t *msg)
     {
         DEBUG_WARNING("->[W] OrionTLV: too many sessions");
         uint16_t sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, transNum);
-        appTcpConnManagerSend(ch, (char *)gs_txBuf, (unsigned int)sz);
+        appTcpConnManagerSend(msg->ch, (char *)gs_txBuf, (unsigned int)sz);
     }
 }
 
