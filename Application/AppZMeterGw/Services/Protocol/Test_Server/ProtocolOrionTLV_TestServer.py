@@ -37,6 +37,7 @@ PKT_END   = ord('#')   # 0x23
 TAG_FLAG            = 0x0001
 TAG_SERIAL_NUMBER   = 0x0002
 TAG_FUNCTION        = 0x0003
+TAG_TRANS_NUMBER    = 0x00FF  # session / correlation (big-endian uint16)
 
 # Ident / Alive
 TAG_REGISTERED      = 0x0101
@@ -107,6 +108,7 @@ FUNC_DIRECTIVE_DEL  = 0x0C
 
 TAG_NAMES = {
     TAG_FLAG: "FLAG", TAG_SERIAL_NUMBER: "SERIAL_NUMBER", TAG_FUNCTION: "FUNCTION",
+    TAG_TRANS_NUMBER: "TRANS_NUMBER",
     TAG_REGISTERED: "REGISTERED", TAG_DEVICE_BRAND: "DEVICE_BRAND",
     TAG_DEVICE_MODEL: "DEVICE_MODEL", TAG_DEVICE_DATE: "DEVICE_DATE",
     TAG_PULL_IP: "PULL_IP", TAG_PULL_PORT: "PULL_PORT", TAG_REGISTER: "REGISTER",
@@ -253,7 +255,7 @@ def format_tlv_fields(fields):
                      TAG_ACK_STATUS, TAG_METER_FIX_BAUD):
             bval = (val[0] != 0) if val else False
             lines.append(f"  {tag_name:22s}  = {bval}")
-        elif tag in (TAG_PULL_PORT, TAG_SERVER_PORT, TAG_PACKET_NUM):
+        elif tag in (TAG_TRANS_NUMBER, TAG_PULL_PORT, TAG_SERVER_PORT, TAG_PACKET_NUM):
             num = struct.unpack("!H", val)[0] if len(val) == 2 else int.from_bytes(val, "big")
             lines.append(f"  {tag_name:22s}  = {num}")
         elif tag == TAG_METER_INIT_BAUD:
@@ -329,6 +331,8 @@ class OrionTLVTestServer:
         self.auto_ident = tk.BooleanVar(value=True)
         self.auto_alive = tk.BooleanVar(value=True)
         self.auto_data_ack = tk.BooleanVar(value=True)
+
+        self._pull_trans = 1  # 1..0xFFFF for pull commands (matches firmware convention)
 
         # ── logging ──
         self.log_queue = queue.Queue()
@@ -637,7 +641,9 @@ class OrionTLVTestServer:
             self.root.after(0, self._enable_pull_buttons)
 
             if self.auto_ident.get():
+                trans = get_uint16(fields, TAG_TRANS_NUMBER)
                 pb = PacketBuilder()
+                pb.add_uint16(TAG_TRANS_NUMBER, trans)
                 pb.add_device_header(self.device_flag, sn)
                 pb.add_uint8(TAG_FUNCTION, FUNC_IDENT)
                 pb.add_bool(TAG_REGISTER, True)
@@ -647,7 +653,9 @@ class OrionTLVTestServer:
             date = get_string(fields, TAG_DEVICE_DATE)
             self._log("info", f"Alive alındı – date:{date}")
             if self.auto_alive.get():
+                trans = get_uint16(fields, TAG_TRANS_NUMBER)
                 pb = PacketBuilder()
+                pb.add_uint16(TAG_TRANS_NUMBER, trans)
                 pb.add_device_header(self.device_flag, self.device_serial.get())
                 pb.add_uint8(TAG_FUNCTION, FUNC_ACK)
                 pb.add_bool(TAG_ACK_STATUS, True)
@@ -659,7 +667,9 @@ class OrionTLVTestServer:
             fname = FUNC_NAMES.get(func, "?")
             self._log("info", f"{fname} verisi alındı – paket:{pnum}  stream:{pstream}")
             if not pstream and self.auto_data_ack.get():
+                trans = get_uint16(fields, TAG_TRANS_NUMBER)
                 pb = PacketBuilder()
+                pb.add_uint16(TAG_TRANS_NUMBER, trans)
                 pb.add_device_header(self.device_flag, self.device_serial.get())
                 pb.add_uint8(TAG_FUNCTION, FUNC_ACK)
                 pb.add_bool(TAG_ACK_STATUS, True)
@@ -761,8 +771,16 @@ class OrionTLVTestServer:
 
     # ──────────────── Helper builders ────────────────
 
+    def _next_pull_trans(self):
+        t = self._pull_trans
+        self._pull_trans = (self._pull_trans % 0xFFFF) + 1
+        if self._pull_trans == 0:
+            self._pull_trans = 1
+        return t
+
     def _build_pull_packet(self, func_id, extra_fn=None):
         pb = PacketBuilder()
+        pb.add_uint16(TAG_TRANS_NUMBER, self._next_pull_trans())
         pb.add_device_header(self.device_flag, self.device_serial.get())
         pb.add_uint8(TAG_FUNCTION, func_id)
         if extra_fn:
