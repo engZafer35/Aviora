@@ -1,0 +1,245 @@
+:root {
+  --bg: #0f1117;
+  --panel: #161b22;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --accent: #58a6ff;
+  --border: #30363d;
+  --code-bg: #0d1117;
+  --ok: #3fb950;
+  --warn: #d29922;
+}
+
+* { box-sizing: border-box; }
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.55;
+  font-size: 15px;
+}
+
+header.hero {
+  padding: 2.5rem 1.5rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(165deg, #161b22 0%, #0d1117 100%);
+}
+
+header.hero h1 {
+  margin: 0 0 0.5rem;
+  font-weight: 600;
+  font-size: 1.75rem;
+}
+
+header.hero p {
+  margin: 0;
+  color: var(--muted);
+  max-width: 52rem;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 0;
+  min-height: calc(100vh - 120px);
+}
+
+nav.toc {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100vh;
+  overflow: auto;
+  padding: 1.25rem 1rem 2rem;
+  border-right: 1px solid var(--border);
+  background: var(--panel);
+  font-size: 13px;
+}
+
+nav.toc strong {
+  display: block;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  margin: 1rem 0 0.4rem;
+}
+
+nav.toc strong:first-child { margin-top: 0; }
+
+nav.toc a {
+  display: block;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 0.2rem 0;
+}
+
+nav.toc a:hover { text-decoration: underline; }
+
+main.doc {
+  padding: 1.75rem 2rem 4rem;
+  max-width: 56rem;
+}
+
+main.doc h2 {
+  margin: 2.25rem 0 0.75rem;
+  font-size: 1.35rem;
+  font-weight: 600;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--border);
+}
+
+main.doc h3 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #c9d1d9;
+}
+
+main.doc p { margin: 0.65rem 0; }
+
+main.doc ul, main.doc ol {
+  margin: 0.5rem 0;
+  padding-left: 1.35rem;
+}
+
+main.doc li { margin: 0.35rem 0; }
+
+table.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 1rem 0;
+}
+
+table.data th, table.data td {
+  border: 1px solid var(--border);
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+table.data th {
+  background: var(--panel);
+  color: var(--muted);
+  font-weight: 600;
+}
+
+table.data code { font-size: 12px; }
+
+pre, .hex {
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.85rem 1rem;
+  overflow-x: auto;
+  font-size: 12px;
+  line-height: 1.45;
+  word-break: break-all;
+}
+
+.hex { font-family: Consolas, "Courier New", monospace; color: #ce9178; }
+
+.mermaid {
+  background: #161b22;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.gif-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 1rem 0;
+}
+
+.gif-row figure {
+  margin: 0;
+  flex: 1 1 280px;
+  max-width: 360px;
+}
+
+.gif-row img {
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.gif-row figcaption {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 0.35rem;
+}
+
+.mock-screen {
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin: 1rem 0;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 12px;
+}
+
+.mock-screen .title {
+  background: #2d333b;
+  padding: 0.4rem 0.75rem;
+  color: #adbac7;
+  font-size: 11px;
+}
+
+.mock-screen .log {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 0.75rem;
+  white-space: pre-wrap;
+  line-height: 1.4;
+  min-height: 180px;
+}
+
+.mock-screen .ts { color: #6a9955; }
+.mock-screen .recv { color: #569cd6; }
+.mock-screen .sent { color: #4ec9b0; }
+.mock-screen .info { color: #808080; }
+
+.note {
+  border-left: 3px solid var(--warn);
+  padding: 0.5rem 0.85rem;
+  margin: 1rem 0;
+  background: rgba(210, 153, 34, 0.08);
+  font-size: 14px;
+}
+
+kbd {
+  background: #21262d;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  font-size: 12px;
+  font-family: inherit;
+}
+
+footer {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; }
+  nav.toc {
+    position: relative;
+    max-height: none;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
