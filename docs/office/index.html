@@ -1978,7 +1978,6 @@ function render() {
   sorted.forEach(ch => ch.draw());
 
   drawScreenGlow();
-  drawLegend();
 
   chatRefreshCounter++;
   if (chatRefreshCounter % 30 === 0 && selectedChar && chatPanel.classList.contains('open')) {
@@ -2003,66 +2002,6 @@ function drawScreenGlow() {
     ctx.arc(mx, my, 30, 0, Math.PI * 2);
     ctx.fill();
   });
-}
-
-function drawLegend() {
-  const lx = W - 220, ly = H - 88;
-  ctx.fillStyle = 'rgba(0,0,0,0.65)';
-  ctx.beginPath();
-  ctx.roundRect(lx, ly, 208, 78, 8);
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  ctx.fillStyle = 'rgba(220,50,50,0.9)';
-  ctx.beginPath();
-  ctx.arc(lx + 20, ly + 14, 7, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#FF6666';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.fillStyle = '#FFF';
-  ctx.strokeStyle = '#FFF';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(lx + 18, ly + 12);
-  ctx.lineTo(lx + 22, ly + 16);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(lx + 22, ly + 12);
-  ctx.lineTo(lx + 18, ly + 16);
-  ctx.stroke();
-  ctx.fillStyle = '#EEE';
-  ctx.font = '11px Segoe UI, sans-serif';
-  ctx.fillText('Görev var', lx + 34, ly + 18);
-
-  ctx.fillStyle = 'rgba(50,200,50,0.9)';
-  ctx.beginPath();
-  ctx.arc(lx + 20, ly + 35, 7, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#66FF66';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.strokeStyle = '#FFF';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(lx + 17, ly + 35);
-  ctx.lineTo(lx + 19, ly + 38);
-  ctx.lineTo(lx + 24, ly + 32);
-  ctx.stroke();
-  ctx.fillStyle = '#EEE';
-  ctx.fillText('Görev yok', lx + 34, ly + 39);
-
-  ctx.fillStyle = 'rgba(221,204,51,0.95)';
-  ctx.beginPath();
-  ctx.arc(lx + 20, ly + 56, 7, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#FFEE88';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-  ctx.fillStyle = '#EEE';
-  ctx.fillText('Seçili', lx + 34, ly + 60);
 }
 
 render();

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🛰️Aviora-Protocol</title>
+  <title>Protocol Test Servers — Aviora</title>
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="./protocol-docs.css" />
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
@@ -36,6 +36,24 @@
       gap: 16px;
       margin-top: 12px;
     }
+    .ts-table { width:100%; border-collapse:collapse; font-size:14px; color:var(--muted); }
+    .ts-table th, .ts-table td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top; }
+    .ts-table th { color:var(--accent); font-size:12px; text-transform:uppercase; letter-spacing:.4px; }
+    .ts-table code { font-size:12px; background:rgba(255,255,255,0.06); padding:2px 6px; border-radius:4px; }
+    .console-out {
+      font-family: ui-monospace, Consolas, monospace;
+      font-size:12px;
+      line-height:1.5;
+      background:#0d1117;
+      border:1px solid var(--line);
+      border-radius:8px;
+      padding:12px 14px;
+      overflow:auto;
+      color:#c9d1d9;
+      margin:10px 0;
+    }
+    .console-out .cmt { color:#6e7681; }
+    .note-box { border-left:3px solid #58a6ff; padding:10px 14px; margin:12px 0; background:rgba(88,166,255,0.08); font-size:14px; line-height:1.55; }
   </style>
 </head>
 <body class="protocol-docs">
@@ -61,11 +79,13 @@
       <div class="sidebar-title">Protocol</div>
       <nav class="sidebar-nav">
         <a href="index.html">Overview</a>
-        <a href="tcp-conn.html">TCP Connection</a>
+        <a href="tcp-conn.html">TCP Connection Service</a>
+        <a href="appMqttConnService.html">MQTT Connection Service</a>
         <a href="meter-operations.html">Meter Operations</a>
         <a href="protocolzd.html">ProtocolZD</a>
         <a href="protocolMetallixTLV.html">ProtocolMetallixTLV</a>
         <a href="protocolOrionTLV.html">ProtocolOrionTLV</a>
+        <a href="protocolRigelMq.html">ProtocolRigelMq</a>
         <a href="test-server.html" class="active">Test Server</a>
         <a href="readme.html">README</a>
       </nav>
@@ -73,37 +93,200 @@
     <div class="main-with-sidebar">
       <section class="hero">
         <div class="hero-card">
-          <h1>AVIORA Protocol Test Server</h1>
+          <h1>Protocol Test Servers</h1>
           <p>
-            Desktop Test Server application listens on the <strong>push</strong> port where the device connects,
-            reads <code>pullIP</code> / <code>pullPort</code> from the first <strong>ident</strong> message (or uses the TCP source IP when needed) and sends pull commands to that address.
+            Desktop tools under <code>Application/AppZMeterGw/Services/Protocol/Test_Server</code> simulate the <strong>central side</strong> of each stack: JSON/TCP (ProtocolZD), binary TLV/TCP (ProtocolOrionTLV), and JSON/MQTT (ProtocolRigelMq). Use them on a PC on the same LAN as the gateway (or with port forwarding) to exercise ident, alive, pull commands, and MQTT request/response flows without a full backend.
           </p>
+          <div class="tag-row">
+            <span class="tag highlight">Python 3 + Tkinter</span>
+            <span class="tag">TCP push listener</span>
+            <span class="tag">MQTT broker</span>
+            <span class="tag">Auto-reply &amp; logs</span>
+          </div>
         </div>
       </section>
 
       <main class="container">
         <div class="grid">
+
           <article class="card col-12">
-            <h2>How to run</h2>
-            <pre class="code-block">cd Application\AppZMeterGw\Services\Protocol\Test_Server
-
-python ProtocolZD_TestServer.py                 # default push port: 8722
-python ProtocolZD_TestServer.py 9000            # custom port
-
-python ProtocolMetallixTLV_TestServer.py            # default push port: 8723
-python ProtocolMetallixTLV_TestServer.py 9000      # custom port
-
-python ProtocolOrionTLV_TestServer.py               # default push port: 8723
-python ProtocolOrionTLV_TestServer.py 9000          # custom port</pre>
-            <p class="note">After the window opens, click <strong>Start</strong> to begin listening. The device must be configured to reach this machine’s IP and the same port.</p>
+            <h2>Which Application Do I Run?</h2>
+            <table class="ts-table">
+              <thead>
+                <tr>
+                  <th>Script</th>
+                  <th>Protocol doc</th>
+                  <th>Transport</th>
+                  <th>Default</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>ProtocolZD_TestServer.py</code></td>
+                  <td><a href="protocolzd.html">ProtocolZD</a></td>
+                  <td>TCP — gateway <strong>pushes</strong> to this machine; tool opens <strong>pull</strong> client to the gateway</td>
+                  <td>Push listen port <strong>8722</strong></td>
+                </tr>
+                <tr>
+                  <td><code>ProtocolOrionTLV_TestServer.py</code></td>
+                  <td><a href="protocolOrionTLV.html">ProtocolOrionTLV</a></td>
+                  <td>Same TCP push/pull model as ZD, binary TLV frames</td>
+                  <td>Push listen port <strong>8723</strong></td>
+                </tr>
+                <tr>
+                  <td><code>ProtocolRigelMq_TestServer.py</code></td>
+                  <td><a href="protocolRigelMq.html">ProtocolRigelMq</a></td>
+                  <td>MQTT — tool is the <strong>backend</strong>: subscribe <code>avi/response</code>, publish <code>avi/request</code></td>
+                  <td>Broker <strong>127.0.0.1:1883</strong></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="note-box">
+              <strong>Metallix TLV:</strong> there is no <code>ProtocolMetallixTLV_TestServer.py</code> in this folder today. Use the Orion or ZD pattern as a reference if you add one, or test Metallix against another harness described in <a href="protocolMetallixTLV.html">ProtocolMetallixTLV</a>.
+            </div>
           </article>
 
           <article class="card col-12">
-            <h2>Test Server — screenshots (wireframes)</h2>
+            <h2>Common Prerequisites</h2>
+            <ul style="color:var(--muted);line-height:1.65;font-size:14px">
+              <li><strong>Python 3</strong> with <strong>Tkinter</strong> (included with most Windows/macOS installers; on some Linux distros install <code>python3-tk</code>).</li>
+              <li>Working directory: change into <code>Test_Server</code> before running scripts (relative paths and log files are created next to the script).</li>
+              <li><strong>RigelMq only:</strong> <code>pip install paho-mqtt</code> — if missing, the process exits with a short message in the terminal.</li>
+              <li><strong>RigelMq only:</strong> an MQTT broker reachable from both the PC and the gateway (e.g. Mosquitto on <code>127.0.0.1:1883</code> or a LAN IP).</li>
+            </ul>
+          </article>
+
+          <article class="card col-12">
+            <h2>1. ProtocolZD Test Server (<code>ProtocolZD_TestServer.py</code>)</h2>
+            <p class="lead">JSON over TCP. Listens on a <strong>push</strong> port for the gateway connection; after <strong>ident</strong>, uses <code>pullIP</code> / <code>pullPort</code> to send pull-side JSON.</p>
+
+            <h3>Install (once)</h3>
+            <pre class="code-block">pip install --upgrade pip
+<span class="cmt"># No extra pip packages required for ZD (stdlib + tkinter only).</span></pre>
+
+            <h3>Run — Windows (PowerShell)</h3>
+            <pre class="code-block">cd C:\Users\&lt;you&gt;\Aviora\Application\AppZMeterGw\Services\Protocol\Test_Server
+
+python ProtocolZD_TestServer.py
+python ProtocolZD_TestServer.py 9000</pre>
+
+            <h3>Run — Linux / macOS</h3>
+            <pre class="code-block">cd /path/to/Aviora/Application/AppZMeterGw/Services/Protocol/Test_Server
+python3 ProtocolZD_TestServer.py
+python3 ProtocolZD_TestServer.py 9000</pre>
+
+            <p><strong>Arguments:</strong> optional integer <strong>port</strong> = TCP listen port for incoming gateway push (default <strong>8722</strong>).</p>
+
+            <h3>Typical terminal output</h3>
+            <p style="color:var(--muted);font-size:14px">The GUI opens immediately; most logging appears in the window. On startup the console may be quiet. A log file is created in the same folder:</p>
+            <div class="console-out">zd_server_log_YYYYMMDD_HHMMSS.txt
+<span class="cmt"># Example first lines after device connects (content mirrors the on-screen log):</span>
+[14:02:01] Server listening on 0.0.0.0:8722
+[14:02:05] [RECV] { "function":"ident", ... }</div>
+
+            <h3>UI workflow</h3>
+            <ol style="color:var(--muted);line-height:1.65;font-size:14px">
+              <li>Click <strong>Start</strong> (or equivalent) to listen on the chosen port.</li>
+              <li>Point the gateway’s push server IP/port to this machine and port.</li>
+              <li>After <strong>ident</strong>, serial / pull fields fill; pull command buttons enable.</li>
+              <li>Use pull commands to open a TCP client to <code>pullIP:pullPort</code> and send JSON requests.</li>
+            </ol>
+          </article>
+
+          <article class="card col-12">
+            <h2>2. ProtocolOrionTLV Test Server (<code>ProtocolOrionTLV_TestServer.py</code>)</h2>
+            <p class="lead">Binary TLV over TCP — same push/pull topology as ZD, different framing (see <a href="protocolOrionTLV.html">ProtocolOrionTLV</a>).</p>
+
+            <h3>Run — Windows (PowerShell)</h3>
+            <pre class="code-block">cd C:\Users\&lt;you&gt;\Aviora\Application\AppZMeterGw\Services\Protocol\Test_Server
+
+python ProtocolOrionTLV_TestServer.py
+python ProtocolOrionTLV_TestServer.py 9000</pre>
+
+            <h3>Run — Linux / macOS</h3>
+            <pre class="code-block">cd /path/to/Aviora/Application/AppZMeterGw/Services/Protocol/Test_Server
+python3 ProtocolOrionTLV_TestServer.py
+python3 ProtocolOrionTLV_TestServer.py 9000</pre>
+
+            <p><strong>Arguments:</strong> optional <strong>port</strong> (default <strong>8723</strong>).</p>
+
+            <h3>Typical log file</h3>
+            <div class="console-out">ba_server_log_YYYYMMDD_HHMMSS.txt
+<span class="cmt"># Created next to the script; same text as the UI log panel.</span></div>
+
+            <p style="color:var(--muted);font-size:14px">UI layout and flow match the ZD test server (push listen → ident → pull commands). Use this binary server when the gateway runs AppProtocolOrionTLV instead of ProtocolZD.</p>
+          </article>
+
+          <article class="card col-12">
+            <h2>3. ProtocolRigelMq Test Server (<code>ProtocolRigelMq_TestServer.py</code>)</h2>
+            <p class="lead">JSON over MQTT. The tool acts as the <strong>backend</strong>: it <strong>subscribes</strong> to <code>avi/response</code> (gateway → server) and <strong>publishes</strong> to <code>avi/request</code> (server → gateway). See <a href="protocolRigelMq.html">ProtocolRigelMq</a> for message shapes.</p>
+
+            <h3>Install</h3>
+            <pre class="code-block">pip install paho-mqtt</pre>
+
+            <h3>Run — Windows (PowerShell)</h3>
+            <pre class="code-block">cd C:\Users\&lt;you&gt;\Aviora\Application\AppZMeterGw\Services\Protocol\Test_Server
+
+python ProtocolRigelMq_TestServer.py
+python ProtocolRigelMq_TestServer.py 192.168.1.10 1883</pre>
+
+            <h3>Run — Linux / macOS</h3>
+            <pre class="code-block">cd /path/to/Aviora/Application/AppZMeterGw/Services/Protocol/Test_Server
+python3 ProtocolRigelMq_TestServer.py
+python3 ProtocolRigelMq_TestServer.py 192.168.1.10 1883</pre>
+
+            <p><strong>Arguments:</strong> optional <code>broker_ip</code> (default <strong>127.0.0.1</strong>), optional <code>broker_port</code> (default <strong>1883</strong>). Enter the same broker the gateway uses.</p>
+
+            <h3>Typical terminal output</h3>
+            <p style="color:var(--muted);font-size:14px">After you click <strong>Başlat</strong> / Start and the broker accepts the connection:</p>
+            <div class="console-out">MQTT client başlatıldı – 127.0.0.1:1883
+Subscribed to avi/response (gateway → server)</div>
+            <p style="color:var(--muted);font-size:14px">If <code>paho-mqtt</code> is missing:</p>
+            <div class="console-out">paho-mqtt kütüphanesi gerekli. 'pip install paho-mqtt' ile yükleyin.</div>
+
+            <h3>Log file</h3>
+            <div class="console-out">rigel_mq_server_log_YYYYMMDD_HHMMSS.txt</div>
+
+            <h3>UI workflow</h3>
+            <ol style="color:var(--muted);line-height:1.65;font-size:14px">
+              <li>Set broker IP/port → connect.</li>
+              <li>When the gateway publishes <strong>ident</strong> on <code>avi/response</code>, the tool fills device fields and stores <code>transNumber</code>.</li>
+              <li>Optional auto option sends an <strong>ident reply</strong> on <code>avi/request</code> with <code>"function":"ident"</code> and <code>response.registered</code>.</li>
+              <li>Other commands (readout, setting, …) publish JSON to <code>avi/request</code>; gateway answers on <code>avi/response</code>.</li>
+            </ol>
+          </article>
+
+          <article class="card col-12">
+            <h2>Quick comparison (Mermaid)</h2>
+            <div class="diagram-wrap">
+              <div class="diagram-head">TCP test servers (ZD and Orion)</div>
+              <pre class="mermaid">flowchart LR
+  GW[Gateway]
+  TS[Test server push listener]
+  PULL[Gateway pull port]
+  GW -->|TCP push JSON or TLV| TS
+  TS -->|TCP pull JSON or TLV| PULL</pre>
+            </div>
+            <div class="diagram-wrap">
+              <div class="diagram-head">MQTT test server (RigelMq)</div>
+              <pre class="mermaid">flowchart LR
+  GW[Gateway]
+  BR[MQTT broker]
+  TS[Test server backend]
+  GW -->|publish avi/response| BR
+  BR --> TS
+  TS -->|publish avi/request| BR
+  BR -->|subscribe avi/request| GW</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Shared UI Screenshots (TCP Tools — Wireframes)</h2>
+            <p style="color:var(--muted);font-size:14px">Wireframes below match the <strong>ZD</strong> and <strong>OrionTLV</strong> Tk layouts (push port, Start/Stop, pull commands, log). The RigelMq window uses broker fields instead of a push port; conceptually the log panel is the same.</p>
 
             <figure class="doc-figure">
               <img src="images/test-server-main.svg" width="720" height="420" alt="Main window wireframe" />
-              <figcaption><strong>Main window.</strong> Left: port, Start/Stop, device fields, auto-reply options, pull commands. Right: message log (SENT/RECV colors).</figcaption>
+              <figcaption><strong>Main window.</strong> Left: port, Start/Stop, device fields, auto-reply options, pull commands. Right: message log (SENT/RECV colours).</figcaption>
             </figure>
 
             <div class="figure-grid">
@@ -113,99 +296,79 @@ python ProtocolOrionTLV_TestServer.py 9000          # custom port</pre>
               </figure>
               <figure class="doc-figure">
                 <img src="images/test-server-auto-reply.svg" width="480" height="140" alt="Auto-reply checkboxes" />
-                <figcaption><strong>Auto reply.</strong> Optionally send automatic ACK for ident, alive, and data.</figcaption>
+                <figcaption><strong>Auto reply.</strong> Optional automatic handling for ident / alive / data (exact labels depend on protocol).</figcaption>
               </figure>
             </div>
 
             <figure class="doc-figure">
               <img src="images/test-server-pull-buttons.svg" width="220" height="380" alt="Pull command list" />
-              <figcaption><strong>Pull commands.</strong> Disabled until ident; then enabled. The tool opens a TCP client to <code>pullIP:pullPort</code>.</figcaption>
+              <figcaption><strong>Pull commands (TCP tools).</strong> Disabled until ident; then connects to <code>pullIP:pullPort</code>.</figcaption>
             </figure>
 
             <figure class="doc-figure">
               <img src="images/test-server-log-panel.svg" width="640" height="280" alt="Message log panel" />
-              <figcaption><strong>Log panel.</strong> The same text is appended to <code>server_log_*.txt</code>.</figcaption>
+              <figcaption><strong>Log panel.</strong> Same text is appended to the per-server log file on disk.</figcaption>
             </figure>
 
             <div class="figure-grid">
               <figure class="doc-figure">
                 <img src="images/test-server-ident.svg" width="400" height="200" alt="Device info after ident" />
-                <figcaption><strong>After ident.</strong> Serial, pull IP and port are filled in.</figcaption>
+                <figcaption><strong>After ident.</strong> Serial, pull IP and port filled from the first ident packet.</figcaption>
               </figure>
               <figure class="doc-figure">
                 <img src="images/test-server-dialog.svg" width="440" height="280" alt="Readout parameter dialog" />
-                <figcaption><strong>Example dialog.</strong> Readout directive and meter serial.</figcaption>
+                <figcaption><strong>Example dialog.</strong> Readout directive and meter serial (ZD-style).</figcaption>
               </figure>
             </div>
 
             <figure class="doc-figure">
               <img src="images/test-server-scenario-a.svg" width="560" height="200" alt="Scenario A steps" />
-              <figcaption><strong>Scenario A summary.</strong> Command line, Start, device push address, ident exchange, pull commands.</figcaption>
+              <figcaption><strong>Scenario A (TCP).</strong> Command line, Start, device push address, ident exchange, pull commands.</figcaption>
             </figure>
           </article>
 
           <article class="card col-12">
-            <h2>Features</h2>
-            <ul>
-              <li><strong>Push listener</strong> — Single client; logs ident, alive, readout/load profile data.</li>
-              <li><strong>Auto replies</strong> — Optional <code>register: true</code> for ident, <code>ack</code> for alive and end-of-data (can be disabled).</li>
-              <li><strong>Pull client</strong> — Buttons stay disabled until ident; then connects to <code>pullIP:pullPort</code> and sends JSON.</li>
-              <li><strong>Multi-packet</strong> — For log and directive list, reads until <code>packetStream</code> is false.</li>
-              <li><strong>File log</strong> — <code>zd_server_log_YYYYMMDD_HHMMSS.txt</code> is created automatically.</li>
-              <li><strong>Loopback fix</strong> — If the device reports <code>127.0.0.1</code>, the server can use the real TCP source IP as the pull target.</li>
+            <h2>Typical TCP Features (ZD / Orion)</h2>
+            <ul style="color:var(--muted);line-height:1.65;font-size:14px">
+              <li><strong>Push listener</strong> — accepts one gateway connection; logs ident, alive, streamed payloads.</li>
+              <li><strong>Auto replies</strong> — optional responses for ident / alive / end-of-data (can be disabled per checkbox).</li>
+              <li><strong>Pull client</strong> — buttons stay disabled until ident; then opens TCP to <code>pullIP:pullPort</code> and sends JSON (ZD) or TLV (Orion).</li>
+              <li><strong>Multi-packet</strong> — for log and similar, reads until <code>packetStream</code> is false where applicable.</li>
+              <li><strong>Loopback</strong> — if the device sends <code>127.0.0.1</code> as pull IP, the tool may substitute the real TCP peer address.</li>
             </ul>
           </article>
 
           <article class="card col-12">
-            <h2>Test server flow diagram</h2>
-            <div class="diagram-wrap">
-              <div class="diagram-head">End-to-end</div>
-              <pre class="mermaid">flowchart TD
-  A[User: Start] --> B[Listen on push port]
-  B --> C[Device TCP connects]
-  C --> D[Receive ident]
-  D --> E[Update pullIP/pullPort in UI]
-  E --> F[Enable pull buttons]
-  F --> G{User command?}
-  G -->|Yes| H[TCP connect to device pull port]
-  H --> I[Send JSON, read responses]
-  I --> J[Log panel + file]
-  G -->|No| K[Listen for alive / data]
-  K --> G</pre>
-            </div>
-          </article>
-
-          <article class="card col-12">
-            <h2>Sample scenarios</h2>
+            <h2>Sample Scenarios — TCP (ZD Example)</h2>
             <h3>Scenario A — First registration</h3>
-            <ol>
+            <ol style="color:var(--muted);line-height:1.65;font-size:14px">
               <li>Run <code>python ProtocolZD_TestServer.py 8722</code>, then click <strong>Start</strong>.</li>
               <li>Configure the gateway push target as <code>this_PC_IP:8722</code>.</li>
-              <li>Device sends ident; JSON appears in the log; optional auto <code>register: true</code> is sent back.</li>
+              <li>Device sends ident; JSON appears in the log; optional auto registration response is sent if enabled.</li>
               <li>Pull IP/port update; try <strong>Log request</strong> or <strong>Add meter</strong>.</li>
             </ol>
             <h3>Scenario B — Readout</h3>
-            <ol>
-              <li>First use <strong>Add meter</strong> to register a meter.</li>
+            <ol style="color:var(--muted);line-height:1.65;font-size:14px">
+              <li>Use <strong>Add meter</strong> to register a meter.</li>
               <li>Use <strong>Readout request</strong> and enter directive and serial.</li>
-              <li>You should see <code>ack</code> on pull, then packetized readout on push.</li>
+              <li>Expect <code>ack</code> on the pull side, then packetized readout on push.</li>
             </ol>
             <h3>Scenario C — Change server address</h3>
-            <ol>
-              <li>Use <strong>Server settings</strong> to send a new IP/port; the device restarts TCP (next connection uses the new address on real hardware).</li>
+            <ol style="color:var(--muted);line-height:1.65;font-size:14px">
+              <li>Use <strong>Server settings</strong> to push a new IP/port; on real hardware the device reconnects using the new target.</li>
             </ol>
           </article>
 
           <article class="card col-12">
-            <h2>Push ↔ pull timeline</h2>
+            <h2>Push ↔ Pull Timeline (TCP)</h2>
             <div class="diagram-wrap">
-              <div class="diagram-head">Typical session</div>
+              <div class="diagram-head">Typical ZD-style session</div>
               <pre class="mermaid">sequenceDiagram
   participant GW as Gateway
   participant TS as Test server
   GW->>TS: ident (push)
-  TS->>GW: ident response register true
-  loop every 5 min
+  TS->>GW: ident response (push)
+  loop heartbeat
     GW->>TS: alive (push)
     TS->>GW: ack (push)
   end
@@ -213,12 +376,22 @@ python ProtocolOrionTLV_TestServer.py 9000          # custom port</pre>
   GW->>TS: ack (pull)</pre>
             </div>
           </article>
+
+          <article class="card col-12">
+            <h2>Further Reading</h2>
+            <ul style="color:var(--muted);line-height:1.65;font-size:14px">
+              <li><a href="protocolzd.html">ProtocolZD</a> — JSON/TCP message reference</li>
+              <li><a href="protocolOrionTLV.html">ProtocolOrionTLV</a> — binary TLV</li>
+              <li><a href="protocolRigelMq.html">ProtocolRigelMq</a> — JSON/MQTT topics and ident flow</li>
+            </ul>
+          </article>
+
         </div>
       </main>
     </div>
   </div>
   <footer class="protocol-global-footer">
-    <p>Designed by Zafer SATILMIS | Aviora Protocol Layer</p>
+    <p>Designed by Zafer SATILMIS | Protocol Test Servers</p>
   </footer>
 </body>
 </html>

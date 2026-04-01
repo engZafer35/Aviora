@@ -3,11 +3,29 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🛰️Aviora-Protocol</title>
+  <title>TCP Connection Service — Aviora</title>
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="./protocol-docs.css" />
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
+  <style>
+    .api-tbl{width:100%;border-collapse:collapse;color:var(--muted);font-size:14px}
+    .api-tbl th,.api-tbl td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+    .api-tbl th{color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+    .api-tbl code{font-size:12px;background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px}
+    .note-tcp{border-left:3px solid #58a6ff;padding:10px 14px;margin:14px 0;background:rgba(88,166,255,0.08);font-size:14px;line-height:1.55;color:var(--muted)}
+    .lead{font-size:15px;line-height:1.65;color:var(--muted)}
+    /* Smaller Mermaid for select-flow diagrams (narrower box + tighter graph) */
+    body.protocol-docs .diagram-wrap.diagram-wrap--sm pre.mermaid{
+      width:min(100%,900px);
+      max-width:980px;
+      margin-left:auto;
+      margin-right:auto;
+    }
+    body.protocol-docs .diagram-wrap.diagram-wrap--sm pre.mermaid svg{
+      max-width:100%;
+    }
+  </style>
 </head>
 <body class="protocol-docs">
   <div class="topbar">
@@ -32,11 +50,13 @@
       <div class="sidebar-title">Protocol</div>
       <nav class="sidebar-nav">
         <a href="index.html">Overview</a>
-        <a href="tcp-conn.html" class="active">TCP Connection</a>
+        <a href="tcp-conn.html" class="active">TCP Connection Service</a>
+        <a href="appMqttConnService.html">MQTT Connection Service</a>
         <a href="meter-operations.html">Meter Operations</a>
         <a href="protocolzd.html">ProtocolZD</a>
         <a href="protocolMetallixTLV.html">ProtocolMetallixTLV</a>
         <a href="protocolOrionTLV.html">ProtocolOrionTLV</a>
+        <a href="protocolRigelMq.html">ProtocolRigelMq</a>
         <a href="test-server.html">Test Server</a>
         <a href="readme.html">README</a>
       </nav>
@@ -45,74 +65,182 @@
       <section class="hero">
         <div class="hero-card">
           <h1>AppTcpConnManager</h1>
-          <p>
-            <code>AppTcpConnManager.c</code> manages the gateway’s <strong>push</strong> connection to the central server
-            and the local <strong>pull</strong> TCP server in a single OS task.
+          <p class="lead">
+            A dedicated RTOS task (<code>tcpConnectionThread</code>) multiplexes <strong>one outbound “push”</strong> TCP client to the head-end and <strong>one local “pull”</strong> TCP listener for inbound commands. Both sides are driven with <strong><code>select()</code></strong> on non-blocking / multiplexed sockets and a short poll timeout so the loop stays responsive without blocking the whole stack.
           </p>
         </div>
       </section>
 
       <main class="container">
         <div class="grid">
+
           <article class="card col-12">
-            <h2>Role</h2>
-            <ul>
-              <li><strong>Push</strong> (<code>PUSH_TCP_SOCK_NAME</code> = <code>"push"</code>): The device connects to the configured server IP/port; ident, alive, and outbound data use this channel. Server responses are read on the same socket.</li>
-              <li><strong>Pull</strong> (<code>PULL_TCP_SOCK_NAME</code> = <code>"pull"</code>): The device <code>listen</code>s on a local port; the head-end (or test tool) connects and sends commands.</li>
-              <li>Incoming data is delivered through the <strong><code>IncomingMsngCb_t</code></strong> callback passed to <code>appTcpConnManagerStart(..., incomingMsngCb)</code>. The ZMeter JSON stack uses <code>appProtocolZDPutIncomingMessage</code> from <code>AppProtocolZD.c</code>; another module can supply its own handler.</li>
+            <h2>Channels And Callback</h2>
+            <ul style="color:var(--muted);line-height:1.65;font-size:14px">
+              <li><strong>Push</strong> — <code>PUSH_TCP_SOCK_NAME</code> is <code>"push"</code>: the gateway <strong>connects</strong> to the configured server IP/port (ident, alive, outbound payloads; server data is read on the same socket).</li>
+              <li><strong>Pull</strong> — <code>PULL_TCP_SOCK_NAME</code> is <code>"pull"</code>: the gateway <strong>bind/listen</strong>s on the local pull port; a head-end or test tool connects as a client.</li>
+              <li><strong><code>IncomingMsngCb_t</code></strong> — <code>void (*)(const char *channel, const char *data, unsigned int dataLength)</code>; <code>channel</code> is <code>"push"</code> or <code>"pull"</code> so upper layers can dispatch JSON or TLV parsers.</li>
             </ul>
           </article>
 
           <article class="card col-12">
-            <h2>Lifecycle flow</h2>
-            <div class="diagram-wrap">
-              <div class="diagram-head">Startup and task loop</div>
-              <pre class="mermaid">flowchart TD
-  A["appTcpConnManagerStart(..., incomingMsngCb)"] --> B[OS task: tcpConnectionThread]
-  B --> C{taskKeepDisconnect?}
-  C -->|optional| D[Close pull/push]
-  C -->|no| E[taskPullSocCreat → createPullSocket]
-  E --> F[taskConnectPush → connectPushSocket]
-  B --> G[select: pull accept / client read]
-  B --> H[select: push read / write ready]
-  G -->|data| I["incomingMsngCb pull"]
-  H -->|data| J["incomingMsngCb push"]</pre>
+            <h2>BSP <code>select()</code> Multiplexing</h2>
+            <p style="color:var(--muted);line-height:1.65;font-size:14px">
+              The connection thread uses the socket <code>SELECT</code> macro (same role as BSD <code>select</code>): build <code>fd_set</code> read masks (and write mask for push while the non-blocking connect finishes), call <code>SELECT(max_fd+1, &amp;readfds, …, &amp;timeout)</code> with <strong><code>timeout.tv_usec = 10000</code></strong> (10&nbsp;ms) and <code>tv_sec = 0</code>. That timeout is one “tick” for idle processing: when <code>select</code> returns <strong>0</strong> (no fd ready), pull-side keep-alive counters advance. Push and pull blocks are evaluated in sequence inside the infinite loop.
+            </p>
+            <div class="diagram-wrap diagram-wrap--sm diagram-wrap--thread-loop">
+              <div class="diagram-head">High-Level Thread Loop</div>
+              <pre class="mermaid">%%{init: {'flowchart': {'nodeSpacing': 12, 'rankSpacing': 110, 'padding': 10}, 'themeVariables': {'fontSize': '13px'}}}%%
+flowchart TD
+  L[Loop forever] --> T{taskKeepDisconnect AND sockets open?}
+  T -->|yes| Q[Queue close push + pull]
+  T -->|no| P[Process task flags]
+  P --> F1[taskPullSocCreat → createPullSocket LISTEN]
+  P --> F2[taskClosePullSock → closePullSocket]
+  P --> F3[taskConnectPush → connectPushSocket NONBLOCK]
+  P --> F4[taskClosePushSock → disconnectPushSocket]
+  Q --> PULL[Pull block: SELECT listen + clients]
+  PULL --> PUSH[Push block: SELECT read + write until connected]
+  PUSH --> L</pre>
             </div>
           </article>
 
           <article class="card col-12">
-            <h2>Key APIs</h2>
-            <table style="width:100%;border-collapse:collapse;color:var(--muted);font-size:14px">
-              <tr style="border-bottom:1px solid var(--line)"><th style="text-align:left;padding:8px">Function</th><th style="text-align:left;padding:8px">Description</th></tr>
-              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><code>IncomingMsngCb_t</code></td><td style="padding:8px">Type of <code>incomingMsngCb</code>: <code>void (*)(const char *channel, const char *data, unsigned int dataLength)</code>. Channel is <code>"push"</code> or <code>"pull"</code>.</td></tr>
-              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><code>appTcpConnManagerStart(ip, port, pullPort, incomingMsngCb)</code></td><td style="padding:8px">Stores server address, local pull port, and the incoming-message callback; starts the TCP thread.</td></tr>
-              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><code>appTcpConnManagerRequestConnect</code></td><td style="padding:8px">Creates the pull socket; allows push to connect.</td></tr>
-              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><code>appTcpConnManagerRequestPushConnect</code></td><td style="padding:8px">Queues a push connection request.</td></tr>
-              <tr style="border-bottom:1px solid var(--line)"><td style="padding:8px"><code>appTcpConnManagerSend(ch, data, len)</code></td><td style="padding:8px">Send on <code>"push"</code> or <code>"pull"</code> channel.</td></tr>
-              <tr><td style="padding:8px"><code>appTcpConnManagerIsConnectedPush</code></td><td style="padding:8px">Returns whether push is connected and handshake completed.</td></tr>
+            <h2>Pull Side: Listen, Accept, And Idle Timeout</h2>
+            <p style="color:var(--muted);line-height:1.65;font-size:14px">
+              When the pull listener exists (<code>pullSockID &gt; 0</code>), <code>FD_SET</code> includes the listen socket and every active accepted client in <code>readfds</code>. <code>ACCEPT</code> runs when the listen fd is readable; new connections are stored in the first free slot of <code>clientSocList[]</code>. If all <code>MAX_PULL_CLIENT_NUMBER</code> slots are busy, the new socket is closed immediately (“Client List full”).
+            </p>
+            <p style="color:var(--muted);line-height:1.65;font-size:14px">
+              Per-client activity is tracked in <code>clietKeepAliveCounter[i]</code> (spelling matches the source). On any received data, the counter for that slot is <strong>reset to 0</strong>. When <code>select</code> returns <strong>0</strong> (timeout, no read event on pull fds), each connected client increments its counter by one. If <strong><code>clietKeepAliveCounter[i] &gt; 36000</code></strong>, the implementation closes that client: <strong>36000 × 10&nbsp;ms ≈ 360&nbsp;s ≈ 6 minutes</strong> without receiving data. The comment in code ties this to idle select iterations, not calendar wall-clock alone if other work delays the loop, but the intended duration is <strong>~6 minutes of no payload</strong> on that pull client.
+            </p>
+            <div class="note-tcp">
+              <strong>Constants:</strong> <code>MAX_PULL_CLIENT_NUMBER</code> is <strong>1</strong> in the current header — one simultaneous pull client. <code>LISTEN</code> backlog is <strong>1</strong>.
+            </div>
+            <div class="diagram-wrap diagram-wrap--sm">
+              <div class="diagram-head">Pull — Select and Accept</div>
+              <pre class="mermaid">%%{init: {'flowchart': {'nodeSpacing': 14, 'rankSpacing': 16, 'padding': 4}, 'themeVariables': {'fontSize': '11px'}}}%%
+flowchart TD
+  S[SELECT readfds: listen + client fds] --> R{activity &gt; 0?}
+  R -->|yes| A{listen fd readable?}
+  A -->|yes| AC[ACCEPT new client]
+  AC --> SL{Free slot in clientSocList?}
+  SL -->|yes| AD[Store fd, keepAlive = 0]
+  SL -->|no| RJ[Close new socket — full]
+  A -->|no| RD[For each client fd readable]
+  RD --> RECV[RECV data]
+  RECV -->|size &gt; 0| CB[incomingMsngCb pull]
+  RECV -->|else| CLS[Close client]
+  CB --> Z[keepAlive counter = 0]
+  R -->|no activity == 0| IDLE[For each connected client: keepAlive++]
+  IDLE --> TO{keepAlive &gt; 36000?}
+  TO -->|yes| KILL[Close client — idle ~6 min]
+  TO -->|no| S</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Push Side: Non-Blocking Connect Then Blocking I/O</h2>
+            <p style="color:var(--muted);line-height:1.65;font-size:14px">
+              <code>connectPushSocket</code> creates the TCP socket and sets <strong><code>O_NONBLOCK</code></strong> before <code>CONNECT</code>. While the handshake is in flight, <code>pushSockConnecting</code> is set; the thread waits on <code>select</code> with the socket in <strong>writefds</strong> until the connection completes, then checks <code>SO_ERROR</code>. On success the code clears non-blocking: <code>F_SETFL</code> with <code>fl &amp; ~O_NONBLOCK</code> for normal send/receive behaviour. Incoming server data uses <code>RECV</code> on read readiness and calls <code>incomingMsngCb("push", …)</code>.
+            </p>
+            <div class="diagram-wrap diagram-wrap--sm">
+              <div class="diagram-head">Push — select read / write</div>
+              <pre class="mermaid">%%{init: {'flowchart': {'nodeSpacing': 16, 'rankSpacing': 18, 'padding': 4}, 'themeVariables': {'fontSize': '11px'}}}%%
+flowchart TD
+  PS[pushSockID &gt; 0] --> W{pushSockConnecting?}
+  W -->|yes| SEL[SELECT readfds + writefds]
+  W -->|no| SELR[SELECT readfds only]
+  SEL --> WR{writable AND connecting?}
+  WR -->|yes| OK[GETSOCKOPT SO_ERROR]
+  OK --> BL[If OK: clear NONBLOCK]
+  SEL --> RD[If readable: RECV → incomingMsngCb push]
+  SELR --> RD</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Connect And Disconnect: Request Functions</h2>
+            <p style="color:var(--muted);line-height:1.65;font-size:14px">
+              The worker thread does not expose blocking connect/disconnect calls. Instead, <strong>bit flags</strong> in <code>gs_taskList</code> are set from public APIs; the loop performs the actual socket work when safe.
+            </p>
+            <table class="api-tbl">
+              <thead>
+                <tr><th>API</th><th>Effect</th></tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>appTcpConnManagerRequestConnect</code></td>
+                  <td>Sets <code>taskKeepDisconnect = false</code> and <code>taskPullSocCreat = true</code> so the listener can be created and operation is allowed.</td>
+                </tr>
+                <tr>
+                  <td><code>appTcpConnManagerRequestDisconnect</code></td>
+                  <td>Sets <code>taskKeepDisconnect = true</code>; when sockets are still open the loop queues <code>taskClosePushSock</code> and <code>taskClosePullSock</code> to tear down both sides.</td>
+                </tr>
+                <tr>
+                  <td><code>appTcpConnManagerRequestPushConnect</code></td>
+                  <td>Sets <code>taskConnectPush = true</code> to start (or continue) the outbound push connection.</td>
+                </tr>
+                <tr>
+                  <td><code>appTcpConnManagerRequestPushDisconnect</code></td>
+                  <td>Sets <code>taskClosePushSock = true</code> to close only the push socket.</td>
+                </tr>
+              </tbody>
+            </table>
+            <p style="color:var(--muted);line-height:1.65;font-size:14px;margin-top:12px">
+              Poll the state with <code>appTcpConnManagerIsConnectedPush()</code> (true when <code>pushSockID &gt; 0</code> and connect handshake finished), <code>appTcpConnManagerIsPullReady()</code>, and <code>appTcpConnManagerAnyPullClient()</code>.
+            </p>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Request Flags → Socket Actions</div>
+              <pre class="mermaid">flowchart LR
+  RC[RequestConnect] --> F1[taskPullSocCreat]
+  RD[RequestDisconnect] --> F2[taskClosePush + taskClosePull]
+  RPC[RequestPushConnect] --> F3[taskConnectPush]
+  RPD[RequestPushDisconnect] --> F4[taskClosePush]
+  F1 --> TH[tcpConnectionThread applies in loop]
+  F2 --> TH
+  F3 --> TH
+  F4 --> TH</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Send Path</h2>
+            <p style="color:var(--muted);line-height:1.65;font-size:14px">
+              <code>appTcpConnManagerSend(channel, data, len)</code> targets <code>"push"</code> via <code>SEND</code> on the push fd when connected; if not connected it may set <code>taskConnectPush</code> for a deferred open. For <code>"pull"</code> it sends on <code>clientSocList[0]</code> when the pull listener and client exist — consistent with <code>MAX_PULL_CLIENT_NUMBER == 3</code>.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Lifecycle: Start And Stop</h2>
+            <p style="color:var(--muted);line-height:1.65;font-size:14px">
+              <code>appTcpConnManagerStart</code> stores server IP, server port, pull port, and the callback, then creates the <code>TcpConn</code> task. <code>appTcpConnManagerStop</code> closes pull and push, clears task flags, and deletes the task.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Key API Summary</h2>
+            <table class="api-tbl">
+              <thead>
+                <tr><th>Symbol</th><th>Role</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>IncomingMsngCb_t</code></td><td>Callback for inbound bytes on <code>"push"</code> or <code>"pull"</code>.</td></tr>
+                <tr><td><code>appTcpConnManagerStart(ip, serverPort, pullPort, cb)</code></td><td>Spawn TCP manager task.</td></tr>
+                <tr><td><code>appTcpConnManagerStop()</code></td><td>Shutdown sockets and task.</td></tr>
+                <tr><td><code>appTcpConnManagerRequestConnect</code> / <code>RequestDisconnect</code></td><td>Enable pull creation + allow link vs full teardown.</td></tr>
+                <tr><td><code>appTcpConnManagerRequestPushConnect</code> / <code>RequestPushDisconnect</code></td><td>Push-only connect or close.</td></tr>
+                <tr><td><code>appTcpConnManagerSend(ch, data, len)</code></td><td>Send on push or pull channel.</td></tr>
+                <tr><td><code>appTcpConnManagerIsConnectedPush</code></td><td>Push connected and not mid–non-blocking handshake.</td></tr>
+              </tbody>
             </table>
           </article>
 
-          <article class="card col-12">
-            <h2>Data path diagram</h2>
-            <div class="diagram-wrap">
-              <div class="diagram-head">Inbound data</div>
-              <pre class="mermaid">flowchart LR
-  NET[TCP stack] --> TH[TcpConn thread]
-  TH -->|RECV push| CB1[incomingMsngCb push]
-  TH -->|RECV pull client| CB2[incomingMsngCb pull]
-  CB1 --> HND["Handler: appProtocolZDPutIncomingMessage"]
-  CB2 --> HND
-  HND --> SM[Parse JSON + state machine]</pre>
-            </div>
-            <p class="note">The push socket connects non-blocking first; after the connection completes it is switched to blocking mode.</p>
-          </article>
         </div>
       </main>
     </div>
   </div>
   <footer class="protocol-global-footer">
-    <p>Designed by Zafer SATILMIS | Aviora Protocol Layer</p>
+    <p>Designed by Zafer SATILMIS | TCP Connection Service</p>
   </footer>
 </body>
 </html>

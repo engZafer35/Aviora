@@ -1,0 +1,700 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ProtocolRigelMq — Aviora</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="./protocol-docs.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
+  <style>
+    .msg-block{margin:14px 0;padding:12px;border:1px solid var(--line);border-radius:10px;background:rgba(0,0,0,0.2)}
+    .msg-block h3{margin-top:0;font-size:16px;color:var(--accent)}
+    .tag-table{width:100%;border-collapse:collapse;color:var(--muted);font-size:13px}
+    .tag-table th,.tag-table td{padding:6px 10px;text-align:left;border-bottom:1px solid var(--line)}
+    .tag-table th{color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+    .tag-table tr:last-child td{border-bottom:none}
+    .tag-table code{background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:3px;font-size:inherit}
+    .doc-figure { margin: 18px 0; text-align: center; }
+    .doc-figure img { max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; background: rgba(0,0,0,0.25); }
+    .doc-figure figcaption { margin-top: 10px; font-size: 13px; color: var(--muted); line-height: 1.45; text-align: left; max-width: 720px; margin-left: auto; margin-right: auto; }
+    .figure-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; margin-top: 12px; }
+    .gif-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 14px 0; align-items: start; }
+    .gif-row figure { margin: 0; min-width: 0; }
+    .gif-row img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; display: block; }
+    .gif-row figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    @media (max-width: 640px) { .gif-row { grid-template-columns: 1fr; } }
+    .note-rigel { border-left: 3px solid #58a6ff; padding: 10px 14px; margin: 14px 0; background: rgba(88,166,255,0.08); font-size: 14px; line-height: 1.55; }
+    .lead { font-size: 15px; line-height: 1.65; color: var(--muted); margin: 0.75rem 0 1rem; }
+    .subhead { font-size: 14px; font-weight: 600; color: #c9d1d9; margin: 1rem 0 0.4rem; }
+  </style>
+</head>
+<body class="protocol-docs">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="index.html" class="active">Protocol</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Protocol</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="tcp-conn.html">TCP Connection Service</a>
+        <a href="appMqttConnService.html">MQTT Connection Service</a>
+        <a href="meter-operations.html">Meter Operations</a>
+        <a href="protocolzd.html">ProtocolZD</a>
+        <a href="protocolMetallixTLV.html">ProtocolMetallixTLV</a>
+        <a href="protocolOrionTLV.html">ProtocolOrionTLV</a>
+        <a href="protocolRigelMq.html" class="active">ProtocolRigelMq</a>
+        <a href="test-server.html">Test Server</a>
+        <a href="readme.html">README</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1>RigelMq — JSON Over MQTT</h1>
+          <p class="lead">
+            RigelMq is the Aviora gateway’s <strong>JSON-over-MQTT</strong> control plane: human-readable messages, a standard MQTT broker in the middle, and the same meter/job backend concepts as other Aviora protocols. It fits deployments where the back office already uses MQTT (cloud IoT hubs, on-prem brokers, TLS bridges) instead of raw TCP push/pull sockets.
+          </p>
+          <p>
+            The gateway <strong>subscribes</strong> to <code>avi/request</code> for commands and <strong>publishes</strong> all replies and telemetry to <code>avi/response</code>. Payloads are UTF-8 JSON objects—not binary frames—so you can trace traffic in any MQTT client or log pipeline with minimal tooling.
+          </p>
+          <div class="tag-row">
+            <span class="tag highlight">JSON</span>
+            <span class="tag">MQTT</span>
+            <span class="tag">transNumber</span>
+            <span class="tag">Sessions</span>
+            <span class="tag">Meter operations</span>
+            <span class="tag">Setting / FW</span>
+          </div>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+
+          <article class="card col-12">
+            <h2>Why This Protocol Exists</h2>
+            <p>
+              Operators often already run an MQTT broker for telemetry, fleet management, or SCADA integration. RigelMq avoids opening separate TCP ports for “push” and “pull” on the gateway in those environments: the broker becomes the single rendezvous point. JSON keeps messages self-describing for debugging and for third-party integrations that do not want to parse TLV or proprietary binary layouts.
+            </p>
+            <p>
+              At the same time, the gateway still performs the same kinds of work as in other Aviora stacks: <strong>identification</strong>, <strong>heartbeat</strong>, <strong>log export</strong>, <strong>configuration</strong> (MQTT broker/topics and per-meter add/remove via <code>setting</code>), <strong>firmware update</strong> via FTP URL, <strong>directive</strong> add/delete/list, <strong>meter readout</strong>, and <strong>load profile</strong>. Session semantics allow overlapping work: each logical operation is tagged with a transaction id so responses can be matched to requests even when several commands are in flight.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>MQTT Topics And Direction</h2>
+            <table class="tag-table">
+              <tr><th>Topic</th><th>Gateway</th><th>Backend / operator tool</th></tr>
+              <tr><td><code>avi/request</code></td><td><strong>Subscribe</strong> — receives commands as JSON</td><td><strong>Publish</strong> — send commands to the fleet</td></tr>
+              <tr><td><code>avi/response</code></td><td><strong>Publish</strong> — ident (outbound), alive, log chunks, readout/loadprofile data, directiveList, ack/nack (including after <code>setting</code>, <code>fwUpdate</code>, directive CRUD), …</td><td><strong>Subscribe</strong> — observe what gateways report</td></tr>
+            </table>
+            <p>
+              Think of <code>avi/request</code> as the <em>downlink</em> topic (toward the gateway) and <code>avi/response</code> as the <em>uplink</em> topic (from the gateway). QoS is typically 0 for lowest latency; use QoS&nbsp;1 on both sides if you need broker-level persistence for each publish.
+            </p>
+            <div class="note-rigel">
+              <strong>Integration tip:</strong> Your backend should publish <strong>commands</strong> to <code>avi/request</code> and subscribe to <code>avi/response</code> to receive every gateway-originated message. If you use a desktop test tool, confirm it uses the same topic pairing as your production bridge—some tools default to publishing on the wrong topic during development.
+            </div>
+            <div class="diagram-wrap">
+              <div class="diagram-head">End-To-End MQTT Data Flow</div>
+              <pre class="mermaid">flowchart LR
+  subgraph Backend
+    PUB_REQ[Publish avi/request]
+    SUB_RES[Subscribe avi/response]
+  end
+  subgraph Broker[MQTT broker]
+    T1[avi/request]
+    T2[avi/response]
+  end
+  subgraph Gateway
+    SUB_REQ[Subscribe avi/request]
+    PUB_RES[Publish avi/response]
+  end
+  PUB_REQ --> T1 --> SUB_REQ
+  PUB_RES --> T2 --> SUB_RES
+              </pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Common Header: Device And TransNumber</h2>
+            <p>
+              <strong>Every</strong> message in this specification—whether sent by the backend or by the gateway—includes the same two top-level fields alongside <code>function</code>:
+            </p>
+            <ul>
+              <li><code>device</code> — identifies the product line and the gateway instance: <code>flag</code> (e.g. <code>"AVI"</code>) and <code>serialNumber</code> (unique device id). This allows multi-tenant brokers to filter or route by serial without parsing the rest of the JSON.</li>
+              <li><code>transNumber</code> — a numeric transaction id (integer). It ties together a request, any intermediate steps, and the final ack/nack or streamed chunks for that operation.</li>
+            </ul>
+            <p>
+              <strong>Documentation convention:</strong> all examples on this page use <code>"transNumber": 1001</code> so you can see at a glance that the same id must appear on both sides of a conversation. In production you assign a new value per operation (monotonic counter, timestamp-derived id, or random 16-bit value—whatever fits your ops policy), but the rule stays the same: <strong>backend and gateway echo the same <code>transNumber</code> for that operation’s complete lifecycle.</strong>
+            </p>
+            <div class="msg-block">
+              <h3>Canonical Header Fragment (Present In Every Message)</h3>
+              <pre class="code-block json">"device": {
+  "flag": "AVI",
+  "serialNumber": "0123456789ABCDE"
+},
+"transNumber": 1001,</pre>
+            </div>
+            <p>
+              The gateway rejects or negatively acknowledges payloads that are not valid JSON, omit <code>function</code>, or omit a usable <code>transNumber</code> where the stack requires it for dispatch—so always send a complete header for predictable behaviour.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Session Model</h2>
+            <p>
+              The gateway maintains a small pool of concurrent <strong>sessions</strong> (bounded, e.g. eight). When a JSON message arrives on <code>avi/request</code>, the runtime reads <code>transNumber</code>. If that number matches an already-active session, the payload is treated as the next step for that session (for example, the backend’s ident reply matching an outbound ident). If not, a new session is created for that <code>function</code> and <code>transNumber</code>. <strong>Ident</strong> is special: the gateway opens the session and publishes ident on <code>avi/response</code> first; the matching server message returns on <code>avi/request</code> with the same <code>transNumber</code>. Sessions expire after a configurable timeout if work does not complete, so stalled operations do not block the gateway forever.
+            </p>
+            <p>
+              This mirrors how operators think about work orders: one <code>transNumber</code> = one logical ticket from “request accepted” through “data delivered” or “failed with nack”.
+            </p>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Gateway Task Loop (Conceptual)</div>
+              <pre class="mermaid">flowchart LR
+  subgraph Loop
+    T[Session timeouts]
+    M[MQTT message queue]
+    E[Internal events e.g. scheduled alive]
+  end
+  T --> M
+  M --> D[Dispatch JSON]
+  E --> P[Publish on avi/response]
+              </pre>
+            </div>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Incoming Message Dispatch</div>
+              <pre class="mermaid">flowchart TD
+  J[JSON payload] --> V{Valid JSON?}
+  V -->|no| N[Publish nack on response topic]
+  V -->|yes| F[Read function + transNumber]
+  F --> X{Session exists for transNumber?}
+  X -->|yes| R[Continue that session]
+  X -->|no| C[Open new session]
+              </pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Message Types (Function String)</h2>
+            <table class="tag-table">
+              <tr><th>Function</th><th>Purpose</th></tr>
+              <tr><td><code>ident</code></td><td>Gateway → <code>avi/response</code>: identity and pull info; server → <code>avi/request</code>: same <code>transNumber</code>, <code>response.registered</code> confirms registration.</td></tr>
+              <tr><td><code>alive</code></td><td>Heartbeat with current device time (about every 15 minutes while registered).</td></tr>
+              <tr><td><code>log</code></td><td>Fetch system log text in chunks.</td></tr>
+              <tr><td><code>readout</code></td><td>Trigger a meter readout job; results stream back as JSON chunks.</td></tr>
+              <tr><td><code>loadprofile</code></td><td>Load-profile acquisition over a date range.</td></tr>
+              <tr><td><code>directiveList</code></td><td>List stored metering directives (filter supported).</td></tr>
+              <tr><td><code>setting</code></td><td><code>request.mqtt</code> (broker, port, auth, topics)—persisted; <code>request.meters[]</code> for add/remove—see §8.</td></tr>
+              <tr><td><code>fwUpdate</code></td><td>Firmware download: <code>request.address</code> is an FTP URL; gateway ACKs then starts the SW-update task.</td></tr>
+              <tr><td><code>directiveAdd</code></td><td>Install a directive JSON under <code>request.directive</code>.</td></tr>
+              <tr><td><code>directiveDelete</code></td><td>Remove a directive by id in <code>request.filter.id</code>.</td></tr>
+              <tr><td><code>ack</code> / <code>nack</code></td><td>Positive or negative acknowledgement of a request (gateway → <code>avi/response</code>).</td></tr>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Flow Animations</h2>
+            <p>
+              The following animations illustrate topic direction, session correlation, readout sequencing, and JSON validation—conceptual aids for readers, not wire captures.
+            </p>
+            <div class="gif-row">
+              <figure><img src="media/rigel_mqtt_topics.gif" alt="MQTT topics" /><figcaption>Topics: commands on avi/request, gateway replies on avi/response (animated arrows).</figcaption></figure>
+              <figure><img src="media/rigel_session_flow.gif" alt="Session" /><figcaption>Session pipeline: each transNumber is parsed, matched to a session, then handled or continued.</figcaption></figure>
+              <figure><img src="media/rigel_readout_sequence.gif" alt="Readout" /><figcaption>Readout: four steps light in order — request, ack, meter job, then streamed JSON chunks (same transNumber).</figcaption></figure>
+              <figure><img src="media/rigel_json_dispatch.gif" alt="Dispatch" /><figcaption>Dispatch: JSON validity, then function and transNumber checks, before the handler runs.</figcaption></figure>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>1. Ident — Device First, Then Server Reply</h2>
+            <p class="lead">
+              The gateway opens an ident <strong>session</strong>: it <strong>publishes first</strong> on <code>avi/response</code> with a chosen <code>transNumber</code>. The backend answers on <code>avi/request</code> with the <strong>same</strong> <code>transNumber</code>, <code>"function": "ident"</code>, and <code>response.registered</code> (boolean): <code>true</code> means the device is registered on the server. The outbound ident uses the same key <code>response.registered</code> as a <em>local</em> hint (persisted state on the device) before the server confirms.
+            </p>
+            <p>
+              Include the <strong>common header</strong> (<code>device</code> + <code>transNumber</code>). Here <code>transNumber</code> is <strong>1001</strong> for illustration; server replies must reuse it so the gateway can match the message to the pending ident session (<code>rgSessionProcessIdentSession</code> validates <code>transNumber</code>, <code>function</code>, and <code>response.registered</code>).
+            </p>
+            <div class="msg-block">
+              <h3>Example — Gateway → Backend (<code>avi/response</code>)</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "ident",
+  "transNumber": 1001,
+  "response": {
+    "registered": false,
+    "brand": "AVI",
+    "model": "AVIO2622",
+    "deviceDate": "2026-04-01 14:30:00",
+    "pullIP": "192.168.1.50",
+    "pullPort": 2622
+  }
+}</pre>
+            </div>
+            <div class="msg-block">
+              <h3>Example — Backend → Gateway (<code>avi/request</code>) ident reply</h3>
+              <p style="margin-top:0;font-size:14px;color:var(--muted)">Same <code>transNumber</code> as the outbound ident; <code>response.registered</code> is the server’s registration result.</p>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "ident",
+  "transNumber": 1001,
+  "response": {
+    "registered": true
+  }
+}</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>2. Alive — About Every 15 Minutes (When Registered)</h2>
+            <p>
+              Periodic liveness proof while the device is registered: the gateway task schedules an <code>alive</code> publish at roughly <strong>15-minute</strong> intervals (same session task loop cadence as the rest of Rigel MQTT). Each message is a compact JSON object with current wall-clock time (from the gateway’s clock). Backends use this for presence dashboards, SLA monitoring, or “last seen” timestamps without polling TCP.
+            </p>
+            <div class="msg-block">
+              <h3>Example — Gateway → Backend (<code>avi/response</code>)</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "alive",
+  "transNumber": 1002,
+  "response": {
+    "deviceDate": "2026-04-01 14:35:00"
+  }
+}</pre>
+              <p style="margin-top:10px;font-size:13px;color:var(--muted)">Uses its own <code>transNumber</code> per publish (here <strong>1002</strong> to distinguish from the ident example’s <strong>1001</strong>).</p>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>3. Ack And Nack</h2>
+            <p>
+              After the gateway accepts or rejects a command, it publishes <code>ack</code> or <code>nack</code>. The <strong>same</strong> <code>transNumber</code> as the request (here <strong>1001</strong>) must appear so the backend can match the answer to the original command without guessing from timestamps.
+            </p>
+            <div class="msg-block">
+              <h3>Example — Gateway → Backend (Ack)</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "ack",
+  "transNumber": 1001
+}</pre>
+              <h3>Example — Gateway → Backend (Nack)</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "nack",
+  "transNumber": 1001
+}</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>4. Log</h2>
+            <p class="subhead">Backend → Gateway (Request On Avi/Request)</p>
+            <p>
+              The backend asks the gateway to upload recent system log text. Only <code>function</code>, <code>transNumber</code>, and the shared <code>device</code> header are required to start the operation; the gateway responds with one or more log packets on <code>avi/response</code>, each carrying <code>packetNum</code>, <code>packetStream</code> (whether more chunks follow), and the text under <code>response.log</code>.
+            </p>
+            <div class="msg-block">
+              <h3>Request</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "log",
+  "transNumber": 1001
+}</pre>
+              <h3>Response — First Chunk (Gateway → Backend)</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "log",
+  "transNumber": 1001,
+  "packetNum": 1,
+  "packetStream": true,
+  "response": {
+    "log": "... up to ~700 characters of log text ..."
+  }
+}</pre>
+              <p style="margin-top:10px;font-size:13px;color:var(--muted)">Subsequent chunks keep <code>transNumber</code>: 1001 and increment <code>packetNum</code> until <code>packetStream</code> is false on the last chunk.</p>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>5. Readout</h2>
+            <p>
+              The backend names a <code>directive</code> (which metering script or recipe to run) and a <code>meterId</code>. The gateway acknowledges with <code>ack</code> (same <code>transNumber</code>), runs the meter job, then publishes one or more JSON packets with <code>"function": "readout"</code> and nested <code>response.data</code> containing <code>id</code> and <code>readout</code> text. Large results are split similarly to log streaming.
+            </p>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Readout Sequence</div>
+              <pre class="mermaid">sequenceDiagram
+  participant B as Backend
+  participant G as Gateway
+  participant M as Meter job
+  B->>G: readout request transNumber 1001
+  G->>B: ack transNumber 1001
+  G->>M: Start readout task
+  M-->>G: Complete
+  G->>B: readout chunks transNumber 1001
+              </pre>
+            </div>
+            <div class="msg-block">
+              <h3>Request — Backend → Gateway</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "readout",
+  "transNumber": 1001,
+  "directive": "ReadoutDirective1",
+  "meterId": "12345678"
+}</pre>
+              <h3>Data Chunk — Gateway → Backend</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "readout",
+  "transNumber": 1001,
+  "packetNum": 1,
+  "packetStream": false,
+  "response": {
+    "data": {
+      "id": "meter-id-string",
+      "readout": "chunk text or full result ..."
+    }
+  }
+}</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>6. Loadprofile</h2>
+            <p>
+              Same pattern as readout, with <code>startDate</code> and <code>endDate</code> strings defining the interval. Chunks use <code>"function": "loadprofile"</code> and the same <code>transNumber</code> throughout the operation.
+            </p>
+            <div class="msg-block">
+              <h3>Request — Backend → Gateway</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "loadprofile",
+  "transNumber": 1001,
+  "directive": "ProfileDirective1",
+  "meterId": "12345678",
+  "startDate": "2021-06-22 00:00:00",
+  "endDate": "2021-06-22 12:00:00"
+}</pre>
+              <h3>Data Chunk — Gateway → Backend (Same Pattern As Readout)</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "loadprofile",
+  "transNumber": 1001,
+  "packetNum": 1,
+  "packetStream": false,
+  "response": {
+    "data": {
+      "id": "meter-id-string",
+      "readout": "profile interval data ..."
+    }
+  }
+}</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>7. Directive List</h2>
+            <p>
+              Retrieves stored directives, optionally filtered. An empty <code>filterId</code> can mean “return all” depending on gateway configuration. The response carries directive content in the <code>response</code> object with streaming flags when the list is long.
+            </p>
+            <div class="msg-block">
+              <h3>Request — Backend → Gateway</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "directiveList",
+  "transNumber": 1001,
+  "filterId": ""
+}</pre>
+              <h3>Response — Gateway → Backend (Illustrative)</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "directiveList",
+  "transNumber": 1001,
+  "packetNum": 1,
+  "packetStream": false,
+  "response": {
+    "directive": "{ \"id\": \"Example\", \"steps\": [] }"
+  }
+}</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>8. Setting (MQTT and Meters)</h2>
+            <p>
+              The backend sends a <strong>request</strong> object. Optional <strong>mqtt</strong> configures the control-plane broker: <strong>broker</strong> (hostname or IP; <strong>ip</strong> is an alias),
+              <strong>port</strong>, optional <strong>userName</strong> / <strong>password</strong>, and optional <strong>requestTopic</strong> / <strong>responseTopic</strong> (defaults <strong>avi/request</strong> and <strong>avi/response</strong> if omitted). 
+              Values are persisted in <strong>rg_session_server.dat</strong>; the gateway stops MQTT, reconnects to the new broker, and subscribes on the request topic.
+            </p>
+            <p>
+              Optional <strong>meters</strong> is an array of operations: <strong>add</strong> supplies a full <strong>meter</strong> record for <strong>appMeterOperationsAddMeter</strong>; <strong>remove</strong> deletes by <strong>meter.serialNumber</strong> (additional fields such as <strong>brand</strong> in the JSON are ignored for delete, as in ZD).
+            </p>
+            <p>
+              The gateway answers with a single <code>ack</code> or <code>nack</code> on the configured response topic (same <code>transNumber</code>). If any meter operation fails, the overall result is <code>nack</code>.
+            </p>
+            <div class="msg-block">
+              <h3>Request — Backend → Gateway (<code>avi/request</code>)</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "setting",
+  "transNumber": 1001,
+  "request": {
+    "mqtt": {
+      "broker": "192.168.1.50",
+      "port": 1883,
+      "userName": "gw01",
+      "password": "secret",
+      "requestTopic": "avi/request",
+      "responseTopic": "avi/response"
+    },
+    "meters": [
+      {
+        "operation": "add",
+        "meter": {
+          "protocol": "IEC62056",
+          "type": "electricity",
+          "brand": "MKL",
+          "serialNumber": "12345678",
+          "serialPort": "port-1",
+          "initBaud": 300,
+          "fixBaud": false,
+          "frame": "7E1"
+        }
+      },
+      {
+        "operation": "remove",
+        "meter": {
+          "brand": "MKL",
+          "serialNumber": "12345678"
+        }
+      }
+    ]
+  }
+}</pre>
+              <h3>Response — Gateway → Backend (<code>avi/response</code>)</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "ack",
+  "transNumber": 1001
+}</pre>
+            </div>
+            <div class="note-rigel">
+              <strong>Note:</strong> <code>mqtt</code> and <code>meters</code> are independent—you may send only broker settings, only meter rows, or both. Inside <code>mqtt</code>, each field is optional: only keys present in the JSON update the corresponding runtime setting (broker, port, credentials, topics).
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>9. Firmware update (<code>fwUpdate</code>)</h2>
+            <p>
+              Same contract as ProtocolZD: <code>request.address</code> must be an FTP URL (<code>ftp://…</code>). The gateway publishes <code>ack</code> first, then parses the URL and calls the firmware update module with host, port, credentials, and remote path. A parse failure is logged; behaviour matches the ZD stack.
+            </p>
+            <div class="msg-block">
+              <h3>Request — Backend → Gateway</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "fwUpdate",
+  "transNumber": 1001,
+  "request": {
+    "address": "ftp://user:pass@192.168.1.50:21/pub/firmware.bin"
+  }
+}</pre>
+              <h3>Response — Immediate <code>ack</code> (then background FTP)</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "ack",
+  "transNumber": 1001
+}</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>10. Directive add (<code>directiveAdd</code>)</h2>
+            <p>
+              The full directive document is placed under <code>request.directive</code> (same as ZD). The gateway returns <code>ack</code> if the directive is accepted, otherwise <code>nack</code>.
+            </p>
+            <div class="msg-block">
+              <h3>Request — Backend → Gateway</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "directiveAdd",
+  "transNumber": 1001,
+  "request": {
+    "directive": {
+      "id": "ReadoutDirective1",
+      "directive": []
+    }
+  }
+}</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>11. Directive delete (<code>directiveDelete</code>)</h2>
+            <p>
+              Deletes by directive id. The id is read from <code>request.filter.id</code> (ZD-compatible). Use a non-empty id; wildcard semantics follow the meter-operations implementation.
+            </p>
+            <div class="msg-block">
+              <h3>Request — Backend → Gateway</h3>
+              <pre class="code-block json">{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "directiveDelete",
+  "transNumber": 1001,
+  "request": {
+    "filter": {
+      "id": "ReadoutDirective1"
+    }
+  }
+}</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Desktop Test Tool</h2>
+            <p>
+              A small graphical test application lives under the protocol <code>Test_Server</code> folder. It behaves like a backend: it <strong>subscribes</strong> to <code>avi/response</code> (gateway traffic) and <strong>publishes</strong> commands and ident replies to <code>avi/request</code>. Connect to any MQTT broker, install the Python MQTT client, then run with broker IP and port.
+            </p>
+            <pre class="code-block">pip install paho-mqtt
+cd Application/AppZMeterGw/Services/Protocol/Test_Server
+python ProtocolRigelMq_TestServer.py
+python ProtocolRigelMq_TestServer.py 192.168.1.10 1883</pre>
+            <p>
+              Use it to validate topic wiring, <code>transNumber</code> echo behaviour (including ident reply with the same id), and auto-reply options before you connect real gateways.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Test Server Screenshots</h2>
+            <p>
+              The test UI follows the same pattern as other Aviora protocol tools: broker connection on the left, device fields filled after the first <code>ident</code> on <code>avi/response</code>, optional automatic ident reply and acks for common types, and a dark log panel for copy/paste into tickets. Remember the tool mirrors a backend: it subscribes to <code>avi/response</code> and publishes commands to <code>avi/request</code>.
+            </p>
+            <figure class="doc-figure">
+              <img src="images/test-server-main.svg" width="720" height="420" alt="Main window" />
+              <figcaption><strong>Main window.</strong> Broker fields, command list, JSON log.</figcaption>
+            </figure>
+            <div class="figure-grid">
+              <figure class="doc-figure">
+                <img src="images/test-server-log-panel.svg" width="520" height="280" alt="Log" />
+                <figcaption><strong>Log panel.</strong> Inbound and outbound JSON.</figcaption>
+              </figure>
+              <figure class="doc-figure">
+                <img src="images/test-server-ident.svg" width="480" height="200" alt="Ident" />
+                <figcaption><strong>After ident.</strong> Serial and pull fields updated from JSON.</figcaption>
+              </figure>
+            </div>
+
+            <h3>Sample Log Table (All Use TransNumber 1001 In This Documentation Scenario)</h3>
+            <table class="tag-table">
+              <tr><th>Time</th><th>Dir</th><th>Topic</th><th>Summary</th><th>TransNumber</th></tr>
+              <tr><td>10:00:01</td><td>←</td><td><code>avi/response</code></td><td><code>ident</code></td><td>1001</td></tr>
+              <tr><td>10:00:02</td><td>→</td><td><code>avi/request</code></td><td><code>ident</code> (reply)</td><td>1001</td></tr>
+              <tr><td>10:00:30</td><td>→</td><td><code>avi/request</code></td><td><code>setting</code> (mqtt + meters)</td><td>1002</td></tr>
+              <tr><td>10:00:31</td><td>←</td><td><code>avi/response</code></td><td><code>ack</code></td><td>1002</td></tr>
+              <tr><td>10:01:00</td><td>→</td><td><code>avi/request</code></td><td><code>readout</code></td><td>1001</td></tr>
+              <tr><td>10:01:01</td><td>←</td><td><code>avi/response</code></td><td><code>ack</code></td><td>1001</td></tr>
+              <tr><td>10:01:05</td><td>←</td><td><code>avi/response</code></td><td><code>readout</code> data chunk</td><td>1001</td></tr>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Gateway Capabilities (Summary)</h2>
+            <ul>
+              <li><strong>Persistence:</strong> registration plus <code>setting</code> / <code>request.mqtt</code> (broker, auth, topics) in <code>rg_session_server.dat</code> can survive reboot when enabled.</li>
+              <li><strong>Configuration:</strong> <code>setting</code> adds or removes meters and updates MQTT via <code>request.mqtt</code> (persisted).</li>
+              <li><strong>Directives:</strong> <code>directiveList</code>, <code>directiveAdd</code>, and <code>directiveDelete</code> map to the shared meter-operations directive store.</li>
+              <li><strong>Streaming:</strong> log and meter file payloads are split into ~700-character chunks to stay within MQTT frame limits.</li>
+              <li><strong>Sessions:</strong> concurrent operations with per-transaction timeout.</li>
+              <li><strong>MQTT integration:</strong> incoming publishes are queued and processed on the gateway task; link-up queues an ident session (outbound ident on <code>avi/response</code>, reply on <code>avi/request</code>) if still unregistered.</li>
+              <li><strong>Meter jobs:</strong> readout and load profile use the same meter-operations pipeline as other Aviora protocol stacks.</li>
+            </ul>
+          </article>
+
+          <article class="card col-12">
+            <h2>Public API (Gateway Firmware)</h2>
+            <p>Lifecycle and events exposed to the rest of the gateway software:</p>
+            <pre class="code-block">appProtocolRigelMqInit(serialNumber, brokerIP, brokerPort, userName, password, deviceIP, pullPort);
+appProtocolRigelMqStart();
+appProtocolRigelMqStop();
+appProtocolRigelMqSendEvent(RG_SESSION_EVENT_ALIVE);
+/* or */ appProtocolRigelMqSendEvent(RG_SESSION_EVENT_FW_UPGRADE_SUCCESS);</pre>
+            <p>Typical limits: JSON payload buffer on the order of 1&nbsp;KB per message, chunk size ~700 characters for streamed bodies, several concurrent sessions, session timeout on the order of tens of seconds (product-specific constants apply).</p>
+          </article>
+
+        </div>
+      </main>
+    </div>
+  </div>
+  <footer class="protocol-global-footer">
+    <p>Designed by Zafer SATILMIS | Protocol RigelMq</p>
+  </footer>
+</body>
+</html>

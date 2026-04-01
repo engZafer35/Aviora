@@ -125,14 +125,39 @@ RETURN_STATUS appMeterOperationsStart(MeterCommInterface_t *meterComm);
  */
 RETURN_STATUS appMeterOperationsAddMeter(MeterData_t *meterData);
 
+/** */
+ * @brief Get the meter data by serial number
+ * @param serialNumber Serial number of the meter
+ * @param meterDataOut Pointer to the meter data output
+ * @return RETURN_STATUS SUCCESS if the meter data is retrieved successfully, FAILURE otherwise
+ */
 RETURN_STATUS appMeterOperationsGetMeterData(const char *serialNumber, MeterData_t *meterDataOut);
 
+/**
+ * @brief Get the meter data by index
+ * @param index Index of the meter
+ * @param meterDataOut Pointer to the meter data output
+ * @return RETURN_STATUS SUCCESS if the meter data is retrieved successfully, FAILURE otherwise
+ */
 RETURN_STATUS appMeterOperationsGetMeterDataByIndex(U32 index, MeterData_t *meterDataOut);
 
+/**
+ * @brief Delete a meter from the meter operations
+ * @param serialNumber Serial number of the meter
+ * @return RETURN_STATUS SUCCESS if the meter is deleted successfully, FAILURE otherwise
+ */
 RETURN_STATUS appMeterOperationsDeleteMeter(const char *serialNumber);
 
+/**
+ * @brief Delete all meters from the meter operations
+ * @return RETURN_STATUS SUCCESS if the meters are deleted successfully, FAILURE otherwise
+ */
 RETURN_STATUS appMeterOperationsDeleteAllMeters(void);
 
+/**
+ * @brief Get the count of meters from the meter operations
+ * @return U32 Count of meters
+ */
 U32 appMeterOperationsGetMeterCount(void);
 
 //example requests
@@ -157,16 +182,50 @@ U32 appMeterOperationsGetMeterCount(void);
 }
 */
 
+/**
+ * @brief Add a readout task to the meter operations
+ * @param request Request string
+ * @param callback Callback function
+ * @return S32 Task ID
+ */
 S32 appMeterOperationsAddReadoutTask(const char *request, Callback_t callback);
 
+/**
+ * @brief Add a profile task to the meter operations
+ * @param request Request string
+ * @param callback Callback function
+ * @return S32 Task ID
+ */
 S32 appMeterOperationsAddProfileTask(const char *request, Callback_t callback);
 
+/**
+ * @brief Add an obis task to the meter operations
+ * @param request Request string
+ * @param callback Callback function
+ * @return S32 Task ID
+ */
 S32 appMeterOperationsAddObisTask(const char *request, Callback_t callback);
 
+/**
+ * @brief Add a write task to the meter operations
+ * @param request Request string
+ * @param callback Callback function
+ * @return S32 Task ID
+ */
 S32 appMeterOperationsAddWriteTask(const char *request, Callback_t callback);
 
+/**
+ * @brief Check if a task is done
+ * @param taskID Task ID
+ * @return ERR_CODE_T SUCCESS if the task is done, FAILURE otherwise
+ */
 ERR_CODE_T appMeterOperationsIsTaskDone(S32 taskID);
 
+/**
+ * @brief Free a task ID
+ * @param taskID Task ID
+ * @return ERR_CODE_T SUCCESS if the task is freed successfully, FAILURE otherwise
+ */
 ERR_CODE_T appMeterOperationsTaskIDFree(S32 taskID);
 
 /* Example directives
@@ -216,7 +275,7 @@ ERR_CODE_T appMeterOperationsTaskIDFree(S32 taskID);
 */
 
 
-/*
+/**
 * @brief Add a directive (full JSON). Stored under DIRECTIVE_MAIN_DIR; id taken from root "id" field.
 * @return Zero-based index on success, or negative ERR_CODE_T value on failure
  */

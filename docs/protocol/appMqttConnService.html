@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>MQTT Connection Service — Aviora</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="./protocol-docs.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
+  <style>
+    .msg-block{margin:14px 0;padding:12px;border:1px solid var(--line);border-radius:10px;background:rgba(0,0,0,0.2)}
+    .msg-block h3{margin-top:0;font-size:16px;color:var(--accent)}
+    .api-table{width:100%;border-collapse:collapse;color:var(--muted);font-size:13px}
+    .api-table th,.api-table td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+    .api-table th{color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+    .api-table tr:last-child td{border-bottom:none}
+    .api-table code{background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:3px;font-size:12px}
+    .doc-figure { margin: 18px 0; text-align: center; }
+    .doc-figure img { max-width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; background: rgba(0,0,0,0.25); }
+    .doc-figure figcaption { margin-top: 10px; font-size: 13px; color: var(--muted); line-height: 1.45; text-align: left; max-width: 720px; margin-left: auto; margin-right: auto; }
+    .gif-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 14px 0; align-items: start; }
+    .gif-row figure { margin: 0; min-width: 0; }
+    .gif-row img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; display: block; }
+    .gif-row figcaption { font-size: 12px; color: var(--muted); margin-top: 6px; }
+    @media (max-width: 640px) { .gif-row { grid-template-columns: 1fr; } }
+    .note-box { border-left: 3px solid #58a6ff; padding: 10px 14px; margin: 14px 0; background: rgba(88,166,255,0.08); font-size: 14px; line-height: 1.5; }
+    .sim-wrap { margin: 20px 0; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: rgba(0,0,0,0.25); }
+    .sim-title { font-size: 13px; color: var(--accent); margin-bottom: 6px; letter-spacing: .3px; }
+    .sim-desc { font-size: 13px; color: var(--muted); margin: 0 0 14px 0; line-height: 1.5; }
+    /* Outgoing PUBLISH: call chain — steps highlight in sequence */
+    .pub-flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      justify-content: center;
+      gap: 0;
+      padding: 12px 8px;
+      border-radius: 10px;
+      background: #0d1117;
+      border: 1px solid rgba(100, 150, 200, 0.35);
+    }
+    .pub-step {
+      flex: 1 1 160px;
+      min-width: 140px;
+      max-width: 220px;
+      margin: 4px;
+      padding: 12px 10px;
+      border-radius: 8px;
+      border: 2px solid rgba(100, 120, 150, 0.35);
+      background: rgba(20, 28, 40, 0.95);
+      text-align: center;
+      opacity: 0.38;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+      animation-duration: 4.5s;
+      animation-timing-function: ease-in-out;
+      animation-iteration-count: infinite;
+    }
+    .pub-step .fn { display: block; font-family: ui-monospace, Consolas, monospace; font-size: 11px; line-height: 1.35; color: #c9d1d9; word-break: break-word; }
+    .pub-step .layer { display: block; margin-top: 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+    .pub-arr {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      flex: 0 0 auto;
+      font-size: 18px;
+      color: rgba(150, 170, 200, 0.28);
+      animation-duration: 4.5s;
+      animation-timing-function: ease-in-out;
+      animation-iteration-count: infinite;
+    }
+    .pub-arr.a1 { animation-name: pub-arr-1; }
+    .pub-arr.a2 { animation-name: pub-arr-2; }
+    .pub-step.s1 { animation-name: pub-step-1; }
+    .pub-step.s2 { animation-name: pub-step-2; }
+    .pub-step.s3 { animation-name: pub-step-3; }
+    @keyframes pub-step-1 {
+      0%, 5% { opacity: 0.4; border-color: rgba(100, 120, 150, 0.35); box-shadow: none; }
+      12%, 28% { opacity: 1; border-color: rgba(88, 166, 255, 0.85); box-shadow: 0 0 20px rgba(88, 166, 255, 0.25); }
+      35%, 100% { opacity: 0.38; border-color: rgba(100, 120, 150, 0.35); box-shadow: none; }
+    }
+    @keyframes pub-step-2 {
+      0%, 32% { opacity: 0.38; border-color: rgba(100, 120, 150, 0.35); box-shadow: none; }
+      38%, 54% { opacity: 1; border-color: rgba(88, 166, 255, 0.85); box-shadow: 0 0 20px rgba(88, 166, 255, 0.25); }
+      60%, 100% { opacity: 0.38; border-color: rgba(100, 120, 150, 0.35); box-shadow: none; }
+    }
+    @keyframes pub-step-3 {
+      0%, 58% { opacity: 0.38; border-color: rgba(100, 120, 150, 0.35); box-shadow: none; }
+      64%, 82% { opacity: 1; border-color: rgba(57, 217, 138, 0.75); box-shadow: 0 0 20px rgba(57, 217, 138, 0.2); }
+      88%, 100% { opacity: 0.38; border-color: rgba(100, 120, 150, 0.35); box-shadow: none; }
+    }
+    @keyframes pub-arr-1 {
+      0%, 22% { color: rgba(150, 170, 200, 0.28); }
+      28%, 36% { color: rgba(88, 166, 255, 0.8); }
+      42%, 100% { color: rgba(150, 170, 200, 0.28); }
+    }
+    @keyframes pub-arr-2 {
+      0%, 48% { color: rgba(150, 170, 200, 0.28); }
+      54%, 63% { color: rgba(57, 217, 138, 0.75); }
+      68%, 100% { color: rgba(150, 170, 200, 0.28); }
+    }
+    .pub-legend { margin-top: 12px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .pub-legend code { font-size: 11px; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; }
+    @media (prefers-reduced-motion: reduce) {
+      .pub-step, .pub-arr { animation: none !important; }
+      .pub-step { opacity: 1; border-color: rgba(100, 120, 150, 0.5); }
+      .pub-arr { color: rgba(150, 170, 200, 0.5); }
+    }
+    @media (max-width: 720px) {
+      .pub-flow { flex-direction: column; align-items: center; }
+      .pub-arr { width: 100%; height: 24px; transform: rotate(90deg); }
+    }
+  </style>
+</head>
+<body class="protocol-docs">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="index.html" class="active">Protocol</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Protocol</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="tcp-conn.html">TCP Connection Service</a>
+        <a href="appMqttConnService.html" class="active">MQTT Connection Service</a>
+        <a href="meter-operations.html">Meter Operations</a>
+        <a href="protocolzd.html">ProtocolZD</a>
+        <a href="protocolMetallixTLV.html">ProtocolMetallixTLV</a>
+        <a href="protocolOrionTLV.html">ProtocolOrionTLV</a>
+        <a href="protocolRigelMq.html">ProtocolRigelMq</a>
+        <a href="test-server.html">Test Server</a>
+        <a href="readme.html">README</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1>MQTT Connection Service</h1>
+          <p>
+            On the gateway, this layer manages MQTT broker session setup, subscriptions, handling of incoming publishes, and reconnection after loss, all through <strong>a single background task</strong>.
+            A thin CycloneTCP-based <em>connection manager</em> sits underneath; this service defines higher-level behavior with an RTOS task loop, request flags, and callbacks.
+          </p>
+          <div class="tag-row">
+            <span class="tag">CycloneTCP MQTT</span>
+            <span class="tag">Dedicated Task</span>
+            <span class="tag">Non-Blocking API</span>
+            <span class="tag">Incoming Publish + Link Event</span>
+          </div>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+
+          <article class="card col-12">
+            <h2>Separation Of Roles And Responsibilities</h2>
+            <p>
+              The <strong>connection manager</strong> is only responsible for a single broker session, <code>CONNECT</code> / <code>SUBSCRIBE</code> / <code>PUBLISH</code>, and the <code>process</code> path (RX + keep-alive) that must run every loop iteration; broker nickname or subscription table state is not kept there.
+            </p>
+            <p>
+              <strong>This service</strong> holds broker address, credentials, the topic list to subscribe to (limited slots), the incoming-message callback and optional link callback; all heavy work runs in a separate task on a fixed-period loop.
+            </p>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Layers (Mermaid)</div>
+              <pre class="mermaid">flowchart TB
+  subgraph App["Application / protocol module"]
+    APP[RigelMq or other consumer]
+  end
+  subgraph Svc["MQTT Connection Service"]
+    T[Task loop]
+    B[Task flags]
+    T --> B
+  end
+  subgraph Mng["MQTT connection manager"]
+    C[CONNECT / DISCONNECT]
+    P[process — RX and keep-alive]
+    S[SUBSCRIBE / PUBLISH]
+  end
+  subgraph Net["Network stack"]
+    CY[CycloneTCP mqtt_client]
+  end
+  APP -->|request: connect / publish / subscribe| Svc
+  Svc --> Mng
+  Mng --> CY
+  CY -->|PUBLISH payload| Svc
+  Svc -->|IncomingCb topic + data| APP
+  Svc -->|LinkCb isUp| APP</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Task Loop And Persistent Connection</h2>
+            <p>
+              The task runs in an infinite <code>while</code> until stop is requested. Each iteration notifies the watchdog; then connect, disconnect, reconnect, or batched subscribe steps are evaluated in order from the flags.
+              While connected, <strong>process</strong> is invoked every iteration to keep receiving from the broker and drive protocol keep-alive. If process fails, the session is treated as lost and reconnect is scheduled after a short delay.
+            </p>
+            <div class="note-box">
+              The loop period is fixed (e.g. one hundred milliseconds). The same cadence is used whether connected or not, which yields a predictable timeline for regular <code>process</code> runs and retries after a drop.
+            </div>
+            <div class="sim-wrap">
+              <div class="sim-title">Outgoing Message (PUBLISH) — Call Chain</div>
+              <p class="sim-desc">
+                When the application calls <code>appMqttConnServicePublish</code>, execution stays in MQTT Connection Service first, then passes to the connection manager and the CycloneTCP <code>mqtt_client</code> API.
+                The animation below highlights each of the three functions in turn as it becomes “active” (arrows show the handoff from one stage to the next).
+              </p>
+              <div class="pub-flow" role="img" aria-label="Order: appMqttConnServicePublish, appMqttConnMngPublish, mqttClientPublish">
+                <div class="pub-step s1">
+                  <span class="fn">appMqttConnServicePublish</span>
+                  <span class="layer">MQTT Connection Service</span>
+                </div>
+                <div class="pub-arr a1" aria-hidden="true">→</div>
+                <div class="pub-step s2">
+                  <span class="fn">appMqttConnMngPublish</span>
+                  <span class="layer">AppMqttConnManager</span>
+                </div>
+                <div class="pub-arr a2" aria-hidden="true">→</div>
+                <div class="pub-step s3">
+                  <span class="fn">mqttClientPublish</span>
+                  <span class="layer">mqtt_client.h · MqttClientContext</span>
+                </div>
+              </div>
+              <p class="pub-legend">
+                On the CycloneTCP side, the send goes through the connected <code>MqttClientContext</code> via
+                <code>mqttClientPublish(…, topic, payload, len, MQTT_QOS_LEVEL_0, …)</code> (mapped to <code>APP_MQTT_CONN_MNG_QOS</code> in the manager).
+                If the return value is <code>NO_ERROR</code>, <code>APP_MQTT_STAT_PUB_OK</code> is reported; otherwise <code>APP_MQTT_STAT_PUB_FAIL</code>.
+              </p>
+            </div>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Task Round — Simplified Flow</div>
+              <pre class="mermaid">flowchart TD
+  A[Loop start] --> B{stop?}
+  B -->|yes| Z[Cleanup, delete task]
+  B -->|no| C[imOK]
+  C --> D{want online?}
+  D -->|no| E{connected?}
+  E -->|yes| F[disconnect]
+  E -->|no| Y[sleep]
+  D -->|yes| G[connect / disconnect / reconnect / subscribe steps]
+  G --> H{connected and process?}
+  H -->|yes| I{process OK?}
+  I -->|no| J[schedule reconnect]
+  I -->|yes| Y
+  H -->|no| Y
+  J --> Y
+  F --> Y</pre>
+            </div>
+            <div class="gif-row">
+              <figure class="doc-figure">
+                <img src="media/mqtt_service_poll.gif" alt="Schematic animation of the MQTT service task loop and process steps" width="760" height="220" loading="lazy" />
+                <figcaption><strong>Poll Loop:</strong> One <code>process</code> call per round plus periodic sleep so RX and keep-alive keep running.</figcaption>
+              </figure>
+              <figure class="doc-figure">
+                <img src="media/mqtt_service_reconnect.gif" alt="Animation of reconnect and re-subscription after a drop" width="760" height="220" loading="lazy" />
+                <figcaption><strong>Reconnect:</strong> After a loss or subscribe failure, disconnect/connect and topic subscriptions are set up again.</figcaption>
+              </figure>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Incoming Packet Delivery — <code>IncomingCb</code></h2>
+            <p>
+              When the broker publishes to a subscribed topic, the connection manager’s listen callback runs. The service forwards that to the application’s <strong>incoming data callback</strong>.
+            </p>
+            <ul style="color:var(--muted);line-height:1.6;font-size:14px">
+              <li>First argument: <strong>topic name</strong> — the MQTT equivalent of a TCP “channel”; used to tell which topic the payload came from.</li>
+              <li>Second argument: <strong>payload</strong> — byte buffer; it is not required to be null-terminated.</li>
+              <li>Third argument: <strong>length</strong> — size in bytes.</li>
+            </ul>
+            <p>
+              Nothing is delivered if the callback is null or the topic/data pointer is invalid. The application is thus fed through one contract: topic plus raw bytes.
+            </p>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Incoming PUBLISH Path</div>
+              <pre class="mermaid">sequenceDiagram
+  participant BR as Broker
+  participant CY as mqtt_client
+  participant M as Connection manager
+  participant S as Service task
+  participant CB as App IncomingCb
+  BR->>CY: PUBLISH topic payload
+  CY->>M: RX handling
+  M->>M: Listen callback
+  M->>S: topic, buffer, length
+  S->>CB: topic, data, dataLength</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Connection And Session Events — <code>LinkCb</code></h2>
+            <p>
+              This callback is <strong>optional</strong>. If omitted, only incoming publishes reach the application; if provided, a single integer tells whether the session is “really up” and when it has gone “down.”
+            </p>
+            <div class="msg-block">
+              <h3><code>isUp != 0</code> (Connected / Ready)</h3>
+              <p style="margin:0;font-size:14px;color:var(--muted)">
+                Invoked once when TCP and MQTT session are up, all planned topic subscribe attempts have <strong>succeeded</strong>, and an “up” notification has not been sent before. That lets application logic run only when traffic is actually expected (e.g. before the first <code>PUBLISH</code>).
+              </p>
+            </div>
+            <div class="msg-block">
+              <h3><code>isUp == 0</code> (Down / Disconnected)</h3>
+              <p style="margin:0;font-size:14px;color:var(--muted)">
+                After connect failure, loss, or user-requested disconnect, if an “up” had been reported, an “down” is reported. An internal flag avoids duplicate notifications.
+              </p>
+            </div>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Connection State — Summary</div>
+              <pre class="mermaid">stateDiagram-v2
+  [*] --> Closed: Start
+  Closed --> Connecting: RequestConnect
+  Connecting --> AwaitingSub: CONNECTION_OK
+  Connecting --> Down: CONNECTION_FAIL
+  AwaitingSub --> Ready: All SUB OK + LinkCb up
+  AwaitingSub --> Reconnecting: SUBS_FAIL
+  Ready --> Down: process error or Disconnect
+  Down --> Connecting: Reconnect / Connect flag
+  Ready --> Closed: Stop</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Task Flags And Connection Status Callback</h2>
+            <p>
+              Requests from the rest of the system do not block the network; bits are set and the task handles them on the next round. Status codes from the connection manager also feed the same flags.
+            </p>
+            <table class="api-table">
+              <thead>
+                <tr><th>Flag / Condition</th><th>Meaning</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>taskConnect</code></td><td>Schedule a CONNECT attempt.</td></tr>
+                <tr><td><code>taskDisconnect</code></td><td>Clean disconnect; may clear <code>userWantOnline</code>.</td></tr>
+                <tr><td><code>taskReconnect</code></td><td>Disconnect first, then set <code>taskConnect</code> again.</td></tr>
+                <tr><td><code>taskSubscribe</code></td><td>After connect succeeds, run SUB for all non-empty topic slots.</td></tr>
+                <tr><td><code>userWantOnline</code></td><td>Desire to stay online; if cleared, connection is torn down even if up.</td></tr>
+                <tr><td><code>linkUpNotified</code></td><td>Whether <code>LinkCb</code> “up” was already delivered once.</td></tr>
+                <tr><td><code>stopRequested</code></td><td>Exit path: disconnect, clear state, delete task.</td></tr>
+              </tbody>
+            </table>
+            <p style="margin-top:14px;font-size:14px;color:var(--muted)">
+              <code>CONNECTION_OK</code> schedules the subscribe pass. <code>CONNECTION_FAIL</code> emits “down” if “up” was previously reported, then requests CONNECT again. <code>SUBS_FAIL</code> triggers reconnect and re-subscribe.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Topic Slots And Subscription</h2>
+            <p>
+              Topic strings live in a fixed-size table; an empty slot is a row whose first byte is zero. The first topic is usually copied at service start; additional topics use the next free slot, and a duplicate topic is a successful no-op.
+              If a new topic is added while connected, <code>SUBSCRIBE</code> is attempted immediately; on failure the slot is rolled back. A short delay between multiple subscribe commands reduces stack or broker contention.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Client ID And Startup Order</h2>
+            <p>
+              The MQTT <code>clientId</code> is built automatically from a fixed prefix and the configured broker short name. <strong>Starting</strong> the service creates the task but does not connect to the broker; connection is requested separately. That allows credentials and the first topic to be ready before the loop connects safely.
+            </p>
+            <p>
+              Stop is <strong>non-blocking</strong>: the call only sets the stop flag; the task disconnects, clears slots and strings, nulls callback pointers, and deletes its own task id. Before starting again, ensure the task has actually finished (short delay or status poll).
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>General API Summary</h2>
+            <table class="api-table">
+              <thead>
+                <tr><th>Function</th><th>Short Description</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>Start</code></td><td>Creates the task with broker address, port, optional user/password, first topic, required <code>IncomingCb</code>, optional <code>LinkCb</code>.</td></tr>
+                <tr><td><code>Stop</code></td><td>Non-blocking stop request.</td></tr>
+                <tr><td><code>IsConnected</code></td><td>Current session state (from manager).</td></tr>
+                <tr><td><code>RequestConnect</code></td><td>Queue stay-online and CONNECT.</td></tr>
+                <tr><td><code>RequestDisconnect</code></td><td>Queue disconnect.</td></tr>
+                <tr><td><code>Publish</code></td><td>QoS 0 publish; requires connection.</td></tr>
+                <tr><td><code>Subscribe</code></td><td>Add topic to a free slot; SUB immediately if connected.</td></tr>
+              </tbody>
+            </table>
+          </article>
+
+        </div>
+        <p class="protocol-footer-note">
+          <a href="index.html">Protocol Overview</a> &nbsp;|&nbsp;
+          <a href="protocolRigelMq.html">ProtocolRigelMq</a> &nbsp;|&nbsp;
+          <a href="tcp-conn.html">TCP Connection Service</a>
+        </p>
+      </main>
+    </div>
+  </div>
+  <footer class="protocol-global-footer">
+    <p>Designed by Zafer SATILMIS | MQTT Connection Service</p>
+  </footer>
+</body>
+</html>
