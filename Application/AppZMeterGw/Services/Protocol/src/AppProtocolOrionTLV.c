@@ -1,5 +1,6 @@
 /******************************************************************************
-* #Author       : Zafer Satılmış
+* #Author       : Zafer Satilmis
+* #Hhype-man    : Radical Noise - Angry Son
 * #Revision     : 1.0
 * #Date         : Mar 30, 2026
 * #File Name    : AppProtocolOrionTLV.c
@@ -909,131 +910,6 @@ static void cleanupMeterFiles(S32 taskId)
     (void)fsDeleteFile((char_t *)path);
 }
 
-/**
- * Start a push session to send readout/loadprofile file chunks to the server.
- * Owns gs_pendingJobs[jobIdx] until send + ACK wait completes (or timeout).
- */
-static RETURN_STATUS startPushMeterDataSession(int jobIdx, uint16_t transNum)
-{
-    if (jobIdx < 0 || jobIdx >= MAX_PENDING_JOBS)
-        return FAILURE;
-
-    OrionSession_t *s = sessionCreate(SFUNC_PUSH_METER_DATA, PUSH_TCP_SOCK_NAME, transNum, meterOprsOnComplete);
-    if (NULL == s)
-        return FAILURE;
-
-    s->pendingJobIdx = jobIdx;
-    s->step          = 0;
-    s->timeCnt       = 0;
-    
-    return SUCCESS;
-}
-
-/**
- * Push meter data over TCP — non-blocking steps (like processAliveSession).
- * step 0: wait for push socket
- * step 1: send packetised file
- * step 2: wait for server ACK on push (same transactionNumber routes via dispatch)
- */
-static void processPushMeterDataSession(OrionSession_t *session)
-{
-    int jobIdx = session->pendingJobIdx;
-    if (jobIdx < 0 || jobIdx >= MAX_PENDING_JOBS)
-    {
-        sessionDelete(session);
-        return;
-    }
-
-    PendingJob_t *job = &gs_pendingJobs[jobIdx];
-    S32 taskId = job->taskId;
-    if (taskId == 0)
-    {
-        sessionDelete(session);
-        return;
-    }
-
-    uint8_t func = job->isLoadProfile ? ORION_FUNC_LOADPROFILE : ORION_FUNC_READOUT;
-
-    char meterId[128] = {0};
-    char idPath[MAX_PATH_LEN];
-    snprintf(idPath, sizeof(idPath), "%s%d_meterID.txt", METER_DATA_OUTPUT_DIR, (int)taskId);
-
-    size_t got = 0;
-    if (SUCCESS != readWholeText(idPath, meterId, sizeof(meterId), &got) || got == 0)
-        strncpy(meterId, "unknown", sizeof(meterId));
-
-    if (job->isLoadProfile)
-        strncpy(meterId, "load-profile-no-id", sizeof(meterId));
-
-    char dataPath[MAX_PATH_LEN];
-    if (job->isLoadProfile)
-        snprintf(dataPath, sizeof(dataPath), "%s%d_payload.txt", METER_DATA_OUTPUT_DIR, (int)taskId);
-    else
-        snprintf(dataPath, sizeof(dataPath), "%s%d_readout.txt", METER_DATA_OUTPUT_DIR, (int)taskId);
-
-    switch (session->step)
-    {
-        case 0:
-        {
-            if (CONN_TYPE_TCP == gsFlagList.connType)
-            {
-                if ((FALSE == gsFlagList.tcpPushInUse) && (FALSE == appTcpConnManagerIsConnectedPush()))
-                {
-                    gsFlagList.tcpPushInUse = TRUE;
-                    appTcpConnManagerRequestPushConnect();
-
-                    session->timeCnt = 0; //clear next step timeout counter
-                    session->step    = 1;
-
-                    DEBUG_INFO("->[I] OrionTLV: Push Socket is used in PushIdent Session");                
-                }
-
-                zosDelayTask(1000);
-                break;
-            }
-            /* !< don't add a break here. in the MQTT connection, there is no need to check the push socket. jump to next step */
-        }
-        case 1:
-        {
-            if ((CONN_TYPE_TCP == gsFlagList.connType) && (FALSE == appTcpConnManagerIsConnectedPush()))
-            {
-                appTcpConnManagerRequestPushConnect();
-                break;
-            }
-
-            if (SUCCESS != sendFilePacketised(PUSH_TCP_SOCK_NAME, func, meterId, dataPath, session->transNumber))
-            {
-                DEBUG_ERROR("->[E] OrionTLV: sendFilePacketised failed (trans %u) for meter task %d", session->transNumber, taskId);
-
-                completeSession(session, SESSION_ERROR, NULL);
-                sessionDelete(session);
-                break;
-            }
-            session->rxReady = FALSE;
-            session->rxLen   = 0;
-            session->timeCnt = 0; //clear next step timeout counter
-            session->step    = 2;
-            break;
-        }
-        case 2:
-        {
-            if (session->rxReady)
-            {
-                session->rxReady = FALSE;
-                session->rxLen   = 0;
-                
-                completeSession(session, SESSION_DONE, NULL);
-                sessionDelete(session);
-            }
-            /* timeout will be handled by the session timeout handler 
-            * we dont need to call sessionDelete here, it will be called
-            * by the session timeout handler */
-
-            break;
-        }
-    }
-}
-
 /* ================================================================== */
 /*           Session management                                       */
 /* ================================================================== */
@@ -1189,9 +1065,132 @@ static void periodicTimerCb(void)
     }
 }
 
+/**
+ * Start a push session to send readout/loadprofile file chunks to the server.
+ * Owns gs_pendingJobs[jobIdx] until send + ACK wait completes (or timeout).
+ */
+static RETURN_STATUS startPushMeterDataSession(int jobIdx, uint16_t transNum)
+{
+    if (jobIdx < 0 || jobIdx >= MAX_PENDING_JOBS)
+        return FAILURE;
+
+    OrionSession_t *s = sessionCreate(SFUNC_PUSH_METER_DATA, PUSH_TCP_SOCK_NAME, transNum, meterOprsOnComplete);
+    if (NULL == s)
+        return FAILURE;
+
+    s->pendingJobIdx = jobIdx;
+    s->step          = 0;
+    s->timeCnt       = 0;
+    
+    return SUCCESS;
+}
+
 /* ================================================================== */
 /*          Session handlers — step-based state machines              */
 /* ================================================================== */
+/**
+ * Push meter data over TCP — non-blocking steps (like processAliveSession).
+ * step 0: wait for push socket
+ * step 1: send packetised file
+ * step 2: wait for server ACK on push (same transactionNumber routes via dispatch)
+ */
+static void processPushMeterDataSession(OrionSession_t *session)
+{
+    int jobIdx = session->pendingJobIdx;
+    if (jobIdx < 0 || jobIdx >= MAX_PENDING_JOBS)
+    {
+        sessionDelete(session);
+        return;
+    }
+
+    PendingJob_t *job = &gs_pendingJobs[jobIdx];
+    S32 taskId = job->taskId;
+    if (taskId == 0)
+    {
+        sessionDelete(session);
+        return;
+    }
+
+    uint8_t func = job->isLoadProfile ? ORION_FUNC_LOADPROFILE : ORION_FUNC_READOUT;
+
+    char meterId[128] = {0};
+    char idPath[MAX_PATH_LEN];
+    snprintf(idPath, sizeof(idPath), "%s%d_meterID.txt", METER_DATA_OUTPUT_DIR, (int)taskId);
+
+    size_t got = 0;
+    if (SUCCESS != readWholeText(idPath, meterId, sizeof(meterId), &got) || got == 0)
+        strncpy(meterId, "unknown", sizeof(meterId));
+
+    if (job->isLoadProfile)
+        strncpy(meterId, "load-profile-no-id", sizeof(meterId));
+
+    char dataPath[MAX_PATH_LEN];
+    if (job->isLoadProfile)
+        snprintf(dataPath, sizeof(dataPath), "%s%d_payload.txt", METER_DATA_OUTPUT_DIR, (int)taskId);
+    else
+        snprintf(dataPath, sizeof(dataPath), "%s%d_readout.txt", METER_DATA_OUTPUT_DIR, (int)taskId);
+
+    switch (session->step)
+    {
+        case 0:
+        {
+            if (CONN_TYPE_TCP == gsFlagList.connType)
+            {
+                if ((FALSE == gsFlagList.tcpPushInUse) && (FALSE == appTcpConnManagerIsConnectedPush()))
+                {
+                    gsFlagList.tcpPushInUse = TRUE;
+                    appTcpConnManagerRequestPushConnect();
+
+                    session->timeCnt = 0; //clear next step timeout counter
+                    session->step    = 1;
+
+                    DEBUG_INFO("->[I] OrionTLV: Push Socket is used in PushIdent Session");                
+                }
+
+                zosDelayTask(1000);
+                break;
+            }            
+        }
+        case 1:
+        {
+            if ((CONN_TYPE_TCP == gsFlagList.connType) && (FALSE == appTcpConnManagerIsConnectedPush()))
+            {
+                appTcpConnManagerRequestPushConnect();
+                break;
+            }
+
+            if (SUCCESS != sendFilePacketised(PUSH_TCP_SOCK_NAME, func, meterId, dataPath, session->transNumber))
+            {
+                DEBUG_ERROR("->[E] OrionTLV: sendFilePacketised failed (trans %u) for meter task %d", session->transNumber, taskId);
+
+                completeSession(session, SESSION_ERROR, NULL);
+                sessionDelete(session);
+                break;
+            }
+            session->rxReady = FALSE;
+            session->rxLen   = 0;
+            session->timeCnt = 0; //clear next step timeout counter
+            session->step    = 2;
+            break;
+        }
+        case 2:
+        {
+            if (session->rxReady)
+            {
+                session->rxReady = FALSE;
+                session->rxLen   = 0;
+                
+                completeSession(session, SESSION_DONE, NULL);
+                sessionDelete(session);
+            }
+            /* timeout will be handled by the session timeout handler 
+            * we dont need to call sessionDelete here, it will be called
+            * by the session timeout handler */
+
+            break;
+        }
+    }
+}
 
 /* ── Push Ident (registration) ── */
 static void processIdentSession(OrionSession_t *session)
@@ -1207,16 +1206,15 @@ static void processIdentSession(OrionSession_t *session)
                     gsFlagList.tcpPushInUse = TRUE;
                     appTcpConnManagerRequestPushConnect();
 
-                    session->timeCnt           = 0;
-                    session->step              = 1;
+                    session->timeCnt = 0;
+                    session->step    = 1;
 
                     DEBUG_INFO("->[I] OrionTLV: Push Socket is used in PushIdent Session");                
                 }
 
                 zosDelayTask(1000);
                 break;
-            }
-            /* !< don't add a break here. in the MQTT connection, there is no need to check the push socket. jump to next step */
+            }            
         }
         case 1:
         {
@@ -1297,16 +1295,15 @@ static void processAliveSession(OrionSession_t *session)
                     gsFlagList.tcpPushInUse = TRUE;
                     appTcpConnManagerRequestPushConnect();
 
-                    session->timeCnt           = 0;
-                    session->step              = 1;
+                    session->timeCnt = 0;
+                    session->step    = 1;
 
                     DEBUG_INFO("->[I] OrionTLV: Push Socket is used in Alive Session");                
                 }
 
                 zosDelayTask(1000);
                 break;
-            }
-            /* !< don't add a break here. in the MQTT connection, there is no need to check the push socket. jump to next step */
+            }            
         }
         case 1:
         {

@@ -9,7 +9,7 @@ except ImportError:
     raise SystemExit("Install Pillow: pip install pillow")
 
 OUT = Path(__file__).resolve().parent / "media"
-FRAMES = 24
+FRAMES = 60
 W, H = 720, 200
 
 
@@ -49,7 +49,7 @@ def main():
 
     def ident_flow(dr, fnt, fs, i):
         t = i / (FRAMES - 1)
-        x = 40 + t * (W - 200)
+        x = 50 + t * (W - 200)
         dr.rectangle([20, 70, 200, 130], outline=(80, 120, 200), width=2)
         dr.text((45, 45), "Cihaz (Gateway)", fill=(180, 200, 255), font=fnt)
         dr.text((55, 95), "IDENT", fill=(200, 220, 255), font=fs)

@@ -73,11 +73,11 @@ RETURN_STATUS appProtocolZDStart(void);
 RETURN_STATUS appProtocolZDStop(void);
 
 /**
- * \brief   put incoming message
- * \param   channel: PUSH_TCP_SOCK_NAME or PULL_TCP_SOCK_NAME
- * \param   data: raw received bytes
- * \param   dataLength: number of bytes received
- * \return  void
+ * @brief   put incoming message
+ * @param   channel: PUSH_TCP_SOCK_NAME or PULL_TCP_SOCK_NAME
+ * @param   data: raw received bytes
+ * @param   dataLength: number of bytes received
+ * @return  void
  */
 void appProtocolZDPutIncomingMessage(const char *channel,
                                      const char *data,

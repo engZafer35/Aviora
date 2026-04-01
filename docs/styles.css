@@ -13,6 +13,7 @@ html{overflow-y:scroll;overflow-x:hidden}
 body{
   margin:0;
   font-family:Arial, Helvetica, sans-serif;
+  font-size:16px;
   background:linear-gradient(180deg,#0b1224,#111a33 35%,#0f172a);
   color:var(--text);
 }
@@ -199,12 +200,12 @@ footer:not(.protocol-global-footer){
 
 .tag-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .tag.highlight{background:rgba(110,168,255,0.2);border-color:var(--accent)}
-code{background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-size:0.9em}
+code{background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-size:inherit;line-height:inherit}
 .benefit-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:12px}
 .benefit-item{border:1px solid var(--line);border-radius:12px;padding:16px;background:rgba(255,255,255,0.02)}
 .benefit-icon{font-size:28px;display:block;margin-bottom:8px}
 .benefit-item h3{margin:0 0 8px 0;font-size:17px}
-.code-block{background:rgba(0,0,0,0.35);padding:12px;border-radius:8px;overflow-x:auto;font-size:13px;margin:10px 0}
+.code-block{background:rgba(0,0,0,0.35);padding:12px;border-radius:8px;overflow-x:auto;font-size:1em;line-height:1.55;margin:10px 0;font-family:Consolas,"Segoe UI Mono","Courier New",monospace}
 .small{font-size:12px;color:#8a9cc7}
 
 .hero-img{

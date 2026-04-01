@@ -131,7 +131,7 @@ table.data th {
   font-weight: 600;
 }
 
-table.data code { font-size: 12px; }
+table.data code { font-size: inherit; }
 
 pre, .hex {
   background: var(--code-bg);
