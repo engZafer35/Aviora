@@ -1,5 +1,6 @@
 /******************************************************************************
-* #Author       : Zafer Satılmış
+* #Author       : Zafer Satilmis
+* #Hhype-man    : Radical Noise - Angry Son
 * #Revision     : 1.0
 * #Date         : Mar 30, 2026
 * #File Name    : AppProtocolOrionTLV.h

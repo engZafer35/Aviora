@@ -41,6 +41,34 @@ body.protocol-docs .main-with-sidebar .container {
   width: 100%;
 }
 
+/* Prose and inline code share the same font metrics (monospace at 1em looks smaller). */
+body.protocol-docs .hero p,
+body.protocol-docs .card p,
+body.protocol-docs .card li {
+  font-size: 1rem;
+  line-height: 1.62;
+}
+
+body.protocol-docs p code,
+body.protocol-docs li code,
+body.protocol-docs td code,
+body.protocol-docs th code,
+body.protocol-docs .note-rigel code,
+body.protocol-docs .lead code,
+body.protocol-docs .subhead code,
+body.protocol-docs .tag-table code {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  vertical-align: baseline;
+}
+
+/* JSON/shell blocks stay monospace; size locked to the same rem as body copy. */
+body.protocol-docs pre.code-block {
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
 /* Mermaid: full content width (fit-content was shrinking diagrams) */
 body.protocol-docs .diagram-wrap pre.mermaid,
 body.protocol-docs .markdown-body pre.mermaid {

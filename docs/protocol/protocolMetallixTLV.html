@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🛰️Aviora-Protocol</title>
+  <title>ProtocolMetallixTLV — Aviora</title>
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="./protocol-docs.css" />
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
@@ -27,6 +27,7 @@
     .wire-label{font-size:9px;display:block;opacity:0.6;margin-top:2px}
   </style>
 </head>
+<body class="protocol-docs">
   <div class="topbar">
     <div class="topbar-inner">
       <div class="brand">🛰️Zafer Satılmış - Aviora</div>
@@ -49,11 +50,13 @@
       <div class="sidebar-title">Protocol</div>
       <nav class="sidebar-nav">
         <a href="index.html">Overview</a>
-        <a href="tcp-conn.html">TCP Connection</a>
+        <a href="tcp-conn.html">TCP Connection Service</a>
+        <a href="appMqttConnService.html">MQTT Connection Service</a>
         <a href="meter-operations.html">Meter Operations</a>
         <a href="protocolzd.html">ProtocolZD</a>
         <a href="protocolMetallixTLV.html" class="active">ProtocolMetallixTLV</a>
         <a href="protocolOrionTLV.html">ProtocolOrionTLV</a>
+        <a href="protocolRigelMq.html">ProtocolRigelMq</a>
         <a href="test-server.html">Test Server</a>
         <a href="readme.html">README</a>
       </nav>
@@ -623,7 +626,7 @@ if (metallixTLV_ParserInit(&p, rawData, rawLen))
     </div>
   </div>
   <footer class="protocol-global-footer">
-    <p>Designed by Zafer SATILMIS | Aviora Protocol Layer</p>
+    <p>Designed by Zafer SATILMIS | Protocol MetallixTLV</p>
   </footer>
 </body>
 </html>

@@ -44,9 +44,9 @@ typedef void (*AppMqttConnMngConnInfoCb_t)(AppMqttConnStatus_t stat);
 /************************* GLOBAL FUNCTION DEFINITIONS **************************/
 
 /**
- * \brief Connect (blocks until CONNACK or failure).
- * \param clientId MQTT Client Identifier (owner builds, e.g. from broker nickname).
- * \param publishCb Called for every incoming PUBLISH after subscribe.
+ * @brief Connect (blocks until CONNACK or failure).
+ * @param clientId MQTT Client Identifier (owner builds, e.g. from broker nickname).
+ * @param publishCb Called for every incoming PUBLISH after subscribe.
  */
 int appMqttConnMngConnectBroker(const char *ip, unsigned short port,
                                 const char *clientName, const char *clientPsw,
@@ -54,17 +54,37 @@ int appMqttConnMngConnectBroker(const char *ip, unsigned short port,
                                 AppMqttConnMngConnInfoCb_t connCb,
                                 AppMqttConnMngListenCb_t publishCb);
 
+/**
+ * @brief Disconnect and deinit.
+ */
 int appMqttConnMngDisconnectBroker(void);
 
-/** Subscribe QoS 0; blocks until SUBACK. */
+/**
+ * @brief Subscribe to a topic.  Topic string is copied by caller, can be stack-allocated.
+ */
 int appMqttConnMngSubscribe(const char *topic);
 
+/**
+ * @brief Unsubscribe from a topic.
+ */
 int appMqttConnMngUnsubscribe(const char *topic);
 
+/**
+ * @brief Publish a message to a topic.  Topic and payload strings are copied by caller, can be stack-allocated.
+ */
 int appMqttConnMngPublish(const char *topic, const char *buff, unsigned int buffLeng);
 
+/**
+ * @brief Check if connected to the broker.
+ * @return 1 if connected, 0 otherwise.
+ */
 int appMqttConnMngIsConnected(void);
 
+/**
+ * @brief Process MQTT client tasks: receive messages, handle keep-alive, etc.
+ *        Call this periodically while connected.
+ * @return APP_MQTT_CONN_MNG_RET_SUCCESS if still connected, APP_MQTT_CONN_MNG_RET_FAILURE if connection lost.
+ */
 int appMqttConnMngProcess(void);
 
 #endif /* __APP_MQTT_CONN_MANAGER_H__ */
