@@ -588,7 +588,19 @@
   "request": {
     "directive": {
       "id": "ReadoutDirective1",
-      "directive": []
+      "steps": [
+        {
+          "order" : 1,
+          "operation": "setBaud",
+          "parameter": 300
+        },
+        {
+          "order" : 2,
+          "operation": "setFraming",
+          "parameter": "7E1"
+        },
+        .... more steps ...
+      ]
     }
   }
 }</pre>
@@ -596,9 +608,9 @@
           </article>
 
           <article class="card col-12">
-            <h2>11. Directive delete (<code>directiveDelete</code>)</h2>
+            <h2>11. Directive Delete (<code>directiveDelete</code>)</h2>
             <p>
-              Deletes by directive id. The id is read from <code>request.filter.id</code> (ZD-compatible). Use a non-empty id; wildcard semantics follow the meter-operations implementation.
+              Deletes by directive id. Use a non-empty id; Delete all directives if id is <strong>"*"</strong>.
             </p>
             <div class="msg-block">
               <h3>Request — Backend → Gateway</h3>
@@ -615,6 +627,59 @@
     }
   }
 }</pre>
+
+        <article class="card col-12">
+          <h2>12. Directive List (<code>directiveList</code>)</h2>
+          <p>
+            Lists all directives. Use a non-empty id; List all directives if id is <strong>"*"</strong>.
+          </p>
+          <div class="msg-block">
+            <h3>Request — Backend → Gateway</h3>
+            <pre class="code-block json">{
+  "device": {
+  "flag": "AVI",
+  "serialNumber": "0123456789ABCDE"
+  },
+  "function": "directiveList",
+  "transNumber": 1001,
+  "request": {
+      "filter": {
+      "id": "ReadoutDirective1"
+    }
+  }
+}</pre>
+
+<h3>Response Immediate  — Gateway → Backend</h3>
+<pre class="code-block json">
+{
+  "device": {
+    "flag": "AVI",
+    "serialNumber": "0123456789ABCDE"
+  },
+  "function": "directiveList",
+  "transNumber": 1001,
+  "packetNum": 1,
+  "packetStream": false,
+  "response": {
+    "directive": {
+      "id": "ReadoutDirective1",
+      "steps": [
+        {
+          "order" : 1,
+          "operation": "setBaud",
+          "parameter": 300
+        },
+        {
+          "order" : 2,
+          "operation": "setFraming",
+          "parameter": "7E1"
+        },
+        .... more steps ...
+      ]
+    }
+  }
+}</pre>
+
             </div>
           </article>
 

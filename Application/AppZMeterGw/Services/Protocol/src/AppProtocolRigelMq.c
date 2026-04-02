@@ -452,15 +452,17 @@ static int rgSessionBuildDataPacket(char *buf, size_t sz,
 
 static int rgSessionBuildDirectivePacket(char *buf, size_t sz,
                                          const char *directive,
-                                         int packetNum, bool stream)
+                                         int packetNum, bool stream, int transNum)
 {
     return snprintf(buf, sz,
         "{\"device\":{\"flag\":\"%s\",\"serialNumber\":\"%s\"},"
         "\"function\":\"directiveList\","
+        "\"transNumber\":%d,"
         "\"packetNum\":%d,"
         "\"packetStream\":%s,"
-        "\"response\":{\"directive\":%s}}",
+        "\"response\":{\"directive\":{%s}}}",
         RG_SESSION_FLAG, gs_serialNumber,
+        transNum,
         packetNum,
         stream ? "true" : "false",
         directive);
@@ -786,8 +788,11 @@ static void rgSessionMqttLinkCb(int isUp)
 
 static int rgSessionMqttRestart(void)
 {
+    appMqttConnServiceRequestDisconnect();
+    zosDelayTask(3000);
+
     (void)appMqttConnServiceStop();
-    zosDelayTask(500);
+    zosDelayTask(3000);
     return appMqttConnServiceStart(gs_brokerIP, gs_brokerPort,
                                    gs_userName[0] ? gs_userName : NULL,
                                    gs_password[0] ? gs_password : NULL,
@@ -1233,21 +1238,10 @@ static void rgSessionProcessLoadProfileSession(RG_Session_t *session)
     }
 }
 
-static void rgSessionProcessDirectiveListSession(RG_Session_t *session)
-{
-    char filterId[64] = {0};
-    ZDJson_GetStringValue(session->rxBuf, "filterId", filterId, sizeof(filterId));
 
-    const char *directive = "{}"; // Get from system based on filterId
-    int sz = rgSessionBuildDirectivePacket(gs_txBuf, sizeof(gs_txBuf), directive, 1, false);
-    appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
-    rgSessionDelete(session);
-}
 
 static void rgSessionProcessSettingSession(RG_Session_t *session)
-{
-    bool success = true;
-
+{ 
     char reqObj[1024];
     if (FALSE == ZDJson_GetObjectValue(session->rxBuf, "request", reqObj, sizeof(reqObj)))
     {
@@ -1258,79 +1252,90 @@ static void rgSessionProcessSettingSession(RG_Session_t *session)
     }
 
     char mqttObj[512];
-    char s[96];
-    int n;
-    bool mqttDirty = false;
+    char tempStr[96];
+    int tempVal;
+    BOOL mqttCorrect = FALSE;
 
     if (ZDJson_GetObjectValue(reqObj, "mqtt", mqttObj, sizeof(mqttObj)))
     {
-        s[0] = '\0';
-        if (ZDJson_GetStringValue(mqttObj, "broker", s, sizeof(s)) && s[0] != '\0')
+        tempStr[0] = '\0';
+        if (ZDJson_GetStringValue(mqttObj, "broker", tempStr, sizeof(tempStr)) && tempStr[0] != '\0')
         {
-            strncpy(gs_brokerIP, s, sizeof(gs_brokerIP) - 1);
+            strncpy(gs_brokerIP, tempStr, sizeof(gs_brokerIP) - 1);
             gs_brokerIP[sizeof(gs_brokerIP) - 1] = '\0';
-            mqttDirty = true;
-        }
-        else
-        {
-            s[0] = '\0';
-            if (ZDJson_GetStringValue(mqttObj, "ip", s, sizeof(s)) && s[0] != '\0')
-            {
-                strncpy(gs_brokerIP, s, sizeof(gs_brokerIP) - 1);
-                gs_brokerIP[sizeof(gs_brokerIP) - 1] = '\0';
-                mqttDirty = true;
-            }
+            mqttCorrect = TRUE;
+            DEBUG_INFO("->[I] RigelMq: NEW MQTT broker IP: %s", gs_brokerIP);
         }
 
-        n = 0;
-        if (ZDJson_GetNumberValue(mqttObj, "port", &n) && n > 0)
-        {
-            gs_brokerPort = n;
-            mqttDirty = true;
+        tempVal = 0;
+        if (mqttCorrect && (mqttCorrect = ZDJson_GetNumberValue(mqttObj, "port", &tempVal)))
+        {            
+            gs_brokerPort = tempVal;
+            DEBUG_INFO("->[I] RigelMq: NEW MQTT broker port: %d", gs_brokerPort);
         }
 
-        if (ZDJson_GetStringValue(mqttObj, "userName", s, sizeof(s)))
-        {
-            strncpy(gs_userName, s, sizeof(gs_userName) - 1);
+        if (mqttCorrect && (mqttCorrect = ZDJson_GetStringValue(mqttObj, "userName", tempStr, sizeof(tempStr))))
+        {            
+            strncpy(gs_userName, tempStr, sizeof(gs_userName) - 1);
             gs_userName[sizeof(gs_userName) - 1] = '\0';
-            mqttDirty = true;
+            DEBUG_INFO("->[I] RigelMq: NEW MQTT username: %s", gs_userName);
         }
-        if (ZDJson_GetStringValue(mqttObj, "password", s, sizeof(s)))
+
+        if (mqttCorrect && (mqttCorrect = ZDJson_GetStringValue(mqttObj, "password", tempStr, sizeof(tempStr))))
         {
-            strncpy(gs_password, s, sizeof(gs_password) - 1);
+            strncpy(gs_password, tempStr, sizeof(gs_password) - 1);
             gs_password[sizeof(gs_password) - 1] = '\0';
-            mqttDirty = true;
+            DEBUG_INFO("->[I] RigelMq: NEW MQTT password: %s", gs_password);
         }
 
-        s[0] = '\0';
-        if (ZDJson_GetStringValue(mqttObj, "requestTopic", s, sizeof(s)) && s[0] != '\0')
+        tempStr[0] = '\0';
+        if (mqttCorrect && (mqttCorrect = ZDJson_GetStringValue(mqttObj, "requestTopic", tempStr, sizeof(tempStr))))
         {
-            strncpy(gs_mqttRequestTopic, s, sizeof(gs_mqttRequestTopic) - 1);
+            strncpy(gs_mqttRequestTopic, tempStr, sizeof(gs_mqttRequestTopic) - 1);
             gs_mqttRequestTopic[sizeof(gs_mqttRequestTopic) - 1] = '\0';
-            mqttDirty = true;
+            DEBUG_INFO("->[I] RigelMq: NEW MQTT request topic: %s", gs_mqttRequestTopic);
         }
-        s[0] = '\0';
-        if (ZDJson_GetStringValue(mqttObj, "responseTopic", s, sizeof(s)) && s[0] != '\0')
+        tempStr[0] = '\0';
+        if (mqttCorrect && (mqttCorrect = ZDJson_GetStringValue(mqttObj, "responseTopic", tempStr, sizeof(tempStr))))
         {
-            strncpy(gs_mqttResponseTopic, s, sizeof(gs_mqttResponseTopic) - 1);
+            strncpy(gs_mqttResponseTopic, tempStr, sizeof(gs_mqttResponseTopic) - 1);
             gs_mqttResponseTopic[sizeof(gs_mqttResponseTopic) - 1] = '\0';
-            mqttDirty = true;
+            DEBUG_INFO("->[I] RigelMq: NEW MQTT response topic: %s", gs_mqttResponseTopic);          
         }
 
-        if (mqttDirty)
+        if (TRUE == mqttCorrect)
         {
             rgSessionServerPersistSave();
             if (0 != rgSessionMqttRestart())
-                success = false;
+            {
+                // mqtt connection could not be restarted with new settings
+                DEBUG_ERROR("->[E] RigelMq: MQTT connection restart failed with new settings");
+                APP_LOG_REC(g_sysLoggerID, "MQTT connection restart failed with new settings");
+
+                //TODO: restart the service or the device
+            }
             else
             {
                 appMqttConnServiceRequestConnect();
-                APP_LOG_REC(g_sysLoggerID, "MQTT broker updated");
+                DEBUG_INFO("->[I] RigelMq: MQTT settings updated and connection restarted");
+                APP_LOG_REC(g_sysLoggerID, "MQTT settings updated and connection restarted");
             }
+        }
+        else
+        {            
+            rgSessionServerPersistLoad(); // Revert to previous settings
+            DEBUG_ERROR("->[E] RigelMq: Invalid MQTT settings in request");
+            APP_LOG_REC(g_sysLoggerID, "RigelMq: Invalid MQTT settings in request");
+            
+            int sz = rgSessionBuildAckNack(gs_txBuf, sizeof(gs_txBuf), false);
+            appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
+            rgSessionDelete(session);
+            return;
         }
     }
 
     int idx = 0;
+    bool success = true;
     char meterEntry[384];
     while (ZDJson_GetArrayObject(reqObj, "meters", idx, meterEntry, sizeof(meterEntry)))
     {
@@ -1418,10 +1423,13 @@ static void rgSessionProcessFwUpdateSession(RG_Session_t *session)
                       path, sizeof(path)))
     {
         (void)AppSwUpdateInit(host, port, user, pass, path, RG_SESSION_FW_LOCAL_PATH);
-        APP_LOG_REC(g_sysLoggerID, "FW update started");
+       
+        DEBUG_INFO("->[I] RigelMq: FW update started from %s", host);
+        APP_LOG_REC(g_sysLoggerID, "FW update started from %s", host);
     }
     else
     {
+        DEBUG_ERROR("->[E] RigelMq: FTP URL parse failed");
         APP_LOG_REC(g_sysLoggerID, "FTP URL parse failed");
     }
 
@@ -1451,6 +1459,9 @@ static void rgSessionProcessDirectiveAddSession(RG_Session_t *session)
     S32 result = appMeterOperationsAddDirective(dirObj);
     bool ok = (result >= 0);
 
+    DEBUG_INFO("->[I] RigelMq: DirectiveID %s ADDED result: %d", dirObj, ok);
+    APP_LOG_REC(g_sysLoggerID, "RigelMq: DirectiveID %s ADDED result: %d", dirObj, ok);
+
     int sz = rgSessionBuildAckNack(gs_txBuf, sizeof(gs_txBuf), ok);
     appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
     rgSessionDelete(session);
@@ -1478,13 +1489,63 @@ static void rgSessionProcessDirectiveDeleteSession(RG_Session_t *session)
         return;
     }
 
-    bool ok = (SUCCESS == appMeterOperationsDeleteDirective(filterId));
+    BOOL ok = (SUCCESS == appMeterOperationsDeleteDirective(filterId));
+
+    DEBUG_INFO("->[I] RigelMq: DirectiveID %s DELETED result: %d", filterId, ok);
+    APP_LOG_REC(g_sysLoggerID, "RigelMq: DirectiveID %s DELETED result: %d", filterId, ok);
 
     int sz = rgSessionBuildAckNack(gs_txBuf, sizeof(gs_txBuf), ok);
     appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
     rgSessionDelete(session);
 }
 
+static void rgSessionProcessDirectiveListSession(RG_Session_t *session)
+{
+    char filterId[MAX_KEY_LENGTH] = "";
+    char directiveBuff[RG_SESSION_PACKET_MAX_SIZE] = "";
+
+    do 
+    {
+        ZDJson_GetStringValue(reqObj, "id", filterId, sizeof(filterId));
+
+        if ('\0' == filterId[0])
+        {
+            break; //got out of the do-while loop to send nack
+        }
+
+        if ('*' == filterId[0]) // List all directives
+        {
+            int count = appMeterOperationsGetDirectiveCount();
+            if (count > 0)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    appMeterOperationsGetDirectiveByIndex(i, directiveBuff, sizeof(directiveBuff)); // Get all directives in one go
+                    int sz = rgSessionBuildDirectivePacket(gs_txBuf, sizeof(gs_txBuf), directiveBuff, 1, false, session->transNumber);
+                    appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
+                    zosDelayTask(500); // Small delay to avoid flooding
+                }
+                rgSessionDelete(session);
+                return;               
+            }
+        }
+        else
+        {
+            // List specific directive by filterId
+            if (SUCCESS == appMeterOperationsGetDirective(filterId, directiveBuff, sizeof(directiveBuff)))
+            {
+                int sz = rgSessionBuildDirectivePacket(gs_txBuf, sizeof(gs_txBuf), directiveBuff, 1, false, session->transNumber);
+                appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
+                rgSessionDelete(session);
+                return;
+            }
+        }
+    } while (0);
+
+    int sz = rgSessionBuildAckNack(gs_txBuf, sizeof(gs_txBuf), ok);
+    appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
+    rgSessionDelete(session);
+}
 /************************* GLOBAL FUNCTION DEFINITIONS **************************/
 
 RETURN_STATUS appProtocolRigelMqInit(const char *serialNumber,
@@ -1545,6 +1606,7 @@ RETURN_STATUS appProtocolRigelMqInit(const char *serialNumber,
         return FAILURE;
     }
 
+    DEBUG_INFO("->[I] RigelMq: Initialized");
     return SUCCESS;
 }
 
@@ -1563,9 +1625,14 @@ RETURN_STATUS appProtocolRigelMqStart(void)
 
     if (gs_taskId == OS_INVALID_TASK_ID)
     {
+        DEBUG_ERROR("->[E] RigelMq: Task creation failed");
+        APP_LOG_REC(g_sysLoggerID, "RigelMq: Task creation failed");
         gs_running = false;
         return FAILURE;
     }
+
+    DEBUG_INFO("->[I] RigelMq: Started");
+    APP_LOG_REC(g_sysLoggerID, "RigelMq: Started");
 
     return SUCCESS;
 }
@@ -1595,6 +1662,9 @@ RETURN_STATUS appProtocolRigelMqStop(void)
         gs_eventQueue = NULL;
     }
 
+    DEBUG_WARNING("->[W] RigelMq: Stopped");
+    APP_LOG_REC(g_sysLoggerID, "RigelMq: Stopped");
+
     return SUCCESS;
 }
 
@@ -1604,6 +1674,9 @@ BOOL appProtocolRigelMqSendEvent(RG_SessionEventType_t type)
         return FALSE;
     if (QUEUE_SUCCESS != zosMsgQueueSend(gs_eventQueue, (const char *)&type, sizeof(type), TIME_OUT_10MS))
         return FALSE;
+
+    DEBUG_INFO("->[I] RigelMq: New event type %d", type);
+    APP_LOG_REC(g_sysLoggerID, "RigelMq: New event %d", type);
     return TRUE;
 }
 
