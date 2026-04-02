@@ -216,10 +216,6 @@ BOOL     metallixTLV_GetFunction  (MetallixTLV_Parser_t *p, MetallixTLV_Function
 /**
  * @brief  Initialise the MetallixTLV protocol module.
  * @param  serialNumber  Device serial number (null-terminated, max 16 chars)
- * @param  serverIP      Default push-server IP  (null-terminated)
- * @param  serverPort    Default push-server port
- * @param  deviceIP      This device's own IP reported in ident
- * @param  pullPort      TCP-server port opened on this device (pull)
  * @return SUCCESS / FAILURE
  */
 RETURN_STATUS appProtocolMetallixTLVInit(const char *serialNumber);

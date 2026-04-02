@@ -1,0 +1,43 @@
+{
+  "customer": "ZD_0101",
+  "version": 1.1,
+  "releaseDate": "2026-03-19",
+  "protocol": {
+    "use": true,
+    "activeProtocol": "protocolRigelMq",
+    "protocols": {
+      "protocolRigelMq": {
+        "use": true,
+        "mqttBroker": {
+          "ipAddr": "127.0.0.1",
+          "port": 1883,
+          "username": "ZDUser",
+          "password": "ZDUserPass"
+        },
+        "deviceIP": "127.0.0.1",
+        "pullPort": 2622
+      },
+      "protocolOrionTlv": {
+        "use": false,
+        "serverIpAddr": "127.0.0.1",
+        "pushPort": 1883,
+        "deviceIP": "127.0.0.1",
+        "pullPort": 2622
+      },
+      "protocolZD": {
+        "use": false,
+        "serverIpAddr": "127.0.0.1",
+        "pushPort": 1883,
+        "deviceIP": "127.0.0.1",
+        "pullPort": 2622
+      },
+      "protocolMetallix": {
+        "use": false,
+        "serverIpAddr": "127.0.0.1",
+        "pushPort": 1883,
+        "deviceIP": "127.0.0.1",
+        "pullPort": 2622
+      }
+    }
+  }
+}
