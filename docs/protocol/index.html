@@ -3,16 +3,38 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Protocol Layer — Aviora</title>
+  <title>Protocol Layer — Overview — Aviora</title>
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="./protocol-docs.css" />
   <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
   <script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:"dark"});}</script>
+  <style>
+    .proto-callout{
+      border-left:4px solid #58a6ff;
+      padding:14px 18px;
+      margin:0 0 18px 0;
+      background:rgba(88,166,255,0.08);
+      border-radius:0 10px 10px 0;
+      font-size:15px;
+      line-height:1.65;
+      color:var(--muted);
+    }
+    .proto-callout strong{color:var(--accent)}
+    .proto-table{width:100%;border-collapse:collapse;color:var(--muted);font-size:14px}
+    .proto-table th,.proto-table td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+    .proto-table th{color:var(--accent);font-size:12px;text-transform:uppercase;letter-spacing:.45px}
+    .proto-table tr:last-child td{border-bottom:none}
+    .proto-table code{background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:4px;font-size:12px}
+    .proto-mini{margin:0;font-size:13px;line-height:1.55;color:var(--muted)}
+    .proto-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:12px}
+    .proto-tile{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:rgba(255,255,255,0.03)}
+    .proto-tile h3{margin:0 0 8px 0;font-size:15px;color:var(--accent)}
+  </style>
 </head>
-
- <div class="topbar">
-   <div class="topbar-inner">
-    <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+<body class="protocol-docs">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
       <nav class="nav">
         <a href="../index.html">Aviora</a>
         <a href="../fs/index.html">File System</a>
@@ -46,25 +68,118 @@
     <div class="main-with-sidebar">
       <section class="hero">
         <div class="hero-card">
-          <h1>Aviora — Protocol Layer</h1>
+          <h1>Protocol Layer Overview</h1>
           <p>
-            Gateway–backend: <strong>AppProtocolZD</strong> (JSON/TCP), <strong>AppProtocolMetallixTLV</strong> ve <strong>AppProtocolOrionTLV</strong> (binary TLV/TCP),
-            ve <strong>AppProtocolRigelMq</strong> (JSON/MQTT). TCP tabanlı olanlar <strong>AppTcpConnManager</strong>; hepsi <strong>AppMeterOperations</strong> ile entegre.
+            The Aviora offers <strong>several interchangeable protocol stacks</strong> in source form: JSON or binary TLV over TCP,
+            and a JSON session model over MQTT. They share the same meter and job pipeline through <strong>AppMeterOperations</strong>,
+            while transport is handled by <strong>AppTcpConnManager</strong> (TCP) or <strong>AppMqttConnService</strong> (MQTT).
+            For a given <strong>customer or product build</strong>, you enable <em>one</em> stack—for example Orion TLV for one deployment
+            and RigelMq for another—by wiring the right module at integration time; switching backends does not require rewriting unrelated subsystems.
           </p>
           <div class="tag-row">
-            <span class="tag highlight">JSON / TCP</span>
-            <span class="tag highlight">TLV / TCP</span>
-            <span class="tag highlight">Push + Pull</span>
-            <span class="tag highlight">Ident / Alive</span>
-            <span class="tag highlight">Readout / Load Profile</span>
+            <span class="tag highlight" style="font-size:14px;">Multi-protocol source tree</span>
+            <span class="tag highlight" style="font-size:14px;">Per-build selection</span>
+            <span class="tag highlight" style="font-size:14px;">Isolated service boundary</span>
+            <span class="tag highlight" style="font-size:14px;">TCP push / pull</span>
+            <span class="tag highlight" style="font-size:14px;">MQTT request / response</span>
           </div>
         </div>
       </section>
 
       <main class="container">
         <div class="grid">
+
           <article class="card col-12">
-            <h2>Source layout</h2>
+            <h2>Customer Builds and Compile-Time Selection</h2>
+            <p class="proto-mini">
+              Aviora already uses <strong>per-customer configuration</strong> (JSON and generated headers) for file system, logging, time service, and similar areas.
+              The protocol layer follows the same idea: <strong>the firmware image includes exactly one active protocol service</strong>—whichever implementation
+              your integration layer links and starts (<code>appProtocol*Init</code> / <code>appProtocol*Start</code>). One customer image might call Orion TLV + TCP only;
+              another might call RigelMq + MQTT only. You do not run all parsers at once in production; you <strong>select the right service</strong> for that binary.
+            </p>
+            <div class="proto-callout">
+              <strong>Typical split.</strong> Customer A’s head-end expects binary TLV with transaction ids → build with <strong>AppProtocolOrionTLV</strong>.
+              Customer B’s cloud uses MQTT topics and JSON sessions → build with <strong>AppProtocolRigelMq</strong>. Meter logic, directives, and readout jobs stay behind the same
+              <code>AppMeterOperations</code> API; only the wire codec and transport task change.
+            </div>
+          </article>
+
+          <article class="card col-12 col-6">
+            <h2>Isolated Protocol Service</h2>
+            <p class="proto-mini">
+              The protocol unit is designed as a <strong>self-contained service</strong>: it owns framing, sessions, and callbacks into the transport layer,
+              and talks to the rest of the gateway through narrow interfaces (incoming message handlers, meter operations, optional file or timer hooks).
+              Display, UI, unrelated drivers, and other services do not need to know which wire format is active—only that metering and jobs are requested consistently.
+            </p>
+          </article>
+
+          <article class="card col-12 col-6">
+            <h2>What You Configure</h2>
+            <p class="proto-mini">
+              Alongside choosing the module, you supply endpoints from customer config: server IP and ports for TCP stacks, broker and topics for MQTT,
+              serial number, pull port, credentials, and so on—usually fed from the same customer JSON or generated constants used elsewhere in the port.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Implementations at a Glance</h2>
+            <table class="proto-table">
+              <thead>
+                <tr>
+                  <th>Module</th>
+                  <th>Wire</th>
+                  <th>Transport</th>
+                  <th>Documentation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>AppProtocolZD</code></td>
+                  <td>JSON packets (text)</td>
+                  <td>TCP via <code>AppTcpConnManager</code></td>
+                  <td><a href="protocolzd.html">ProtocolZD</a></td>
+                </tr>
+                <tr>
+                  <td><code>AppProtocolMetallixTLV</code></td>
+                  <td>Binary TLV (<code>$</code> … <code>#</code>)</td>
+                  <td>TCP via <code>AppTcpConnManager</code></td>
+                  <td><a href="protocolMetallixTLV.html">ProtocolMetallixTLV</a></td>
+                </tr>
+                <tr>
+                  <td><code>AppProtocolOrionTLV</code></td>
+                  <td>Binary TLV + TRANS_NUMBER</td>
+                  <td>TCP via <code>AppTcpConnManager</code></td>
+                  <td><a href="protocolOrionTLV.html">ProtocolOrionTLV</a></td>
+                </tr>
+                <tr>
+                  <td><code>AppProtocolRigelMq</code></td>
+                  <td>JSON + TRANS_NUMBER</td>
+                  <td>MQTT via <code>AppMqttConnService</code></td>
+                  <td><a href="protocolRigelMq.html">ProtocolRigelMq</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Architecture (one stack per image)</h2>
+            <p class="proto-mini">
+              The diagram below shows roles, not simultaneous execution: a release binary contains <strong>one</strong> protocol row plus the matching transport.
+            </p>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Gateway data path</div>
+              <pre class="mermaid">flowchart LR
+  subgraph IMG["Single Product Build"]
+    PM["One of:\nZD / MetallixTLV /\nOrionTLV / RigelMq"]
+    PM --> MO[AppMeterOperations]
+    PM --> TR["TcpConnManager\nor\nMqttConnService"]
+  end
+  TR --> NET[Head-end / broker]</pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Repository Layout</h2>
             <pre class="code-block">Application/AppZMeterGw/Services/Protocol/
 ├── inc/
 │   ├── AppTcpConnManager.h
@@ -88,74 +203,66 @@
           </article>
 
           <article class="card col-12">
-            <h2>High-level data flow</h2>
-            <div class="diagram-wrap">
-              <div class="diagram-head">High-Level Data Flow</div>
-              <pre class="mermaid">flowchart TB
-  subgraph Server["Central server"]
-    SP[Listen push port]
-    PC[Pull client]
-  end
-  subgraph Device["Gateway device"]
-    PZD[AppProtocolZD]
-    METALLIX[AppProtocolMetallixTLV]
-    ORION[AppProtocolOrionTLV]
-    TCP[AppTcpConnManager]
-    MTR[AppMeterOperations]
-    PZD --> TCP
-    PZD --> MTR
-    METALLIX --> TCP
-    METALLIX --> MTR
-    ORION --> TCP
-    ORION --> MTR
-    RIGEL[AppProtocolRigelMq]
-    MQTT[AppMqttConnService]
-    RIGEL --> MQTT
-    RIGEL --> MTR
-    TCP -->|push: device connects| SP
-    PC -->|pull: server connects to device| TCP
-  end</pre>
+            <h2>Push vs Pull (TCP-based Stacks)</h2>
+            <table class="proto-table">
+              <thead>
+                <tr>
+                  <th>Channel</th>
+                  <th>Who initiates</th>
+                  <th>Typical use</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Push</strong></td>
+                  <td>Device connects to push socket of the server via TCP</td>
+                  <td><code>ident</code>, <code>alive</code>, readout / load-profile data toward the backend</td>
+                </tr>
+                <tr>
+                  <td><strong>Pull</strong></td>
+                  <td>Device listens locally; server connects in</td>
+                  <td><code>log</code>, <code>setting</code>, <code>fwUpdate</code>, readout requests, directive list/add/delete</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="proto-mini" style="margin-top:12px">
+              Details: <a href="tcp-conn.html">TCP Connection Service</a> — non-blocking <code>select</code>, push and pull sockets, request-based connect/disconnect.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Documentation Map</h2>
+            <div class="proto-grid">
+              <div class="proto-tile">
+                <h3>Transports</h3>
+                <p class="proto-mini"><a href="tcp-conn.html">TCP Connection Service</a> — <code>AppTcpConnManager</code>, callbacks, idle timeouts.</p>
+                <p class="proto-mini"><a href="appMqttConnService.html">MQTT Connection Service</a> — broker session, <code>IncomingCb</code> / <code>LinkCb</code>, reconnect.</p>
+              </div>
+              <div class="proto-tile">
+                <h3>Meter Operations</h3>
+                <p class="proto-mini"><a href="meter-operations.html">Meter Operations</a> — registry, directives, readout and profile jobs shared by all protocols.</p>
+              </div>
+              <div class="proto-tile">
+                <h3>Protocols</h3>
+                <p class="proto-mini"><a href="protocolzd.html">ProtocolZD</a> — JSON/TCP messages and state.</p>
+                <p class="proto-mini"><a href="protocolMetallixTLV.html">ProtocolMetallixTLV</a> — Metallix binary TLV.</p>
+                <p class="proto-mini"><a href="protocolOrionTLV.html">ProtocolOrionTLV</a> — Orion TLV, <code>TRANS_NUMBER</code>, sessions.</p>
+                <p class="proto-mini"><a href="protocolRigelMq.html">ProtocolRigelMq</a> — JSON over MQTT, topics, sessions.</p>
+              </div>
+              <div class="proto-tile">
+                <h3>Tools</h3>
+                <p class="proto-mini"><a href="test-server.html">Test Server</a> — Python harnesses and ports.</p>
+                <p class="proto-mini"><a href="readme.html">README</a> — extended Markdown bundle.</p>
+              </div>
             </div>
           </article>
 
-          <article class="card col-12">
-            <h2>Push vs pull</h2>
-            <table style="width:100%;border-collapse:collapse;color:var(--muted);font-size:14px">
-              <tr style="border-bottom:1px solid var(--line)">
-                <th style="text-align:left;padding:8px">Channel</th>
-                <th style="text-align:left;padding:8px">Who initiates?</th>
-                <th style="text-align:left;padding:8px">Typical messages</th>
-              </tr>
-              <tr style="border-bottom:1px solid var(--line)">
-                <td style="padding:8px"><strong>Push</strong></td>
-                <td style="padding:8px">Device opens TCP to the server</td>
-                <td style="padding:8px"><code>ident</code>, <code>alive</code>, readout/load profile data packets</td>
-              </tr>
-              <tr>
-                <td style="padding:8px"><strong>Pull</strong></td>
-                <td style="padding:8px">Device listens locally; server connects in</td>
-                <td style="padding:8px"><code>log</code>, <code>setting</code>, <code>fwUpdate</code>, requests, directive CRUD</td>
-              </tr>
-            </table>
-          </article>
-
-          <article class="card col-12">
-            <h2>Page guide</h2>
-            <ul>
-              <li><a href="readme.html">README</a> — full protocol documentation (Markdown + Mermaid diagrams)</li>
-              <li><a href="tcp-conn.html">TCP Connection</a> — socket tasks, thread, <code>IncomingMsngCb_t</code> registration</li>
-              <li><a href="appMqttConnService.html">MQTT Connection Service</a> — task loop, <code>IncomingCb</code> / <code>LinkCb</code>, reconnect, CycloneTCP session</li>
-              <li><a href="meter-operations.html">Meter Operations</a> — meter registry, directives, readout/profile jobs</li>
-              <li><a href="protocolzd.html">ProtocolZD</a> — all JSON message types, examples, response pairing, state diagram</li>
-              <li><a href="protocolMetallixTLV.html">ProtocolMetallixTLV</a> — binary TLV (Metallix module): TAG table, wire format, packet examples</li>
-              <li><a href="protocolOrionTLV.html">ProtocolOrionTLV</a> — binary TLV (Orion): <code>TRANS_NUMBER</code>, session queue, test server</li>
-              <li><a href="protocolRigelMq.html">ProtocolRigelMq</a> — JSON over MQTT (<code>avi/request</code>, <code>avi/response</code>), sessions, <code>AppProtocolRigelMq.c</code></li>
-              <li><a href="appMqttConnService.html">MQTT Connection Service</a> — görev döngüsü, <code>IncomingCb</code> / <code>LinkCb</code>, yeniden bağlanma, CycloneTCP oturumu</li>
-              <li><a href="test-server.html">Test Server</a> — Python UI, usage, flows, sample scenarios</li>
-            </ul>
-          </article>
         </div>
-        <p class="protocol-footer-note">JSON/TCP → <a href="protocolzd.html">ProtocolZD</a> &nbsp;|&nbsp; TLV → <a href="protocolMetallixTLV.html">Metallix</a> / <a href="protocolOrionTLV.html">Orion</a> &nbsp;|&nbsp; JSON/MQTT → <a href="protocolRigelMq.html">RigelMq</a> / <a href="appMqttConnService.html">MQTT servis</a></p>
+        <p class="protocol-footer-note">
+          JSON/TCP → <a href="protocolzd.html">ProtocolZD</a>
+          &nbsp;|&nbsp; TLV/TCP → <a href="protocolMetallixTLV.html">Metallix</a> / <a href="protocolOrionTLV.html">Orion</a>
+          &nbsp;|&nbsp; JSON/MQTT → <a href="protocolRigelMq.html">RigelMq</a> + <a href="appMqttConnService.html">MQTT service</a>
+        </p>
       </main>
     </div>
   </div>
