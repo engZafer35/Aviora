@@ -72,6 +72,11 @@
 #define ORION_REGISTER_FILE           "orion_register.dat"
 #define ORION_SERVER_FILE             "orion_server.dat"
 
+#define ORION_DEFAULT_SERVER_IP   "127.0.0.1"
+#define ORION_DEFAULT_PUSH_PORT   (1883)
+#define ORION_DEFAULT_DEVICE_IP   "192.168.1.10"
+#define ORION_DEFAULT_PULL_PORT   (2622)
+
 #define ORION_PKT_START               '$'       /* 0x24 */
 #define ORION_PKT_END                 '#'       /* 0x23 */
 
@@ -115,9 +120,7 @@ typedef enum
  * @param  pullPort      TCP-server port opened on this device (pull)
  * @return SUCCESS / FAILURE
  */
-RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber,
-                                     const char *serverIP, int serverPort,
-                                     const char *deviceIP, int pullPort);
+RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber);
 
 /**
  * @brief  Start the protocol task (creates TCP connections, enters state machine).

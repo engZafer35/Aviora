@@ -222,9 +222,7 @@ BOOL     metallixTLV_GetFunction  (MetallixTLV_Parser_t *p, MetallixTLV_Function
  * @param  pullPort      TCP-server port opened on this device (pull)
  * @return SUCCESS / FAILURE
  */
-RETURN_STATUS appProtocolMetallixTLVInit(const char *serialNumber,
-                                const char *serverIP, int serverPort,
-                                const char *deviceIP, int pullPort);
+RETURN_STATUS appProtocolMetallixTLVInit(const char *serialNumber);
 
 /**
  * @brief  Start the protocol task (creates TCP connections, enters state machine).
