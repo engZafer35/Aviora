@@ -39,7 +39,14 @@
 #define PROTOCOL_CONNECT_TIMEOUT_MS (10000)  /* 10 seconds */
 
 #define PROTOCOL_REGISTER_FILE      "protocol_register.dat"
-#define PROTOCOL_SERVER_FILE        "protocol_server.dat"
+#define PROTOCOL_CONN_CONFIG_FILE   "protocol_conn_config.dat"
+
+#define ZD_DEFAULT_SERVER_IP   "127.0.0.1"
+#define ZD_DEFAULT_PUSH_PORT   (1883)
+#define ZD_DEFAULT_DEVICE_IP   "192.168.1.10"
+#define ZD_DEFAULT_PULL_PORT   (2622)
+
+
 
 /*******************************TYPE DEFINITIONS ******************************/
 
@@ -56,9 +63,7 @@
  * @param  pullPort      TCP-server port opened on this device (pull)
  * @return SUCCESS / FAILURE
  */
-RETURN_STATUS appProtocolZDInit(const char *serialNumber,
-                                const char *serverIP, int serverPort,
-                                const char *deviceIP, int pullPort);
+RETURN_STATUS appProtocolZDInit(const char *serialNumber);
 
 /**
  * @brief  Start the protocol task (creates TCP connections and enters state machine).

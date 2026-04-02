@@ -32,8 +32,20 @@
 #define RG_SESSION_MAX_SESSIONS       (8)
 #define RG_SESSION_TIMEOUT_MS         (10000)  /* 10 seconds */
 
-#define RG_SESSION_REQUEST_TOPIC      "avi/request"
-#define RG_SESSION_RESPONSE_TOPIC     "avi/response"
+/** Defaults when \c RG_SESSION_SERVER_FILE is missing or invalid (same fields as \c rgSessionServerPersistLoad applies). */
+#define RG_RIGEL_DEFAULT_MQTT_BROKER_IP       "127.0.0.1"
+#define RG_RIGEL_DEFAULT_MQTT_BROKER_PORT     (1883)
+#define RG_RIGEL_DEFAULT_DEVICE_IP            "192.168.1.10"
+#define RG_RIGEL_DEFAULT_PULL_PORT            (2622)
+#define RG_RIGEL_DEFAULT_MQTT_USER_NAME       "ZDUser"
+#define RG_RIGEL_DEFAULT_MQTT_PASSWORD        "ZDUserPass"
+
+/** Default MQTT topics (subscribe / publish) before \c setting or persisted \c rg_session_server.dat. */
+#define RG_RIGEL_DEFAULT_MQTT_REQUEST_TOPIC   "avi/request"
+#define RG_RIGEL_DEFAULT_MQTT_RESPONSE_TOPIC  "avi/response"
+
+#define RG_SESSION_REQUEST_TOPIC              RG_RIGEL_DEFAULT_MQTT_REQUEST_TOPIC
+#define RG_SESSION_RESPONSE_TOPIC             RG_RIGEL_DEFAULT_MQTT_RESPONSE_TOPIC
 
 /** Alive: main task loop runs every 100 ms; value is tick count (9000 × 100 ms = 15 min). */
 #define RG_SESSION_ALIVE_INTERVAL_S   (9000)
@@ -101,20 +113,13 @@ struct RG_Session_s
 /************************* GLOBAL FUNCTION DEFINITIONS **************************/
 
 /**
- * @brief  Initialise the ZD session protocol module with MQTT connection.
- * @param  serialNumber  Device serial number (null-terminated, max 16 chars)
- * @param  brokerIP      MQTT broker IP (null-terminated)
- * @param  brokerPort    MQTT broker port (e.g. 1883)
- * @param  userName      MQTT username (NULL for no auth)
- * @param  password      MQTT password (NULL for no auth)
- * @param  deviceIP      This device's own IP reported in ident message
- * @param  pullPort      TCP-server port opened on this device (pull) - for ident response
+ * @brief  Initialise the RigelMq protocol module.
+ * @param  serialNumber  Device serial number (null-terminated).
+ *         MQTT broker, topics, device/pull endpoints: loaded from \c RG_SESSION_SERVER_FILE if present;
+ *         otherwise defaults from \c RG_RIGEL_DEFAULT_* macros in this header and the file is created.
  * @return SUCCESS / FAILURE
  */
-RETURN_STATUS appProtocolRigelMqInit(const char *serialNumber,
-                                       const char *brokerIP, int brokerPort,
-                                       const char *userName, const char *password,
-                                       const char *deviceIP, int pullPort);
+RETURN_STATUS appProtocolRigelMqInit(const char *serialNumber);
 
 /**
  * @brief  Start the ZD session protocol task (connects to MQTT and enters state machine).

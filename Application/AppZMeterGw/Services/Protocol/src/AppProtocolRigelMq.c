@@ -116,6 +116,7 @@ static void rgSessionProcessDirectiveDeleteSession(RG_Session_t *session);
 static void rgSessionMqttIncomingCb(const char *topic, const char *data, unsigned int dataLength);
 static void rgSessionMqttLinkCb(int isUp);
 static int rgSessionMqttRestart(void);
+static void rgLoadDefaultSettings(void);
 
 /***************************** STATIC FUNCTIONS  ******************************/
 static U32 nextTransNumber(void)
@@ -159,12 +160,30 @@ static void rgSessionRegisterStateSave(bool reg)
 /*                   MQTT settings persistence (on-disk v1 layout)       */
 /* ------------------------------------------------------------------ */
 
-static void rgSessionTopicsSetDefaults(void)
+/**
+ * Load all runtime settings from \c RG_RIGEL_DEFAULT_* macros in \c AppProtocolRigelMq.h.
+ * Mirrors fields applied by \c rgSessionServerPersistLoad when a valid persist record exists.
+ */
+static void rgLoadDefaultSettings(void)
 {
-    strncpy(gs_mqttRequestTopic, RG_SESSION_REQUEST_TOPIC, sizeof(gs_mqttRequestTopic) - 1);
+    strncpy(gs_brokerIP, RG_RIGEL_DEFAULT_MQTT_BROKER_IP, sizeof(gs_brokerIP) - 1);
+    gs_brokerIP[sizeof(gs_brokerIP) - 1] = '\0';
+    gs_brokerPort = RG_RIGEL_DEFAULT_MQTT_BROKER_PORT;
+
+    strncpy(gs_userName, RG_RIGEL_DEFAULT_MQTT_USER_NAME, sizeof(gs_userName) - 1);
+    gs_userName[sizeof(gs_userName) - 1] = '\0';
+
+    strncpy(gs_password, RG_RIGEL_DEFAULT_MQTT_PASSWORD, sizeof(gs_password) - 1);
+    gs_password[sizeof(gs_password) - 1] = '\0';
+
+    strncpy(gs_mqttRequestTopic, RG_RIGEL_DEFAULT_MQTT_REQUEST_TOPIC, sizeof(gs_mqttRequestTopic) - 1);
     gs_mqttRequestTopic[sizeof(gs_mqttRequestTopic) - 1] = '\0';
-    strncpy(gs_mqttResponseTopic, RG_SESSION_RESPONSE_TOPIC, sizeof(gs_mqttResponseTopic) - 1);
+    strncpy(gs_mqttResponseTopic, RG_RIGEL_DEFAULT_MQTT_RESPONSE_TOPIC, sizeof(gs_mqttResponseTopic) - 1);
     gs_mqttResponseTopic[sizeof(gs_mqttResponseTopic) - 1] = '\0';
+
+    strncpy(gs_deviceIP, RG_RIGEL_DEFAULT_DEVICE_IP, sizeof(gs_deviceIP) - 1);
+    gs_deviceIP[sizeof(gs_deviceIP) - 1] = '\0';
+    gs_pullPort = RG_RIGEL_DEFAULT_PULL_PORT;
 }
 
 static void rgSessionServerPersistSave(void)
@@ -173,8 +192,9 @@ static void rgSessionServerPersistSave(void)
     memset(&rec, 0, sizeof(rec));
     rec.magic = RG_SRV_PERSIST_MAGIC;
     rec.version = RG_SRV_PERSIST_VER;
-    rec.tcpIp[0] = '\0';
-    rec.tcpPort = 0;
+    strncpy(rec.tcpIp, gs_deviceIP, sizeof(rec.tcpIp) - 1);
+    rec.tcpIp[sizeof(rec.tcpIp) - 1] = '\0';
+    rec.tcpPort = (int32_t)gs_pullPort;
     strncpy(rec.mqttBroker, gs_brokerIP, sizeof(rec.mqttBroker) - 1);
     rec.mqttPort = (int32_t)gs_brokerPort;
     strncpy(rec.mqttUser, gs_userName, sizeof(rec.mqttUser) - 1);
@@ -191,52 +211,62 @@ static void rgSessionServerPersistSave(void)
 }
 
 /**
- * Load MQTT settings from disk (v1 record includes unused tcp fields from older builds).
- * Call after \c gs_broker* / topics are seeded from \c appProtocolRigelMqInit parameters.
+ * Load MQTT / device settings from disk (v1: \c tcpIp / \c tcpPort store device IP and pull port).
+ * Call after \c rgLoadDefaultSettings so missing fields keep defaults.
+ * @return SUCCESS if a valid record was read and applied; FAILURE if missing, short read, or bad magic/version.
  */
-static void rgSessionServerPersistLoad(void)
+static RETURN_STATUS rgSessionServerPersistLoad(void)
 {
     FsFile *f = fsOpenFile((char_t *)RG_SESSION_SERVER_FILE, FS_FILE_MODE_READ);
     if (f == NULL)
-        return;
+        return FAILURE;
 
     uint8_t buf[sizeof(RG_ServerPersist_t) + 4];
     size_t got = 0;
     (void)fsReadFile(f, buf, sizeof(buf), &got);
     fsCloseFile(f);
 
-    if (got == sizeof(RG_ServerPersist_t))
+    if (got != sizeof(RG_ServerPersist_t))
+        return FAILURE;
+
+    RG_ServerPersist_t rec;
+    memcpy(&rec, buf, sizeof(rec));
+    if (rec.magic != RG_SRV_PERSIST_MAGIC || rec.version != RG_SRV_PERSIST_VER)
+        return FAILURE;
+
+    if (rec.mqttBroker[0] != '\0')
     {
-        RG_ServerPersist_t rec;
-        memcpy(&rec, buf, sizeof(rec));
-        if (rec.magic == RG_SRV_PERSIST_MAGIC && rec.version == RG_SRV_PERSIST_VER)
-        {
-            if (rec.mqttBroker[0] != '\0')
-            {
-                strncpy(gs_brokerIP, rec.mqttBroker, sizeof(gs_brokerIP) - 1);
-                gs_brokerIP[sizeof(gs_brokerIP) - 1] = '\0';
-            }
-            if (rec.mqttPort > 0)
-                gs_brokerPort = (int)rec.mqttPort;
-
-            strncpy(gs_userName, rec.mqttUser, sizeof(gs_userName) - 1);
-            gs_userName[sizeof(gs_userName) - 1] = '\0';
-            strncpy(gs_password, rec.mqttPass, sizeof(gs_password) - 1);
-            gs_password[sizeof(gs_password) - 1] = '\0';
-
-            if (rec.mqttReqTopic[0] != '\0')
-            {
-                strncpy(gs_mqttRequestTopic, rec.mqttReqTopic, sizeof(gs_mqttRequestTopic) - 1);
-                gs_mqttRequestTopic[sizeof(gs_mqttRequestTopic) - 1] = '\0';
-            }
-            if (rec.mqttResTopic[0] != '\0')
-            {
-                strncpy(gs_mqttResponseTopic, rec.mqttResTopic, sizeof(gs_mqttResponseTopic) - 1);
-                gs_mqttResponseTopic[sizeof(gs_mqttResponseTopic) - 1] = '\0';
-            }
-            return;
-        }
+        strncpy(gs_brokerIP, rec.mqttBroker, sizeof(gs_brokerIP) - 1);
+        gs_brokerIP[sizeof(gs_brokerIP) - 1] = '\0';
     }
+    if (rec.mqttPort > 0)
+        gs_brokerPort = (int)rec.mqttPort;
+
+    strncpy(gs_userName, rec.mqttUser, sizeof(gs_userName) - 1);
+    gs_userName[sizeof(gs_userName) - 1] = '\0';
+    strncpy(gs_password, rec.mqttPass, sizeof(gs_password) - 1);
+    gs_password[sizeof(gs_password) - 1] = '\0';
+
+    if (rec.mqttReqTopic[0] != '\0')
+    {
+        strncpy(gs_mqttRequestTopic, rec.mqttReqTopic, sizeof(gs_mqttRequestTopic) - 1);
+        gs_mqttRequestTopic[sizeof(gs_mqttRequestTopic) - 1] = '\0';
+    }
+    if (rec.mqttResTopic[0] != '\0')
+    {
+        strncpy(gs_mqttResponseTopic, rec.mqttResTopic, sizeof(gs_mqttResponseTopic) - 1);
+        gs_mqttResponseTopic[sizeof(gs_mqttResponseTopic) - 1] = '\0';
+    }
+
+    if (rec.tcpIp[0] != '\0')
+    {
+        strncpy(gs_deviceIP, rec.tcpIp, sizeof(gs_deviceIP) - 1);
+        gs_deviceIP[sizeof(gs_deviceIP) - 1] = '\0';
+    }
+    if (rec.tcpPort > 0)
+        gs_pullPort = (int)rec.tcpPort;
+
+    return SUCCESS;
 }
 
 /* ------------------------------------------------------------------ */
@@ -1322,8 +1352,12 @@ static void rgSessionProcessSettingSession(RG_Session_t *session)
             }
         }
         else
-        {            
-            rgSessionServerPersistLoad(); // Revert to previous settings
+        {
+            if (FAILURE == rgSessionServerPersistLoad())
+            {
+                DEBUG_WARNING("->[W] RigelMq: Revert — persisted MQTT settings could not be reloaded");
+                //todo: LOAD DEFAULT SETTINGS
+            }
             DEBUG_ERROR("->[E] RigelMq: Invalid MQTT settings in request");
             APP_LOG_REC(g_sysLoggerID, "RigelMq: Invalid MQTT settings in request");
             
@@ -1581,47 +1615,25 @@ static void rgSessionProcessDirectiveListSession(RG_Session_t *session)
 }
 /************************* GLOBAL FUNCTION DEFINITIONS **************************/
 
-RETURN_STATUS appProtocolRigelMqInit(const char *serialNumber,
-                                       const char *brokerIP, int brokerPort,
-                                       const char *userName, const char *password,
-                                       const char *deviceIP, int pullPort)
+RETURN_STATUS appProtocolRigelMqInit(const char *serialNumber)
 {
-    if (serialNumber == NULL || brokerIP == NULL || deviceIP == NULL)
+    if (serialNumber == NULL)
         return FAILURE;
 
     strncpy(gs_serialNumber, serialNumber, sizeof(gs_serialNumber) - 1);
     gs_serialNumber[sizeof(gs_serialNumber) - 1] = '\0';
 
-    strncpy(gs_brokerIP, brokerIP, sizeof(gs_brokerIP) - 1);
-    gs_brokerIP[sizeof(gs_brokerIP) - 1] = '\0';
-    gs_brokerPort = brokerPort;
-
-    if (userName)
+    if (FAILURE == rgSessionServerPersistLoad())
     {
-        strncpy(gs_userName, userName, sizeof(gs_userName) - 1);
-        gs_userName[sizeof(gs_userName) - 1] = '\0';
-    }
-    else
-    {
-        gs_userName[0] = '\0';
-    }
+        DEBUG_WARNING("->[W] RigelMq: Persisted MQTT settings could not be loaded");
+        APP_LOG_REC(g_sysLoggerID, "RigelMq: Persisted MQTT settings could not be loaded");
 
-    if (password)
-    {
-        strncpy(gs_password, password, sizeof(gs_password) - 1);
-        gs_password[sizeof(gs_password) - 1] = '\0';
-    }
-    else
-    {
-        gs_password[0] = '\0';
-    }
+        rgLoadDefaultSettings();
+        rgSessionServerPersistSave();
 
-    strncpy(gs_deviceIP, deviceIP, sizeof(gs_deviceIP) - 1);
-    gs_deviceIP[sizeof(gs_deviceIP) - 1] = '\0';
-    gs_pullPort = pullPort;
-
-    rgSessionTopicsSetDefaults();
-    rgSessionServerPersistLoad();
+        DEBUG_INFO("->[I] RigelMq: Default settings saved to " RG_SESSION_SERVER_FILE);
+        APP_LOG_REC(g_sysLoggerID, "RigelMq: Default settings saved to " RG_SESSION_SERVER_FILE);
+    }
 
     gs_registered = rgSessionRegisterStateLoad();
 
