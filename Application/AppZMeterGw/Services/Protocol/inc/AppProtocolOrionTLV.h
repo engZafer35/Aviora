@@ -114,10 +114,6 @@ typedef enum
 /**
  * @brief  Initialise the OrionTLV protocol module.
  * @param  serialNumber  Device serial number (null-terminated, max 16 chars)
- * @param  serverIP      Default push-server IP  (null-terminated)
- * @param  serverPort    Default push-server port
- * @param  deviceIP      This device's own IP reported in ident
- * @param  pullPort      TCP-server port opened on this device (pull)
  * @return SUCCESS / FAILURE
  */
 RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber);
