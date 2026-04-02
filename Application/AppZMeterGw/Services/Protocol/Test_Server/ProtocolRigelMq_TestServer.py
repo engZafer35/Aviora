@@ -52,7 +52,7 @@ class ProtocolTestServer:
     def __init__(self, root, broker_ip, broker_port):
         self.root = root
         self.root.title("Protocol RigelMq Test Server")
-        self.root.geometry("1200x800")
+        self.root.geometry("1200x900")
         #self.root.minsize(1200, 800)
 
         self.broker_ip = broker_ip
@@ -75,6 +75,9 @@ class ProtocolTestServer:
         self.auto_ident = tk.BooleanVar(value=True)
         self.auto_alive = tk.BooleanVar(value=True)
         self.auto_data_ack = tk.BooleanVar(value=True)
+
+        # directiveList & directiveDelete: same request.filter.id (exact id, or "*" = all)
+        self.directive_filter_id = tk.StringVar(value="ReadoutDirective1")
 
         # ── logging ──
         self.log_queue = queue.Queue()
@@ -160,6 +163,16 @@ class ProtocolTestServer:
                          variable=self.auto_alive).pack(anchor="w")
         ttk.Checkbutton(af, text="Readout/LP Veri → ACK",
                          variable=self.auto_data_ack).pack(anchor="w")
+
+        # --- directiveList / directiveDelete: request.filter.id (AppProtocolRigelMq) ---
+        dlf = ttk.LabelFrame(left, text=" directiveList / directiveDelete — filter id ", padding=6)
+        dlf.pack(fill="x", padx=4, pady=4)
+        ttk.Label(
+            dlf,
+            text="id, or * ",
+            wraplength=260,
+        ).pack(anchor="w")
+        ttk.Entry(dlf, textvariable=self.directive_filter_id, width=24).pack(fill="x", pady=(4, 2))
 
         # --- Push Komutları ---
         cf = ttk.LabelFrame(left, text=" Push Komutları  (Sunucu → Cihaz) ", padding=6)
@@ -326,6 +339,8 @@ class ProtocolTestServer:
             self._handle_loadprofile(data)
         elif func == "directiveList":
             self._handle_directive_list(data)
+        elif func in ("ack", "nack"):
+            self._log("info", f"{func.upper()} transNumber={trans_num}")
         elif func == "register":
             self._handle_register(data)
         else:
@@ -363,8 +378,24 @@ class ProtocolTestServer:
             self._send_ack(data.get("transNumber", 0))
 
     def _handle_directive_list(self, data):
-        if self.auto_data_ack.get():
-            self._send_ack(data.get("transNumber", 0))
+        """
+        Gateway → backend on avi/response: directive payload (not ack/nack).
+        Firmware builds JSON with function directiveList, transNumber, response.directive { id, steps }.
+        """
+        trans_num = data.get("transNumber", 0)
+        resp = data.get("response", {})
+        directive = resp.get("directive", {})
+        did = directive.get("id", "")
+        steps = directive.get("steps")
+        n_steps = len(steps) if isinstance(steps, list) else 0
+        self._log(
+            "info",
+            f"directiveList response: transNumber={trans_num}, directive.id={did!r}, steps={n_steps}",
+        )
+        try:
+            self._log("info", json.dumps(data, indent=2))
+        except (TypeError, ValueError):
+            pass
 
     def _handle_register(self, data):
         # Legacy/unused: firmware dispatches "register" only if added to protocol
@@ -502,12 +533,27 @@ class ProtocolTestServer:
         self._publish(msg)
 
     def cmd_directive_list(self):
+        """
+        Publish directiveList request on avi/request (gateway subscribes).
+        request.filter.id: specific directive id, or '*' to receive every directive in separate responses.
+        """
+        fid = (self.directive_filter_id.get() or "").strip()
+        if not fid:
+            messagebox.showwarning(
+                "directiveList",
+                "Enter request.filter.id (e.g. ReadoutDirective1) or * to list all.",
+            )
+            return
         trans_num = int(time.time() * 1000) % 65536
         msg = {
             "device": {"flag": self.device_flag, "serialNumber": self.device_serial.get()},
             "function": "directiveList",
             "transNumber": trans_num,
-            "filterId": ""
+            "request": {
+                "filter": {
+                    "id": fid,
+                }
+            },
         }
         self._publish(msg)
 
@@ -528,14 +574,26 @@ class ProtocolTestServer:
         self._publish(msg)
 
     def cmd_directive_delete(self):
+        """
+        Same request.filter.id as directiveList. id '*' deletes all directives (firmware: appMeterOperationsDeleteDirective).
+        """
+        fid = (self.directive_filter_id.get() or "").strip()
+        if not fid:
+            messagebox.showwarning(
+                "directiveDelete",
+                "Enter request.filter.id (e.g. TestDirective) or * to delete all.",
+            )
+            return
         trans_num = int(time.time() * 1000) % 65536
         msg = {
             "device": {"flag": self.device_flag, "serialNumber": self.device_serial.get()},
             "function": "directiveDelete",
             "transNumber": trans_num,
-            "response": {
-                "id": "TestDirective"
-            }
+            "request": {
+                "filter": {
+                    "id": fid,
+                }
+            },
         }
         self._publish(msg)
 
