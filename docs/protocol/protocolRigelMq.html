@@ -745,8 +745,8 @@ python ProtocolRigelMq_TestServer.py 192.168.1.10 1883</pre>
 
           <article class="card col-12">
             <h2>Public API (Gateway Firmware)</h2>
-            <p>Lifecycle and events exposed to the rest of the gateway software:</p>
-            <pre class="code-block">appProtocolRigelMqInit(serialNumber, brokerIP, brokerPort, userName, password, deviceIP, pullPort);
+            <p>Lifecycle and events exposed to the rest of the gateway software. <code>appProtocolRigelMqInit</code> only takes the serial number; broker, topics, device IP, and pull port come from <code>rg_session_server.dat</code> when present, otherwise defaults from <code>RG_RIGEL_DEFAULT_*</code> in <code>AppProtocolRigelMq.h</code> (file is then created).</p>
+            <pre class="code-block">appProtocolRigelMqInit(serialNumber);
 appProtocolRigelMqStart();
 appProtocolRigelMqStop();
 appProtocolRigelMqSendEvent(RG_SESSION_EVENT_ALIVE);

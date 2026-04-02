@@ -182,7 +182,8 @@ typedef struct
 {
     char ip[20];
     int  port;
-} ServerConfig_t;
+    int  pullPort;
+} ConnConfig_t;
 
 typedef enum
 {
@@ -552,31 +553,59 @@ static void registerStateSave(BOOL reg)
 /*                   Server-address persistence                       */
 /* ================================================================== */
 
-static BOOL serverConfigLoad(char *ip, size_t ipSz, int *port)
+static void connConfigDefault(void)
 {
-    ServerConfig_t cfg;
-    FsFile *f = fsOpenFile((char_t *)ORION_SERVER_FILE, FS_FILE_MODE_READ);
-    if (f == NULL) return FALSE;
-    size_t got = 0;
-    (void)fsReadFile(f, &cfg, sizeof(cfg), &got);
-    fsCloseFile(f);
-    if (got != sizeof(cfg)) return FALSE;
-    strncpy(ip, cfg.ip, ipSz - 1); ip[ipSz - 1] = '\0';
-    *port = cfg.port;
-    return TRUE;
+    strncpy(gs_serverIP, ZD_DEFAULT_SERVER_IP, sizeof(gs_serverIP) - 1);
+    gs_serverIP[sizeof(gs_serverIP) - 1] = '\0';
+    gs_serverPort = ZD_DEFAULT_PUSH_PORT;
+    gs_pullPort = ZD_DEFAULT_PULL_PORT;
+    return;
 }
 
-static void serverConfigSave(const char *ip, int port)
+static RETURN_STATUS connConfigLoad(void)
 {
-    ServerConfig_t cfg;
+    ConnConfig_t cfg;
+    FsFile *f = fsOpenFile((char_t *)ORION_SERVER_FILE, FS_FILE_MODE_READ);
+    if (f == NULL)
+     return FAILURE;
+    
+     size_t got = 0;
+    (void)fsReadFile(f, &cfg, sizeof(cfg), &got);
+    fsCloseFile(f);
+
+    if (got != sizeof(cfg))
+        return FAILURE;
+
+    strncpy(gs_serverIP, cfg.ip, sizeof(gs_serverIP) - 1);
+    gs_serverIP[sizeof(gs_serverIP) - 1] = '\0';
+    gs_serverPort = cfg.port;
+    gs_pullPort = cfg.pullPort;
+
+    return SUCCESS;
+}
+
+static RETURN_STATUS connConfigSave(void)
+{
+    RETURN_STATUS retVal = FAILURE;
+    ConnConfig_t cfg;
+
     memset(&cfg, 0, sizeof(cfg));
-    strncpy(cfg.ip, ip, sizeof(cfg.ip) - 1);
-    cfg.port = port;
+    strncpy(cfg.ip, gs_serverIP, sizeof(cfg.ip) - 1);
+    cfg.port = gs_serverPort;
+    cfg.pullPort = gs_pullPort;
+
     FsFile *f = fsOpenFile((char_t *)ORION_SERVER_FILE,
                            FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
-    if (f == NULL) return;
-    (void)fsWriteFile(f, &cfg, sizeof(cfg));
-    fsCloseFile(f);
+    if (NULL != f)
+    {
+        if (NO_ERROR == fsWriteFile(f, &cfg, sizeof(cfg)))
+        {
+            retVal = SUCCESS;
+        }
+        fsCloseFile(f); 
+    }
+
+    return retVal;
 }
 
 /* ================================================================== */
@@ -1365,7 +1394,7 @@ static void processSettingSession(OrionSession_t *session)
     {
         strncpy(gs_serverIP, newIP, sizeof(gs_serverIP) - 1);
         gs_serverPort = (int)newPort;
-        serverConfigSave(gs_serverIP, gs_serverPort);
+        connConfigSave();
 
         appTcpConnManagerStop();
         zosDelayTask(500);
@@ -2049,26 +2078,18 @@ static void protocolTaskFunc(void *arg)
 /*                       PUBLIC FUNCTIONS                             */
 /* ================================================================== */
 
-RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber,
-                                     const char *serverIP, int serverPort,
-                                     const char *deviceIP, int pullPort)
+RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber)
 {
-    if (serialNumber == NULL || serverIP == NULL || deviceIP == NULL)
+    if (NULL == serialNumber)
         return FAILURE;
 
     memset(gs_serialNumber, 0, sizeof(gs_serialNumber));
     strncpy(gs_serialNumber, serialNumber, sizeof(gs_serialNumber) - 1);
 
-    memset(gs_deviceIP, 0, sizeof(gs_deviceIP));
-    strncpy(gs_deviceIP, deviceIP, sizeof(gs_deviceIP) - 1);
-
-    gs_pullPort = pullPort;
-
-    if (!serverConfigLoad(gs_serverIP, sizeof(gs_serverIP), &gs_serverPort))
+    if (FAILURE == connConfigLoad())
     {
-        strncpy(gs_serverIP, serverIP, sizeof(gs_serverIP) - 1);
-        gs_serverIP[sizeof(gs_serverIP) - 1] = '\0';
-        gs_serverPort = serverPort;
+        connConfigDefault();
+        connConfigSave();
     }
 
     memset(gs_pendingJobs, 0, sizeof(gs_pendingJobs));
@@ -2078,7 +2099,7 @@ RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber,
 
     gs_evHead = gs_evTail = gs_evCount = 0;
 
-    gs_registered = FALSE;
+    gs_registered = registerStateLoad();
     gs_taskId     = OS_INVALID_TASK_ID;
     gs_periodicTimerId = -1;
     gsFlagList.sendIdent  = FALSE;
