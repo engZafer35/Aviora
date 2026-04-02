@@ -1469,17 +1469,27 @@ static void rgSessionProcessDirectiveAddSession(RG_Session_t *session)
 
 static void rgSessionProcessDirectiveDeleteSession(RG_Session_t *session)
 {
-    char reqObj[128];
+    char reqObj[RG_SESSION_PACKET_MAX_SIZE];
+    char filterObj[256];
     char filterId[MAX_KEY_LENGTH] = {0};
 
-    if (ZDJson_GetObjectValue(session->rxBuf, "request", reqObj, sizeof(reqObj)))
+    if (FALSE == ZDJson_GetObjectValue(session->rxBuf, "request", reqObj, sizeof(reqObj)))
     {
-        char filterObj[128];
-        if (ZDJson_GetObjectValue(reqObj, "filter", filterObj, sizeof(filterObj)))
-        {
-            ZDJson_GetStringValue(filterObj, "id", filterId, sizeof(filterId));
-        }
+        int sz = rgSessionBuildAckNack(gs_txBuf, sizeof(gs_txBuf), false);
+        appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
+        rgSessionDelete(session);
+        return;
     }
+
+    if (FALSE == ZDJson_GetObjectValue(reqObj, "filter", filterObj, sizeof(filterObj)))
+    {
+        int sz = rgSessionBuildAckNack(gs_txBuf, sizeof(gs_txBuf), false);
+        appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
+        rgSessionDelete(session);
+        return;
+    }
+
+    ZDJson_GetStringValue(filterObj, "id", filterId, sizeof(filterId));
 
     if (filterId[0] == '\0')
     {
@@ -1489,6 +1499,7 @@ static void rgSessionProcessDirectiveDeleteSession(RG_Session_t *session)
         return;
     }
 
+    /* filterId "*" → delete all directives (see appMeterOperationsDeleteDirective). */
     BOOL ok = (SUCCESS == appMeterOperationsDeleteDirective(filterId));
 
     DEBUG_INFO("->[I] RigelMq: DirectiveID %s DELETED result: %d", filterId, ok);
@@ -1501,48 +1512,70 @@ static void rgSessionProcessDirectiveDeleteSession(RG_Session_t *session)
 
 static void rgSessionProcessDirectiveListSession(RG_Session_t *session)
 {
+    char reqObj[RG_SESSION_PACKET_MAX_SIZE];
+    char filterObj[256];
     char filterId[MAX_KEY_LENGTH] = "";
     char directiveBuff[RG_SESSION_PACKET_MAX_SIZE] = "";
 
-    do 
+    if (FALSE == ZDJson_GetObjectValue(session->rxBuf, "request", reqObj, sizeof(reqObj)))
     {
-        ZDJson_GetStringValue(reqObj, "id", filterId, sizeof(filterId));
+        int sz = rgSessionBuildAckNack(gs_txBuf, sizeof(gs_txBuf), false);
+        appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
+        rgSessionDelete(session);
+        return;
+    }
 
-        if ('\0' == filterId[0])
+    if (FALSE == ZDJson_GetObjectValue(reqObj, "filter", filterObj, sizeof(filterObj)))
+    {
+        int sz = rgSessionBuildAckNack(gs_txBuf, sizeof(gs_txBuf), false);
+        appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
+        rgSessionDelete(session);
+        return;
+    }
+
+    ZDJson_GetStringValue(filterObj, "id", filterId, sizeof(filterId));
+
+    if ('\0' == filterId[0])
+    {
+        int sz = rgSessionBuildAckNack(gs_txBuf, sizeof(gs_txBuf), false);
+        appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
+        rgSessionDelete(session);
+        return;
+    }
+
+    /* id "*" → publish one response packet per directive (same transNumber). */
+    if ('*' == filterId[0])
+    {
+        int count = appMeterOperationsGetDirectiveCount();
+        if (count <= 0)
         {
-            break; //got out of the do-while loop to send nack
+            int sz = rgSessionBuildAckNack(gs_txBuf, sizeof(gs_txBuf), false);
+            appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
+            rgSessionDelete(session);
+            return;
         }
 
-        if ('*' == filterId[0]) // List all directives
+        for (int i = 0; i < count; i++)
         {
-            int count = appMeterOperationsGetDirectiveCount();
-            if (count > 0)
-            {
-                for (int i = 0; i < count; i++)
-                {
-                    appMeterOperationsGetDirectiveByIndex(i, directiveBuff, sizeof(directiveBuff)); // Get all directives in one go
-                    int sz = rgSessionBuildDirectivePacket(gs_txBuf, sizeof(gs_txBuf), directiveBuff, 1, false, session->transNumber);
-                    appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
-                    zosDelayTask(500); // Small delay to avoid flooding
-                }
-                rgSessionDelete(session);
-                return;               
-            }
+            appMeterOperationsGetDirectiveByIndex(i, directiveBuff, sizeof(directiveBuff));
+            int sz = rgSessionBuildDirectivePacket(gs_txBuf, sizeof(gs_txBuf), directiveBuff, 1, false, session->transNumber);
+            appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
+            zosDelayTask(500); /* avoid broker flood */
         }
-        else
-        {
-            // List specific directive by filterId
-            if (SUCCESS == appMeterOperationsGetDirective(filterId, directiveBuff, sizeof(directiveBuff)))
-            {
-                int sz = rgSessionBuildDirectivePacket(gs_txBuf, sizeof(gs_txBuf), directiveBuff, 1, false, session->transNumber);
-                appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
-                rgSessionDelete(session);
-                return;
-            }
-        }
-    } while (0);
+        rgSessionDelete(session);
+        return;
+    }
 
-    int sz = rgSessionBuildAckNack(gs_txBuf, sizeof(gs_txBuf), ok);
+    /* Single directive by id */
+    if (SUCCESS == appMeterOperationsGetDirective(filterId, directiveBuff, sizeof(directiveBuff)))
+    {
+        int sz = rgSessionBuildDirectivePacket(gs_txBuf, sizeof(gs_txBuf), directiveBuff, 1, false, session->transNumber);
+        appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
+        rgSessionDelete(session);
+        return;
+    }
+
+    int sz = rgSessionBuildAckNack(gs_txBuf, sizeof(gs_txBuf), false);
     appMqttConnServicePublish(gs_mqttResponseTopic, gs_txBuf, (unsigned int)sz);
     rgSessionDelete(session);
 }
