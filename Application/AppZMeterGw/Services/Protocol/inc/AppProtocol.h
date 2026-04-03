@@ -15,6 +15,11 @@
 /********************************* INCLUDES **********************************/
 #include "../../../../Customers/Protocol_Config.h"
 /***************************** MACRO DEFINITIONS *****************************/
+#define APP_INIT_PROTOCOLS(setErrorFlag)    INIT_PROTOCOLS(setErrorFlag)
+#define APP_INIT_SENSORS(setErrorFlag)      INIT_SENSORS(setErrorFlag)
+
+#define APP_ACTIVE_PROTOCOL_NUMBER          ACTIVE_PROTOCOL_NUMBER
+#define APP_ACTIVE_SENDOR_NUMBER            ACTIVE_SENDOR_NUMBER
 
 /******************************* TYPE DEFINITIONS *****************************/
 
