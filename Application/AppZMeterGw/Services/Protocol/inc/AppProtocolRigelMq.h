@@ -32,21 +32,6 @@
 #define RG_SESSION_MAX_SESSIONS       (8)
 #define RG_SESSION_TIMEOUT_MS         (10000)  /* 10 seconds */
 
-/** Defaults when \c RG_SESSION_SERVER_FILE is missing or invalid (same fields as \c rgSessionServerPersistLoad applies). */
-#define RG_RIGEL_DEFAULT_MQTT_BROKER_IP       "127.0.0.1"
-#define RG_RIGEL_DEFAULT_MQTT_BROKER_PORT     (1883)
-#define RG_RIGEL_DEFAULT_DEVICE_IP            "192.168.1.10"
-#define RG_RIGEL_DEFAULT_PULL_PORT            (2622)
-#define RG_RIGEL_DEFAULT_MQTT_USER_NAME       "ZDUser"
-#define RG_RIGEL_DEFAULT_MQTT_PASSWORD        "ZDUserPass"
-
-/** Default MQTT topics (subscribe / publish) before \c setting or persisted \c rg_session_server.dat. */
-#define RG_RIGEL_DEFAULT_MQTT_REQUEST_TOPIC   "avi/request"
-#define RG_RIGEL_DEFAULT_MQTT_RESPONSE_TOPIC  "avi/response"
-
-#define RG_SESSION_REQUEST_TOPIC              RG_RIGEL_DEFAULT_MQTT_REQUEST_TOPIC
-#define RG_SESSION_RESPONSE_TOPIC             RG_RIGEL_DEFAULT_MQTT_RESPONSE_TOPIC
-
 /** Alive: main task loop runs every 100 ms; value is tick count (9000 × 100 ms = 15 min). */
 #define RG_SESSION_ALIVE_INTERVAL_S   (9000)
 
