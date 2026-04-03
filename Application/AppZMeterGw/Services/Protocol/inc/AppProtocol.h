@@ -14,12 +14,34 @@
 #define __APP_PROTOCOL_H__
 /********************************* INCLUDES **********************************/
 #include "../../../../Customers/Protocol_Config.h"
+
 /***************************** MACRO DEFINITIONS *****************************/
-#define APP_INIT_PROTOCOLS(setErrorFlag)    INIT_PROTOCOLS(setErrorFlag)
+/**
+ * @brief This macro initializes the active sensors and sets the error flag.
+ *        If all sensors are initialized successfully, the error flag will be set to 0,
+ *        otherwise it will be set to -1.
+ * @param setErrorFlag This macro must be invoked before APP_INIT_PROTOCOLS called.
+ */
 #define APP_INIT_SENSORS(setErrorFlag)      INIT_SENSORS(setErrorFlag)
 
-#define APP_ACTIVE_PROTOCOL_NUMBER          ACTIVE_PROTOCOL_NUMBER
-#define APP_ACTIVE_SENDOR_NUMBER            ACTIVE_SENDOR_NUMBER
+/**
+ *
+ * @param setErrorFlag This macro initializes the avtive protocols and sets the error flag.
+ *                     If all protocols are initialized successfully, the error flag will be set to 0,
+ *                     otherwise it will be set to -1.
+ * @note This macro should be invoked after APP_INIT_SENSORS called, because protocols is depend on sensors.
+ */
+#define APP_INIT_PROTOCOLS(setErrorFlag)    INIT_PROTOCOLS(setErrorFlag)
+
+/**
+ * @brief This macro defines the number of active protocols.
+ */
+#define APP_ACTIVE_PROTOCOL_NUMBER  ACTIVE_PROTOCOL_NUMBER
+
+/**
+ * @brief This macro defines the number of active sensors.
+ */
+#define APP_ACTIVE_SENSOR_NUMBER    ACTIVE_SENSOR_NUMBER
 
 /******************************* TYPE DEFINITIONS *****************************/
 

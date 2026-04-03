@@ -6,7 +6,7 @@
 #ifndef __APP_PROTOCOL_CONFIG_H__
 #define __APP_PROTOCOL_CONFIG_H__
 
-/* generated on: 2026-04-03 20:04:29 */
+/* generated on: 2026-04-03 21:53:00 */
 /* customer name: ZD_0101 */
 
 #include "ZD_0101/Protocol/cus_protocol_config.h"
