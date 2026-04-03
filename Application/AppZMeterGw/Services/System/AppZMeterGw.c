@@ -23,10 +23,8 @@
 #include "AppDisplayManager.h"
 #include "AppInternalMsgFrame.h"
 #include "AppTaskManager.h"
-#include "AppGsmManager.h"
-#include "AppMessageHandlerManager.h"
-#include "AppMeterMessageHandler.h"
-#include "AppProtocol_2.h"
+#include "AppNetworkService.h"
+#include "../Protocol/inc/AppProtocol.h"
 
 #include "MiddDigitalIOControl.h"
 #include "../Middleware/MiddComm/Midd_FS/fs_port.h"
@@ -206,12 +204,14 @@ static RETURN_STATUS initSWUnit(void)
         if (FAILURE == appDBusInit())
         {
             DEBUG_ERROR("->[E] appDBusInit ERROR ");
+            APP_LOG_REC(g_sysLoggerID, "DBus init Error");
             return FAILURE;
         }
 
         if (FAILURE == AppNetworkService_Start())
         {
             DEBUG_ERROR("->[E] AppNetworkService_Start ERROR ");
+            APP_LOG_REC(g_sysLoggerID, "Network Service start Error");
             return FAILURE;
         }
 
@@ -232,34 +232,21 @@ static RETURN_STATUS initSWUnit(void)
         }
         appDisplayStart();
 
-        if (FAILURE == appMsgHandlerInit())
+        APP_INIT_SENSORS(retVal);
+        if (SUCCESS != retVal)
         {
-            DEBUG_ERROR("->[E] Message Handler Init ERROR");
-            APP_LOG_REC(g_sysLoggerID, "Message Handler Init Error");
-            return FAILURE;
-            //todo: conf kısmından bakılarak protokoller yüklensin ve hangi protokoller aktif ise o protokoller kendisi addhandler çağırsın.
-        }
-
-        appMsgHandlerStop(); //stop until all handlers are intalled
-
-        //todo: all message handler and protocol handler shoul be loaded by conf menager according to conf file
-        MeterSerialInterface electricityMeterLine; //TODO: fill this buffer according to meter line
-        if (SUCCESS != appMeterMsgHandlerSetSerialInterface(&electricityMeterLine))
-        {
-            DEBUG_ERROR("->[E] Meter Serial Interface Error");
-            APP_LOG_REC(g_sysLoggerID, "Meter Serial Interface Error");
+            DEBUG_ERROR("->[E] Sensor init ERROR !!");
+            APP_LOG_REC(g_sysLoggerID, "Sensor init Error");
             return FAILURE;
         }
 
-
-        if (0 == g_protocol)
+        APP_INIT_PROTOCOLS(retVal);
+        if (SUCCESS != retVal)
         {
-            appMsgHandlerAddHandler(PROTOCOL2_MSG_HANDLER_NAME, appProtocol2MessageHandler);
+            DEBUG_ERROR("->[E] Protocol init ERROR !!");
+            APP_LOG_REC(g_sysLoggerID, "Protocol init Error");
+            return FAILURE;
         }
-#include "AppHEndTcpConn.h"
-//        appHEndTcpOpenServer("TEST-MIKO", "192.168.1.110", 5555, 3, NULL, EN_MSG_TYPE_);
-        appHEndTcpOpenServer("TEST-GIRBIX", "192.168.1.110", 5566, 3, NULL, EN_MSG_TYPE_PROTOCOL_2);
-
     }
 
     DEBUG_INFO("->[I] initSwUnits return %d", retVal);
