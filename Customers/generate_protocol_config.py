@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Generate AppProtocol.h from Customers/<customer>/Protocol/protocol_config.json.
-Output is always written to Customers/<customer>/Protocol/AppProtocol.h.
+Generate protocol headers from Customers/<customer>/Protocol/protocol_config.json:
+
+- Customers/<customer>/Protocol/cus_protocol_config.h  (macros, INIT_*, sensors)
+- Customers/Protocol_Config.h                         (shim that includes the customer file)
 
 Example:
   python Customers/generate_protocol_config.py --customer ZD_0101
@@ -366,6 +368,30 @@ def generate_header(data: dict) -> str:
     return "\n".join(lines)
 
 
+def generate_protocol_config_shim(customer: str) -> str:
+    """Customers/Protocol_Config.h — includes the selected customer's cus_protocol_config.h."""
+    ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    lines = [
+        "/**",
+        " * @file Protocol_Config.h",
+        " * @brief AUTO-GENERATED configuration for Protocol",
+        " *        AUTO-GENERATED FILE - DO NOT EDIT MANUALLY",
+        " */",
+        "#ifndef __APP_PROTOCOL_CONFIG_H__",
+        "#define __APP_PROTOCOL_CONFIG_H__",
+        "",
+        f"/* generated on: {ts} */",
+        f"/* customer name: {customer} */",
+        "",
+        f'#include "{customer}/Protocol/cus_protocol_config.h"',
+        "",
+        "",
+        "#endif /* __APP_PROTOCOL_CONFIG_H__ */",
+        "",
+    ]
+    return "\n".join(lines)
+
+
 def main() -> int:
     # Prefer UTF-8 on Windows so paths and help print reliably
     out = sys.stdout
@@ -377,15 +403,16 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(
         description=(
-            "Generate AppProtocol.h from the customer's Protocol/protocol_config.json "
-            "and write it to the same Protocol directory."
+            "Generate cus_protocol_config.h from the customer's Protocol/protocol_config.json "
+            "and Customers/Protocol_Config.h shim that includes that customer."
         ),
         epilog=(
             "Example:\n"
             "  python Customers/generate_protocol_config.py --customer ZD_0101\n"
             "\n"
             "Input : Customers/ZD_0101/Protocol/protocol_config.json\n"
-            "Output: Customers/ZD_0101/Protocol/AppProtocol.h"
+            "Output: Customers/ZD_0101/Protocol/cus_protocol_config.h\n"
+            "        Customers/Protocol_Config.h"
         ),
         formatter_class=argparse.RawTextHelpFormatter,
     )
@@ -413,6 +440,12 @@ def main() -> int:
     with open(out_path, "w", encoding="utf-8", newline="\n") as f:
         f.write(text)
     print(f"Wrote {out_path}")
+
+    shim_path = root / "Customers" / "Protocol_Config.h"
+    shim_text = generate_protocol_config_shim(args.customer)
+    with open(shim_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(shim_text)
+    print(f"Wrote {shim_path}")
     return 0
 
 
