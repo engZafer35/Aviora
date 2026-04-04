@@ -29,6 +29,45 @@
     .proto-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:12px}
     .proto-tile{border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:rgba(255,255,255,0.03)}
     .proto-tile h3{margin:0 0 8px 0;font-size:15px;color:var(--accent)}
+    .terminal-shot{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin:16px 0;box-shadow:0 8px 24px rgba(0,0,0,0.35);max-width:100%}
+    .terminal-shot .tw-title{background:#3d3d3d;color:#e0e0e0;font-size:12px;padding:8px 12px;font-family:system-ui,sans-serif;display:flex;align-items:center;gap:8px}
+    .terminal-shot .tw-dots span{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px}
+    .terminal-shot .tw-dots .d1{background:#ff5f56}.terminal-shot .tw-dots .d2{background:#ffbd2e}.terminal-shot .tw-dots .d3{background:#27c93f}
+    .terminal-shot pre{margin:0;background:#0d1117;color:#c9d1d9;font-size:12px;line-height:1.5;padding:14px 16px;overflow:auto;max-height:320px}
+    .terminal-shot pre .prompt{color:#58a6ff}.terminal-shot pre .ok{color:#3fb950}
+    .sub-h3{font-size:14px;color:var(--accent);margin:18px 0 8px 0;font-weight:600}
+    .overview-hero-lede{
+      font-size:clamp(1.05rem,1.35vw,1.25rem);
+      font-weight:700;
+      letter-spacing:.02em;
+      line-height:1.45;
+      margin:0 0 14px 0;
+      background:linear-gradient(92deg,#79c0ff 0%,#d2a8ff 45%,#ffa657 100%);
+      -webkit-background-clip:text;
+      background-clip:text;
+      color:transparent;
+      text-shadow:0 0 40px rgba(121,192,255,0.25);
+    }
+    .overview-hero-spotlight{
+      border:1px solid rgba(121,192,255,0.45);
+      border-radius:16px;
+      padding:18px 22px;
+      margin:0;
+      background:linear-gradient(145deg,rgba(88,166,255,0.12) 0%,rgba(200,100,250,0.06) 55%,rgba(255,166,87,0.05) 100%);
+      box-shadow:0 0 0 1px rgba(0,0,0,0.2),0 12px 40px rgba(0,0,0,0.25);
+      font-size:15px;
+      line-height:1.72;
+      color:var(--muted);
+    }
+    .overview-hero-spotlight strong{color:#c8e1ff}
+    .overview-pulse{
+      display:inline-block;
+      animation:overviewPulse 2.2s ease-in-out infinite;
+    }
+    @keyframes overviewPulse{
+      0%,100%{opacity:1;filter:brightness(1);}
+      50%{opacity:.92;filter:brightness(1.15);}
+    }
   </style>
 </head>
 <body class="protocol-docs">
@@ -69,19 +108,25 @@
       <section class="hero">
         <div class="hero-card">
           <h1>Protocol Layer Overview</h1>
-          <p>
-            The Aviora offers <strong>several interchangeable protocol stacks</strong> in source form: JSON or binary TLV over TCP,
-            and a JSON session model over MQTT. They share the same meter and job pipeline through <strong>AppMeterOperations</strong>,
-            while transport is handled by <strong>AppTcpConnManager</strong> (TCP) or <strong>AppMqttConnService</strong> (MQTT).
-            For a given <strong>customer or product build</strong>, you enable <em>one</em> stack—for example Orion TLV for one deployment
-            and RigelMq for another—by wiring the right module at integration time; switching backends does not require rewriting unrelated subsystems.
-          </p>
-          <div class="tag-row">
-            <span class="tag highlight" style="font-size:14px;">Multi-protocol source tree</span>
-            <span class="tag highlight" style="font-size:14px;">Per-build selection</span>
-            <span class="tag highlight" style="font-size:14px;">Isolated service boundary</span>
-            <span class="tag highlight" style="font-size:14px;">TCP push / pull</span>
-            <span class="tag highlight" style="font-size:14px;">MQTT request / response</span>
+          <p class="overview-hero-lede"><span class="overview-pulse">Multi-protocol gateway</span> · one JSON profile · TCP and MQTT</p>
+          <div class="overview-hero-spotlight">
+            <p style="margin:0 0 12px 0">
+              The gateway firmware can load <strong>several protocol stacks at once</strong>—TCP-style sessions, MQTT toward a broker, TLV and other framing—without a separate image for every mix.
+              The customer file <strong><code>protocol_config.json</code></strong> is where that profile is declared: which blocks are enabled (<code>use: true</code>), how each one connects, and the rest of the fields the generator consumes.
+              Run <code>generate_protocol_config.py</code> and it emits the C headers (for example <code>INIT_PROTOCOLS</code> and related init expansion). <strong>Product-specific wiring stays in JSON and generated code</strong>, not in ad-hoc branches scattered through the sources.
+            </p>
+            <p style="margin:0">
+              <strong>TCP</strong> and <strong>MQTT</strong> are both supported: addresses, ports, push/pull roles where applicable, broker host, topics, credentials, and other transport parameters are supplied through the same JSON configuration—so connection behaviour is chosen per customer file, not baked in as a one-off C edit.
+              This page is the <strong>entry to the protocol layer</strong>: it describes the overall layout; the links in the sidebar lead to each transport and protocol for detail.
+            </p>
+          </div>
+          <div class="tag-row" style="margin-top:16px">
+            <span class="tag highlight" style="font-size:13px;">JSON-driven profiles</span>
+            <span class="tag highlight" style="font-size:13px;">Multi-protocol in one build</span>
+            <span class="tag highlight" style="font-size:13px;">TCP + MQTT transports</span>
+            <span class="tag highlight" style="font-size:13px;">Connection params in JSON</span>
+            <span class="tag highlight" style="font-size:13px;">Generated headers</span>
+            <span class="tag highlight" style="font-size:13px;">Protocol layer overview</span>
           </div>
         </div>
       </section>
@@ -90,34 +135,173 @@
         <div class="grid">
 
           <article class="card col-12">
-            <h2>Customer Builds and Compile-Time Selection</h2>
+            <h2>Customer Builds and JSON-Driven Selection</h2>
             <p class="proto-mini">
-              Aviora already uses <strong>per-customer configuration</strong> (JSON and generated headers) for file system, logging, time service, and similar areas.
-              The protocol layer follows the same idea: <strong>the firmware image includes exactly one active protocol service</strong>—whichever implementation
-              your integration layer links and starts (<code>appProtocol*Init</code> / <code>appProtocol*Start</code>). One customer image might call Orion TLV + TCP only;
-              another might call RigelMq + MQTT only. You do not run all parsers at once in production; you <strong>select the right service</strong> for that binary.
+              Like file system, logger, and time service, the protocol plane uses <strong>per-customer JSON + generated headers</strong>. The difference from a naive “pick A or B” model:
+              <strong><code>protocol_config.json</code> can enable several protocol entries at once</strong> (<code>use: true</code> on RigelMq, Orion TLV, ZD, Metallix…). Each brings its own
+              <code>protocolFunc</code> hooks and connection defaults; the script composes <code>INIT_PROTOCOLS</code> so init/start run in order. <strong>Multiple sensors</strong> are not an afterthought—each active protocol names a
+              <code>linkedSensorName</code>; the union drives <code>INIT_SENSORS</code>. One customer folder, one generator run, one firmware personality—spelled out in JSON.
             </p>
             <div class="proto-callout">
-              <strong>Typical split.</strong> Customer A’s head-end expects binary TLV with transaction ids → build with <strong>AppProtocolOrionTLV</strong>.
-              Customer B’s cloud uses MQTT topics and JSON sessions → build with <strong>AppProtocolRigelMq</strong>. Meter logic, directives, and readout jobs stay behind the same
-              <code>AppMeterOperations</code> API; only the wire codec and transport task change.
+              <strong>Why this matters.</strong> A gateway can speak <strong>MQTT to the cloud</strong> and <strong>TCP TLV to a legacy head-end</strong> in the same binary—if your product needs both, you flip booleans and regenerate;
+              you do not fork the application. Metering, directives, and readouts still converge on <code>AppMeterOperations</code>.
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Customer <code>protocol_config.json</code> and <code>generate_protocol_config.py</code></h2>
+            <p class="proto-mini">
+              Under <code>Customers/&lt;CustomerName&gt;/Protocol/</code>, each customer keeps a single <strong>protocol_config.json</strong> that declares <strong>which protocol blocks are on</strong> (one or many),
+              their connection defaults (MQTT or TCP), and the <strong>sensors</strong> referenced by <code>linkedSensorName</code>. The Python tool
+              <code>Customers/generate_protocol_config.py</code> reads that JSON and emits C headers so the gateway gets composed <code>INIT_PROTOCOLS</code> / <code>INIT_SENSORS</code> macros—no manual stitching.
+            </p>
+
+            <h3 class="sub-h3">End-to-end flow</h3>
+            <div class="diagram-wrap">
+              <div class="diagram-head">From JSON to firmware includes</div>
+              <pre class="mermaid">flowchart LR
+  subgraph IN["Input"]
+    J[protocol_config.json]
+  end
+  subgraph PY["Python"]
+    G[generate_protocol_config.py --customer NAME]
+  end
+  subgraph OUT["Generated C headers"]
+    CUS[Customers/NAME/Protocol/cus_protocol_config.h]
+    SHIM[Customers/Protocol_Config.h]
+  end
+  subgraph FW["Firmware"]
+    APP[AppZMeterGw.c includes Protocol_Config.h]
+    INIT[INIT_PROTOCOLS / INIT_SENSORS macros]
+  end
+  J --> G
+  G --> CUS
+  G --> SHIM
+  SHIM -->|shim includes| CUS
+  CUS --> APP
+  APP --> INIT</pre>
+            </div>
+
+            <h3 class="sub-h3">Selection logic (active protocol and sensors)</h3>
+            <div class="diagram-wrap">
+              <div class="diagram-head">What the generator keeps</div>
+              <pre class="mermaid">flowchart TB
+  P["protocol.use"]
+  P --> AP["activeProtocol doc label"]
+  P --> PL["protocols map use true or false each"]
+  PL --> EMIT["emit INIT_PROTOCOLS for each use-true"]
+  EMIT --> LINK["linkedSensorName per protocol"]
+  LINK --> SENS["sensor union from linked names"]
+  SENS --> MAC["SENSOR init macros plus INIT_SENSORS"]</pre>
+            </div>
+
+            <p class="proto-mini">
+              Run from the <strong>repository root</strong> (paths below are relative to Aviora root):
+            </p>
+            <div class="terminal-shot" aria-label="Example terminal session">
+              <div class="tw-title"><span class="tw-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></span> PowerShell — repo root</div>
+              <pre><span class="prompt">PS Aviora&gt;</span> python Customers/generate_protocol_config.py --customer ZD_0101
+<span class="ok">Wrote C:\...\Customers\ZD_0101\Protocol\cus_protocol_config.h</span>
+<span class="ok">Wrote C:\...\Customers\Protocol_Config.h</span></pre>
+            </div>
+
+            <p class="proto-mini">The shim <code>Customers/Protocol_Config.h</code> only includes the selected customer file, for example:</p>
+            <pre class="code-block">#include "ZD_0101/Protocol/cus_protocol_config.h"</pre>
+
+            <h3 class="sub-h3">Root fields (<code>protocol_config.json</code>)</h3>
+            <table class="proto-table">
+              <thead><tr><th>Field</th><th>Role</th></tr></thead>
+              <tbody>
+                <tr><td><code>customer</code></td><td>Customer folder name (e.g. <code>ZD_0101</code>); echoed in the generated header comment.</td></tr>
+                <tr><td><code>version</code> / <code>releaseDate</code></td><td>Metadata stored in the banner of <code>cus_protocol_config.h</code>.</td></tr>
+                <tr><td><code>protocol</code></td><td>Container for enable flag, active protocol name, per-protocol definitions, and the <code>sensors</code> array.</td></tr>
+              </tbody>
+            </table>
+
+            <h3 class="sub-h3"><code>protocol</code> object</h3>
+            <table class="proto-table">
+              <thead><tr><th>Field</th><th>Role</th></tr></thead>
+              <tbody>
+                <tr><td><code>use</code></td><td>If <code>false</code>, the generator emits <strong>no</strong> protocol blocks (empty active list).</td></tr>
+                <tr><td><code>activeProtocol</code></td><td>Human-readable label for the chosen stack (e.g. <code>protocolRigelMq</code>); documentation / consistency only.</td></tr>
+                <tr><td><code>protocols</code></td><td>Map of stack keys: <code>protocolRigelMq</code>, <code>protocolOrionTlv</code>, <code>protocolZD</code>, <code>protocolMetallix</code>. Each has <code>use</code>, connection, and <code>protocolFunc</code>.</td></tr>
+                <tr><td><code>sensors</code></td><td>Array of sensor definitions referenced by <code>linkedSensorName</code> from active protocols.</td></tr>
+              </tbody>
+            </table>
+
+            <h3 class="sub-h3">Per-protocol entry (example keys)</h3>
+            <table class="proto-table">
+              <thead><tr><th>Field</th><th>Role</th></tr></thead>
+              <tbody>
+                <tr><td><code>use</code></td><td>Only entries with <code>true</code> are generated (macros, includes, <code>INIT_PROTOCOLS</code>).</td></tr>
+                <tr><td><code>name</code> / <code>description</code></td><td>Documentation inside JSON.</td></tr>
+                <tr><td><code>linkedSensorName</code></td><td>Must match a <code>sensors[].name</code>. Drives which sensor init macros are emitted and in which order (unique list following active protocols).</td></tr>
+                <tr><td><code>connection</code></td><td>See below. Merged with top-level keys for default <code>#define</code>s (Rigel / Orion / ZD).</td></tr>
+                <tr><td><code>protocolFunc</code></td><td><code>sourcePath</code> (header to include), <code>initFunc</code>, <code>startFunc</code>, <code>stopFunc</code>, <code>putIncomingFunc</code> — wired to <code>APP_*_PROTOCOL_*</code> macros.</td></tr>
+              </tbody>
+            </table>
+
+            <h3 class="sub-h3" id="connection-mqtt-tcp"><code>connection</code> (MQTT vs TCP)</h3>
+            <p class="proto-mini">The script flattens <code>connection</code> into settings for <code>emit_*_defaults</code>:</p>
+            <table class="proto-table">
+              <thead><tr><th><code>type</code></th><th>Typical keys</th><th>Generated defaults (examples)</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td><code>mqtt</code></td>
+                  <td><code>mqttBroker.ipAddr</code>, <code>port</code>, <code>username</code>, <code>password</code>; <code>deviceIpAddr</code>; <code>pullPort</code>; optional <code>mqttRequestTopic</code> / <code>mqttResponseTopic</code></td>
+                  <td><code>RG_RIGEL_DEFAULT_*</code> in <code>cus_protocol_config.h</code> for RigelMq (overrides or supplements app headers).</td>
+                </tr>
+                <tr>
+                  <td><code>tcp</code></td>
+                  <td><code>serverIpAddr</code>, <code>pushPort</code>, <code>deviceIpAddr</code> or <code>deviceIP</code>, <code>pullPort</code></td>
+                  <td><code>ORION_TLV_DEFAULT_*</code> or <code>ZD_DEFAULT_*</code> depending on protocol key.</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <h3 class="sub-h3"><code>sensors[]</code> (ZD_0101 example)</h3>
+            <table class="proto-table">
+              <thead><tr><th>Field</th><th>Role</th></tr></thead>
+              <tbody>
+                <tr><td><code>name</code></td><td>Identifier; referenced by <code>linkedSensorName</code> (e.g. <code>electricityMeter</code>, <code>sensor1</code>).</td></tr>
+                <tr><td><code>type</code></td><td><code>meter</code> → <code>MeterCommInterface_t</code> block; <code>temperature</code> / <code>humidity</code> → sensor struct with init/read/write/erase/sync.</td></tr>
+                <tr><td><code>drvSrcPath</code></td><td>Header path emitted as <code>#include</code> before the sensor macro.</td></tr>
+                <tr><td><code>meter</code> functions</td><td><code>initFunc</code>, <code>writeFunc</code>, <code>readFunc</code>, <code>setBaudrateFunc</code> (required for meters).</td></tr>
+                <tr><td><code>temperature</code> / <code>humidity</code></td><td><code>readFunc</code>, <code>writeFunc</code>, <code>eraseFunc</code>, <code>syncFunc</code>; <code>initFunc</code> optional (or derived from <code>readFunc</code>).</td></tr>
+              </tbody>
+            </table>
+
+            <h3 class="sub-h3">Generated output (excerpt)</h3>
+            <p class="proto-mini">For <code>ZD_0101</code> with only <code>protocolRigelMq.use: true</code> and <code>linkedSensorName: electricityMeter</code>, the customer header defines protocol macros, Rigel default IPs/ports/topics, <code>INIT_PROTOCOLS</code>, and <code>INIT_SENSORS</code>:</p>
+            <pre class="code-block">#define ACTIVE_PROTOCOL_NUMBER (1)
+#include "Application/.../AppProtocolRigelMq.h"
+#define APP_RIGEL_MQ_PROTOCOL_INIT_FUNC(serialNumber)   appProtocolRigelMqInit(serialNumber)
+#define RG_RIGEL_DEFAULT_MQTT_BROKER_IP       "127.0.0.1"
+/* ... */
+#define INIT_PROTOCOLS(setErrorFlag)   do{ ... } while(0)
+#define ACTIVE_SENDOR_NUMBER (1)
+#define SENSOR_ELECTRICITYMETER_INITIALIZE_FUNC(setErrorFlag)   do{ ... } while(0)
+#define INIT_SENSORS(setErrorFlag)   do{ ... } while(0)</pre>
+
+            <div class="proto-callout">
+              <strong>Rebuild after edits.</strong> Whenever you change <code>protocol_config.json</code>, run <code>generate_protocol_config.py</code> again so <code>cus_protocol_config.h</code> and <code>Customers/Protocol_Config.h</code> stay in sync before compiling the firmware.
             </div>
           </article>
 
           <article class="card col-12 col-6">
-            <h2>Isolated Protocol Service</h2>
+            <h2>Isolated Protocol Services</h2>
             <p class="proto-mini">
-              The protocol unit is designed as a <strong>self-contained service</strong>: it owns framing, sessions, and callbacks into the transport layer,
-              and talks to the rest of the gateway through narrow interfaces (incoming message handlers, meter operations, optional file or timer hooks).
-              Display, UI, unrelated drivers, and other services do not need to know which wire format is active—only that metering and jobs are requested consistently.
+              Each stack (<strong>ZD, Metallix, Orion, RigelMq</strong>) remains a <strong>self-contained module</strong>: framing, sessions, transport callbacks.
+              When several are enabled, they still talk to the rest of the gateway through the same narrow seams—especially <code>AppMeterOperations</code> for meters and jobs.
+              The UI or unrelated drivers do not care <em>how many</em> wire formats are live—only that requests resolve consistently.
             </p>
           </article>
 
           <article class="card col-12 col-6">
             <h2>What You Configure</h2>
             <p class="proto-mini">
-              Alongside choosing the module, you supply endpoints from customer config: server IP and ports for TCP stacks, broker and topics for MQTT,
-              serial number, pull port, credentials, and so on—usually fed from the same customer JSON or generated constants used elsewhere in the port.
+              <code>protocol_config.json</code> is the inventory: which protocols are on, broker/server endpoints, topics, device/pull addresses, and which sensor drivers back each link.
+              Regenerate after edits so <code>cus_protocol_config.h</code> stays the single source of truth for that customer’s <code>INIT_*</code> story.
             </p>
           </article>
 
@@ -162,19 +346,28 @@
           </article>
 
           <article class="card col-12">
-            <h2>Architecture (one stack per image)</h2>
+            <h2>Architecture — multi-protocol, one meter core</h2>
             <p class="proto-mini">
-              The diagram below shows roles, not simultaneous execution: a release binary contains <strong>one</strong> protocol row plus the matching transport.
+              A build can load <strong>several protocol modules</strong> when JSON says so; each uses its transport (TCP and/or MQTT). All operational traffic still meets at
+              <strong>AppMeterOperations</strong> for metering, directives, and jobs—parallel front doors, one house.
             </p>
             <div class="diagram-wrap">
-              <div class="diagram-head">Gateway data path</div>
+              <div class="diagram-head">Gateway data path (conceptual)</div>
               <pre class="mermaid">flowchart LR
-  subgraph IMG["Single Product Build"]
-    PM["One of:\nZD / MetallixTLV /\nOrionTLV / RigelMq"]
-    PM --> MO[AppMeterOperations]
-    PM --> TR["TcpConnManager\nor\nMqttConnService"]
+  subgraph CFG["protocol_config.json"]
+    ON[Multiple use:true protocols possible]
   end
-  TR --> NET[Head-end / broker]</pre>
+  subgraph ST["Protocol stacks"]
+    P1[Stack A e.g. RigelMq]
+    P2[Stack B e.g. Orion TLV]
+  end
+  MO[AppMeterOperations]
+  NET[Head-ends / brokers]
+  ON -.-> ST
+  P1 --> MO
+  P2 --> MO
+  P1 --> NET
+  P2 --> NET</pre>
             </div>
           </article>
 
@@ -227,6 +420,40 @@
             </table>
             <p class="proto-mini" style="margin-top:12px">
               Details: <a href="tcp-conn.html">TCP Connection Service</a> — non-blocking <code>select</code>, push and pull sockets, request-based connect/disconnect.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>MQTT (broker-based stacks)</h2>
+            <p class="proto-mini">
+              TCP push and pull are not the only transports. When <code>protocol_config.json</code> sets a protocol block’s <code>connection</code> to <strong>MQTT</strong>, that stack uses
+              <strong><a href="appMqttConnService.html">AppMqttConnService</a></strong>: one session to the configured broker, subscribe/publish on the topics you declare (including optional request/response pairs), with reconnect and link callbacks wired the same way across builds.
+              The same binary can run <strong>MQTT and TCP protocols together</strong>—each enabled block picks its own transport from JSON; nothing extra is hand-coded in the app to mix them.
+            </p>
+            <table class="proto-table">
+              <thead>
+                <tr>
+                  <th>Aspect</th>
+                  <th>MQTT path</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Who is in the middle</strong></td>
+                  <td>A <strong>broker</strong> (not a raw TCP server socket on the device). The gateway is an MQTT client.</td>
+                </tr>
+                <tr>
+                  <td><strong>Configuration</strong></td>
+                  <td><code>mqttBroker.ipAddr</code>, <code>port</code>, credentials, optional <code>mqttRequestTopic</code> / <code>mqttResponseTopic</code>—see the <a href="#connection-mqtt-tcp"><code>connection</code> (MQTT vs TCP)</a> table on this page.</td>
+                </tr>
+                <tr>
+                  <td><strong>Typical protocol module</strong></td>
+                  <td><a href="protocolRigelMq.html">ProtocolRigelMq</a> — JSON payloads over MQTT topics, session handling aligned with <code>AppMqttConnService</code>.</td>
+                </tr>
+              </tbody>
+            </table>
+            <p class="proto-mini" style="margin-top:12px">
+              Details: <a href="appMqttConnService.html">MQTT Connection Service</a> — broker attach, <code>IncomingCb</code> / <code>LinkCb</code>, reconnect. Protocol specifics: <a href="protocolRigelMq.html">ProtocolRigelMq</a>.
             </p>
           </article>
 
