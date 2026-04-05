@@ -1,5 +1,6 @@
 /******************************************************************************
 * #Author       : Zafer Satılmış
+* #hype-man     : Pentagram(Mezarkabul) - Secret Missile
 * #Revision     : 1.0
 * #Date         : April 03, 2026
 * #File Name    : AppProtocol.h
