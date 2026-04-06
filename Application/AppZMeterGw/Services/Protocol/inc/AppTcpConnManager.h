@@ -12,7 +12,7 @@
 #ifndef __APP_TCP_CONN_MANAGER_H__
 #define __APP_TCP_CONN_MANAGER_H__
 /*********************************INCLUDES*************************************/
-#include <stdbool.h>
+#include "Project_Conf.h"
 /******************************MACRO DEFINITIONS*******************************/
 #define PUSH_TCP_SOCK_NAME  "push"  //asynchronous
 #define PULL_TCP_SOCK_NAME  "pull"  //synchronous
@@ -48,21 +48,21 @@ int appTcpConnManagerStop(void);
  * @return  if any pull client is connected, return true
  *          otherwise return false
  */
-bool appTcpConnManagerAnyPullClient(void);
+BOOL appTcpConnManagerAnyPullClient(void);
 
 /**
  * @brief   get pull connection status
  * @return  if pull socket creted, return true
  *          otherwise return false
  */
-bool appTcpConnManagerIsPullReady(void);
+BOOL appTcpConnManagerIsPullReady(void);
 
 /**
  * @brief   get push connection status
  * @return  if connected to server, return true
  *          otherwise return false
  */
-bool appTcpConnManagerIsConnectedPush(void);
+BOOL appTcpConnManagerIsConnectedPush(void);
 
 /**
  * @brief   request connect to server.

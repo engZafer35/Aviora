@@ -95,12 +95,12 @@ int meterTcpCommDeinit(void)
 }
 
 /*--------------------------------------------------*/
-int meterTcpCommSend(const uint8_t *data, uint32_t dataLeng)
+int meterTcpCommSend(const U8 *data, U32 dataLeng, U32 timeout)
 {
     if (g_sock < 0 || data == NULL)
         return -1;
 
-    uint32_t total_sent = 0;
+    U32 total_sent = 0;
 
     while (total_sent < dataLeng) 
     {
@@ -126,7 +126,7 @@ int meterTcpCommSend(const uint8_t *data, uint32_t dataLeng)
 }
 
 /*--------------------------------------------------*/
-int meterTcpCommReceive(uint8_t *data, uint32_t *dataLeng)
+int meterTcpCommReceive(U8 *data, U32 *dataLeng, U32 timeout)
 {
     if (g_sock < 0 || data == NULL || dataLeng == NULL)
         return -1;
@@ -153,7 +153,7 @@ int meterTcpCommReceive(uint8_t *data, uint32_t *dataLeng)
     return ret;
 }
 
-int meterTcpCommSetBaudrate(uint32_t baudrate)
+int meterTcpCommSetBaudrate(U32 baudrate)
 {
     return 0; // No-op for TCP communication
 }

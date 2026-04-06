@@ -496,7 +496,7 @@ int appTcpConnManagerStop(void)
         DEBUG_INFO("TCP Connection Stopped");
         APP_LOG_REC(g_sysLoggerID, "TCP Connection Stopped");
 
-        appTskMngDelete(gs_tcpTaskId);
+        appTskMngDelete(&gs_tcpTaskId);
         gs_tcpTaskId = OS_INVALID_TASK_ID;
     }
 

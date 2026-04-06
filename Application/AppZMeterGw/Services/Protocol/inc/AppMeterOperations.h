@@ -49,9 +49,9 @@ typedef void (*Callback_t)(S32 taskID, ERR_CODE_T status);
 typedef struct
 {
     RETURN_STATUS (*meterCommInit)(void);
-    S32 (*meterCommSend)(const uint8_t *data, uint32_t dataLeng, uint32_t timeout);
-    S32 (*meterCommReceive)(uint8_t *data, uint32_t *dataLeng, uint32_t timeout);
-    RETURN_STATUS (*meterCommSetBaudrate)(uint32_t baudrate);
+    S32 (*meterCommSend)(const U8 *data, U32 dataLeng, U32 timeout);
+    S32 (*meterCommReceive)(U8 *data, U32 *dataLeng, U32 timeout);
+    RETURN_STATUS (*meterCommSetBaudrate)(U32 baudrate);
 }MeterCommInterface_t;
 
 typedef enum MeterBrands
@@ -125,7 +125,7 @@ RETURN_STATUS appMeterOperationsStart(MeterCommInterface_t *meterComm);
  */
 RETURN_STATUS appMeterOperationsAddMeter(MeterData_t *meterData);
 
-/** */
+/**
  * @brief Get the meter data by serial number
  * @param serialNumber Serial number of the meter
  * @param meterDataOut Pointer to the meter data output

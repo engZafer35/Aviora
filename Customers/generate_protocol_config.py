@@ -197,7 +197,6 @@ def build_sensor_init_macro(sensor: dict) -> tuple[str, list[str]]:
                                             .meterCommSetBaudrate = {baud_f}, \\
                                         }}; \\
                                         setErrorFlag |= appMeterOperationsStart(&meterComm); \\
-
                                     }} while(0)"""
         return block, includes
 
@@ -315,20 +314,20 @@ def generate_header(data: dict) -> str:
     for _key, _p in active_protocol_items:
         prefix = protocol_key_to_macro_prefix(_key)
         init_inner.append(
-            f"if(!setErrorFlag) {{setErrorFlag |= APP_{prefix}_PROTOCOL_INIT_FUNC(setErrorFlag); zosDelay(1000); }} \\"
+            f"if(!setErrorFlag) {{setErrorFlag |= APP_{prefix}_PROTOCOL_INIT_FUNC(serialNum); zosDelayTask(1000); }} \\"
         )
         init_inner.append(
-            f"if(!setErrorFlag) {{setErrorFlag |= APP_{prefix}_PROTOCOL_START_FUNC(); zosDelay(1000); }} \\"
+            f"if(!setErrorFlag) {{setErrorFlag |= APP_{prefix}_PROTOCOL_START_FUNC(); zosDelayTask(1000); }} \\"
         )
     init_body = "\n                                        ".join(init_inner)
-    lines.append("#define INIT_PROTOCOLS(setErrorFlag)   \\")
+    lines.append("#define INIT_PROTOCOLS(setErrorFlag, serialNum)   \\")
     lines.append("                                    do{ \\")
     lines.append(f"                                        {init_body}")
     lines.append("                                    } while(0)")
     lines.append("")
     lines.append("")
     lines.append("/********************************* SENSOR DEFINITIONS *************************/")
-    lines.append(f"#define ACTIVE_SENDOR_NUMBER ({len(active_sensor_defs)})")
+    lines.append(f"#define ACTIVE_SENSOR_NUMBER ({len(active_sensor_defs)})")
     lines.append("")
 
     sensor_includes_seen: set[str] = set()

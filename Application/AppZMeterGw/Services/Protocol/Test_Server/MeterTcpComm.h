@@ -12,7 +12,7 @@
 #ifndef __METER_TCP_COMM_H__
 #define __METER_TCP_COMM_H__
 /*********************************INCLUDES*************************************/
-#include <stdbool.h>
+#include "Project_Conf.h"
 /******************************MACRO DEFINITIONS*******************************/
 #define METER_TCP_SERVER_IP   "127.0.0.1"
 #define METER_TCP_PORT        (1883)
@@ -25,11 +25,11 @@ int meterTcpCommInit(void);
 
 int meterTcpCommDeinit(void);
 
-int meterTcpCommSend(const uint8_t *data, uint32_t dataLeng, uint32_t timeout);
+int meterTcpCommSend(const U8 *data, U32 dataLeng, U32 timeout);
 
-int meterTcpCommReceive(uint8_t *data, uint32_t *dataLeng, uint32_t timeout);
+int meterTcpCommReceive(U8 *data, U32 *dataLeng, U32 timeout);
 
-int meterTcpCommSetBaudrate(uint32_t baudrate);
+int meterTcpCommSetBaudrate(U32 baudrate);
 
 
 #endif /* __METER_TCP_COMM_H__ */
