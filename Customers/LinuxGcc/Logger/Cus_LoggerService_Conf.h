@@ -41,7 +41,7 @@ extern S32 g_sysLoggerID;
 #define LOGGER_SYS_TOTAL_LOG_SIZE     (10240)
 #define LOGGER_SYS_TIME_INFO_USE      (TRUE)
 #define LOGGER_SYS_TIME_INFO_FORMAT   (FIRST_YEAR)
-
+//todo: include LOGGER_SYS_FS_PATH here
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
 RETURN_STATUS appLogStartLoggers(void);
 

@@ -17,6 +17,17 @@
 /******************************MACRO DEFINITIONS*******************************/
 
 /*******************************TYPE DEFINITIONS ******************************/
+typedef struct _RtcStr_t
+{
+    U8 sec;     /* Seconds parameter, from 00 to 59 */
+    U8 min;     /* Minutes parameter, from 00 to 59 */
+    U8 hour;    /* Hours parameter, 24Hour mode, 00 to 23 */
+    U8 wday;    /* Day in a week, from 1 to 7 */
+    U8 mday;    /* Date in a month, 1 to 31 */
+    U8 mon;     /* Month in a year, 1 to 12 */
+    U16 year;   /* Year parameter, 2000 to 3000 */
+}RtcStr_t;
+
 typedef RtcStr_t MiddRtcStr_t;
 
 /********************************** VARIABLES *********************************/

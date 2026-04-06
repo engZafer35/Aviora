@@ -19,6 +19,7 @@
 #include "AppLogRecorder.h"
 #include "AppGlobalVariables.h"
 
+#include "MiddRTC.h"
 #include "MiddEventTimer.h"
 
 #include <string.h>
@@ -42,8 +43,8 @@ static AppTimeServiceCtx gs_ts;
 #include "AppTimeService_Autogen.c"
 
 /* RTC <-> epoch conversion (used by autogen; tz from config) */
-RETURN_STATUS appTimeServiceRtcStrToEpochUtc(const MiddRtcStr_t *r, U32 *outEpochUtc);
-RETURN_STATUS appTimeServiceEpochUtcToRtcStr(U32 epochUtc, MiddRtcStr_t *r);
+//RETURN_STATUS appTimeServiceRtcStrToEpochUtc(const MiddRtcStr_t *r, U32 *outEpochUtc);
+//RETURN_STATUS appTimeServiceEpochUtcToRtcStr(U32 epochUtc, MiddRtcStr_t *r);
 
 static S32 tzOffsetSeconds(void)
 {
@@ -425,7 +426,10 @@ RETURN_STATUS appTimeServiceEpochToTm(U32 epoch, struct tm *outTm)
     /* Input epoch is UTC, output is local */
     S32 localEpoch = (S32)epoch + tzOffsetSeconds();
     if (localEpoch < 0) localEpoch = 0;
-    return epochUtcToTm((U32)localEpoch, outTm);
+
+    epochUtcToTm((U32)localEpoch, outTm);
+
+    return SUCCESS;
 }
 
 RETURN_STATUS appTimeServiceTmToEpoch(const struct tm *tmValue, U32 *outEpoch)
@@ -447,7 +451,7 @@ RETURN_STATUS appTimeServiceTmToEpoch(const struct tm *tmValue, U32 *outEpoch)
 RETURN_STATUS appTimeServiceFormatNow(char *buf, U32 bufSize, APP_TIME_STRING_FORMAT fmt)
 {
     struct tm t;
-    if (SUCCESS != appTimeServiceGetTm(&t))
+    if (SUCCESS != appTimeServiceGetTime(&t))
     {
         return FAILURE;
     }

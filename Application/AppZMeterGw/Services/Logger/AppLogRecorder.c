@@ -15,7 +15,7 @@
 #include "AppLogRecorder.h"
 #include "AppTaskManager.h"
 #include "AppTimeService.h"
-
+#include <stdbool.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -49,7 +49,7 @@ typedef struct
 static LoggerService services[MAX_SERVICE_NUMBER];
 
 /***************************** STATIC FUNCTIONS  ******************************/
-static void getCurrentDate(char *dest, U32 destSize)
+static void getCurrentDate_(char *dest, U32 destSize)
 {
     struct tm tmValue;
     appTimeServiceGetTime(&tmValue);
@@ -72,7 +72,7 @@ static RETURN_STATUS openNewLogFile(LoggerService *svc)
     char dateStr[16];
     
     appTimeServiceGetTime(&tmValue);
-    getCurrentDate(dateStr, sizeof(dateStr));
+    getCurrentDate_(dateStr, sizeof(dateStr));
 
     if (svc->logFile)
     {
@@ -83,7 +83,7 @@ static RETURN_STATUS openNewLogFile(LoggerService *svc)
     snprintf(svc->currentLogFile, sizeof(svc->currentLogFile), "%s/%s_%s-%02d%02d%02d.log",
                                                                 svc->srvIFace.logPath,
                                                                 svc->serviceName, 
-                                                                svc->currentDate, 
+                                                                dateStr,
                                                                 tmValue.tm_hour, tmValue.tm_min, tmValue.tm_sec);
 
     svc->logFile = svc->srvIFace.openFunc(svc->currentLogFile, FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE);
@@ -124,7 +124,7 @@ static void loggerWriterTask(void *arg)
                 char timeStr[16];
                 char dateStr[16];
                 getCurrentTime(timeStr, sizeof(timeStr));
-                getCurrentDate(dateStr, sizeof(dateStr));
+                getCurrentDate_(dateStr, sizeof(dateStr));
 
                 char line[LOGGER_LOG_MAX_LENGTH + 64];
                 int lineLen = snprintf(line, sizeof(line), "%s %s - %s\n", dateStr, timeStr, item.text);
@@ -208,7 +208,7 @@ RETURN_STATUS appLogRecRegister(logRecConf_t *logger, const char *srvName, S32 *
 
             ZOsTaskParameters taskParam;
             taskParam.priority  = ZOS_TASK_PRIORITY_LOW;
-            taskParam.stackSize = SW_UPDATE_TASK_STACK;
+            taskParam.stackSize = 2048;
 
             services[i].writerTask = appTskMngCreate(services[i].serviceName, loggerWriterTask, &services[i], &taskParam);
             if (OS_INVALID_TASK_ID == services[i].writerTask)
@@ -283,7 +283,7 @@ RETURN_STATUS appLogRec(S32 loggerID, const char *logStr)
     return SUCCESS;
 }
 
-S32 appLogRecRead(S32 loggerID, const char *str, U32 size)
+S32 appLogRecRead(S32 loggerID, char *str, U32 size)
 {
     if ((loggerID < 0) || (loggerID >= MAX_SERVICE_NUMBER) || (str == NULL))
     {
@@ -296,7 +296,9 @@ S32 appLogRecRead(S32 loggerID, const char *str, U32 size)
         return -1;
     }
 
-    return svc->srvIFace.readFunc(str, size);
+    size_t outLen = 0;
+    svc->srvIFace.readFunc(svc->logFile, str, size, &outLen);
+    return outLen;
 }
 
 S32 appLogRecGetLoggerID(const char *srvName)
