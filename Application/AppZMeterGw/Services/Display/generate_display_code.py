@@ -41,7 +41,7 @@ class DisplayCodeGenerator:
         display_type = disp_config.get('type', 'unknown')
         
         # Include path'ini oluştur
-        include_path = os.path.join(customer_path, custom_file_name + '.c')
+        include_path = os.path.join(customer_path, custom_file_name)
         include_path = include_path.replace('\\', '/')
         
         content = f"""/******************************************************************************
@@ -83,9 +83,9 @@ class DisplayCodeGenerator:
         
         # Relative path ise project root'dan resolve yap
         if not Path(customer_path).is_absolute():
-            full_path = self.project_root.parent.parent / customer_path / (custom_file_name + '.c')
+            full_path = self.project_root.parent.parent.parent.parent / customer_path / (custom_file_name)
         else:
-            full_path = Path(customer_path) / (custom_file_name + '.c')
+            full_path = Path(customer_path) / (custom_file_name)
         
         if full_path.exists():
             print(f"✓ Müşteri Display dosyası bulundu: {full_path}")
