@@ -30,6 +30,11 @@
 			<locationURI>PARENT-2-PROJECT_LOC/Application</locationURI>
 		</link>
 		<link>
+			<name>Customers</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/Customers</locationURI>
+		</link>
+		<link>
 			<name>Documents</name>
 			<type>2</type>
 			<locationURI>PARENT-2-PROJECT_LOC/Documents</locationURI>

@@ -6,10 +6,10 @@
 #ifndef __CUS_TIME_SERVICE_CONFIG_H__
 #define __CUS_TIME_SERVICE_CONFIG_H__
 
-/* generated on: 2026-04-06 19:28:38 */
+/* generated on: 2026-04-06 22:47:31 */
 
 #define APP_TIME_SERVICE_USE              (1)
-#define APP_TIME_SERVICE_USE_NTP          (1)
+#define APP_TIME_SERVICE_USE_NTP          (0)
 #define APP_TIME_SERVICE_USE_INT_RTC      (0)
 #define APP_TIME_SERVICE_USE_EXT_RTC      (0)
 

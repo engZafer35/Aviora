@@ -15,7 +15,7 @@
 #include "Project_Conf.h"
 #include "Midd_OSPort.h"
 /******************************MACRO DEFINITIONS*******************************/
-#define MANAGE_MAX_TASK_NUMBER  (10) /** number of threads which will be tracked by this module */
+#define MANAGE_MAX_TASK_NUMBER  (64) /** number of threads which will be tracked by this module */
 /*******************************TYPE DEFINITIONS ******************************/
 
 /************************* GLOBAL VARIBALE REFERENCES *************************/
@@ -26,7 +26,7 @@ RETURN_STATUS appTskMngInit(void);
 
 OsTaskId appTskMngCreate(const char *name, OsTaskCode taskCode, void *arg, const ZOsTaskParameters *params);
 
-RETURN_STATUS appTskMngDelete(OsTaskId tid);
+RETURN_STATUS appTskMngDelete(OsTaskId *tid);
 
 RETURN_STATUS appTskMngSuspend(OsTaskId tid);
 

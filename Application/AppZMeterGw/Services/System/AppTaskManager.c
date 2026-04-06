@@ -14,6 +14,8 @@
 #include "AppGlobalVariables.h"
 #include "AppLogRecorder.h"
 
+#include "MiddEventTimer.h"
+
 /****************************** MACRO DEFINITIONS *****************************/
 
 /******************************* TYPE DEFINITIONS *****************************/
@@ -29,7 +31,7 @@ static struct
 }gs_treads[MANAGE_MAX_TASK_NUMBER];
 /***************************** STATIC FUNCTIONS  ******************************/
 
-static void timerCb(void * param)
+static void timerCb(void)
 {
     U32 i;
 
