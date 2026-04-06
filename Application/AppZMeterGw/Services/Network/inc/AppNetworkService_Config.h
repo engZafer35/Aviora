@@ -18,7 +18,7 @@
 #define GSM_INTERFACE_NUMBER   (0)
 #define ETH_INTERFACE_NUMBER   (1)
 
-#define TOTAL_INTERFACE_NUMBER (2)
+#define TOTAL_INTERFACE_NUMBER (1)
 /*******************************TYPE DEFINITIONS ******************************/
 
 /************************* GLOBAL VARIBALE REFERENCES *************************/
