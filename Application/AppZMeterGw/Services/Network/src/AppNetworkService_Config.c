@@ -51,6 +51,7 @@ const AppNetworkServiceConfig_t gAppNetworkServiceConfig = {
         .devName = "ENC28J60",
         .connInterface = "hspi2",
         .srcPath = "/e/ENC28J60"
+        //todo: add ethernet stack name, pc, tcp, lwIP, etc. if needed
 
     },
     .interfaceCount = 2

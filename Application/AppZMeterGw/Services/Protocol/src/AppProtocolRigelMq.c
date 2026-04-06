@@ -804,11 +804,7 @@ static void rgSessionMqttLinkCb(int isUp)
 {
     if (isUp)
     {
-        if (!gs_registered)
-        {
-            uint16_t transNum = (uint16_t)nextTransNumber();
-            (void)rgSessionCreate(RG_FUNC_IDENT, transNum, NULL);
-        }
+        /* MQTT connection established */
     }
     else
     {
@@ -894,6 +890,8 @@ static void rgSessionTask(void *arg)
 
     // Request connection
     appMqttConnServiceRequestConnect();
+
+    zosDelayTask(5000); // Wait for connection to establish
 
     // Main loop
     while (gs_running)
@@ -1267,8 +1265,6 @@ static void rgSessionProcessLoadProfileSession(RG_Session_t *session)
             break;
     }
 }
-
-
 
 static void rgSessionProcessSettingSession(RG_Session_t *session)
 { 
