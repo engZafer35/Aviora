@@ -18,6 +18,7 @@
 #include "AppDataBus.h"
 #include "AppInternalMsgFrame.h"
 #include "Project_Conf.h"
+#include "AppLogRecorder.h"
 #include "ZDebug.h"
 
 #include "core/net.h"
@@ -171,7 +172,6 @@ static void appSwUpdateTask(void *arg)
     if (error)
     {
         appSwUpdatePublishStatus(EN_SW_UPDATE_RESULT_FAILED);
-        break;
     }
 
     if (outputFile != NULL)

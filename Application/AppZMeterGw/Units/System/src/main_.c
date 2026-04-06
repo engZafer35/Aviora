@@ -27,7 +27,7 @@
 #include "Midd_OSPort.h"
 #include <poll.h>
 #include <stdio.h>
-#include "AppMessageHandlerManager.h"
+
 OsQueue testQueue = OS_INVALID_QUEUE;
 OsQueue testQueue2 = OS_INVALID_QUEUE;
 
@@ -79,38 +79,18 @@ static void keyboardInput(void *arg)
             case 'c':
             case 'C':
             {
-                int s = appGsmMngIsNetworkReady();
-                s = !s; //invert current status
-                printf("Pressed Connection Button, Conn stat will be set to %s\n", s ? "ENABLE" : "DISABLE");
-                appGsmMngSetConnStat(s);
+
                 break;
             }
             case 'm':
             case 'M':
             {
-                if (OS_INVALID_QUEUE == testQueue) {
-                    testQueue = appMsgHandlerAddClient("TESTV");
-                    testQueue2 = appMsgHandlerAddClient("TESTG");
-                }
-                else
-                {
-                    Msg_Handler_Message msg, msg2;
 
-
-                    msg2.msgType = EN_MSG_TYPE_PROTOCOL_2;
-                    msg2.data = "#FC|ZADA|123456|123456789012345|ZMET|1.0.3.4|20241114135613|26|+905301234567|1.03|ZADA";
-                    msg2.length = strlen("#FC|ZADA|123456|123456789012345|ZMET|1.0.3.4|20241114135613|26|+905301234567|1.03|ZADA");
-                    appMsgHandlerHandleMsg("TESTG", &msg2);
-                }
                 break;
             }
             case 'd':
             {
-                appMsgHandlerRemoveClient("TESTV");
-                appMsgHandlerRemoveClient("GBOXV");
 
-                testQueue = OS_INVALID_QUEUE;
-                testQueue2 = OS_INVALID_QUEUE;
             }
         }
 

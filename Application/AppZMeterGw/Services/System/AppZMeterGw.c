@@ -192,7 +192,7 @@ static RETURN_STATUS initSWUnit(void)
             return FAILURE;
         }
 
-        if (FAILURE == appLogStartLoggers()))
+        if (FAILURE == appLogStartLoggers())
         {
             DEBUG_ERROR("->[E] Log Reg for sysLogger ERROR ");
             return FAILURE;
@@ -224,13 +224,13 @@ static RETURN_STATUS initSWUnit(void)
         }
 
         /* initialize display after time service */
-        if (FAILURE == appDisplayInit())
+        if (FAILURE == AppDisplayInit())
         {
             DEBUG_ERROR("->[E] Display init ERROR");
             APP_LOG_REC(g_sysLoggerID, "Display init Error");
             return FAILURE;
         }
-        appDisplayStart();
+        AppDisplayStart();
 
         APP_INIT_SENSORS(retVal);
         if (SUCCESS != retVal)
@@ -240,7 +240,7 @@ static RETURN_STATUS initSWUnit(void)
             return FAILURE;
         }
 
-        APP_INIT_PROTOCOLS(retVal);
+        APP_INIT_PROTOCOLS(retVal, "123456789");
         if (SUCCESS != retVal)
         {
             DEBUG_ERROR("->[E] Protocol init ERROR !!");
@@ -326,15 +326,15 @@ static void zmgTask(void * pvParameters)
 
                 if (FALSE == gsmMsg.connStat)
                 {
-                    if (EN_WORKING_MODE_NO_GSM_CONNECTION != gs_devVar.wMode)
+                    if (EN_WORKING_MODE_NO_NETWORK != gs_devVar.wMode)
                     {
-                        gs_devVar.wMode = EN_WORKING_MODE_NO_GSM_CONNECTION;
+                        gs_devVar.wMode = EN_WORKING_MODE_NO_NETWORK;
                         newMsg = TRUE;
                     }
                 }
                 else
                 {
-                    if (EN_WORKING_MODE_NO_GSM_CONNECTION == gs_devVar.wMode)
+                    if (EN_WORKING_MODE_NO_NETWORK == gs_devVar.wMode)
                     {
                         gs_devVar.wMode = EN_WORKING_MODE_MAIN;
                         newMsg = TRUE;
@@ -380,7 +380,7 @@ RETURN_STATUS appZMGwInit(void)
 
     if (SUCCESS == retVal)
     {
-        retVal = appDBusRegister(EN_DBUS_TOPIC_GSM | EN_DBUS_TOPIC_NETWORK | EN_DBUS_TOPIC_TASK_MNG, &gs_zmgDbusID);
+        retVal = appDBusRegister(EN_DBUS_TOPIC_GSM | EN_DBUS_TOPIC_ETH | EN_DBUS_TOPIC_TASK_MNG, &gs_zmgDbusID);
     }
 
     if (SUCCESS == retVal)
