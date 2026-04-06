@@ -10,6 +10,7 @@
 *******************************************************************************/
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
+#include "TimeSync_Ntp.h"
 #include "ZDebug.h"
 #include "AppLogRecorder.h"
 

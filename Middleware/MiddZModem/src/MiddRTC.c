@@ -12,7 +12,7 @@
 /********************************* INCLUDES ***********************************/
 #include <string.h>
 
-#include "ProjectConf.h"
+#include "Project_Conf.h"
 #include "MiddRTC.h"
 
 /****************************** MACRO DEFINITIONS *****************************/

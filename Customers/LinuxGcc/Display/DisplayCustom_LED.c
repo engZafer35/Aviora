@@ -9,7 +9,6 @@
 *
 *******************************************************************************/
 /********************************* INCLUDES ***********************************/
-#include "DisplayCustom_LED.h"
 #include "AppDataBus.h"
 #include "AppLogRecorder.h"
 #include "AppGlobalVariables.h"
