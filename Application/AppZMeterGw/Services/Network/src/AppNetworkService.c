@@ -12,7 +12,6 @@
 /********************************* INCLUDES ***********************************/
 #include "AppNetworkService.h"
 #include "AppDataBus.h"
-#include "AppGsmManager.h"
 
 #include "AppTaskManager.h"
 #include "AppLogRecorder.h"

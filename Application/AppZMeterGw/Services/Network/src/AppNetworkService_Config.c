@@ -23,12 +23,12 @@
 #include "net_config.h"
 
 /* GSM Interface Implementation */
-#if defined(GSM_INTERFACE_ENABLED) || 1  /* Replace with: if enabled in config */
+#if defined(GSM_INTERFACE_ENABLED) || 0  /* Replace with: if enabled in config */
 #include "GsmConn_Comm.h"
 #endif
 
 /* Ethernet Interface Implementation */
-#if defined(ETH_INTERFACE_ENABLED) || 1  /* Replace with: if enabled in config */
+#if defined(ETH_INTERFACE_ENABLED) || 0  /* Replace with: if enabled in config */
 #include "EthConn_ENC28j60.h"
 #endif
 /**
@@ -37,6 +37,7 @@
  * Only enabled interfaces are included in this structure
  */
 
+#if 0
 const AppNetworkServiceConfig_t gAppNetworkServiceConfig = {
     .gsmConfig = {
         .enabled = true,
@@ -56,7 +57,7 @@ const AppNetworkServiceConfig_t gAppNetworkServiceConfig = {
     },
     .interfaceCount = 2
 };
-
+#endif
 /**
  * priv_InitTCPIPStack - if any tcp/ip stack is used in the project, it should be initialized
  * but if no stack is used, this function can be left empty and return SUCCESS.
@@ -66,7 +67,7 @@ static RETURN_STATUS priv_InitTCPIPStack(void)
     RETURN_STATUS retVal = SUCCESS;
 
     //TCP/IP stack initialization
-    if(NO_ERROR != netInit())
+    if(0/*NO_ERROR != netInit()*/)
     {
         retVal = FAILURE;
         DEBUG_ERROR("Failed to initialize TCP/IP stack!");
@@ -82,7 +83,7 @@ static RETURN_STATUS priv_InitTCPIPStack(void)
 static RETURN_STATUS priv_StartInterfaces(void)
 {
     RETURN_STATUS retVal = SUCCESS;
-
+#if 0
     /* === GSM Interface Initialization === */
     //TODO: initialize all gsm interface listed in config
     if (SUCCESS != GsmConnInit()) 
@@ -91,7 +92,7 @@ static RETURN_STATUS priv_StartInterfaces(void)
         DEBUG_ERROR("->[E] InitGsmInterface failed");
         /* Continue anyway - Another interface may still be available */
     }
-    
+#endif
     /* === Ethernet Interface Initialization === */
     //TODO: initialize all eth interface listed in config
     if (SUCCESS != EthConn_Enc28J60_Init()) 

@@ -58,7 +58,7 @@ static void ethPeriodicInfoCb (void)
     dbPacket.topic      = EN_DBUS_TOPIC_ETH;
 
     //1: link up, 0: link down
-    (netInterface[ETH_INTERFACE_NUMBER].linkState == TRUE) ? (dbPacket.payload.data[0] = 1) : (dbPacket.payload.data[0] = 0);
+    (/*netInterface[ETH_INTERFACE_NUMBER].linkState */ TRUE == TRUE) ? (dbPacket.payload.data[0] = 1) : (dbPacket.payload.data[0] = 0);
 
     appDBusPublish(gs_ethDbusID, &dbPacket);
 }
@@ -304,7 +304,7 @@ RETURN_STATUS EthConn_Enc28J60_Reconnect(void)
 
 BOOL EthConn_Enc28J60IsNetworkReady(void)
 {
-    return netInterface[ETH_INTERFACE_NUMBER].linkState;
+    return TRUE; //netInterface[ETH_INTERFACE_NUMBER].linkState;
 }
 
 /******************************** End Of File *********************************/
