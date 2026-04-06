@@ -178,6 +178,7 @@ static int appMqttSvcTaskDisconnect(void)
 static int appMqttSvcTaskReconnect(void)
 {
     (void)appMqttSvcTaskDisconnect();
+    zosDelayTask((systime_t)APP_MQTT_SVC_RECONNECT_MS);
     gs_bits.taskConnect = TRUE;
     return APP_MQTT_SVC_RET_SUCCESS;
 }
