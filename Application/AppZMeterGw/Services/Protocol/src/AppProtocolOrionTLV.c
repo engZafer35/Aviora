@@ -446,12 +446,12 @@ static BOOL mtlxParserInit(OrionParser_t *p, const uint8_t *raw, uint16_t rawLen
     return TRUE;
 }
 
-static void mtlxParserReset(OrionParser_t *p)
+static void orionParserReset(OrionParser_t *p)
 {
     p->cursor = 0;
 }
 
-static BOOL mtlxParserNext(OrionParser_t *p, uint16_t *tag, const uint8_t **value, uint16_t *valueLen)
+static BOOL orionParserNext(OrionParser_t *p, uint16_t *tag, const uint8_t **value, uint16_t *valueLen)
 {
     if (p->cursor + ORION_TLV_HEADER_SIZE > p->length) return FALSE;
     *tag      = readU16BE(p->data + p->cursor);       p->cursor += 2;
@@ -468,7 +468,7 @@ static BOOL findTag(OrionParser_t *p, uint16_t wantTag, const uint8_t **value, u
     p->cursor = 0;
 
     uint16_t tag; const uint8_t *v; uint16_t vl;
-    while (mtlxParserNext(p, &tag, &v, &vl))
+    while (orionParserNext(p, &tag, &v, &vl))
     {
         if (tag == wantTag)
         {
@@ -531,7 +531,7 @@ static BOOL mtlxGetUint32(OrionParser_t *p, uint16_t tag, uint32_t *out)
 
 static BOOL registerStateLoad(void)
 {
-    FsFile *f = fsOpenFile((char_t *)ORION_REGISTER_FILE, FS_FILE_MODE_READ);
+    FsFile *f = fsOpenFile((char *)ORION_REGISTER_FILE, FS_FILE_MODE_READ);
     if (f == NULL) return FALSE;
     U8 val = 0; size_t got = 0;
     (void)fsReadFile(f, &val, 1, &got);
@@ -541,7 +541,7 @@ static BOOL registerStateLoad(void)
 
 static void registerStateSave(BOOL reg)
 {
-    FsFile *f = fsOpenFile((char_t *)ORION_REGISTER_FILE,
+    FsFile *f = fsOpenFile((char *)ORION_REGISTER_FILE,
                            FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
     if (f == NULL) return;
     U8 val = reg ? 1 : 0;
@@ -555,18 +555,18 @@ static void registerStateSave(BOOL reg)
 
 static void connConfigDefault(void)
 {
-    strncpy(gs_serverIP, ZD_DEFAULT_SERVER_IP, sizeof(gs_serverIP) - 1);
+    strncpy(gs_serverIP, ORION_DEFAULT_SERVER_IP, sizeof(gs_serverIP) - 1);
     gs_serverIP[sizeof(gs_serverIP) - 1] = '\0';
-    gs_serverPort = ZD_DEFAULT_PUSH_PORT;
-    gs_pullPort = ZD_DEFAULT_PULL_PORT;
+    gs_serverPort = ORION_DEFAULT_PUSH_PORT;
+    gs_pullPort = ORION_DEFAULT_PULL_PORT;
     return;
 }
 
 static RETURN_STATUS connConfigLoad(void)
 {
     ConnConfig_t cfg;
-    FsFile *f = fsOpenFile((char_t *)ORION_SERVER_FILE, FS_FILE_MODE_READ);
-    if (f == NULL)
+    FsFile *f = fsOpenFile((char *)ORION_SERVER_FILE, FS_FILE_MODE_READ);
+    if (NULL == f)
      return FAILURE;
     
      size_t got = 0;
@@ -594,7 +594,7 @@ static RETURN_STATUS connConfigSave(void)
     cfg.port = gs_serverPort;
     cfg.pullPort = gs_pullPort;
 
-    FsFile *f = fsOpenFile((char_t *)ORION_SERVER_FILE,
+    FsFile *f = fsOpenFile((char *)ORION_SERVER_FILE,
                            FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
     if (NULL != f)
     {
@@ -766,7 +766,7 @@ static RETURN_STATUS sendFilePacketised(const char *channel, uint8_t func,
                                         const char *meterId, const char *filePath,
                                         uint16_t transNum)
 {
-    FsFile *f = fsOpenFile((char_t *)filePath, FS_FILE_MODE_READ);
+    FsFile *f = fsOpenFile((char *)filePath, FS_FILE_MODE_READ);
     if (f == NULL)
         return FAILURE;
 
@@ -878,7 +878,7 @@ static BOOL parseFtpUrl(const char *url,
 
 static RETURN_STATUS readWholeText(const char *path, char *buf, size_t cap, size_t *outLen)
 {
-    FsFile *f = fsOpenFile((char_t *)path, FS_FILE_MODE_READ);
+    FsFile *f = fsOpenFile((char *)path, FS_FILE_MODE_READ);
     if (f == NULL) return FAILURE;
     size_t total = 0;
     for (;;)
@@ -932,11 +932,11 @@ static void cleanupMeterFiles(S32 taskId)
 {
     char path[MAX_PATH_LEN];
     snprintf(path, sizeof(path), "%s%d_meterID.txt",  METER_DATA_OUTPUT_DIR, (int)taskId);
-    (void)fsDeleteFile((char_t *)path);
+    (void)fsDeleteFile((char *)path);
     snprintf(path, sizeof(path), "%s%d_readout.txt",  METER_DATA_OUTPUT_DIR, (int)taskId);
-    (void)fsDeleteFile((char_t *)path);
+    (void)fsDeleteFile((char *)path);
     snprintf(path, sizeof(path), "%s%d_payload.txt",  METER_DATA_OUTPUT_DIR, (int)taskId);
-    (void)fsDeleteFile((char_t *)path);
+    (void)fsDeleteFile((char *)path);
 }
 
 /* ================================================================== */
@@ -1552,7 +1552,7 @@ static void processFwUpdateSession(OrionSession_t *session)
                     user, sizeof(user), pass, sizeof(pass),
                     path, sizeof(path)))
     {
-        AppSwUpdateInit(host, port, user, pass, path, FW_LOCAL_PATH);
+        //AppSwUpdateInit(host, port, user, pass, path, FW_LOCAL_PATH);
         DEBUG_INFO("->[I] OrionTLV: FW update started from %s", host);
         APP_LOG_REC(g_sysLoggerID, "FW update started");
     }
@@ -1594,7 +1594,7 @@ static void processReadoutSession(OrionSession_t *session)
             if (tid <= 0)
             {
                 DEBUG_ERROR("->[E] OrionTLV: meter oprs READOUT task add failed tranN %u", session->transNumber);
-                APP_LOG_REC(g_sysLoggerID, "OrionTLV: meter oprs READOUT task add failed tranN %u", session->transNumber);
+                APP_LOG_REC(g_sysLoggerID, "OrionTLV: meter oprs READOUT task add failed");
 
                 sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
                 appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
@@ -1638,7 +1638,7 @@ static void processReadoutSession(OrionSession_t *session)
                     if (FAILURE == startPushMeterDataSession(idx, session->transNumber))
                     {
                         DEBUG_ERROR("->[E] OrionTLV: push meter data session start failed tranN %u", session->transNumber);
-                        APP_LOG_REC(g_sysLoggerID, "Push meter data session start failed tranN %u", session->transNumber);
+                        APP_LOG_REC(g_sysLoggerID, "Push meter data session start failed");
                         cleanupMeterFiles(tid);
                         appMeterOperationsTaskIDFree(tid);
                         memset(&gs_pendingJobs[idx], 0, sizeof(gs_pendingJobs[idx]));
@@ -1649,8 +1649,7 @@ static void processReadoutSession(OrionSession_t *session)
                     DEBUG_WARNING("->[W] OrionTLV: readout task failed tranN %u, tid %d, err %d",
                                   session->transNumber, (int)tid, (int)res);
 
-                    APP_LOG_REC(g_sysLoggerID, "Readout task failed tranN %u, tid: %d, err: %d",
-                                session->transNumber, (int)tid, (int)res);
+                    APP_LOG_REC(g_sysLoggerID, "Readout task failed");
 
                     cleanupMeterFiles(tid);
                     appMeterOperationsTaskIDFree(tid);
@@ -1704,7 +1703,7 @@ static void processLoadProfileSession(OrionSession_t *session)
             if (tid <= 0)
             {
                 DEBUG_ERROR("->[E] OrionTLV: meter oprs PROFILE task add failed tranN %u", session->transNumber);
-                APP_LOG_REC(g_sysLoggerID, "OrionTLV: meter oprs PROFILE task add failed tranN %u", session->transNumber);
+                APP_LOG_REC(g_sysLoggerID, "OrionTLV: meter oprs PROFILE task add failed tranN");
 
                 sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
                 appTcpConnManagerSend(PULL_TCP_SOCK_NAME, (char *)gs_txBuf, (unsigned int)sz);
@@ -1715,7 +1714,7 @@ static void processLoadProfileSession(OrionSession_t *session)
             if (slot < 0)
             {
                 DEBUG_ERROR("->[E] OrionTLV: meter oprs LP task slot allocation failed tranN %u", session->transNumber);
-                APP_LOG_REC(g_sysLoggerID, "OrionTLV: meter oprs LP task slot allocation failed tranN %u", session->transNumber);
+                APP_LOG_REC(g_sysLoggerID, "OrionTLV: meter oprs LP task slot allocation failed tranN");
 
                 appMeterOperationsTaskIDFree(tid);
                 sz = buildAckNack(gs_txBuf, sizeof(gs_txBuf), FALSE, session->transNumber);
@@ -1749,7 +1748,7 @@ static void processLoadProfileSession(OrionSession_t *session)
                     {
                         DEBUG_ERROR("->[E] OrionTLV: LP, push meter data session start failed tranN %u",
                                     session->transNumber);
-                        APP_LOG_REC(g_sysLoggerID, "OrionTLV: LP, push meter data session start failed tranN %u", session->transNumber);
+                        APP_LOG_REC(g_sysLoggerID, "OrionTLV: LP, push meter data session start failed tranN");
                         cleanupMeterFiles(tid);
                         appMeterOperationsTaskIDFree(tid);
                         memset(&gs_pendingJobs[idx], 0, sizeof(gs_pendingJobs[idx]));
@@ -2152,7 +2151,7 @@ RETURN_STATUS appProtocolOrionTLVStop(void)
 
     if (OS_INVALID_TASK_ID != gs_taskId)
     {
-        appTskMngDelete(gs_taskId);
+        appTskMngDelete(&gs_taskId);
         gs_taskId = OS_INVALID_TASK_ID;
     }
 

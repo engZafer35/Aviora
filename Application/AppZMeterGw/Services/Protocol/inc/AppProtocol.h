@@ -32,7 +32,7 @@
  *                     otherwise it will be set to -1.
  * @note This macro should be invoked after APP_INIT_SENSORS called, because protocols is depend on sensors.
  */
-#define APP_INIT_PROTOCOLS(setErrorFlag)    INIT_PROTOCOLS(setErrorFlag)
+#define APP_INIT_PROTOCOLS(setErrorFlag, serialNum)    INIT_PROTOCOLS(setErrorFlag, serialNum)
 
 /**
  * @brief This macro defines the number of active protocols.

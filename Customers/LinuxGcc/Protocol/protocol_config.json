@@ -24,7 +24,7 @@
         },
 
         "protocolFunc": {
-          "sourcePath": "Application/AppZMeterGw/Services/Protocol/inc/AppProtocolRigelMq.h",
+          "sourcePath": "AppZMeterGw/Services/Protocol/inc/AppProtocolRigelMq.h",
           "initFunc": "appProtocolRigelMqInit",
           "startFunc": "appProtocolRigelMqStart",
           "stopFunc": "appProtocolRigelMqStop",
@@ -44,11 +44,11 @@
           "pullPort": 2622
         },
         "protocolFunc": {
-          "sourcePath": "Application/AppZMeterGw/Services/Protocol/inc/AppProtocolOrionTlv.h",
-          "initFunc": "appProtocolOrionTlvInit",
-          "startFunc": "appProtocolOrionTlvStart",
-          "stopFunc": "appProtocolOrionTlvStop",
-          "putIncomingFunc": "appProtocolOrionTlvPutIncomingMessage"
+          "sourcePath": "AppZMeterGw/Services/Protocol/inc/AppProtocolOrionTLV.h",
+          "initFunc": "appProtocolOrionTLVInit",
+          "startFunc": "appProtocolOrionTLVStart",
+          "stopFunc": "appProtocolOrionTLVStop",
+          "putIncomingFunc": "appProtocolOrionTLVPutIncomingMessage"
         }
       },
       "protocolZD": {
@@ -64,7 +64,7 @@
           "pullPort": 2622
         },
         "protocolFunc": {
-          "sourcePath": "Application/AppZMeterGw/Services/Protocol/inc/AppProtocolZD.h",
+          "sourcePath": "AppZMeterGw/Services/Protocol/inc/AppProtocolZD.h",
           "initFunc": "appProtocolZDInit",
           "startFunc": "appProtocolZDStart",
           "stopFunc": "appProtocolZDStop",
@@ -84,7 +84,7 @@
           "pullPort": 2622
         },
         "protocolFunc": {
-          "sourcePath": "Application/AppZMeterGw/Services/Protocol/inc/AppProtocolMetallixTLV.h",
+          "sourcePath": "AppZMeterGw/Services/Protocol/inc/AppProtocolMetallixTLV.h",
           "initFunc": "appProtocolMetallixTLVInit",
           "startFunc": "appProtocolMetallixTLVStart",
           "stopFunc": "appProtocolMetallixTLVStop",
@@ -97,7 +97,7 @@
         "name": "electricityMeter",
         "type": "meter",
         "description": "Electricity Energy Meter",
-        "drvSrcPath": "Application/AppZMeterGw/Services/Protocol/Test_Server/MeterTcpComm.h",
+        "drvSrcPath": "AppZMeterGw/Services/Protocol/Test_Server/MeterTcpComm.h",
         "uartLine": "UART_COMM_LINE_1",
         "initFunc": "meterTcpCommInit",
         "deinitFunc": "meterTcpCommDeinit",

@@ -638,7 +638,6 @@ error_t fsReadDir(FsDir *dir, FsDirEntry *dirEntry)
 
       //Retrieve the full pathname
       pathCombine(path, entry->d_name, FS_MAX_PATH_LEN);
-      pathCanonicalize(path);
 
       //Get file status
       ret = stat(path, &fileStat);
@@ -696,6 +695,6 @@ void fsCloseDir(FsDir *dir)
       closedir(dir->handle);
 
       //Release directory descriptor
-      osFreeMem(dir);
+      zosFreeMem(dir);
    }
 }

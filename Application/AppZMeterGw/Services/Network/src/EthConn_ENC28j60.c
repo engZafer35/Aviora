@@ -10,8 +10,6 @@
 *******************************************************************************/
 #define DEBUG_LEVEL  (DEBUG_LEVEL_DEBUG)
 /********************************* INCLUDES ***********************************/
-#include "AppGsmManager.h"
-
 #include "net_config.h"
 
 #include "AppGlobalVariables.h"
@@ -24,8 +22,11 @@
 #include "core/net.h"
 #include "drivers/eth/enc28j60_driver.h"
 #include "dhcp/dhcp_client.h"
+
+#if USE_CYCLONE_LIB == 1
 #include "spi_driver.h"
 #include "ext_int_driver.h"
+#endif
 
 #include "MiddEventTimer.h"
 /****************************** MACRO DEFINITIONS *****************************/
@@ -111,7 +112,7 @@ static ethConnManagerTask(void* argument)
     error_t error;
 
     (void)argument;
-    osDelayTask(1000);
+    zosDelayTask(1000);
 
     interface = &netInterface[ETH_INTERFACE_NUMBER];
 
@@ -195,7 +196,7 @@ static ethConnManagerTask(void* argument)
                 break;
         }
         
-        osDelayTask(1000);
+        zosDelayTask(1000);
     }
 }
 
@@ -204,7 +205,7 @@ static ethConnManagerTask(void* argument)
 static ethConnManagerTask(void* argument)
 {      
     (void)argument;
-    osDelayTask(1000);
+    zosDelayTask(1000);
 
     while(666)
     { 
@@ -241,7 +242,7 @@ static ethConnManagerTask(void* argument)
                 break;
         }
         
-        osDelayTask(1000);
+        zosDelayTask(1000);
     }
 }
 
