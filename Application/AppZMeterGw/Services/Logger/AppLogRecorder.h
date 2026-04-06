@@ -15,6 +15,8 @@
 #include "Project_Conf.h"
 #include "AppTimeService.h"
 #include "LoggerService_Config.h"
+
+#include LOGGER_SYS_FS_PATH
 /******************************MACRO DEFINITIONS*******************************/
 
 #define MAX_SERVICE_NUMBER (2) //move this param to configuration file
@@ -106,7 +108,7 @@ RETURN_STATUS appLogRec(S32 loggerID, const char *logStr);
  * @param size Size of the buffer
  * @return Number of bytes read on success, -1 on failure
  */
-S32 appLogRecRead(S32 loggerID, const char *str, U32 size);
+S32 appLogRecRead(S32 loggerID, char *str, U32 size);
 
 /**
  * @brief Get logger ID by service name
