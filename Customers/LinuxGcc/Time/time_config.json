@@ -1,0 +1,31 @@
+{
+  "customer": "LinuxGcc",
+  "version": 1.1,
+  "releaseDate": "2026-04-06",  
+  "timeService": {
+    "use": true,
+    "timeZone": "UTC",
+    "ntp": {
+      "use": true,
+      "ipAddr": "pool.ntp.org",
+      "port": 123,
+      "updatePeriodMin": 60
+    },
+    "extRTC": {
+      "use": false,
+      "deviceName": "MT41T11",
+      "deviceConfig": {
+        "i2cBusName": "I2C_LINE_1",
+        "i2cAddress": "0x68",
+        "driverPath": "Driver/DeviceDrivers/inc/DrvM41T11_RTC.h"        
+      }
+    },
+    "intRTC": {
+      "use": false,
+      "deviceConfig": {
+        "driverPath": "Driver/McuCoreDrivers/inc/McuInterruptRegister.h"        
+      }
+    }
+  }
+}
+
