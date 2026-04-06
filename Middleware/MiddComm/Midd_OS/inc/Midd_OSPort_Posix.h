@@ -34,7 +34,7 @@
 #include <semaphore.h>
 #include <mqueue.h>
 
-#include "Midd_OSPort.h"
+//#include "Midd_OSPort.h"
 
 //Invalid task identifier
 #define OS_INVALID_TASK_ID -1

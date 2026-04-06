@@ -6,7 +6,7 @@
 #ifndef __FS_PORT_H__
 #define __FS_PORT_H__
 
-#include "os_port.h"
+#include "Midd_OSPort.h"
 #include "date_time.h"
 #include "error.h"
 
@@ -74,7 +74,7 @@ typedef struct
    uint32_t attributes;
    uint32_t size;
    DateTime modified;
-   char_t name[FS_MAX_NAME_LEN + 1];
+   char name[FS_MAX_NAME_LEN + 1];
 } FsDirEntry;
 
 

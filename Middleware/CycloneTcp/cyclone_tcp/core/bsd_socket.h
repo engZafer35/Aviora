@@ -31,6 +31,8 @@
 #ifndef _BSD_SOCKET_H
 #define _BSD_SOCKET_H
 
+#define BSD_SOCKET_SUPPORT DISABLE
+
 //BSD socket support
 #ifndef BSD_SOCKET_SUPPORT
    #define BSD_SOCKET_SUPPORT ENABLED

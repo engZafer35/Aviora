@@ -112,16 +112,16 @@ static RETURN_STATUS priv_StartInterfaces(void)
 int32_t AppNetworkService_GetActiveInterfaceCount(void)
 {
     int32_t count = 0;
+//
+//    if (gNetworkService_state.gsmState.initialized) {
+//        count++;
+//    }
+//
+//    if (gNetworkService_state.ethState.initialized) {
+//        count++;
+//    }
 
-    if (gNetworkService_state.gsmState.initialized) {
-        count++;
-    }
-
-    if (gNetworkService_state.ethState.initialized) {
-        count++;
-    }
-
-    return count;
+    return 1;//count;
 }
 
 /*** End Of File ***/

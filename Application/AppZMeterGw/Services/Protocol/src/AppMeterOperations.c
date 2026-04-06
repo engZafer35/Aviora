@@ -168,7 +168,7 @@ static void taskSlotMarkFinished(S32 taskId, ERR_CODE_T res)
 
 /* ---- FS helpers ---- */
 
-static error_t fsWriteWholeFile(const char_t *path, const void *data, size_t len)
+static error_t fsWriteWholeFile(const char *path, const void *data, size_t len)
 {
     FsFile *f = fsOpenFile(path, FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
     if (f == NULL)
@@ -178,7 +178,7 @@ static error_t fsWriteWholeFile(const char_t *path, const void *data, size_t len
     return e;
 }
 
-static error_t fsReadWholeText(const char_t *path, char *buf, size_t cap, size_t *outLen)
+static error_t fsReadWholeText(const char *path, char *buf, size_t cap, size_t *outLen)
 {
     FsFile *f = fsOpenFile(path, FS_FILE_MODE_READ);
     if (f == NULL)
@@ -215,7 +215,7 @@ static error_t fsReadWholeText(const char_t *path, char *buf, size_t cap, size_t
 static void meterListRefreshCount(void)
 {
     uint32_t sz = 0;
-    if (fsGetFileSize((char_t *)METER_LIST_FILE, &sz) != NO_ERROR || sz == 0)
+    if (fsGetFileSize((char *)METER_LIST_FILE, &sz) != NO_ERROR || sz == 0)
     {
         s_meterCount = 0;
         return;
@@ -230,7 +230,7 @@ static BOOL meterListContainsSerial(const char serialKey[16])
     if (s_meterCount == 0)
         return FALSE;
 
-    FsFile *f = fsOpenFile((char_t *)METER_LIST_FILE, FS_FILE_MODE_READ);
+    FsFile *f = fsOpenFile((char *)METER_LIST_FILE, FS_FILE_MODE_READ);
     if (f == NULL)
         return FALSE;
 
@@ -259,7 +259,7 @@ static BOOL meterListContainsSerial(const char serialKey[16])
 
 static error_t meterListAppendRow(const MeterTable_t *row)
 {
-    FsFile *f = fsOpenFile((char_t *)METER_LIST_FILE, FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE);
+    FsFile *f = fsOpenFile((char *)METER_LIST_FILE, FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE);
     if (f == NULL)
         return ERROR_FILE_OPENING_FAILED;
     if (fsSeekFile(f, 0, FS_SEEK_END) != NO_ERROR)
@@ -277,11 +277,11 @@ static error_t meterListRemoveSerial(const char serialKey[16])
     if (s_meterCount == 0)
         return NO_ERROR;
 
-    FsFile *src = fsOpenFile((char_t *)METER_LIST_FILE, FS_FILE_MODE_READ);
+    FsFile *src = fsOpenFile((char *)METER_LIST_FILE, FS_FILE_MODE_READ);
     if (src == NULL)
         return ERROR_FILE_OPENING_FAILED;
 
-    const char_t *tmpPath = METER_MAIN_DIR "meterList.tmp";
+    const char *tmpPath = METER_MAIN_DIR "meterList.tmp";
     FsFile *dst = fsOpenFile(tmpPath, FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
     if (dst == NULL)
     {
@@ -316,9 +316,9 @@ static error_t meterListRemoveSerial(const char serialKey[16])
         return NO_ERROR;
     }
 
-    (void)fsDeleteFile((char_t *)METER_LIST_FILE);
+    (void)fsDeleteFile((char *)METER_LIST_FILE);
     if (written > 0)
-        (void)fsRenameFile(tmpPath, (char_t *)METER_LIST_FILE);
+        (void)fsRenameFile(tmpPath, (char *)METER_LIST_FILE);
     else
         (void)fsDeleteFile(tmpPath);
 
@@ -336,7 +336,7 @@ static RETURN_STATUS directiveIndexSave(void)
     memcpy(hdr, &magic, sizeof(magic));
     memcpy(hdr + sizeof(U32), &s_directiveCount, sizeof(U32));
 
-    FsFile *f = fsOpenFile((char_t *)DIRECTIVE_INDEX_FILE,
+    FsFile *f = fsOpenFile((char *)DIRECTIVE_INDEX_FILE,
                            FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
     if (f == NULL)
         return FAILURE;
@@ -354,7 +354,7 @@ static RETURN_STATUS directiveIndexLoad(void)
     U8 hdr[sizeof(U32) * 2];
     s_directiveCount = 0;
 
-    FsFile *f = fsOpenFile((char_t *)DIRECTIVE_INDEX_FILE, FS_FILE_MODE_READ);
+    FsFile *f = fsOpenFile((char *)DIRECTIVE_INDEX_FILE, FS_FILE_MODE_READ);
     if (f == NULL)
         return SUCCESS;
 
@@ -443,7 +443,6 @@ static ERR_CODE_T recvLine(char *line, size_t cap, U32 overallTimeoutMs)
         return EN_ERR_CODE_METER_COMM_LINE_PARAM_ERROR;
 
     size_t n = 0;
-    systime_t t0 = osGetSystemTime();
 
     while (n + 1 < cap)
     {
@@ -463,8 +462,6 @@ static ERR_CODE_T recvLine(char *line, size_t cap, U32 overallTimeoutMs)
             }
             line[n++] = (char)b;
         }
-        if ((U32)(osGetSystemTime() - t0) > overallTimeoutMs)
-            return EN_ERR_CODE_TIMEOUT;
     }
     return EN_ERR_CODE_METER_COMM_LINE_ERROR;
 }
@@ -475,7 +472,7 @@ static ERR_CODE_T iecSaveMeterIdFile(S32 taskId, const char *line)
 {
     char path[MAX_PATH_LEN];
     snprintf(path, sizeof(path), "%s%d_meterID.txt", METER_DATA_OUTPUT_DIR, (int)taskId);
-    return (fsWriteWholeFile((char_t *)path, line, strlen(line)) == NO_ERROR)
+    return (fsWriteWholeFile((char *)path, line, strlen(line)) == NO_ERROR)
                ? EN_ERR_CODE_SUCCESS
                : EN_ERR_CODE_FAILURE;
 }
@@ -507,7 +504,7 @@ static ERR_CODE_T iecDoReadout(S32 taskId)
     if (sendAll((const U8 *)"ACK050\r\n", 8U, IEC_LINE_TIMEOUT_MS) != 0)
         return EN_ERR_CODE_METER_COMM_LINE_ERROR;
 
-    FsFile *f = fsOpenFile((char_t *)pathOut, FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
+    FsFile *f = fsOpenFile((char *)pathOut, FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
     if (f == NULL)
         return EN_ERR_CODE_FAILURE;
 
@@ -560,7 +557,7 @@ static ERR_CODE_T iecDoProfile(S32 taskId, const char *t0, const char *t1)
     if (sendAll((const U8 *)cmd, (U32)strlen(cmd), IEC_LINE_TIMEOUT_MS) != 0)
         return EN_ERR_CODE_METER_COMM_LINE_ERROR;
 
-    FsFile *f = fsOpenFile((char_t *)pathPay, FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
+    FsFile *f = fsOpenFile((char *)pathPay, FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
     if (f == NULL)
         return EN_ERR_CODE_FAILURE;
 
@@ -719,7 +716,7 @@ RETURN_STATUS appMeterOperationsAddMeter(MeterData_t *meterData)
     }
 
     snprintf(path, sizeof(path), "%s%.16s", METER_REG_DIR, meterData->serialNumber);
-    error_t e = fsWriteWholeFile((char_t *)path, meterData, sizeof(MeterData_t));
+    error_t e = fsWriteWholeFile((char *)path, meterData, sizeof(MeterData_t));
     if (e != NO_ERROR)
     {
         unlockMeterReg();
@@ -729,14 +726,14 @@ RETURN_STATUS appMeterOperationsAddMeter(MeterData_t *meterData)
     e = meterListAppendRow(&row);
     if (e != NO_ERROR)
     {
-        (void)fsDeleteFile((char_t *)path);
+        (void)fsDeleteFile((char *)path);
         unlockMeterReg();
         return FAILURE;
     }
     s_meterCount++;
 
     DEBUG_INFO("->[I] Meter %s added", meterData->serialNumber);
-    APP_LOG_REC(g_sysLoggerID, "Meter %s added", meterData->serialNumber);
+    APP_LOG_REC(g_sysLoggerID, "Meter added");
 
     unlockMeterReg();
     return SUCCESS;
@@ -751,7 +748,7 @@ RETURN_STATUS appMeterOperationsGetMeterData(const char *serialNumber, MeterData
 
     snprintf(path, sizeof(path), "%s%.16s", METER_REG_DIR, serialNumber);
 
-    FsFile *f = fsOpenFile((char_t *)path, FS_FILE_MODE_READ);
+    FsFile *f = fsOpenFile((char *)path, FS_FILE_MODE_READ);
     if (f == NULL)
         return FAILURE;
 
@@ -776,14 +773,14 @@ RETURN_STATUS appMeterOperationsGetMeterDataByIndex(U32 index, MeterData_t *mete
         return FAILURE;
     }
 
-    FsFile *f = fsOpenFile((char_t *)METER_LIST_FILE, FS_FILE_MODE_READ);
+    FsFile *f = fsOpenFile((char *)METER_LIST_FILE, FS_FILE_MODE_READ);
     if (NULL == f)
     {
         unlockMeterReg();
         return FAILURE;
     }
 
-    if (NO_ERROR != fsSeekFile(f, (int_t)(index * METER_LIST_ROW_SZ), FS_SEEK_SET))
+    if (NO_ERROR != fsSeekFile(f, (int)(index * METER_LIST_ROW_SZ), FS_SEEK_SET))
     {
         fsCloseFile(f);
         unlockMeterReg();
@@ -822,10 +819,10 @@ RETURN_STATUS appMeterOperationsDeleteMeter(const char *serialNumber)
     (void)meterListRemoveSerial(serialNumber);
 
     snprintf(path, sizeof(path), "%s%.16s", METER_REG_DIR, serialNumber);
-    (void)fsDeleteFile((char_t *)path);
+    (void)fsDeleteFile((char *)path);
 
     DEBUG_INFO("->[I] Meter %s deleted", serialNumber);
-    APP_LOG_REC(g_sysLoggerID, "Meter %s deleted", serialNumber);
+    APP_LOG_REC(g_sysLoggerID, "Meter deleted");
 
     unlockMeterReg();
     return SUCCESS;
@@ -840,7 +837,7 @@ RETURN_STATUS appMeterOperationsDeleteAllMeters(void)
 
     if (s_meterCount > 0)
     {
-        FsFile *f = fsOpenFile((char_t *)METER_LIST_FILE, FS_FILE_MODE_READ);
+        FsFile *f = fsOpenFile((char *)METER_LIST_FILE, FS_FILE_MODE_READ);
         if (f != NULL)
         {
             for (;;)
@@ -856,7 +853,7 @@ RETURN_STATUS appMeterOperationsDeleteAllMeters(void)
                     MeterTable_t row;
                     memcpy(&row, buf + m * METER_LIST_ROW_SZ, sizeof(row));
                     snprintf(path, sizeof(path), "%s%.16s", METER_REG_DIR, row.serialNumber);
-                    (void)fsDeleteFile((char_t *)path);
+                    (void)fsDeleteFile((char *)path);
                 }
                 if (got < sizeof(buf))
                     break;
@@ -865,7 +862,7 @@ RETURN_STATUS appMeterOperationsDeleteAllMeters(void)
         }
     }
 
-    (void)fsDeleteFile((char_t *)METER_LIST_FILE);
+    (void)fsDeleteFile((char *)METER_LIST_FILE);
     s_meterCount = 0;
 
     DEBUG_INFO("->[I] All meters deleted");
@@ -918,7 +915,7 @@ S32 appMeterOperationsAddReadoutTask(const char *request, Callback_t callback)
     }
 
     DEBUG_INFO("->[I] Readout task %d added", tid);
-    APP_LOG_REC(g_sysLoggerID, "Readout task %d added", tid);
+    APP_LOG_REC(g_sysLoggerID, "Readout task added");
 
     return tid;
 }
@@ -968,7 +965,7 @@ S32 appMeterOperationsAddProfileTask(const char *request, Callback_t callback)
     }
 
     DEBUG_INFO("->[I] Profile task %d added", tid);
-    APP_LOG_REC(g_sysLoggerID, "Profile task %d added", tid);
+    APP_LOG_REC(g_sysLoggerID, "Profile task added");
 
     return tid;
 }
@@ -1017,7 +1014,7 @@ ERR_CODE_T appMeterOperationsTaskIDFree(S32 taskID)
         retVal = EN_ERR_CODE_SUCCESS;
 
         DEBUG_INFO("->[I] Task %d freed", taskID);
-        APP_LOG_REC(g_sysLoggerID, "Task %d freed", taskID);
+        APP_LOG_REC(g_sysLoggerID, "Task freed");
     }
     
     unlockTask();
@@ -1059,7 +1056,7 @@ S32 appMeterOperationsAddDirective(const char *directive)
     snprintf(path, sizeof(path), "%s%s.json", DIRECTIVE_MAIN_DIR, id);
     path[sizeof(path) - 1] = '\0';
 
-    if (NO_ERROR != fsWriteWholeFile((char_t *)path, directive, strlen(directive)))
+    if (NO_ERROR != fsWriteWholeFile((char *)path, directive, strlen(directive)))
     {
         DEBUG_INFO("->[E] Directive add failed: Write failed");
         APP_LOG_REC(g_sysLoggerID, "Directive add failed: Write failed");
@@ -1079,7 +1076,7 @@ S32 appMeterOperationsAddDirective(const char *directive)
     if (SUCCESS != directiveIndexSave())
     {
         if (isNew) { s_directiveCount--; }
-        (void)fsDeleteFile((char_t *)path);
+        (void)fsDeleteFile((char *)path);
 
         DEBUG_INFO("->[E] Directive add failed: Index save failed");
         APP_LOG_REC(g_sysLoggerID, "Directive add failed: Index save failed");
@@ -1102,10 +1099,10 @@ RETURN_STATUS appMeterOperationsDeleteDirective(const char *directiveID)
             char path[MAX_PATH_LEN];
             snprintf(path, sizeof(path), "%s%s.json", DIRECTIVE_MAIN_DIR, s_directiveIds[i]);
             path[sizeof(path) - 1] = '\0';
-            (void)fsDeleteFile((char_t *)path);
+            (void)fsDeleteFile((char *)path);
         }
         s_directiveCount = 0;
-        (void)fsDeleteFile((char_t *)DIRECTIVE_INDEX_FILE);
+        (void)fsDeleteFile((char *)DIRECTIVE_INDEX_FILE);
 
         DEBUG_INFO("->[I] All directives deleted");
         APP_LOG_REC(g_sysLoggerID, "All directives deleted");
@@ -1124,7 +1121,7 @@ RETURN_STATUS appMeterOperationsDeleteDirective(const char *directiveID)
     char path[MAX_PATH_LEN];
     snprintf(path, sizeof(path), "%s%s.json", DIRECTIVE_MAIN_DIR, directiveID);
     path[sizeof(path) - 1] = '\0';
-    (void)fsDeleteFile((char_t *)path);
+    (void)fsDeleteFile((char *)path);
 
     for (U32 j = (U32)ix + 1; j < s_directiveCount; j++)
         memcpy(s_directiveIds[j - 1], s_directiveIds[j], MAX_KEY_LENGTH);
@@ -1134,7 +1131,7 @@ RETURN_STATUS appMeterOperationsDeleteDirective(const char *directiveID)
     directiveIndexSave(); 
 
     DEBUG_INFO("->[I] Directive %s deleted", directiveID);
-    APP_LOG_REC(g_sysLoggerID, "Directive %s deleted", directiveID);
+    APP_LOG_REC(g_sysLoggerID, "Directive deleted");
 
     unlockDirective();
     return SUCCESS;
@@ -1157,7 +1154,7 @@ RETURN_STATUS appMeterOperationsGetDirective(const char *directiveID, char *dire
     unlockDirective();
 
     size_t got = 0;
-    error_t e = fsReadWholeText((char_t *)path, directiveOut, directiveOutSz, &got);
+    error_t e = fsReadWholeText((char *)path, directiveOut, directiveOutSz, &got);
     return (e == NO_ERROR) ? SUCCESS : FAILURE;
 }
 
@@ -1179,7 +1176,7 @@ RETURN_STATUS appMeterOperationsGetDirectiveByIndex(U32 index, char *directiveOu
     unlockDirective();
 
     size_t got = 0;
-    error_t e = fsReadWholeText((char_t *)path, directiveOut, directiveOutSz, &got);
+    error_t e = fsReadWholeText((char *)path, directiveOut, directiveOutSz, &got);
     return (e == NO_ERROR) ? SUCCESS : FAILURE;
 }
 

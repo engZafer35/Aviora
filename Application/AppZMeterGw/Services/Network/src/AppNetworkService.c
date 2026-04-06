@@ -46,7 +46,7 @@ static void networkServiceTask(void* argument)
     
     (void)argument;
 
-    sDelayTask(2000);
+    zosDelayTask(2000);
 
     while (1) 
     {
@@ -72,12 +72,12 @@ static void networkServiceTask(void* argument)
 
             case NM_STATE_DONE:
             {
-                osDeleteTask(OS_SELF_TASK_ID);
+                zosDeleteTask(OS_SELF_TASK_ID);
                 break;
             }
         }
 
-        osDelayTask(1000);
+        zosDelayTask(1000);
     }
 }
 
