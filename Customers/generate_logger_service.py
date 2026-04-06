@@ -7,8 +7,8 @@ Reads:
 
 Generates:
   Customers/<customer>/Logger/Cus_LoggerService_Config.h
-  Customers/Cus_loggerService_Conf.h
-  Customers/<customer>/Logger/Cus_loggerService_Conf.c
+  Customers/Cus_LoggerService_Conf.h
+  Customers/<customer>/Logger/Cus_LoggerService_Conf.c
   Customers/LoggerService_Config.h
 
 Important:
@@ -196,7 +196,7 @@ def generate_logger_service(customer: str, repo_root: Path) -> None:
     out_cfg_h.parent.mkdir(parents=True, exist_ok=True)
     out_cfg_h.write_text("\n".join(lines_cfg_h).rstrip() + "\n", encoding="utf-8")
 
-    # -------------------- Cus_loggerService_Conf.h --------------------
+    # -------------------- Cus_LoggerService_Conf.h --------------------
     conf_h_guard = "__LOGGER_SERVICE_CONFIG_H__"
     lines_conf_h: list[str] = [
         "/******************************************************************************",
@@ -225,12 +225,12 @@ def generate_logger_service(customer: str, repo_root: Path) -> None:
     out_conf_h = here / "LoggerService_Config.h"
     out_conf_h.write_text("\n".join(lines_conf_h).rstrip() + "\n", encoding="utf-8")
 
-    # -------------------- Cus_loggerService_Conf.c --------------------
+    # -------------------- Cus_LoggerService_Conf.c --------------------
     lines_conf_c: list[str] = []
     lines_conf_c += [
         "/******************************************************************************",
         "* #Author       : Zafer Satilmis",
-        "* #File Name    : Cus_loggerService_Conf.c",
+        "* #File Name    : Cus_LoggerService_Conf.c",
         f"* #Customer     : {customer}",
         f"* #Date         : {now}",
         "******************************************************************************/",
@@ -242,7 +242,7 @@ def generate_logger_service(customer: str, repo_root: Path) -> None:
         "",
         "#define SHOW_PAGE_DBG_MSG  (DISABLE)",
         "/********************************* INCLUDES ***********************************/",
-        "#include \"Cus_loggerService_Conf.h\"",
+        "#include \"Cus_LoggerService_Conf.h\"",
         "#include \"Project_Conf.h\"",
         "#include \"AppLogRecorder.h\"",
         "",
@@ -311,7 +311,7 @@ def generate_logger_service(customer: str, repo_root: Path) -> None:
         "/******************************** End Of File *********************************/",
     ]
 
-    out_conf_c = customer_dir / "Cus_loggerService_Conf.c"
+    out_conf_c = customer_dir / "Cus_LoggerService_Conf.c"
     out_conf_c.write_text("\n".join(lines_conf_c).rstrip() + "\n", encoding="utf-8")
 
     # -------------------- Customers/LoggerService_Config.h wrapper --------------------
