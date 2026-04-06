@@ -5,7 +5,6 @@
 * #Description  : LCD Display Implementation - 3.5" TFT LCD Screen
 *******************************************************************************/
 
-#include "DisplayCustom_LCD.h"
 #include "AppDataBus.h"
 #include "AppLogRecorder.h"
 

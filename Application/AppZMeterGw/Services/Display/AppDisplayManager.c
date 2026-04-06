@@ -18,7 +18,7 @@
 /****************************** MACRO DEFINITIONS *****************************/
 
 /* Auto-generated display configuration - Include customer display implementation */
-#include "AppDisplayManager_Autogen.c"
+
 
 /******************************* TYPE DEFINITIONS *****************************/
 
@@ -31,6 +31,8 @@ static S32 gs_dbusID;
 static OsTaskId gs_dpTaskID;
 
 /***************************** STATIC FUNCTIONS  ******************************/
+#include "AppDisplayManager_Autogen.c"
+
 static void displayTask(void * pvParameters)
 {
     zosDelayTask(1000); //wait once before starting
