@@ -24,9 +24,10 @@
 
 /********************************* INCLUDES ***********************************/
 #include "AppProtocolOrionTLV.h"
+#include "AppProtocol.h"
 #include "MiddEventTimer.h"
 #include "AppTcpConnManager.h"
-#include "AppMeterOperations.h"
+
 #include "AppTaskManager.h"
 #include "AppLogRecorder.h"
 #include "AppTimeService.h"
@@ -49,7 +50,7 @@
 #define FTP_DEFAULT_PORT        (21)
 #define FW_LOCAL_PATH           "/tmp/firmware.bin"
 
-#define ORION_TLV_HEADER_SIZE         (4)   /* 2 tag + 2 len */
+#define ORION_TLV_HEADER_SIZE   (4)   /* 2 tag + 2 len */
 
 #define ORION_EVENT_Q_DEPTH     (8)
 
@@ -57,7 +58,8 @@
 #define SFUNC_ALIVE             (0xF1)
 #define SFUNC_PUSH_METER_DATA   (0xF2)
 
-
+#define ORION_PKT_START '$'       /* 0x24 */
+#define ORION_PKT_END   '#'       /* 0x23 */
 /* ─── TAG Definitions ─────────────────────────────────────────────────────
  *  0x00XX  Common / header
  *  0x01XX  Ident / alive
@@ -555,11 +557,10 @@ static void registerStateSave(BOOL reg)
 
 static void connConfigDefault(void)
 {
-    strncpy(gs_serverIP, ORION_DEFAULT_SERVER_IP, sizeof(gs_serverIP) - 1);
+    strncpy(gs_serverIP, ORION_TLV_DEFAULT_SERVER_IP, sizeof(gs_serverIP) - 1);
     gs_serverIP[sizeof(gs_serverIP) - 1] = '\0';
-    gs_serverPort = ORION_DEFAULT_PUSH_PORT;
-    gs_pullPort = ORION_DEFAULT_PULL_PORT;
-    return;
+    gs_serverPort = ORION_TLV_DEFAULT_PUSH_PORT;
+    gs_pullPort = ORION_TLV_DEFAULT_PULL_PORT;
 }
 
 static RETURN_STATUS connConfigLoad(void)
@@ -1250,6 +1251,7 @@ static void processIdentSession(OrionSession_t *session)
             if ((CONN_TYPE_TCP == gsFlagList.connType) && (FALSE == appTcpConnManagerIsConnectedPush()))
             {
                 appTcpConnManagerRequestPushConnect();
+                zosDelayTask(1000);
                 break;
             }
 
@@ -1258,6 +1260,7 @@ static void processIdentSession(OrionSession_t *session)
             {
                 DEBUG_WARNING("->[W] OrionTLV: pushident send failed");
                 APP_LOG_REC(g_sysLoggerID, "Pushident send failed");
+                gsFlagList.sendIdent = TRUE;
                 
                 sessionDelete(session);
                 break;
@@ -2105,6 +2108,8 @@ RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber)
     gsFlagList.sendAlive  = FALSE;
     gs_aliveCnt   = 0;
     gs_localTransNum = 0;
+
+    gsFlagList.connType = CONN_TYPE_TCP;
 
     return SUCCESS;
 }

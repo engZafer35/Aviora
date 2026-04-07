@@ -72,14 +72,6 @@
 #define ORION_REGISTER_FILE           "orion_register.dat"
 #define ORION_SERVER_FILE             "orion_server.dat"
 
-#define ORION_DEFAULT_SERVER_IP   "127.0.0.1"
-#define ORION_DEFAULT_PUSH_PORT   (8723)
-#define ORION_DEFAULT_DEVICE_IP   "127.0.0.1"
-#define ORION_DEFAULT_PULL_PORT   (2622)
-
-#define ORION_PKT_START               '$'       /* 0x24 */
-#define ORION_PKT_END                 '#'       /* 0x23 */
-
 #define ORION_SESSION_MAX             (8)
 #define ORION_SESSION_TIMEOUT         (10000)   /* 10 s  */
 

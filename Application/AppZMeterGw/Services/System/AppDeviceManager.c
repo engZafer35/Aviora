@@ -62,13 +62,14 @@ RETURN_STATUS appFeedWdt(void)
 {
     return SUCCESS;
 }
-
+#include <stdlib.h>
 void appDevMngHwRestart(void)
 {
     //TODO: stop all thread/task
     //TODO: stop feed wdt
     //todo: call hw reset func
 
+    exit(0);
     while(1) /* wait until hw reset */
         ;
 }

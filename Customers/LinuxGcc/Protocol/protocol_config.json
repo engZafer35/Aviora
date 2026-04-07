@@ -39,7 +39,7 @@
         "connection": {
           "type": "tcp",
           "serverIpAddr": "127.0.0.1",
-          "pushPort": 1883,
+          "pushPort": 8723,
           "deviceIpAddr": "127.0.0.1",
           "pullPort": 2622
         },
@@ -59,7 +59,7 @@
         "connection": {
           "type": "tcp",
           "serverIpAddr": "127.0.0.1",
-          "pushPort": 1883,
+          "pushPort": 8723,
           "deviceIpAddr": "127.0.0.1",
           "pullPort": 2622
         },
@@ -79,7 +79,7 @@
         "connection": {
           "type": "tcp",
           "serverIpAddr": "127.0.0.1",
-          "pushPort": 1883,
+          "pushPort": 8723,
           "deviceIpAddr": "127.0.0.1",
           "pullPort": 2622
         },
