@@ -73,8 +73,8 @@
 #define ORION_SERVER_FILE             "orion_server.dat"
 
 #define ORION_DEFAULT_SERVER_IP   "127.0.0.1"
-#define ORION_DEFAULT_PUSH_PORT   (1883)
-#define ORION_DEFAULT_DEVICE_IP   "192.168.1.10"
+#define ORION_DEFAULT_PUSH_PORT   (8723)
+#define ORION_DEFAULT_DEVICE_IP   "127.0.0.1"
 #define ORION_DEFAULT_PULL_PORT   (2622)
 
 #define ORION_PKT_START               '$'       /* 0x24 */
