@@ -37,6 +37,7 @@
 - Industrial process monitoring  
 - Agricultural and environmental sensing  
 - Remote diagnostics and telemetry systems
+<img width="1600" height="900" alt="image" src="https://github.com/user-attachments/assets/8fec2173-9fae-4520-b642-f8c7a3b24e69" />
 
 ---
 
