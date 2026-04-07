@@ -534,7 +534,9 @@ static BOOL mtlxGetUint32(OrionParser_t *p, uint16_t tag, uint32_t *out)
 static BOOL registerStateLoad(void)
 {
     FsFile *f = fsOpenFile((char *)ORION_REGISTER_FILE, FS_FILE_MODE_READ);
-    if (f == NULL) return FALSE;
+    if (f == NULL)
+        return FALSE;
+
     U8 val = 0; size_t got = 0;
     (void)fsReadFile(f, &val, 1, &got);
     fsCloseFile(f);
@@ -545,10 +547,12 @@ static void registerStateSave(BOOL reg)
 {
     FsFile *f = fsOpenFile((char *)ORION_REGISTER_FILE,
                            FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE | FS_FILE_MODE_TRUNC);
-    if (f == NULL) return;
-    U8 val = reg ? 1 : 0;
-    (void)fsWriteFile(f, &val, 1);
-    fsCloseFile(f);
+    if (f != NULL)
+    {
+        U8 val = (U8)reg;
+        fsWriteFile(f, &val, 1);
+        fsCloseFile(f);
+    }
 }
 
 /* ================================================================== */
@@ -1594,7 +1598,7 @@ static void processReadoutSession(OrionSession_t *session)
                      directive, meterSn);
 
             S32 tid = appMeterOperationsAddReadoutTask(reqBuf, meterTaskCallback);
-            if (tid <= 0)
+            if (tid < 0)
             {
                 DEBUG_ERROR("->[E] OrionTLV: meter oprs READOUT task add failed tranN %u", session->transNumber);
                 APP_LOG_REC(g_sysLoggerID, "OrionTLV: meter oprs READOUT task add failed");

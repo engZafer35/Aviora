@@ -244,6 +244,26 @@ def get_function(fields):
     return get_uint8(fields, TAG_FUNCTION, 0)
 
 
+def minify_json_for_device(text: str) -> str:
+    """
+    Dialog / düzenlenebilir JSON metnini ağ üzerinde tek satır, gereksiz boşluksuz
+    göndermek için sıkıştırır (json.loads → json.dumps compact).
+    """
+    obj = json.loads(text.strip())
+    return json.dumps(obj, separators=(",", ":"), ensure_ascii=False)
+
+
+def format_json_for_log_display(text: str):
+    """
+    Logda göstermek için JSON'u girintili metne çevirir; parse edilemezse None.
+    """
+    try:
+        obj = json.loads(text.strip())
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return None
+    return json.dumps(obj, indent=2, ensure_ascii=False)
+
+
 def format_tlv_fields(fields):
     """Pretty-print TLV fields for the log panel."""
     lines = []
@@ -268,11 +288,31 @@ def format_tlv_fields(fields):
         elif tag == TAG_ERROR_CODE:
             num = struct.unpack("!h", val)[0] if len(val) == 2 else 0
             lines.append(f"  {tag_name:22s}  = {num}")
+        elif tag == TAG_DIRECTIVE_DATA:
+            s = val.decode("utf-8", errors="replace")
+            pj = format_json_for_log_display(s)
+            if pj:
+                lines.append(f"  {tag_name:22s}  =")
+                for pl in pj.splitlines():
+                    lines.append(f"      {pl}")
+            else:
+                disp = s if len(s) <= 400 else s[:397] + "..."
+                lines.append(f"  {tag_name:22s}  = {disp!r}")
         else:
             try:
-                s = val.decode("ascii")
-                if len(s) > 80:
-                    s = s[:77] + "..."
+                s = val.decode("utf-8", errors="replace")
+                # Diğer alanlarda JSON benzeri içerik (cihaz düz JSON gönderir)
+                if tag in (TAG_LOG_DATA, TAG_READOUT_DATA) or (
+                    len(s) > 2 and s.lstrip()[:1] in "{["
+                ):
+                    pj = format_json_for_log_display(s)
+                    if pj:
+                        lines.append(f"  {tag_name:22s}  =")
+                        for pl in pj.splitlines():
+                            lines.append(f"      {pl}")
+                        continue
+                #if len(s) > 80:
+                  #  s = s[:77] + "..."
                 lines.append(f"  {tag_name:22s}  = \"{s}\"")
             except UnicodeDecodeError:
                 lines.append(f"  {tag_name:22s}  = [{val.hex()}]")
@@ -323,10 +363,10 @@ class OrionTLVTestServer:
         self.lock = threading.Lock()
 
         # ── device info ──
-        self.device_serial = tk.StringVar(value="")
+        self.device_serial = tk.StringVar(value="12345678")
         self.device_flag = "AVI"
-        self.pull_ip = tk.StringVar(value="")
-        self.pull_port_var = tk.StringVar(value="")
+        self.pull_ip = tk.StringVar(value="127.0.0.1")
+        self.pull_port_var = tk.StringVar(value="2622")
         self.device_identified = False
 
         # ── auto-response toggles ──
@@ -883,8 +923,8 @@ class OrionTLVTestServer:
 
     def cmd_setting_server(self):
         vals = self._show_dialog("Sunucu Ayarla", [
-            ("IP",   "192.168.1.100", "str"),
-            ("Port", "8722",          "str"),
+            ("IP",   "127.0.0.1", "str"),
+            ("Port", "8723",          "str"),
         ])
         if not vals:
             return
@@ -974,8 +1014,8 @@ class OrionTLVTestServer:
         vals = self._show_dialog("Load Profile İste", [
             ("Directive",       "ProfileDirective1",     "str"),
             ("Meter Serial No", "12345678",              "str"),
-            ("Başlangıç",      "2021-06-22 00:00:00",   "str"),
-            ("Bitiş",          "2021-06-22 12:05:00",   "str"),
+            ("Başlangıç",      "2026-04-07 00:00:00",   "str"),
+            ("Bitiş",          "2026-04-07 18:05:00",   "str"),
         ])
         if not vals:
             return
@@ -1019,13 +1059,23 @@ class OrionTLVTestServer:
         }, indent=2, ensure_ascii=False)
 
         vals = self._show_dialog("Directive Ekle", [
-            ("Directive (JSON blob)", default_dir, "text"),
+            ("Directive (JSON blob)", default_dir, "text", (62, 22)),
         ])
         if not vals:
             return
 
+        raw_json = vals["Directive (JSON blob)"]
+        try:
+            wire_payload = minify_json_for_device(raw_json)
+        except json.JSONDecodeError as e:
+            messagebox.showerror(
+                "JSON hatası",
+                f"Geçerli JSON değil; düzeltip tekrar deneyin.\n\n{e}",
+            )
+            return
+
         def extra(pb):
-            pb.add_string(TAG_DIRECTIVE_DATA, vals["Directive (JSON blob)"])
+            pb.add_string(TAG_DIRECTIVE_DATA, wire_payload)
 
         pkt = self._build_pull_packet(FUNC_DIRECTIVE_ADD, extra)
         self._send_pull(pkt)
@@ -1058,7 +1108,13 @@ class OrionTLVTestServer:
         frame = ttk.Frame(dlg, padding=12)
         frame.pack(fill="both", expand=True)
 
-        for i, (label, default, ftype) in enumerate(fields):
+        for i, row in enumerate(fields):
+            if len(row) >= 4:
+                label, default, ftype, text_size = row[0], row[1], row[2], row[3]
+            else:
+                label, default, ftype = row
+                text_size = (55, 12)
+
             ttk.Label(frame, text=label + ":").grid(
                 row=i, column=0, sticky="nw", padx=(0, 8), pady=3)
 
@@ -1067,8 +1123,10 @@ class OrionTLVTestServer:
                 w = ttk.Checkbutton(frame, variable=var)
                 entries[label] = ("bool", var)
             elif ftype == "text":
-                w = tk.Text(frame, width=55, height=12,
-                            font=("Consolas", 9))
+                tw, th = text_size
+                w = tk.Text(
+                    frame, width=tw, height=th, font=("Consolas", 9), wrap="none"
+                )
                 w.insert("1.0", str(default))
                 entries[label] = ("text", w)
             else:
