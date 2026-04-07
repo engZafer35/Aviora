@@ -308,7 +308,7 @@ class OrionTLVTestServer:
     def __init__(self, root, push_port):
         self.root = root
         self.root.title("Protocol OrionTLV Test Server")
-        self.root.geometry("1200x980")
+        self.root.geometry("1200x780")
         self.root.minsize(1000, 600)
 
         self.push_port = push_port
@@ -362,12 +362,53 @@ class OrionTLVTestServer:
         paned = ttk.PanedWindow(self.root, orient="horizontal")
         paned.pack(fill="both", expand=True, padx=6, pady=6)
 
-        # ── LEFT PANEL ──
+        # ── LEFT PANEL (dikey kaydırma — tüm kontroller dar ekranda sığsın) ──
         left = ttk.Frame(paned, width=300)
         paned.add(left, weight=0)
 
+        left_canvas = tk.Canvas(left, highlightthickness=0, borderwidth=0)
+        left_scroll = ttk.Scrollbar(left, orient="vertical", command=left_canvas.yview)
+        left_canvas.configure(yscrollcommand=left_scroll.set)
+
+        scroll_inner = ttk.Frame(left_canvas)
+        left_win = left_canvas.create_window((0, 0), window=scroll_inner, anchor="nw")
+
+        def _left_scroll_region(_event=None):
+            left_canvas.configure(scrollregion=left_canvas.bbox("all"))
+
+        def _left_canvas_width(event):
+            left_canvas.itemconfigure(left_win, width=event.width)
+
+        scroll_inner.bind("<Configure>", _left_scroll_region)
+        left_canvas.bind("<Configure>", _left_canvas_width)
+
+        def _on_left_panel_mousewheel(event):
+            """Sol panel (veya altındaki widget) üzerindeyken dikey kaydır."""
+            try:
+                w = self.root.winfo_containing(event.x_root, event.y_root)
+            except tk.TclError:
+                return
+            p = w
+            while p:
+                if p is left:
+                    if getattr(event, "delta", 0):
+                        left_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+                    elif getattr(event, "num", None) == 4:
+                        left_canvas.yview_scroll(-3, "units")
+                    elif getattr(event, "num", None) == 5:
+                        left_canvas.yview_scroll(3, "units")
+                    return "break"
+                p = p.master
+
+        self.root.bind_all("<MouseWheel>", _on_left_panel_mousewheel, add="+")
+        self.root.bind_all("<Button-4>", _on_left_panel_mousewheel, add="+")
+        self.root.bind_all("<Button-5>", _on_left_panel_mousewheel, add="+")
+
+        left_scroll.pack(side="right", fill="y")
+        left_canvas.pack(side="left", fill="both", expand=True)
+
         # --- Sunucu ---
-        sf = ttk.LabelFrame(left, text=" Sunucu (OrionTLV) ", padding=6)
+        sf = ttk.LabelFrame(scroll_inner, text=" Sunucu (OrionTLV) ", padding=6)
         sf.pack(fill="x", padx=4, pady=(0, 4))
 
         row = ttk.Frame(sf)
@@ -389,7 +430,7 @@ class OrionTLVTestServer:
         self.status_lbl.pack(anchor="w")
 
         # --- Cihaz Bilgisi ---
-        df = ttk.LabelFrame(left, text=" Cihaz Bilgisi ", padding=6)
+        df = ttk.LabelFrame(scroll_inner, text=" Cihaz Bilgisi ", padding=6)
         df.pack(fill="x", padx=4, pady=4)
 
         for r, (label, var) in enumerate([
@@ -405,7 +446,7 @@ class OrionTLVTestServer:
         self.conn_lbl.grid(row=3, column=0, columnspan=2, sticky="w", pady=2)
 
         # --- Otomatik Cevap ---
-        af = ttk.LabelFrame(left, text=" Otomatik Cevap ", padding=6)
+        af = ttk.LabelFrame(scroll_inner, text=" Otomatik Cevap ", padding=6)
         af.pack(fill="x", padx=4, pady=4)
         ttk.Checkbutton(af, text="Ident → register: true",
                          variable=self.auto_ident).pack(anchor="w")
@@ -415,7 +456,7 @@ class OrionTLVTestServer:
                          variable=self.auto_data_ack).pack(anchor="w")
 
         # --- Pull Komutları ---
-        cf = ttk.LabelFrame(left, text=" Pull Komutları  (Sunucu → Cihaz) ", padding=6)
+        cf = ttk.LabelFrame(scroll_inner, text=" Pull Komutları  (Sunucu → Cihaz) ", padding=6)
         cf.pack(fill="x", padx=4, pady=4)
 
         self.pull_info_lbl = ttk.Label(cf, text="⚠ Ident bekleniyor...",
@@ -436,12 +477,12 @@ class OrionTLVTestServer:
         ]
         self.pull_buttons = []
         for text, cmd in cmds:
-            btn = ttk.Button(cf, text=text, command=cmd, state="enable")
+            btn = ttk.Button(cf, text=text, command=cmd, state="disabled")
             btn.pack(fill="x", pady=1)
             self.pull_buttons.append(btn)
 
         # --- Alt kontroller ---
-        ttk.Button(left, text="Logları Temizle", command=self.clear_log).pack(
+        ttk.Button(scroll_inner, text="Logları Temizle", command=self.clear_log).pack(
             fill="x", padx=4, pady=6)
 
         # ── RIGHT PANEL (log) ──
