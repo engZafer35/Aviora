@@ -311,8 +311,8 @@ def format_tlv_fields(fields):
                         for pl in pj.splitlines():
                             lines.append(f"      {pl}")
                         continue
-                if len(s) > 80:
-                    s = s[:77] + "..."
+                #if len(s) > 80:
+                  #  s = s[:77] + "..."
                 lines.append(f"  {tag_name:22s}  = \"{s}\"")
             except UnicodeDecodeError:
                 lines.append(f"  {tag_name:22s}  = [{val.hex()}]")
@@ -363,10 +363,10 @@ class OrionTLVTestServer:
         self.lock = threading.Lock()
 
         # ── device info ──
-        self.device_serial = tk.StringVar(value="")
+        self.device_serial = tk.StringVar(value="12345678")
         self.device_flag = "AVI"
-        self.pull_ip = tk.StringVar(value="")
-        self.pull_port_var = tk.StringVar(value="")
+        self.pull_ip = tk.StringVar(value="127.0.0.1")
+        self.pull_port_var = tk.StringVar(value="2622")
         self.device_identified = False
 
         # ── auto-response toggles ──
@@ -923,8 +923,8 @@ class OrionTLVTestServer:
 
     def cmd_setting_server(self):
         vals = self._show_dialog("Sunucu Ayarla", [
-            ("IP",   "192.168.1.100", "str"),
-            ("Port", "8722",          "str"),
+            ("IP",   "127.0.0.1", "str"),
+            ("Port", "8723",          "str"),
         ])
         if not vals:
             return
@@ -1014,8 +1014,8 @@ class OrionTLVTestServer:
         vals = self._show_dialog("Load Profile İste", [
             ("Directive",       "ProfileDirective1",     "str"),
             ("Meter Serial No", "12345678",              "str"),
-            ("Başlangıç",      "2021-06-22 00:00:00",   "str"),
-            ("Bitiş",          "2021-06-22 12:05:00",   "str"),
+            ("Başlangıç",      "2026-04-07 00:00:00",   "str"),
+            ("Bitiş",          "2026-04-07 18:05:00",   "str"),
         ])
         if not vals:
             return
