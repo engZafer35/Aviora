@@ -27,7 +27,7 @@
 
 #define MAX_DIRECTIVES       (64)
 #define MAX_METER_TASKS      (4)
-#define METER_OPS_QUEUE_DEPTH (16)
+#define METER_OPS_QUEUE_DEPTH (8)
 #define DIRECTIVE_INDEX_FILE DIRECTIVE_MAIN_DIR "directive.idx"
 #define MAX_PATH_LEN         (96)
 #define IEC_LINE_TIMEOUT_MS  (5000U)

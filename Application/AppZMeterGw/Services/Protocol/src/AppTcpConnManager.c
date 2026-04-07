@@ -227,8 +227,6 @@ static void tcpConnectionThread(void *arg)
     int pushSockCounter = 0;
 
     struct timeval timeout;
-    timeout.tv_sec  = 0;
-    timeout.tv_usec = 10000;
 
     while (1)
     {
@@ -290,6 +288,8 @@ static void tcpConnectionThread(void *arg)
                     max_sd = gs_connInfo.clientSocList[i];
             }
 
+            timeout.tv_sec  = 0;
+            timeout.tv_usec = 10000;
             activity = SELECT(max_sd + 1, &readfds, NULL, NULL, &timeout);
 
             if (activity > 0)
@@ -376,6 +376,8 @@ static void tcpConnectionThread(void *arg)
             FD_SET(gs_connInfo.pushSockID, &readfds);
 
             max_sd = gs_connInfo.pushSockID;
+            timeout.tv_sec  = 0;
+            timeout.tv_usec = 10000;
 
             if (gs_connInfo.pushSockConnecting)
             {

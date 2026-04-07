@@ -15,7 +15,7 @@
 #include "Project_Conf.h"
 
 /******************************MACRO DEFINITIONS*******************************/
-#define METER_MAIN_DIR         "./meter/"
+#define METER_MAIN_DIR         "meter/"
 /** Binary tablo: ardışık MeterTable kayıtları (boyut / sizeof(MeterTable) = sayaç adedi) */
 #define METER_LIST_FILE        METER_MAIN_DIR "meterList"
 /** Kayıtlı sayaç verisi: METER_REG_DIR + seri no (16 byte'a kadar) */

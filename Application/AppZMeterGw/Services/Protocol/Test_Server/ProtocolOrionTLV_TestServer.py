@@ -778,12 +778,6 @@ class OrionTLVTestServer:
                 sock.connect((ip, port))
 
                 sock.sendall(packet_bytes)
-                # İstek gönderildi; yazma yönünü kapat (TCP half-close). Cihazdaki stack
-                # yanıtı FIN gelene kadar bekleyebilir; aksi halde SEND() RST/EPIPE ile düşer.
-                try:
-                    sock.shutdown(socket.SHUT_WR)
-                except OSError:
-                    pass
 
                 fields = parse_packet(packet_bytes)
                 hex_dump = packet_bytes.hex().upper()
