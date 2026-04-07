@@ -23,8 +23,8 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 
 RECV_BUF = 4096
-# Pull (sunucu → cihaz) yanıtı için toplam bekleme; bu süre dolmadan soket kapatılmaz (cevap gelirse erken kapanır)
-PULL_RESPONSE_TIMEOUT_SEC = 10.0
+# Pull (sunucu → cihaz) yanıtı için toplam bekleme; tam TLV alınmadan EOF olursa bu süre dolana kadar beklenir (erken "kapandı" logu yok)
+PULL_RESPONSE_TIMEOUT_SEC = 15.0
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_PORT = 8723
 
@@ -738,9 +738,10 @@ class OrionTLVTestServer:
                 pretty = format_tlv_fields(fields) if fields else ""
                 self._log("sent", f"HEX: {hex_dump}\n{pretty}", "PULL")
 
-                # Cevap gelene kadar (veya toplam süre dolana kadar) bekle; tek bir boş recv ile kapatma
+                # Cevap gelene kadar (veya toplam süre dolana kadar) bekle
                 deadline = time.monotonic() + PULL_RESPONSE_TIMEOUT_SEC
                 buf = b""
+                got_complete_response = False
 
                 while True:
                     remaining = deadline - time.monotonic()
@@ -751,6 +752,7 @@ class OrionTLVTestServer:
                         )
                         return
 
+                    remaining = max(remaining, 0.001)
                     sock.settimeout(remaining)
                     try:
                         chunk = sock.recv(RECV_BUF)
@@ -762,15 +764,27 @@ class OrionTLVTestServer:
                         return
 
                     if not chunk:
+                        # TCP EOF: Henüz tam bir TLV yoksa bu logu hemen gösterme — bazı cihazlar
+                        # yanıtı geciktirir veya kısa süre sonra gönderir; süre dolana kadar bekle.
+                        if not got_complete_response:
+                            wr = deadline - time.monotonic()
+                            if wr > 0:
+                                time.sleep(wr)
+                            self._log(
+                                "error",
+                                "Pull: yanıt alınamadı (süre doldu veya cihaz yanıt göndermeden bağlantıyı kapattı)",
+                            )
+                            return
                         self._log(
                             "info",
-                            "Pull: karşı uç bağlantıyı kapattı (yanıt alınmadan veya tamamlandıktan sonra)",
+                            "Pull: karşı uç bağlantıyı kapattı (yanıt alındıktan sonra)",
                         )
                         return
 
                     buf += chunk
                     packets, buf = extract_packets(buf)
                     for pkt in packets:
+                        got_complete_response = True
                         pkt_fields = parse_packet(pkt)
                         if pkt_fields:
                             hex_d = pkt.hex().upper()
