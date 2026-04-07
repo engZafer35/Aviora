@@ -23,6 +23,8 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 
 RECV_BUF = 4096
+# Pull (sunucu → cihaz) yanıtı için toplam bekleme; tam TLV alınmadan EOF olursa bu süre dolana kadar beklenir (erken "kapandı" logu yok)
+PULL_RESPONSE_TIMEOUT_SEC = 15.0
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_PORT = 8723
 
@@ -306,7 +308,7 @@ class OrionTLVTestServer:
     def __init__(self, root, push_port):
         self.root = root
         self.root.title("Protocol OrionTLV Test Server")
-        self.root.geometry("1200x780")
+        self.root.geometry("1200x980")
         self.root.minsize(1000, 600)
 
         self.push_port = push_port
@@ -434,7 +436,7 @@ class OrionTLVTestServer:
         ]
         self.pull_buttons = []
         for text, cmd in cmds:
-            btn = ttk.Button(cf, text=text, command=cmd, state="disabled")
+            btn = ttk.Button(cf, text=text, command=cmd, state="enable")
             btn.pack(fill="x", pady=1)
             self.pull_buttons.append(btn)
 
@@ -502,6 +504,8 @@ class OrionTLVTestServer:
         self.accept_th = threading.Thread(target=self._accept_loop, daemon=True)
         self.accept_th.start()
         self._log("info", f"Sunucu başlatıldı – port {port}")
+        self.device_identified = True
+        self._enable_pull_buttons()
 
     def stop_server(self):
         if not self.running:
@@ -583,7 +587,7 @@ class OrionTLVTestServer:
         self._log("info", "Cihaz bağlantısı kesildi")
         self.root.after(0, lambda: self.conn_lbl.config(
             text="Bağlı değil", foreground="gray"))
-        self.root.after(0, self._disable_pull_buttons)
+        #self.root.after(0, self._disable_pull_buttons)
 
         with self.lock:
             if self.device_conn is conn:
@@ -682,7 +686,7 @@ class OrionTLVTestServer:
 
     def _enable_pull_buttons(self):
         for btn in self.pull_buttons:
-            btn.config(state="normal")
+            btn.config(state="enable")
         self.pull_info_lbl.config(
             text=f"✔ Pull: {self.pull_ip.get()}:{self.pull_port_var.get()}",
             foreground="green")
@@ -725,42 +729,85 @@ class OrionTLVTestServer:
                     return
 
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.settimeout(10)
+                try:
+                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+                except OSError:
+                    pass
+                sock.settimeout(PULL_RESPONSE_TIMEOUT_SEC)
                 sock.connect((ip, port))
 
                 sock.sendall(packet_bytes)
+
                 fields = parse_packet(packet_bytes)
                 hex_dump = packet_bytes.hex().upper()
                 pretty = format_tlv_fields(fields) if fields else ""
                 self._log("sent", f"HEX: {hex_dump}\n{pretty}", "PULL")
 
+                # Cevap gelene kadar (veya toplam süre dolana kadar) bekle
+                deadline = time.monotonic() + PULL_RESPONSE_TIMEOUT_SEC
                 buf = b""
+                got_complete_response = False
+
                 while True:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        self._log(
+                            "error",
+                            f"Pull: {PULL_RESPONSE_TIMEOUT_SEC:.0f} sn içinde yanıt alınamadı",
+                        )
+                        return
+
+                    remaining = max(remaining, 0.001)
+                    sock.settimeout(remaining)
                     try:
                         chunk = sock.recv(RECV_BUF)
-                        if not chunk:
-                            break
-                        buf += chunk
-
-                        packets, buf = extract_packets(buf)
-                        for pkt in packets:
-                            pkt_fields = parse_packet(pkt)
-                            if pkt_fields:
-                                hex_d = pkt.hex().upper()
-                                pr = format_tlv_fields(pkt_fields)
-                                self._log("recv", f"HEX: {hex_d}\n{pr}", "PULL")
-
-                                stream = get_bool(pkt_fields, TAG_PACKET_STREAM)
-                                if not expect_stream or not stream:
-                                    sock.close()
-                                    return
-
                     except socket.timeout:
-                        break
+                        self._log(
+                            "error",
+                            f"Pull: {PULL_RESPONSE_TIMEOUT_SEC:.0f} sn içinde yanıt alınamadı",
+                        )
+                        return
 
-                sock.close()
+                    if not chunk:
+                        # TCP EOF: Henüz tam bir TLV yoksa bu logu hemen gösterme — bazı cihazlar
+                        # yanıtı geciktirir veya kısa süre sonra gönderir; süre dolana kadar bekle.
+                        if not got_complete_response:
+                            wr = deadline - time.monotonic()
+                            if wr > 0:
+                                time.sleep(wr)
+                            self._log(
+                                "error",
+                                "Pull: yanıt alınamadı (süre doldu veya cihaz yanıt göndermeden bağlantıyı kapattı)",
+                            )
+                            return
+                        self._log(
+                            "info",
+                            "Pull: karşı uç bağlantıyı kapattı (yanıt alındıktan sonra)",
+                        )
+                        return
+
+                    buf += chunk
+                    packets, buf = extract_packets(buf)
+                    for pkt in packets:
+                        got_complete_response = True
+                        pkt_fields = parse_packet(pkt)
+                        if pkt_fields:
+                            hex_d = pkt.hex().upper()
+                            pr = format_tlv_fields(pkt_fields)
+                            self._log("recv", f"HEX: {hex_d}\n{pr}", "PULL")
+
+                        stream = (
+                            get_bool(pkt_fields, TAG_PACKET_STREAM)
+                            if pkt_fields
+                            else False
+                        )
+                        # Tek yanıt (ACK/NACK vb.): ilk tam pakette biter. Akış: stream=True iken okumaya devam
+                        if not expect_stream or not stream:
+                            return
+
             except Exception as e:
                 self._log("error", f"Pull komutu hatası: {e}")
+            finally:
                 if sock:
                     try:
                         sock.close()
