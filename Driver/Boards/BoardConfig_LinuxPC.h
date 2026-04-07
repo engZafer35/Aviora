@@ -14,10 +14,10 @@
 /*********************************INCLUDES*************************************/
 
 /************************* GLOBAL VARIBALE REFERENCES *************************/
-#define BOARD_NAME            "Z_METER_GW_LINUX_010101"
+#define BOARD_NAME            "AVIORA_LINUX_010101"
 #define BOARD_VERSION         "V1.0"
 #define BOARD_FILE_NAME       "BoardConfig_LinuxPC.h"
-#define WORKING_PLATFORM_PC   (202403)
+#define WORKING_PLATFORM_PC   (202603)
 #define _WORKING_PLATFORM     WORKING_PLATFORM_PC
 #define _PLATFORM_NAME        "Ubuntu-x64-GCC"
 #define _MCU_BIT_SIZE         (64)

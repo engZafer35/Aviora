@@ -18,9 +18,9 @@
         "readFunc": "fsReadFile",
         "writeFunc": "fsWriteFile",
         "closeFunc": "fsCloseFile",
-        "logPath": "./sys",
-        "fileSize": 1024,
-        "totalLogSize": 10240,
+        "logPath": "log",
+        "fileSize": 10240,
+        "totalLogSize": 102400,
         "timeInfo": {
           "use": true,
           "format": "FIRST_YEAR"

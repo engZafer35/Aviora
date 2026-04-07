@@ -36,9 +36,9 @@ extern S32 g_sysLoggerID;
 #define LOGGER_SYS_READ_FUNC          (fsReadFile)
 #define LOGGER_SYS_WRITE_FUNC         (fsWriteFile)
 #define LOGGER_SYS_CLOSE_FUNC         (fsCloseFile)
-#define LOGGER_SYS_LOG_PATH           "./sys"
-#define LOGGER_SYS_FILE_SIZE          (1024)
-#define LOGGER_SYS_TOTAL_LOG_SIZE     (10240)
+#define LOGGER_SYS_LOG_PATH           "log"
+#define LOGGER_SYS_FILE_SIZE          (10240)
+#define LOGGER_SYS_TOTAL_LOG_SIZE     (102400)
 #define LOGGER_SYS_TIME_INFO_USE      (TRUE)
 #define LOGGER_SYS_TIME_INFO_FORMAT   (FIRST_YEAR)
 //todo: include LOGGER_SYS_FS_PATH here
