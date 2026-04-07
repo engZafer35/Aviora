@@ -306,7 +306,7 @@ class OrionTLVTestServer:
     def __init__(self, root, push_port):
         self.root = root
         self.root.title("Protocol OrionTLV Test Server")
-        self.root.geometry("1200x780")
+        self.root.geometry("1200x980")
         self.root.minsize(1000, 600)
 
         self.push_port = push_port
@@ -434,7 +434,7 @@ class OrionTLVTestServer:
         ]
         self.pull_buttons = []
         for text, cmd in cmds:
-            btn = ttk.Button(cf, text=text, command=cmd, state="disabled")
+            btn = ttk.Button(cf, text=text, command=cmd, state="enable")
             btn.pack(fill="x", pady=1)
             self.pull_buttons.append(btn)
 
@@ -502,6 +502,8 @@ class OrionTLVTestServer:
         self.accept_th = threading.Thread(target=self._accept_loop, daemon=True)
         self.accept_th.start()
         self._log("info", f"Sunucu başlatıldı – port {port}")
+        self.device_identified = True
+        self._enable_pull_buttons()
 
     def stop_server(self):
         if not self.running:
@@ -583,7 +585,7 @@ class OrionTLVTestServer:
         self._log("info", "Cihaz bağlantısı kesildi")
         self.root.after(0, lambda: self.conn_lbl.config(
             text="Bağlı değil", foreground="gray"))
-        self.root.after(0, self._disable_pull_buttons)
+        #self.root.after(0, self._disable_pull_buttons)
 
         with self.lock:
             if self.device_conn is conn:
@@ -682,7 +684,7 @@ class OrionTLVTestServer:
 
     def _enable_pull_buttons(self):
         for btn in self.pull_buttons:
-            btn.config(state="normal")
+            btn.config(state="enable")
         self.pull_info_lbl.config(
             text=f"✔ Pull: {self.pull_ip.get()}:{self.pull_port_var.get()}",
             foreground="green")
