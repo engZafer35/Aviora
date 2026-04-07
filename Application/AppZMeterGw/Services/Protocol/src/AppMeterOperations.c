@@ -69,7 +69,7 @@ typedef struct
 } MeterJobMsg_t;
 
 /********************************** VARIABLES *********************************/
-static MeterCommInterface_t *s_meterIf = NULL;
+static MeterCommInterface_t s_meterIf;
 static OsTaskId s_workerTid = OS_INVALID_TASK_ID;
 static OsQueue s_jobQueue = OS_INVALID_QUEUE;
 static bool s_running = false;
@@ -431,15 +431,15 @@ static BOOL parseProfileWindow(const char *ts, char out11[11])
 
 static int sendAll(const U8 *data, U32 len, U32 timeoutMs)
 {
-    if (s_meterIf == NULL || data == NULL || len == 0)
+    if (data == NULL || len == 0)
         return -1;
-    S32 r = s_meterIf->meterCommSend(data, len, timeoutMs);
+    S32 r = s_meterIf.meterCommSend(data, len, timeoutMs);
     return ((U32)r == len) ? 0 : -1;
 }
 
 static ERR_CODE_T recvLine(char *line, size_t cap, U32 overallTimeoutMs)
 {
-    if (s_meterIf == NULL || line == NULL || cap < 2)
+    if (line == NULL || cap < 2)
         return EN_ERR_CODE_METER_COMM_LINE_PARAM_ERROR;
 
     size_t n = 0;
@@ -448,7 +448,7 @@ static ERR_CODE_T recvLine(char *line, size_t cap, U32 overallTimeoutMs)
     {
         U8 b;
         U32 got = 1;
-        S32 rr = s_meterIf->meterCommReceive(&b, &got, IEC_BYTE_TIMEOUT_MS);
+        S32 rr = s_meterIf.meterCommReceive(&b, &got, IEC_BYTE_TIMEOUT_MS);
         if (rr < 0)
             return EN_ERR_CODE_METER_COMM_LINE_ERROR;
         if (got == 1)
@@ -586,7 +586,7 @@ static S32 enqueueMeterJob(const MeterJobMsg_t *job)
 {
     if (s_jobQueue == OS_INVALID_QUEUE || !s_running)
         return (S32)EN_ERR_CODE_FAILURE;
-    if (QUEUE_SUCCESS != zosMsgQueueSend(s_jobQueue, (const char *)job, sizeof(*job), TIME_OUT_10MS))
+    if (QUEUE_SUCCESS != zosMsgQueueSend(s_jobQueue, (const char *)job, sizeof(*job), TIME_OUT_500MS))
         return (S32)EN_ERR_CODE_NO_RESOURCES;
     return job->taskId;
 }
@@ -601,16 +601,8 @@ static void meterOpsWorkerTask(void *arg)
 
     while (s_running)
     {
-        if (QUEUE_SUCCESS == zosMsgQueueReceive(s_jobQueue, (char *)&job, sizeof(job), TIME_OUT_50MS))
+        if (0 < zosMsgQueueReceive(s_jobQueue, (char *)&job, sizeof(job), TIME_OUT_500MS))
         {
-            if (s_meterIf == NULL)
-            {
-                if (job.callback != NULL)
-                    job.callback(job.taskId, EN_ERR_CODE_FAILURE);
-                taskSlotMarkFinished(job.taskId, EN_ERR_CODE_FAILURE);
-                continue;
-            }
-
             taskSlotMarkRunning(job.taskId);
             ERR_CODE_T res = EN_ERR_CODE_FAILURE;
 
@@ -624,6 +616,7 @@ static void meterOpsWorkerTask(void *arg)
                 job.callback(job.taskId, res);
         }
         appTskMngImOK(s_workerTid);
+        zosDelayTask(WAIT_1_SEC);
     }
 
     DEBUG_WARNING("->[W] %s worker stopping", METER_OPS_TASK_NAME);
@@ -636,12 +629,14 @@ static void meterOpsWorkerTask(void *arg)
 
 RETURN_STATUS appMeterOperationsStart(MeterCommInterface_t *meterComm)
 {
-    if (meterComm == NULL)
+    if ((meterComm == NULL) || (NULL == meterComm->meterCommInit) || (NULL == meterComm->meterCommSend) || \
+        (NULL == meterComm->meterCommReceive) || (NULL == meterComm->meterCommSetBaudrate))
         return FAILURE;
+
     if (s_running)
         return SUCCESS;
 
-    s_meterIf = meterComm;
+    s_meterIf = *meterComm;
 
     if ((zosCreateMutex(&s_meterRegMux) == FALSE) || (zosCreateMutex(&s_directiveMux) == FALSE)
         || (zosCreateMutex(&s_taskMux) == FALSE))
@@ -651,9 +646,9 @@ RETURN_STATUS appMeterOperationsStart(MeterCommInterface_t *meterComm)
     meterListRefreshCount();
     unlockMeterReg();
 
-    if (meterComm->meterCommInit != NULL)
+    if (s_meterIf.meterCommInit != NULL)
     {
-        if (meterComm->meterCommInit() != SUCCESS)
+        if (s_meterIf.meterCommInit() != SUCCESS)
             return FAILURE;
     }
 

@@ -80,7 +80,7 @@ static RETURN_STATUS openNewLogFile(LoggerService *svc)
         svc->logFile = NULL;
     }
 
-    snprintf(svc->currentLogFile, sizeof(svc->currentLogFile), "%s/%s_%s-%02d%02d%02d.log",
+    snprintf(svc->currentLogFile, sizeof(svc->currentLogFile), "%s/%s/%s-%02d%02d%02d.log",
                                                                 svc->srvIFace.logPath,
                                                                 svc->serviceName, 
                                                                 dateStr,
