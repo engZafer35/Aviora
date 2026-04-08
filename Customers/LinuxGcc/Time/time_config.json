@@ -12,7 +12,7 @@
       "updatePeriodMin": 60
     },
     "extRTC": {
-      "use": true,
+      "use": false,
       "deviceName": "MT41T11",
       "deviceConfig": {
         "i2cBusName": "I2C_LINE_1",
@@ -24,6 +24,12 @@
       "use": false,
       "deviceConfig": {
         "driverPath": "Driver/McuCoreDrivers/inc/McuInterruptRegister.h"        
+      }
+    },
+    "linuxLocalTime": {
+      "use": true,
+      "deviceConfig": {
+        "driverPath": "Middleware/MiddComm/Midd_OS/inc/Linux_DateTime.h"        
       }
     }
   }
