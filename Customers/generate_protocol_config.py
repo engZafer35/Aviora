@@ -3,7 +3,7 @@
 """
 Generate protocol headers from Customers/<customer>/Protocol/protocol_config.json:
 
-- Customers/<customer>/Protocol/cus_protocol_config.h  (macros, INIT_*, sensors)
+- Customers/<customer>/Protocol/Cus_Protocol_Config.h  (macros, INIT_*, sensors)
 - Customers/Protocol_Config.h                         (shim that includes the customer file)
 
 Example:
@@ -169,6 +169,10 @@ def sensor_macro_suffix(sensor_name: str) -> str:
     return sensor_name.upper()
 
 
+# Meter sensörü: MeterComm arayüzü + appMeterOperationsStart — her ikisi de include edilir
+METER_OPERATIONS_INCLUDE = "AppZMeterGw/Services/Protocol/inc/AppMeterOperations.h"
+
+
 def build_sensor_init_macro(sensor: dict) -> tuple[str, list[str]]:
     """Returns (macro_block, include_paths)."""
     name = sensor["name"]
@@ -198,6 +202,8 @@ def build_sensor_init_macro(sensor: dict) -> tuple[str, list[str]]:
                                         }}; \\
                                         setErrorFlag |= appMeterOperationsStart(&meterComm); \\
                                     }} while(0)"""
+        if METER_OPERATIONS_INCLUDE not in includes:
+            includes.append(METER_OPERATIONS_INCLUDE)
         return block, includes
 
     if stype in ("temperature", "humidity"):
@@ -368,7 +374,7 @@ def generate_header(data: dict) -> str:
 
 
 def generate_protocol_config_shim(customer: str) -> str:
-    """Customers/Protocol_Config.h — includes the selected customer's cus_protocol_config.h."""
+    """Customers/Protocol_Config.h — includes the selected customer's Cus_Protocol_Config.h."""
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     lines = [
         "/**",
@@ -382,7 +388,7 @@ def generate_protocol_config_shim(customer: str) -> str:
         f"/* generated on: {ts} */",
         f"/* customer name: {customer} */",
         "",
-        f'#include "{customer}/Protocol/cus_protocol_config.h"',
+        f'#include "{customer}/Protocol/Cus_Protocol_Config.h"',
         "",
         "",
         "#endif /* __APP_PROTOCOL_CONFIG_H__ */",
@@ -402,7 +408,7 @@ def main() -> int:
 
     parser = argparse.ArgumentParser(
         description=(
-            "Generate cus_protocol_config.h from the customer's Protocol/protocol_config.json "
+            "Generate Cus_Protocol_Config.h from the customer's Protocol/protocol_config.json "
             "and Customers/Protocol_Config.h shim that includes that customer."
         ),
         epilog=(
@@ -410,7 +416,7 @@ def main() -> int:
             "  python Customers/generate_protocol_config.py --customer ZD_0101\n"
             "\n"
             "Input : Customers/ZD_0101/Protocol/protocol_config.json\n"
-            "Output: Customers/ZD_0101/Protocol/cus_protocol_config.h\n"
+            "Output: Customers/ZD_0101/Protocol/Cus_Protocol_Config.h\n"
             "        Customers/Protocol_Config.h"
         ),
         formatter_class=argparse.RawTextHelpFormatter,
@@ -426,7 +432,7 @@ def main() -> int:
     root = repo_root()
     protocol_dir = root / "Customers" / args.customer / "Protocol"
     cfg_path = protocol_dir / "protocol_config.json"
-    out_path = protocol_dir / "cus_protocol_config.h"
+    out_path = protocol_dir / "Cus_Protocol_Config.h"
     if not cfg_path.is_file():
         print(f"Error: config not found: {cfg_path}", file=sys.stderr)
         return 1
