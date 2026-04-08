@@ -32,14 +32,14 @@ RETURN_STATUS appTimeSoftTickInit(void);
  * @brief Get current epoch time from software tick backend
  * @return Current epoch time in seconds, or 0 on failure
  */
-U32 appTimeSoftTickGetEpochUtc(void);
+U32 appTimeSoftTickGetEpoch(void);
 
 /**
  * @brief Set current epoch time to software tick backend
  * @param epochUtc Epoch time in seconds to set
  * @return SUCCESS if successful, FAILURE otherwise
  */
-RETURN_STATUS appTimeSoftTickSetEpochUtc(U32 epochUtc);
+RETURN_STATUS appTimeSoftTickSetEpoch(U32 epochUtc);
 
 #endif /* __TIME_BACKEND_SOFTTICK_H__ */
 

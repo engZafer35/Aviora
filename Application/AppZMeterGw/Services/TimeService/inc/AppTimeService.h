@@ -61,10 +61,10 @@ RETURN_STATUS appTimeServiceGetTime(struct tm *tmValue);
 
 /**
  * @brief Get current epoch time
- * @param outEpoch Output parameter for current epoch time
- * @return RETURN_STATUS_SUCCESS if successful, RETURN_STATUS_FAILURE otherwise
+ * @return Current epoch time in seconds, or 0 if failed to get time
  */
-RETURN_STATUS appTimeServiceGetEpoch(U32 *outEpoch);
+
+U32 appTimeServiceGetEpoch(void);
 
 /**
  * @brief Convert epoch time to struct tm
