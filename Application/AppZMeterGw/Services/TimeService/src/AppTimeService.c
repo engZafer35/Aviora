@@ -43,8 +43,8 @@ static AppTimeServiceCtx gs_ts;
 #include "AppTimeService_Autogen.c"
 
 /* RTC <-> epoch conversion (used by autogen; tz from config) */
-//RETURN_STATUS appTimeServiceRtcStrToEpochUtc(const MiddRtcStr_t *r, U32 *outEpochUtc);
-//RETURN_STATUS appTimeServiceEpochUtcToRtcStr(U32 epochUtc, MiddRtcStr_t *r);
+//RETURN_STATUS appTimeServiceRtcStrToEpoch(const MiddRtcStr_t *r, U32 *outEpoch);
+//RETURN_STATUS appTimeServiceEpochToRtcStr(U32 epoch, MiddRtcStr_t *r);
 
 static S32 tzOffsetSeconds(void)
 {
@@ -71,10 +71,10 @@ static int daysInMonth(int year, int mon1to12)
     return d;
 }
 
-static void epochUtcToTm(U32 epochUtc, struct tm *outTm)
+static void epochToTm(U32 epoch, struct tm *outTm)
 {
     /* Convert seconds since 1970-01-01 00:00:00 UTC to broken-down time */
-    U32 t = epochUtc;
+    U32 t = epoch;
     U32 sec = t % 60; t /= 60;
     U32 min = t % 60; t /= 60;
     U32 hour = t % 24; t /= 24;
@@ -119,12 +119,12 @@ static void epochUtcToTm(U32 epochUtc, struct tm *outTm)
     outTm->tm_year = year - 1900;    /* years since 1900 */
 
     /* tm_wday (0=Sunday). 1970-01-01 was Thursday (4) */
-    outTm->tm_wday = (int)((epochUtc / 86400U + 4U) % 7U);
+    outTm->tm_wday = (int)((epoch / 86400U + 4U) % 7U);
 }
 
-static RETURN_STATUS tmToEpochUtc(const struct tm *tmValue, U32 *outEpochUtc)
+static RETURN_STATUS tmToEpoch(const struct tm *tmValue, U32 *outEpoch)
 {
-    if (IS_NULL_PTR(tmValue) || IS_NULL_PTR(outEpochUtc))
+    if (IS_NULL_PTR(tmValue) || IS_NULL_PTR(outEpoch))
     {
         return FAILURE;
     }
@@ -154,7 +154,7 @@ static RETURN_STATUS tmToEpochUtc(const struct tm *tmValue, U32 *outEpochUtc)
              + (U32)tmValue->tm_min  * 60U
              + (U32)tmValue->tm_sec;
 
-    *outEpochUtc = secs;
+    *outEpoch = secs;
     return SUCCESS;
 }
 
@@ -194,12 +194,12 @@ static RETURN_STATUS tmFromRtcStr(const MiddRtcStr_t *rtc, struct tm *outTm)
     return SUCCESS;
 }
 
-static RETURN_STATUS appTimeServiceRtcStrToEpochUtc(const MiddRtcStr_t *r, U32 *outEpochUtc)
+static RETURN_STATUS appTimeServiceRtcStrToEpoch(const MiddRtcStr_t *r, U32 *outEpoch)
 {
     struct tm tmLocal;
     U32 epochLocal;
 
-    if (IS_NULL_PTR(r) || IS_NULL_PTR(outEpochUtc))
+    if (IS_NULL_PTR(r) || IS_NULL_PTR(outEpoch))
     {
         return FAILURE;
     }
@@ -207,7 +207,7 @@ static RETURN_STATUS appTimeServiceRtcStrToEpochUtc(const MiddRtcStr_t *r, U32 *
     {
         return FAILURE;
     }
-    if (SUCCESS != tmToEpochUtc(&tmLocal, &epochLocal))
+    if (SUCCESS != tmToEpoch(&tmLocal, &epochLocal))
     {
         return FAILURE;
     }
@@ -215,18 +215,18 @@ static RETURN_STATUS appTimeServiceRtcStrToEpochUtc(const MiddRtcStr_t *r, U32 *
     S32 utc = (S32)epochLocal - tzOffsetSeconds();
     if (utc < 0) utc = 0;
 
-    *outEpochUtc = (U32)utc;
+    *outEpoch = (U32)utc;
     return SUCCESS;
 }
 
-static void appTimeServiceEpochUtcToRtcStr(U32 epochUtc, MiddRtcStr_t *r)
+static void appTimeServiceEpochToRtcStr(U32 epoch, MiddRtcStr_t *r)
 {
     struct tm tmLocal;
 
-    S32 localEpoch = (S32)epochUtc + tzOffsetSeconds();
+    S32 localEpoch = (S32)epoch + tzOffsetSeconds();
     if (localEpoch < 0) localEpoch = 0;
 
-    epochUtcToTm((U32)localEpoch, &tmLocal);
+    epochToTm((U32)localEpoch, &tmLocal);
     rtcStrFromTm(&tmLocal, r);
 }
 
@@ -239,12 +239,12 @@ static void ntpTimerCb(void)
         return;
     }
 
-    epoch = appTimeServiceAutogenGetNtpEpochUtc();
+    epoch = appTimeServiceAutogenGetNtpEpoch();
     if (epoch >= 0)
     {
         DEBUG_INFO("->[I] NTP sync OK, epoch=%u", (U32)epoch);
         APP_LOG_REC(g_sysLoggerID, " NTP sync OK");
-        if (FAILURE == appTimeServiceAutogenUpdateRtcsFromEpochUtc((U32)epoch))
+        if (FAILURE == appTimeServiceAutogenUpdateRtcsFromEpoch((U32)epoch))
         {
             DEBUG_ERROR("->[E] TimeSrv: Failed to update RTCs from NTP epoch");
             APP_LOG_REC(g_sysLoggerID, "TimeSrv: Failed to update RTCs from NTP epoch");
@@ -367,7 +367,7 @@ RETURN_STATUS appTimeServiceSetTime(U32 epoch)
         return FAILURE;
     }
 
-    if (FAILURE == appTimeServiceAutogenUpdateRtcsFromEpochUtc((U32)epoch))
+    if (FAILURE == appTimeServiceAutogenUpdateRtcsFromEpoch((U32)epoch))
     {
         DEBUG_ERROR("->[E] User time update Failed");
         APP_LOG_REC(g_sysLoggerID, "TimeSrv: User time update Failed");
@@ -392,7 +392,7 @@ RETURN_STATUS appTimeServiceGetTime(struct tm *tmValue)
         return FAILURE;
     }
 
-    epoch = appTimeServiceAutogenGetEpochUtcFromPreferredSource();
+    epoch = appTimeServiceAutogenGetEpochFromPreferredSource();
     if (epoch > 0)
     {
         retVal = appTimeServiceEpochToTm(epoch, tmValue);        
@@ -401,24 +401,9 @@ RETURN_STATUS appTimeServiceGetTime(struct tm *tmValue)
     return retVal;
 }
 
-RETURN_STATUS appTimeServiceGetEpoch(U32 *outEpoch)
+U32 appTimeServiceGetEpoch(void)
 {
-    RETURN_STATUS retVal = FAILURE;
-    U32 epoch;
-
-    if (IS_NULL_PTR(outEpoch))
-    {
-        return FAILURE;
-    }
-
-    epoch = appTimeServiceAutogenGetEpochUtcFromPreferredSource();
-    if (epoch > 0)
-    {
-        retVal = SUCCESS;
-        *outEpoch = epoch;
-    }
-    
-    return retVal;
+    return appTimeServiceAutogenGetEpochFromPreferredSource();
 }
 
 RETURN_STATUS appTimeServiceEpochToTm(U32 epoch, struct tm *outTm)
@@ -427,7 +412,7 @@ RETURN_STATUS appTimeServiceEpochToTm(U32 epoch, struct tm *outTm)
     S32 localEpoch = (S32)epoch + tzOffsetSeconds();
     if (localEpoch < 0) localEpoch = 0;
 
-    epochUtcToTm((U32)localEpoch, outTm);
+    epochToTm((U32)localEpoch, outTm);
 
     return SUCCESS;
 }
@@ -437,7 +422,7 @@ RETURN_STATUS appTimeServiceTmToEpoch(const struct tm *tmValue, U32 *outEpoch)
     RETURN_STATUS retVal = FAILURE;
     U32 localEpoch;
     
-    if (SUCCESS == tmToEpochUtc(tmValue, &localEpoch))
+    if (SUCCESS == tmToEpoch(tmValue, &localEpoch))
     {
         S32 utc = (S32)localEpoch - tzOffsetSeconds();
         if (utc < 0) utc = 0;
