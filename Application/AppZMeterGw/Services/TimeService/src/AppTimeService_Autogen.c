@@ -1,22 +1,28 @@
 /******************************************************************************
 * #Author       : Auto-generated
-* #Date         : 08 Apr 2026 - 13:29:45
+* #Date         : 08 Apr 2026 - 13:38:44
 * #File Name    : AppTimeService_Autogen.c
 *******************************************************************************/
 /******************************************************************************
 * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
-* Customer Name: LinuxGcc
+* Customer Name: ZD_2622
 * Generated from customer time_config.json. Only used units are included.
 *******************************************************************************/
 
 #include "Project_Conf.h"
 #include "../../../Customers/TimeService_Config.h"
 
-#include "time_modules/TimeBackend_SoftTick.h"
+#include "time_modules/TimeSync_Ntp.h"
+#include "../Middleware/MiddZModem/inc/MiddRTC.h"
 
 static RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)
 {
-    if (SUCCESS != appTimeSoftTickInit())
+    if (SUCCESS != appTimeNtpSetServer(ntpHost, ntpPort))
+    {
+        return FAILURE;
+    }
+
+    if (SUCCESS != middRtcIntInit())
     {
         return FAILURE;
     }
@@ -26,24 +32,36 @@ static RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)
 
 static U32 appTimeServiceAutogenGetEpochUtcFromPreferredSource(void)
 {
-    return appTimeSoftTickGetEpochUtc();
+    MiddRtcStr_t r;
+    U32 e = 0;
+    if (SUCCESS == middRtcIntGetTime(&r))
+    {
+        //dont need to check return value here since 0 is an invalid epoch and indicates failure
+        appTimeServiceRtcStrToEpochUtc(&r, &e);
+    }
+    return e;
 }
 
 static RETURN_STATUS appTimeServiceAutogenUpdateRtcsFromEpochUtc(U32 epochUtc)
 {
     RETURN_STATUS retVal = SUCCESS;
-    retVal = appTimeSoftTickSetEpochUtc(epochUtc);
+    MiddRtcStr_t r;
+
+    appTimeServiceEpochUtcToRtcStr(epochUtc, &r);
+
+    if (SUCCESS != middRtcIntSetTime(&r))
+    {
+        retVal = FAILURE;
+    }
     return retVal;
 }
 
 static U32 appTimeServiceAutogenGetNtpEpochUtc(void)
 {
-    return 0;
+    return appTimeNtpGetEpochUtc();
 }
 
 static RETURN_STATUS appTimeServiceAutogenSetNtpServer(const char *host, U16 port)
 {
-    (void)host;
-    (void)port;
-    return FAILURE;
+    return appTimeNtpSetServer(host, port);
 }
