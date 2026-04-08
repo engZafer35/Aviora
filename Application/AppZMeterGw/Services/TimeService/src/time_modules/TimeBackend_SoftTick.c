@@ -56,12 +56,12 @@ RETURN_STATUS appTimeSoftTickInit(void)
     return SUCCESS;
 }
 
-U32 appTimeSoftTickGetEpochUtc(void)
+U32 appTimeSoftTickGetEpoch(void)
 {
     return gs_epochUtc;
 }
 
-RETURN_STATUS appTimeSoftTickSetEpochUtc(U32 epochUtc)
+RETURN_STATUS appTimeSoftTickSetEpoch(U32 epochUtc)
 {
     gs_epochUtc = epochUtc;
     return SUCCESS;

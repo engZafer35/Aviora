@@ -250,8 +250,8 @@ def generate_autogen_c(cfg: dict) -> str:
             lines += ["    if (SUCCESS != appTimeSoftTickInit())", "    {", "        return FAILURE;", "    }", ""]
         lines += ["    return SUCCESS;", "}", ""]
 
-    # appTimeServiceAutogenGetEpochUtcFromPreferredSource - returns epoch (U32), 0 on error
-    lines += ["static U32 appTimeServiceAutogenGetEpochUtcFromPreferredSource(void)", "{"]
+    # appTimeServiceAutogenGetEpochFromPreferredSource - returns epoch (U32), 0 on error
+    lines += ["static U32 appTimeServiceAutogenGetEpochFromPreferredSource(void)", "{"]
     
     if int_use:
         lines += [
@@ -260,7 +260,7 @@ def generate_autogen_c(cfg: dict) -> str:
             "    if (SUCCESS == middRtcIntGetTime(&r))",
             "    {",
             "        //dont need to check return value here since 0 is an invalid epoch and indicates failure", 
-            "        appTimeServiceRtcStrToEpochUtc(&r, &e);",
+            "        appTimeServiceRtcStrToEpoch(&r, &e);",
             "    }",
             "    return e;",
         ]
@@ -271,23 +271,23 @@ def generate_autogen_c(cfg: dict) -> str:
             "    if (SUCCESS == middRtcExtGetTime(&r))",
             "    {",
             "        //dont need to check return value here since 0 is an invalid epoch and indicates failure",
-            "        appTimeServiceRtcStrToEpochUtc(&r, &e);",
+            "        appTimeServiceRtcStrToEpoch(&r, &e);",
             "    }",
             "    return e;",
         ]
     elif soft_use:
         lines += [
-            "    return appTimeSoftTickGetEpochUtc();",
+            "    return appTimeSoftTickGetEpoch();",
         ]
     else:
         lines += ["    return 0;"]
     lines += ["}", ""]
 
-    # appTimeServiceAutogenUpdateRtcsFromEpochUtc
+    # appTimeServiceAutogenUpdateRtcsFromEpoch
     # - If no RTC is used (soft-tick only), don't generate RTC conversion code.
     # - If one/both RTC are used, convert once to RTC str and then update the active RTC(s).
     lines += [
-        "static RETURN_STATUS appTimeServiceAutogenUpdateRtcsFromEpochUtc(U32 epochUtc)",
+        "static RETURN_STATUS appTimeServiceAutogenUpdateRtcsFromEpoch(U32 epoch)",
         "{",
     ]
     if not use:
@@ -298,7 +298,7 @@ def generate_autogen_c(cfg: dict) -> str:
             lines += [
                 "    MiddRtcStr_t r;",
                 "",
-                "    appTimeServiceEpochUtcToRtcStr(epochUtc, &r);",
+                "    appTimeServiceEpochToRtcStr(epoch, &r);",
                 "",
             ]
             if int_use:
@@ -307,15 +307,15 @@ def generate_autogen_c(cfg: dict) -> str:
                 lines += ["    if (SUCCESS != middRtcExtSetTime(&r))", "    {", "        retVal = FAILURE;", "    }"]
 
         if soft_use:
-            lines += ["    retVal = appTimeSoftTickSetEpochUtc(epochUtc);"]
+            lines += ["    retVal = appTimeSoftTickSetEpoch(epoch);"]
 
     lines += ["    return retVal;", "}", ""]
 
-    # appTimeServiceAutogenGetNtpEpochUtc
-    lines += ["static U32 appTimeServiceAutogenGetNtpEpochUtc(void)", "{"]
+    # appTimeServiceAutogenGetNtpEpoch
+    lines += ["static U32 appTimeServiceAutogenGetNtpEpoch(void)", "{"]
     if ntp_use:
         lines += [
-            "    return appTimeNtpGetEpochUtc();",
+            "    return appTimeNtpGetEpoch();",
         ]
     else:
         lines += ["    return 0;"]
