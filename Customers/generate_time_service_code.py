@@ -14,6 +14,9 @@ Usage:
 Design:
 - Avoid customer-specific #if/#else in core code.
 - Select pre-written, testable modules by generating a small wiring/include file.
+- linuxLocalTime: when timeService.use and extRTC/intRTC are off and linuxLocalTime.use is
+  true, backend uses LINUX_LOCAL_TIME_* macros from driverPath (e.g. Linux_DateTime.h);
+  otherwise soft tick is used when no RTC is selected.
 """
 
 import argparse
@@ -90,6 +93,12 @@ def generate_cus_config_h(cfg: dict, repo_root: Path) -> str:
     int_use = use and bool(int_rtc.get("use", False))
     ext_use = use and bool(ext_rtc.get("use", False))
 
+    linux_lt = ts.get("linuxLocalTime", {})
+    linux_lt_dev = linux_lt.get("deviceConfig", linux_lt)
+    linux_lt_driver_path = str(linux_lt_dev.get("driverPath", "") or "")
+    # Linux host clock: only when no hardware RTC backend is selected
+    linux_local_use = use and (not int_use) and (not ext_use) and bool(linux_lt.get("use", False))
+
     ext_dev = ext_rtc.get("deviceConfig", ext_rtc)
     int_dev = int_rtc.get("deviceConfig", int_rtc)
 
@@ -106,7 +115,7 @@ def generate_cus_config_h(cfg: dict, repo_root: Path) -> str:
     lines = [
         "/**",
         " * @author: Zafer Satilmis",
-        " * @hype-man: Judas Priest with Tim Ripper Owens - Metal Gods" 
+        " * @hype-man: Judas Priest with Tim Ripper Owens - Metal Gods", 
         " * @file TimeService_Config.h",
         " * @brief AUTO-GENERATED configuration for TimeService",
         " */",
@@ -119,6 +128,7 @@ def generate_cus_config_h(cfg: dict, repo_root: Path) -> str:
         f"#define APP_TIME_SERVICE_USE_NTP          ({b(ntp_use)})",
         f"#define APP_TIME_SERVICE_USE_INT_RTC      ({b(int_use)})",
         f"#define APP_TIME_SERVICE_USE_EXT_RTC      ({b(ext_use)})",
+        f"#define APP_TIME_SERVICE_USE_LINUX_LOCAL_TIME ({b(linux_local_use)})",
         "",
         f"/* timeZone: {tz_str} => offset minutes */",
         f"#define APP_TIME_SERVICE_TZ_OFFSET_MINUTES ({tz_min})",
@@ -154,6 +164,13 @@ def generate_cus_config_h(cfg: dict, repo_root: Path) -> str:
         lines.append("#define INT_RTC_INIT_FUNC(x)      (FAILURE)")
         lines.append("#define INT_RTC_GET_TIME_FUNC(t)  (FAILURE)")
         lines.append("#define INT_RTC_SET_TIME_FUNC(t)  (FAILURE)")
+
+    lines.append("")
+
+    # --- linuxLocalTime: driver header defines LINUX_LOCAL_TIME_* macros ---
+    if linux_local_use and linux_lt_driver_path:
+        lines.append(f'#include "{inc_prefix}{linux_lt_driver_path}"')
+        lines.append("")
 
     lines.append("")
     lines.append("#endif /* __CUS_TIME_SERVICE_CONFIG_H__ */")
@@ -195,14 +212,17 @@ def generate_autogen_c(cfg: dict) -> str:
     ntp_use = (use) and bool(ntp.get("use", False))
     int_use = (use) and bool(ts.get("intRTC", {}).get("use", False))
     ext_use = (use) and bool(ts.get("extRTC", {}).get("use", False))
-    soft_use = (use) and (not int_use) and (not ext_use)    
+    linux_lt = ts.get("linuxLocalTime", {})
+    linux_local_use = (use) and (not int_use) and (not ext_use) and bool(linux_lt.get("use", False))
+    soft_use = (use) and (not int_use) and (not ext_use) and (not linux_local_use)
     now = datetime.now().strftime("%d %b %Y - %H:%M:%S")
 
     print(f"\033[93mTimeService use: {use}\033[0m")
     print(f"\033[93mNTP use: {ntp_use}\033[0m")
     print(f"\033[93mInt RTC use: {int_use}\033[0m")
     print(f"\033[93mExt RTC use: {ext_use}\033[0m")
-    print(f"\033[93mSoft RTC use: {soft_use}\033[0m")
+    print(f"\033[93mLinux local time use: {linux_local_use}\033[0m")
+    print(f"\033[93mSoft tick use: {soft_use}\033[0m")
 
     lines = [
         "/******************************************************************************",
@@ -246,6 +266,8 @@ def generate_autogen_c(cfg: dict) -> str:
             lines += ["    if (SUCCESS != middRtcIntInit())", "    {", "        return FAILURE;", "    }", ""]
         if ext_use:
             lines += ["    if (SUCCESS != middRtcExtInit())", "    {", "        return FAILURE;", "    }", ""]
+        if linux_local_use:
+            lines += ["    // linux local time is used"]
         if soft_use:
             lines += ["    if (SUCCESS != appTimeSoftTickInit())", "    {", "        return FAILURE;", "    }", ""]
         lines += ["    return SUCCESS;", "}", ""]
@@ -275,6 +297,8 @@ def generate_autogen_c(cfg: dict) -> str:
             "    }",
             "    return e;",
         ]
+    elif linux_local_use:
+        lines += ["    return getCurrentUnixTime();"]
     elif soft_use:
         lines += [
             "    return appTimeSoftTickGetEpoch();",
@@ -306,6 +330,13 @@ def generate_autogen_c(cfg: dict) -> str:
             if ext_use:
                 lines += ["    if (SUCCESS != middRtcExtSetTime(&r))", "    {", "        retVal = FAILURE;", "    }"]
 
+        if linux_local_use:
+            lines += [
+                "    if (0 != linuxLocalTimeSvcSetEpoch(epoch))",
+                "    {",
+                "        retVal = FAILURE;",
+                "    }",
+            ]
         if soft_use:
             lines += ["    retVal = appTimeSoftTickSetEpoch(epoch);"]
 
@@ -366,7 +397,7 @@ def main():
     os.makedirs(out_c.parent, exist_ok=True)
     os.makedirs(cusTsConfout_h.parent, exist_ok=True)
 
-    cusTsConfout_h.write_text(generate_cus_config_h(cfg, cusTsConfout_h), encoding="utf-8")
+    cusTsConfout_h.write_text(generate_cus_config_h(cfg, repo_root), encoding="utf-8")
     out_c.write_text(generate_autogen_c(cfg), encoding="utf-8")
     out_h.write_text(generate_config_h(json_path), encoding="utf-8")
 
