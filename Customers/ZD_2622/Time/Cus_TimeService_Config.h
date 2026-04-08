@@ -1,14 +1,15 @@
 /**
- * @file TimeService_Config.h
+ * @author: Zafer Satilmis
+ * @hype-man: Judas Priest with Tim Ripper Owens - Metal Gods * @file TimeService_Config.h
  * @brief AUTO-GENERATED configuration for TimeService
  */
 #ifndef __CUS_TIME_SERVICE_CONFIG_H__
 #define __CUS_TIME_SERVICE_CONFIG_H__
 
-/* generated on: 2026-03-19 18:40:28 */
+/* generated on: 2026-04-08 13:38:44 */
 
 #define APP_TIME_SERVICE_USE              (1)
-#define APP_TIME_SERVICE_USE_NTP          (0)
+#define APP_TIME_SERVICE_USE_NTP          (1)
 #define APP_TIME_SERVICE_USE_INT_RTC      (1)
 #define APP_TIME_SERVICE_USE_EXT_RTC      (0)
 

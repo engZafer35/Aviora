@@ -4,7 +4,6 @@
   "releaseDate": "2026-04-06",
   "protocol": {
     "use": true,
-    "activeProtocol": "protocolOrionTlv",
     "protocols": {
       "protocolRigelMq": {
         "use": false,
@@ -54,7 +53,7 @@
       "protocolZD": {
         "use": false,
         "name": "protocolZD",
-        "linkedSensorName": "electricityMeter",
+        "linkedSensorName": "sensor2",
         "description": "ZD JSON-TCP based protocol for IoT meter gateway",
         "connection": {
           "type": "tcp",
