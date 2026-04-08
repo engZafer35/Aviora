@@ -1,8 +1,8 @@
 /******************************************************************************
 * #Author       : Zafer Satilmis
-* #File Name    : Cus_loggerService_Conf.c
+* #File Name    : Cus_LoggerService_Conf.c
 * #Customer     : ZD_0101
-* #Date         : 2026-03-25 17:26:39
+* #Date         : 2026-04-08 13:38:38
 ******************************************************************************/
 /******************************************************************************
 * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
@@ -12,7 +12,7 @@
 
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
-#include "Cus_loggerService_Conf.h"
+#include "Cus_LoggerService_Conf.h"
 #include "Project_Conf.h"
 #include "AppLogRecorder.h"
 
