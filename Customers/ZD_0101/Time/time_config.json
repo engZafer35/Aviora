@@ -25,6 +25,12 @@
       "deviceConfig": {
         "driverPath": "Driver/McuCoreDrivers/inc/McuInterruptRegister.h"        
       }
+    },
+    "linuxLocalTime": {
+      "use": true,
+      "deviceConfig": {
+        "driverPath": "Middleware/MiddComm/Midd_OS/inc/Linux_DateTime.h"        
+      }
     }
   }
 }
