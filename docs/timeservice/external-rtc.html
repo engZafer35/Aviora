@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>External RTC — Time Service — Aviora</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="../protocol/protocol-docs.css" />
+  <link rel="stylesheet" href="timeservice-docs.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    if (window.mermaid) { mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" }); }
+  </script>
+</head>
+<body class="protocol-docs timeservice-docs">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="../protocol/index.html">Protocol</a>
+        <a href="index.html" class="active">Time Service</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Time Service</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="ntp.html">Network Time Protocol</a>
+        <a href="external-rtc.html" class="active">External RTC</a>
+        <a href="internal-rtc.html">Internal RTC</a>
+        <a href="os-time-source.html">OS Time Source</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1>External Real-Time Clock (Ext RTC)</h1>
+          <p class="ts-lead">
+            When <code>extRTC.use</code> is <code>true</code>, the generator includes the driver header from <code>deviceConfig.driverPath</code> (for example
+            <code>DrvM41T11_RTC.h</code>), defines <code>EXT_RTC_I2C_ADDR</code> and <code>EXT_RTC_I2C_LINE</code> from JSON, and relies on driver-provided macros
+            <code>EXT_RTC_INIT_FUNC</code>, <code>EXT_RTC_GET_TIME_FUNC</code>, <code>EXT_RTC_SET_TIME_FUNC</code>. Middleware <code>MiddRTC</code> uses those macros for the external path.
+            Autogen calls <code>middRtcExtInit</code>, <code>middRtcExtGetTime</code>, and <code>middRtcExtSetTime</code> when external RTC is selected.
+          </p>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+          <article class="card col-12">
+            <h2>JSON Fields</h2>
+            <table class="ts-table">
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Meaning</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>extRTC.use</code></td>
+                  <td>Enables external RTC path when <code>timeService.use</code> is true.</td>
+                </tr>
+                <tr>
+                  <td><code>deviceConfig.i2cAddress</code></td>
+                  <td>Becomes <code>EXT_RTC_I2C_ADDR</code> (e.g. <code>0x68</code>).</td>
+                </tr>
+                <tr>
+                  <td><code>deviceConfig.i2cBusName</code></td>
+                  <td>Becomes <code>EXT_RTC_I2C_LINE</code> (e.g. <code>I2C_LINE_1</code>).</td>
+                </tr>
+                <tr>
+                  <td><code>deviceConfig.driverPath</code></td>
+                  <td>Header pulled into <code>Cus_TimeService_Config.h</code>; must define the <code>EXT_RTC_*</code> macro block.</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Data Path (Midd RTC)</h2>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Figure — External RTC Read Path</div>
+              <pre class="mermaid">
+flowchart LR
+  A[appTimeServiceAutogenGetEpochFromPreferredSource] --> B[middRtcExtGetTime]
+  B --> C[MiddRtcStr_t]
+  C --> D[appTimeServiceRtcStrToEpoch]
+  D --> E[U32 epoch UTC]
+              </pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>When Disabled</h2>
+            <p>
+              If <code>extRTC.use</code> is false, Cus defines <code>EXT_RTC_*</code> stubs to <code>FAILURE</code> and I2C macros to safe defaults; autogen does not call external RTC APIs.
+              Internal RTC or Linux local time or soft tick may still be active per priority rules on the <a href="index.html">Overview</a> page.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Related Pages</h2>
+            <p><a href="index.html">Overview</a> · <a href="ntp.html">Network Time Protocol</a> · <a href="internal-rtc.html">Internal RTC</a> · <a href="os-time-source.html">OS Time Source</a></p>
+          </article>
+        </div>
+      </main>
+      <footer><p><a href="../index.html">← Back To Aviora</a></p></footer>
+    </div>
+  </div>
+</body>
+</html>

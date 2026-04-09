@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Network Time Protocol — Time Service — Aviora</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="../protocol/protocol-docs.css" />
+  <link rel="stylesheet" href="timeservice-docs.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: "dark",
+      securityLevel: "loose",
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true,
+        curve: "basis",
+        nodeSpacing: 36,
+        rankSpacing: 40,
+        padding: 10
+      },
+      themeVariables: {
+        fontSize: "14px",
+        fontFamily: "system-ui, Segoe UI, Arial, sans-serif",
+        primaryTextColor: "#eaf0ff",
+        secondaryTextColor: "#c8d9ff",
+        tertiaryTextColor: "#b8c6ea"
+      }
+    });
+  </script>
+</head>
+<body class="protocol-docs timeservice-docs">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="../protocol/index.html">Protocol</a>
+        <a href="index.html" class="active">Time Service</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Time Service</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="ntp.html" class="active">Network Time Protocol</a>
+        <a href="external-rtc.html">External RTC</a>
+        <a href="internal-rtc.html">Internal RTC</a>
+        <a href="os-time-source.html">OS Time Source</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1>Network Time Protocol (NTP)</h1>
+          <p class="ts-lead">
+            NTP is optional. When <code>ntp.use</code> is <code>true</code> in <code>time_config.json</code> and <code>timeService.use</code> is <code>true</code>, the generator sets
+            <code>APP_TIME_SERVICE_USE_NTP</code> to 1, embeds default host, port, and update period as macros, and emits <code>AppTimeService_Autogen.c</code> code that
+            calls <code>appTimeNtpSetServer</code> during init and <code>appTimeNtpGetEpoch</code> from the NTP-specific getter. The core file <code>AppTimeService.c</code> starts a periodic timer
+            only when that macro is 1.
+          </p>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+          <article class="card col-12">
+            <h2>Activation Rules</h2>
+            <table class="ts-table">
+              <thead>
+                <tr>
+                  <th>Condition</th>
+                  <th>Result</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>timeService.use == false</code></td>
+                  <td><code>APP_TIME_SERVICE_USE_NTP</code> is 0 regardless of <code>ntp.use</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>timeService.use == true</code> and <code>ntp.use == true</code></td>
+                  <td>NTP enabled; includes <code>TimeSync_Ntp.h</code> in autogen; init configures server; getter returns <code>appTimeNtpGetEpoch()</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>ntp.use == false</code></td>
+                  <td>Autogen stubs: <code>GetNtpEpoch</code> returns 0; <code>SetNtpServer</code> returns <code>FAILURE</code>; no NTP include.</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Parameters And Macros</h2>
+            <table class="ts-table">
+              <thead>
+                <tr>
+                  <th>JSON Field</th>
+                  <th>Macro In Cus Header</th>
+                  <th>Used Where</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>ntp.ipAddr</code></td>
+                  <td><code>APP_TIME_SERVICE_DEFAULT_NTP_HOST</code> (string)</td>
+                  <td>Passed into <code>appTimeServiceInit(ntpHost, ntpPort)</code> with application defaults; autogen calls <code>appTimeNtpSetServer</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>ntp.port</code></td>
+                  <td><code>APP_TIME_SERVICE_DEFAULT_NTP_PORT</code></td>
+                  <td>Same init path (typically 123).</td>
+                </tr>
+                <tr>
+                  <td><code>ntp.updatePeriodMin</code></td>
+                  <td><code>APP_TIME_SERVICE_NTP_UPDATE_PERIOD_MIN</code></td>
+                  <td><code>AppTimeService.c</code>: <code>periodMs = APP_TIME_SERVICE_NTP_UPDATE_PERIOD_MIN * WAIT_1_MIN</code> for the event timer.</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Init And Callback Path</h2>
+            <p style="color: var(--muted); margin-top: 0;">
+              Two <strong>horizontal</strong> Mermaid charts, stacked top to bottom: init path (A), then timer callback (B).
+            </p>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Figure — NTP Wiring In Application</div>
+              <div class="ts-mermaid-stack">
+                <div class="ts-mermaid-panel">
+                  <div class="ts-mermaid-panel-title">A — <code>appTimeServiceInit</code> (left → right)</div>
+                  <div class="ts-mermaid-scroll">
+                    <pre class="mermaid">
+flowchart LR
+  A[AutogenInit] --> B{NTP?}
+  B -->|Yes| C[NtpSetServer]
+  B -->|No| D[Skip NTP]
+  C --> E[EvTimerReg]
+  E --> F[EvTimerStart]
+  F --> G[ntpTimerCb x1]
+                    </pre>
+                  </div>
+                </div>
+                <div class="ts-mermaid-panel">
+                  <div class="ts-mermaid-panel-title">B — <code>ntpTimerCb</code> each tick (left → right)</div>
+                  <div class="ts-mermaid-scroll">
+                    <pre class="mermaid">
+flowchart LR
+  H[AutogenGetNtpEpoch] --> I[appTimeNtpGetEpoch]
+  I --> J[UpdateRtcsFromEpoch]
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p class="small" style="margin-top: 12px; color: var(--muted);">
+              Abbreviations — <code>AutogenInit</code> = <code>appTimeServiceAutogenInit</code>;
+              <code>NtpSetServer</code> = <code>appTimeNtpSetServer</code>;
+              <code>EvTimerReg</code> = <code>middEventTimerRegister</code> (period from <code>NTP_UPDATE_PERIOD_MIN</code>);
+              <code>EvTimerStart</code> = <code>middEventTimerStart</code>;
+              <code>UpdateRtcsFromEpoch</code> = <code>appTimeServiceAutogenUpdateRtcsFromEpoch</code>.
+            </p>
+            <div class="ts-callout">
+              <strong>Note:</strong> Changing only <code>updatePeriodMin</code> requires regenerating Cus headers and rebuilding so <code>AppTimeService.c</code> sees the new macro value for the timer.
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Related Pages</h2>
+            <p><a href="index.html">Overview</a> · <a href="external-rtc.html">External RTC</a> · <a href="internal-rtc.html">Internal RTC</a> · <a href="os-time-source.html">OS Time Source</a></p>
+          </article>
+        </div>
+      </main>
+      <footer><p><a href="../index.html">← Back To Aviora</a></p></footer>
+    </div>
+  </div>
+</body>
+</html>

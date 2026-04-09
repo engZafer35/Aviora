@@ -3,19 +3,26 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🛰️Aviora-TimeService</title>
+  <title>Time Service — Overview — Aviora</title>
   <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="../protocol/protocol-docs.css" />
+  <link rel="stylesheet" href="timeservice-docs.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });
+    }
+  </script>
 </head>
-<body>
-  <body class="protocol-docs">
-    <div class="topbar">
-      <div class="topbar-inner">
+<body class="protocol-docs timeservice-docs">
+  <div class="topbar">
+    <div class="topbar-inner">
       <div class="brand">🛰️Zafer Satılmış - Aviora</div>
       <nav class="nav">
         <a href="../index.html">Aviora</a>
         <a href="../fs/index.html">File System</a>
         <a href="../protocol/index.html">Protocol</a>
-        <a href="index.html" class="active">TimeService</a>
+        <a href="index.html" class="active">Time Service</a>
         <a href="../network/index.html">Network</a>
         <a href="../display/index.html">Display</a>
         <a href="../sw_update/index.html">SW Update</a>
@@ -27,57 +34,232 @@
 
   <div class="layout-with-sidebar">
     <aside class="sidebar">
-      <div class="sidebar-title">TimeService</div>
+      <div class="sidebar-title">Time Service</div>
       <nav class="sidebar-nav">
         <a href="index.html" class="active">Overview</a>
+        <a href="ntp.html">Network Time Protocol</a>
+        <a href="external-rtc.html">External RTC</a>
+        <a href="internal-rtc.html">Internal RTC</a>
+        <a href="os-time-source.html">OS Time Source</a>
       </nav>
     </aside>
     <div class="main-with-sidebar">
-  <section class="hero">
-    <div class="hero-card">
-      <h1>TimeService</h1>
-      <p>
-        Application time service with NTP, internal/external RTC, and software tick backends.
-        JSON configuration and auto-generated wiring; unified API for time sync and format.
-      </p>
-    </div>
-  </section>
+      <section class="hero">
+        <div class="hero-card ts-animate-pulse">
+          <h1>Time Service — Architecture And Code Generation</h1>
+          <p class="ts-lead">
+            The application <strong>Time Service</strong> exposes one API for epoch, <code>struct tm</code>, and formatted strings.
+            Which backends run (NTP, internal RTC, external RTC, Linux host clock, software tick) is <strong>not</strong> chosen with
+            <code>#ifdef</code> in core files: it is driven by <code>Customers/&lt;Customer&gt;/Time/time_config.json</code> and the
+            generator <code>generate_time_service_code.py</code>, which writes customer headers and <code>AppTimeService_Autogen.c</code>.
+            Core logic in <code>AppTimeService.c</code> includes that autogen file and always calls the same static functions; behavior follows the generated implementation.
+          </p>
+        </div>
+      </section>
 
-  <main class="container">
-    <div class="grid">
-      <article class="card col-8">
-        <h2>Overview</h2>
-        <p>
-          TimeService provides current time to other modules. Multiple backends (NTP, intRTC, extRTC, SoftTick) are selected via <code>time_config.json</code>. The generator script produces <code>Cus_TimeService_Config.h</code> and <code>AppTimeService_Autogen.c</code>.
-        </p>
-        <ul>
-          <li>Time zone support (e.g. UTC+3)</li>
-          <li>NTP sync with configurable server and period</li>
-          <li>Epoch / struct tm / string conversion</li>
-        </ul>
-      </article>
+      <main class="container">
+        <div class="grid">
+          <article class="card col-12 ts-fade-in">
+            <h2>End-To-End Configuration Pipeline</h2>
+            <p>
+              A single JSON file per customer defines the time domain. The Python script emits three artifacts: customer-specific macros and optional driver includes
+              (<code>Cus_TimeService_Config.h</code>), a thin wrapper that points at the customer (<code>Customers/TimeService_Config.h</code>), and the static wiring inside
+              <code>AppTimeService_Autogen.c</code>.
+            </p>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Figure — From JSON To Running Code</div>
+              <pre class="mermaid">
+flowchart LR
+  subgraph Input
+    J[time_config.json]
+  end
+  subgraph Generator
+    G[generate_time_service_code.py]
+  end
+  subgraph Outputs
+    CUS[Cus_TimeService_Config.h]
+    TSW[TimeService_Config.h]
+    AUTO[AppTimeService_Autogen.c]
+  end
+  subgraph Core
+    APP[AppTimeService.c]
+  end
+  J --> G
+  G --> CUS
+  G --> TSW
+  G --> AUTO
+  TSW --> APP
+  AUTO --> APP
+  CUS -.->|included via| TSW
+              </pre>
+            </div>
+          </article>
 
-      <article class="card col-4">
-        <h2>API</h2>
-        <ul>
-          <li><code>appTimeServiceInit</code></li>
-          <li><code>appTimeServiceGetTime</code></li>
-          <li><code>appTimeServiceGetEpoch</code></li>
-          <li><code>appTimeServiceFormatNow</code></li>
-        </ul>
-      </article>
+          <article class="card col-12">
+            <h2>Example — Linuxgcc Customer <code>time_config.json</code></h2>
+            <p>
+              Below is a real configuration shape (values may change). When <code>timeService.use</code> is <code>true</code>, child features are evaluated.
+              If <code>timeService.use</code> is <code>false</code>, NTP and all RTC / OS time flags are forced off in the generator (same rule as application code expectations).
+            </p>
+            <pre class="code-block">{
+  "customer": "LinuxGcc",
+  "timeService": {
+    "use": true,
+    "timeZone": "UTC",
+    "ntp": {
+      "use": false,
+      "ipAddr": "pool.ntp.org",
+      "port": 123,
+      "updatePeriodMin": 60
+    },
+    "extRTC": { "use": false, "deviceConfig": { ... } },
+    "intRTC": { "use": false, "deviceConfig": { ... } },
+    "linuxLocalTime": {
+      "use": true,
+      "deviceConfig": {
+        "driverPath": "Middleware/MiddComm/Midd_OS/inc/Linux_DateTime.h"
+      }
+    }
+  }
+}</pre>
+            <div class="ts-callout">
+              <strong>Preferred epoch source</strong> (what <code>appTimeServiceGetEpoch</code> uses) is resolved in this order:
+              internal RTC → external RTC → Linux local time (host <code>time()</code>) → software tick — first enabled backend wins.
+              NTP is separate: it periodically fetches network time and pushes epoch into RTCs / OS / soft tick via <code>appTimeServiceAutogenUpdateRtcsFromEpoch</code> when enabled.
+            </div>
+          </article>
 
-      <article class="card col-12">
-        <h2>Configuration</h2>
-        <pre class="code-block">Customers/&lt;customer&gt;/Time/time_config.json</pre>
-        <p>Keys: <code>timeService.use</code>, <code>timeZone</code>, <code>ntp</code>, <code>intRTC</code>, <code>extRTC</code></p>
-      </article>
-    </div>
-  </main>
+          <article class="card col-12">
+            <h2>JSON Parameters To Generated Macros</h2>
+            <table class="ts-table">
+              <thead>
+                <tr>
+                  <th>JSON Path</th>
+                  <th>Generated Symbols (Cus Header)</th>
+                  <th>Role</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>timeService.use</code></td>
+                  <td><code>APP_TIME_SERVICE_USE</code></td>
+                  <td>Master switch; when 0, all feature flags in Cus header are 0.</td>
+                </tr>
+                <tr>
+                  <td><code>timeZone</code></td>
+                  <td><code>APP_TIME_SERVICE_TZ_OFFSET_MINUTES</code></td>
+                  <td>UTC offset in minutes (e.g. <code>UTC+3</code>).</td>
+                </tr>
+                <tr>
+                  <td><code>ntp.use</code>, <code>ipAddr</code>, <code>port</code>, <code>updatePeriodMin</code></td>
+                  <td><code>APP_TIME_SERVICE_USE_NTP</code>, <code>APP_TIME_SERVICE_DEFAULT_NTP_*</code>, <code>APP_TIME_SERVICE_NTP_UPDATE_PERIOD_MIN</code></td>
+                  <td>NTP enable and defaults; period drives the periodic timer in <code>AppTimeService.c</code> when NTP is on.</td>
+                </tr>
+                <tr>
+                  <td><code>intRTC.use</code> + <code>deviceConfig.driverPath</code></td>
+                  <td><code>APP_TIME_SERVICE_USE_INT_RTC</code>, include + <code>INT_RTC_*</code> macros</td>
+                  <td>Internal RTC driver; stubs with <code>FAILURE</code> when off.</td>
+                </tr>
+                <tr>
+                  <td><code>extRTC.use</code> + I2C + <code>driverPath</code></td>
+                  <td><code>APP_TIME_SERVICE_USE_EXT_RTC</code>, <code>EXT_RTC_I2C_*</code>, include + <code>EXT_RTC_*</code></td>
+                  <td>External RTC (e.g. M41T11) via I2C.</td>
+                </tr>
+                <tr>
+                  <td><code>linuxLocalTime.use</code> + <code>driverPath</code></td>
+                  <td><code>APP_TIME_SERVICE_USE_LINUX_LOCAL_TIME</code>, include <code>Linux_DateTime.h</code></td>
+                  <td>Host OS clock; only when both RTCs are off and this is on; otherwise software tick fills the gap.</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
 
-  <footer>
-    <p><a href="../index.html">← Back to Aviora</a></p>
-  </footer>
+          <article class="card col-12">
+            <h2>Runtime Flow — Read Time</h2>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Figure — Get Epoch From Preferred Source</div>
+              <pre class="mermaid">
+flowchart TD
+  A[appTimeServiceGetEpoch] --> B[appTimeServiceAutogenGetEpochFromPreferredSource]
+  B --> C{Int RTC enabled?}
+  C -->|Yes| D[middRtcIntGetTime → epoch]
+  C -->|No| E{Ext RTC enabled?}
+  E -->|Yes| F[middRtcExtGetTime → epoch]
+  E -->|No| G{Linux local enabled?}
+  G -->|Yes| H[getCurrentUnixTime]
+  G -->|No| I[appTimeSoftTickGetEpoch]
+              </pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Runtime Flow — NTP Sync (When Enabled)</h2>
+            <p>
+              When <code>APP_TIME_SERVICE_USE_NTP == 1</code>, <code>appTimeServiceInit</code> registers a repeating event timer. Period =
+              <code>APP_TIME_SERVICE_NTP_UPDATE_PERIOD_MIN × WAIT_1_MIN</code>. Each tick calls <code>appTimeNtpGetEpoch</code> then updates backends via
+              <code>appTimeServiceAutogenUpdateRtcsFromEpoch</code>.
+            </p>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Figure — NTP Timer Callback</div>
+              <pre class="mermaid">
+sequenceDiagram
+  participant T as Event Timer
+  participant C as ntpTimerCb
+  participant N as appTimeNtpGetEpoch
+  participant U as appTimeServiceAutogenUpdateRtcsFromEpoch
+  T->>C: periodic
+  C->>N: get epoch from NTP stack
+  N-->>C: epoch or failure
+  C->>U: push epoch to RTCs / OS / soft tick
+              </pre>
+            </div>
+            <p class="small">See <a href="ntp.html">Network Time Protocol</a> for parameter binding and activation rules.</p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Where Core Meets Generated Code</h2>
+            <div class="ts-grid-2">
+              <div class="ts-tile">
+                <h3>AppTimeService.c</h3>
+                <p>Public API, timezone conversion, string format, and <code>#include "AppTimeService_Autogen.c"</code> so static helpers live in one translation unit.</p>
+              </div>
+              <div class="ts-tile">
+                <h3>AppTimeService_Autogen.c</h3>
+                <p>Implements <code>appTimeServiceAutogenInit</code>, <code>GetEpochFromPreferredSource</code>, <code>UpdateRtcsFromEpoch</code>, <code>GetNtpEpoch</code>, <code>SetNtpServer</code> — only the backends selected in JSON appear here.</p>
+              </div>
+              <div class="ts-tile">
+                <h3>TimeService_Config.h</h3>
+                <p>Includes <code>&lt;Customer&gt;/Time/Cus_TimeService_Config.h</code> so the rest of the tree includes one stable name.</p>
+              </div>
+              <div class="ts-tile">
+                <h3>Cus_TimeService_Config.h</h3>
+                <p>All <code>APP_TIME_SERVICE_*</code> macros, NTP defaults, RTC I2C, driver includes or <code>FAILURE</code> stubs.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Deep Dives (Sidebar)</h2>
+            <p>Use the left navigation for focused topics:</p>
+            <ul>
+              <li><a href="ntp.html">Network Time Protocol</a> — host, port, period, timer, macros.</li>
+              <li><a href="external-rtc.html">External RTC</a> — I2C, M41T11 driver path, middleware.</li>
+              <li><a href="internal-rtc.html">Internal RTC</a> — MCU RTC driver macros.</li>
+              <li><a href="os-time-source.html">OS Time Source</a> — Linux host clock, <code>Linux_DateTime.h</code>, simulator.</li>
+            </ul>
+          </article>
+
+          <article class="card col-12">
+            <h2>Regenerate After Editing JSON</h2>
+            <pre class="code-block">python Customers/generate_time_service_code.py --customer LinuxGcc</pre>
+            <p class="small">Replace <code>LinuxGcc</code> with your customer folder name under <code>Customers/</code>.</p>
+          </article>
+        </div>
+      </main>
+
+      <footer>
+        <p><a href="../index.html">← Back To Aviora</a></p>
+      </footer>
     </div>
   </div>
 </body>
