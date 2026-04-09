@@ -43,6 +43,7 @@ typedef enum
 /********************************** VARIABLES *********************************/
 static S32 gs_ethDbusID;
 static S32 gs_timerId;
+OsTaskId gs_ethTaskID;
 
 static EthModuleStep_t gs_ethInitStep = ETH_CONN_STEP_INIT_ETH_DRIVER;
 
@@ -202,20 +203,21 @@ static ethConnManagerTask(void* argument)
 
 #else
 
-static ethConnManagerTask(void* argument)
+static void ethConnManagerTask(void* argument)
 {      
     (void)argument;
     zosDelayTask(1000);
 
     while(666)
     { 
+        appTskMngImOK(gs_ethTaskID);
         switch (gs_ethInitStep)
         {
             case ETH_CONN_STEP_INIT_ETH_DRIVER:
             {                
-                gs_ethInitStep = ETH_CONN_STEP_COMPLETED;
+                gs_ethInitStep = ETH_CONN_STEP_ETH_UP;
                 DEBUG_INFO("Eth driver initialized successfully");
-                APP_LOG_REC(g_sysLoggerID, "Eth driver initialized successfully");
+                //APP_LOG_REC(g_sysLoggerID, "Eth driver initialized successfully");
             
                 break;      
             }
@@ -242,6 +244,7 @@ static ethConnManagerTask(void* argument)
                 break;
         }
         
+        appTskMngImOK(gs_ethTaskID);
         zosDelayTask(1000);
     }
 }
@@ -252,7 +255,6 @@ RETURN_STATUS EthConn_Enc28J60_Init(void)
 {
     RETURN_STATUS retVal = SUCCESS;
     ZOsTaskParameters tempParam;
-    OsTaskId gsmTaskID;
 
     tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
     tempParam.stackSize = ZOS_MIN_STACK_SIZE;
@@ -260,8 +262,8 @@ RETURN_STATUS EthConn_Enc28J60_Init(void)
     retVal = appDBusRegister(EN_DBUS_TOPIC_DEVICE, &gs_ethDbusID);
     if (SUCCESS != retVal)
     {
-        DEBUG_ERROR("Failed to register GSM manager to DBus!");
-        APP_LOG_REC(g_sysLoggerID, "Failed to register GSM manager to DBus!");
+        DEBUG_ERROR("Failed to register ETH manager to DBus!");
+        APP_LOG_REC(g_sysLoggerID, "Failed to register ETH manager to DBus!");
         return FAILURE;
     }
 
@@ -271,20 +273,20 @@ RETURN_STATUS EthConn_Enc28J60_Init(void)
 
     if (SUCCESS == retVal)
     {
-        gsmTaskID = appTskMngCreate("GSM_TASK", ethConnManagerTask, NULL, &tempParam);
+        gs_ethTaskID = appTskMngCreate("ETH_TASK", ethConnManagerTask, NULL, &tempParam);
 
-        if (OS_INVALID_TASK_ID != gsmTaskID)
+        if (OS_INVALID_TASK_ID != gs_ethTaskID)
         {
-            DEBUG_ERROR("->[E] GSM Task created id: %d", gsmTaskID);
-            APP_LOG_REC(g_sysLoggerID, "GSM: Task created successfully");
+            DEBUG_ERROR("->[E] ETH Task created id: %lu", gs_ethTaskID);
+            APP_LOG_REC(g_sysLoggerID, "ETH: Task created successfully");
         }
         else
         {
             appDBusUnregister(gs_ethDbusID);
             retVal = FAILURE;
 
-            DEBUG_ERROR("->[E] GSM Task could not be created");
-            APP_LOG_REC(g_sysLoggerID, "GSM: Task could not be created");
+            DEBUG_ERROR("->[E] ETH Task could not be created");
+            APP_LOG_REC(g_sysLoggerID, "ETH: Task could not be created");
         }
     }
 
