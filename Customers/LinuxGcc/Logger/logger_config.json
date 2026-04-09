@@ -13,7 +13,7 @@
         "_comment": "don't change the name, sysLogger is mandatory, loggerID is g_sysLoggerID, this logger can bu used with the g_sysLoggerID",
         "name": "sysLogger",
         "use": true,
-        "fsPath": "Middleware/MiddComm/Midd_FS/fs_port.h",
+        "fsPath": "MiddComm/Midd_FS/fs_port.h",
         "openFunc": "fsOpenFile",
         "readFunc": "fsReadFile",
         "writeFunc": "fsWriteFile",

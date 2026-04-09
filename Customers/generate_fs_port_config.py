@@ -509,7 +509,7 @@ def generate_config_h(cus_fs: Path) -> str:
         "#define __FS_PORT_CONFIG_H__",
         "",
 
-        f'#include "{cus_fs.parent.parent.name}/Fs/cus_fs_port_config.h"',
+        f'#include "{cus_fs.parent.parent.name}/Fs/Cus_Fs_Port_Config.h"',
     ]
 
     lines.append("")
@@ -553,7 +553,7 @@ Examples:
 
     customers_root = script_dir
     json_path = os.path.join(customers_root, args.customer, "Fs", "fs_config.json")
-    out_path = os.path.join(customers_root, args.customer, "Fs", "cus_fs_port_config.h")
+    out_path = os.path.join(customers_root, args.customer, "Fs", "Cus_Fs_Port_Config.h")
 
     if not os.path.isfile(json_path):
         print(f"Error: Config file not found: {json_path}", file=sys.stderr)

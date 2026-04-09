@@ -115,7 +115,7 @@
         "pc_simulator": {
           "use": false,
           "name": "pc_simulator",
-          "rootPath": "../DevFs"
+          "rootPath": "DevFs/"
         }
       }
     }

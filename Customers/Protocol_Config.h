@@ -6,10 +6,10 @@
 #ifndef __APP_PROTOCOL_CONFIG_H__
 #define __APP_PROTOCOL_CONFIG_H__
 
-/* generated on: 2026-04-08 13:38:44 */
-/* customer name: ZD_2622 */
+/* generated on: 2026-04-09 10:13:55 */
+/* customer name: LinuxGcc */
 
-#include "ZD_2622/Protocol/Cus_Protocol_Config.h"
+#include "LinuxGcc/Protocol/Cus_Protocol_Config.h"
 
 
 #endif /* __APP_PROTOCOL_CONFIG_H__ */
