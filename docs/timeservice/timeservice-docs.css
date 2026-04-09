@@ -1,0 +1,304 @@
+/* TimeService documentation — animations, Mermaid, diagrams */
+
+body.timeservice-docs .hero-card h1 {
+  letter-spacing: 0.02em;
+}
+
+body.timeservice-docs .card > h2 {
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #eaf0ff;
+}
+
+/* Figure strip titles — short labels only (avoid CSS capitalize on JSON/API tokens) */
+body.timeservice-docs .diagram-head {
+  text-transform: capitalize;
+}
+
+/* Title Case via explicit class (use on headings you control) */
+.ts-title-case {
+  text-transform: capitalize;
+}
+
+.ts-lead {
+  font-size: clamp(1.05rem, 1.2vw, 1.2rem);
+  line-height: 1.65;
+  color: var(--muted);
+  max-width: 920px;
+}
+
+.ts-callout {
+  border-left: 4px solid #58a6ff;
+  padding: 14px 18px;
+  margin: 0 0 20px 0;
+  background: rgba(88, 166, 255, 0.08);
+  border-radius: 0 12px 12px 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.ts-callout strong {
+  color: var(--accent);
+}
+
+.ts-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.ts-table th,
+.ts-table td {
+  padding: 10px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.ts-table th {
+  color: var(--accent);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.45px;
+}
+
+.ts-table code {
+  font-size: 12px;
+}
+
+.ts-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.ts-tile {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.03);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.ts-tile:hover {
+  border-color: rgba(110, 168, 255, 0.45);
+  box-shadow: 0 0 24px rgba(88, 166, 255, 0.08);
+}
+
+.ts-tile h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: var(--accent);
+}
+
+.ts-tile p {
+  margin: 0;
+  font-size: 14px;
+}
+
+/* Pulse animation on emphasis blocks */
+@keyframes ts-pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(110, 168, 255, 0);
+  }
+  50% {
+    box-shadow: 0 0 28px rgba(110, 168, 255, 0.15);
+  }
+}
+
+.ts-animate-pulse {
+  animation: ts-pulse-glow 3s ease-in-out infinite;
+  border-radius: 14px;
+}
+
+@keyframes ts-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.ts-fade-in {
+  animation: ts-fade-up 0.55s ease forwards;
+}
+
+.ts-fade-in:nth-child(2) {
+  animation-delay: 0.08s;
+}
+.ts-fade-in:nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+/* NTP period bar chart (CSS-only) */
+.ts-ntp-timeline {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 120px;
+  margin: 20px 0;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+.ts-ntp-bar {
+  flex: 1;
+  min-height: 8px;
+  border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, #58a6ff, #1f6feb);
+  animation: ts-bar-grow 1.2s ease-out forwards;
+  transform-origin: bottom;
+  transform: scaleY(0);
+}
+
+@keyframes ts-bar-grow {
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.ts-ntp-bar:nth-child(1) {
+  height: 35%;
+  animation-delay: 0.1s;
+}
+.ts-ntp-bar:nth-child(2) {
+  height: 55%;
+  animation-delay: 0.2s;
+}
+.ts-ntp-bar:nth-child(3) {
+  height: 100%;
+  animation-delay: 0.3s;
+}
+.ts-ntp-bar:nth-child(4) {
+  height: 70%;
+  animation-delay: 0.4s;
+}
+.ts-ntp-bar:nth-child(5) {
+  height: 45%;
+  animation-delay: 0.5s;
+}
+
+.ts-ntp-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #8a9cc7;
+  margin-top: 8px;
+}
+
+/* Flow arrow SVG decoration */
+.ts-flow-arrow {
+  display: inline-block;
+  color: var(--accent);
+  font-size: 1.2em;
+  margin: 0 6px;
+  animation: ts-arrow-nudge 1.5s ease-in-out infinite;
+}
+
+@keyframes ts-arrow-nudge {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+}
+
+.diagram-wrap {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 16px 0;
+}
+
+.diagram-head {
+  background: rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c8d9ff;
+  text-transform: capitalize;
+}
+
+pre.mermaid {
+  margin: 0;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.22);
+  overflow: auto;
+}
+
+/* NTP page — Mermaid panels stacked vertically, compact horizontal charts */
+.ts-mermaid-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 12px 16px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.ts-mermaid-panel {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.15);
+  min-width: 0;
+}
+
+.ts-mermaid-panel-title {
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #eaf0ff;
+  border-bottom: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.ts-mermaid-panel-title code {
+  font-size: 0.95em;
+}
+
+.ts-mermaid-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 6px 6px 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ts-mermaid-scroll pre.mermaid {
+  margin: 0;
+  padding: 6px 4px;
+  background: transparent;
+}
+
+/* Match compact mermaid.initialize fontSize */
+.ts-mermaid-scroll foreignObject div,
+.ts-mermaid-scroll foreignObject span {
+  font-size: 14px !important;
+  line-height: 1.25 !important;
+}
+
+.ts-mermaid-scroll svg .edgeLabel div,
+.ts-mermaid-scroll svg .edgeLabel span {
+  font-size: 12px !important;
+}
+
+@media (max-width: 960px) {
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+  .layout-with-sidebar {
+    flex-direction: column;
+  }
+}

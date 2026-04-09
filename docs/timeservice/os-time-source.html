@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>OS Time Source — Time Service — Aviora</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="../protocol/protocol-docs.css" />
+  <link rel="stylesheet" href="timeservice-docs.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    if (window.mermaid) { mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" }); }
+  </script>
+</head>
+<body class="protocol-docs timeservice-docs">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="../protocol/index.html">Protocol</a>
+        <a href="index.html" class="active">Time Service</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Time Service</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="ntp.html">Network Time Protocol</a>
+        <a href="external-rtc.html">External RTC</a>
+        <a href="internal-rtc.html">Internal RTC</a>
+        <a href="os-time-source.html" class="active">OS Time Source</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1>OS Time Source (Linux Local Time)</h1>
+          <p class="ts-lead">
+            The JSON node <code>linuxLocalTime</code> targets the <strong>Linux simulator / host</strong> (and similar environments) where wall-clock time comes from the operating system
+            (<code>time()</code> / <code>settimeofday</code>), not from an external I2C RTC chip. It is intended when <strong>both</strong> <code>intRTC.use</code> and <code>extRTC.use</code> are
+            <code>false</code>. If both are off and <code>linuxLocalTime.use</code> is <code>true</code>, the generator sets <code>APP_TIME_SERVICE_USE_LINUX_LOCAL_TIME</code> to 1,
+            includes <code>Linux_DateTime.h</code>, and autogen reads epoch via <code>getCurrentUnixTime()</code> and writes via <code>linuxLocalTimeSvcSetEpoch</code> when updating from epoch.
+            If both RTCs are off and <code>linuxLocalTime.use</code> is <code>false</code>, the <strong>software tick</strong> backend is used instead.
+          </p>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+          <article class="card col-12">
+            <h2>Eligibility</h2>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Figure — Choosing Linux Local Versus Soft Tick</div>
+              <pre class="mermaid">
+flowchart TD
+  A[timeService.use] --> B{intRTC or extRTC on?}
+  B -->|Yes| C[Linux local node ignored for preferred source priority]
+  B -->|No| D{linuxLocalTime.use?}
+  D -->|Yes| E[OS host clock backend]
+  D -->|No| F[Software tick backend]
+              </pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Driver Header</h2>
+            <p>
+              <code>deviceConfig.driverPath</code> normally points to <code>Middleware/MiddComm/Midd_OS/inc/Linux_DateTime.h</code>. That header provides
+              <code>getCurrentUnixTime</code>, conversion helpers, and the service wrappers used by autogen. On non-Linux targets, <code>settimeofday</code> may fail at runtime;
+              read path still works wherever <code>time()</code> is valid.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Simulator And CI</h2>
+            <p>
+              This backend is ideal for continuous integration and robot-framework style tests on a Linux workstation: Ethernet or USB GSM modem can provide network access, while the process
+              uses the same Time Service API as on embedded hardware with real RTCs — only the generated autogen and Cus macros differ.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Related Pages</h2>
+            <p><a href="index.html">Overview</a> · <a href="ntp.html">Network Time Protocol</a> · <a href="external-rtc.html">External RTC</a> · <a href="internal-rtc.html">Internal RTC</a></p>
+          </article>
+        </div>
+      </main>
+      <footer><p><a href="../index.html">← Back To Aviora</a></p></footer>
+    </div>
+  </div>
+</body>
+</html>

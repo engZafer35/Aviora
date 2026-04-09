@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Internal RTC — Time Service — Aviora</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="../protocol/protocol-docs.css" />
+  <link rel="stylesheet" href="timeservice-docs.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    if (window.mermaid) { mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" }); }
+  </script>
+</head>
+<body class="protocol-docs timeservice-docs">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="../protocol/index.html">Protocol</a>
+        <a href="index.html" class="active">Time Service</a>
+        <a href="../network/index.html">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Time Service</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="ntp.html">Network Time Protocol</a>
+        <a href="external-rtc.html">External RTC</a>
+        <a href="internal-rtc.html" class="active">Internal RTC</a>
+        <a href="os-time-source.html">OS Time Source</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1>Internal Real-Time Clock (Int RTC)</h1>
+          <p class="ts-lead">
+            When <code>intRTC.use</code> is <code>true</code>, the generator includes <code>deviceConfig.driverPath</code> (typically <code>McuInterruptRegister.h</code> or another MCU-specific header)
+            that defines <code>INT_RTC_INIT_FUNC</code>, <code>INT_RTC_GET_TIME_FUNC</code>, and <code>INT_RTC_SET_TIME_FUNC</code>. Middleware maps these to <code>middRtcInt*</code>.
+            In <code>AppTimeService_Autogen.c</code>, internal RTC has <strong>highest priority</strong> for the preferred epoch source: if both internal and external RTC were enabled,
+            the generated code uses internal first (branch order: int → ext → Linux → soft tick).
+          </p>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+          <article class="card col-12">
+            <h2>JSON Fields</h2>
+            <table class="ts-table">
+              <thead>
+                <tr>
+                  <th>Field</th>
+                  <th>Effect</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>intRTC.use</code></td>
+                  <td>Sets <code>APP_TIME_SERVICE_USE_INT_RTC</code>; includes driver header when true.</td>
+                </tr>
+                <tr>
+                  <td><code>deviceConfig.driverPath</code></td>
+                  <td>Path to header with <code>INT_RTC_*</code> macro block.</td>
+                </tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Priority Over External RTC</h2>
+            <div class="diagram-wrap">
+              <div class="diagram-head">Figure — Preferred Source Selection</div>
+              <pre class="mermaid">
+flowchart TD
+  Q[Autogen get epoch] --> I{Int RTC on?}
+  I -->|Yes| R[middRtcIntGetTime]
+  I -->|No| X{Ext RTC on?}
+  X -->|Yes| E[middRtcExtGetTime]
+  X -->|No| L{Linux local on?}
+  L -->|Yes| G[getCurrentUnixTime]
+  L -->|No| S[Soft tick]
+              </pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>When Disabled</h2>
+            <p>Cus header defines <code>INT_RTC_*</code> stubs to <code>FAILURE</code>; autogen does not call <code>middRtcIntInit</code> or read internal RTC.</p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Related Pages</h2>
+            <p><a href="index.html">Overview</a> · <a href="ntp.html">Network Time Protocol</a> · <a href="external-rtc.html">External RTC</a> · <a href="os-time-source.html">OS Time Source</a></p>
+          </article>
+        </div>
+      </main>
+      <footer><p><a href="../index.html">← Back To Aviora</a></p></footer>
+    </div>
+  </div>
+</body>
+</html>
