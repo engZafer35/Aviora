@@ -30,10 +30,10 @@
 } NetworkServiceState_t;
 
 typedef enum {
-    NET_IF_DOWN,       // bağlantı yok
-    NET_IF_CONNECTING, // bağlanıyor
-    NET_IF_UP,         // bağlantı aktif
-    NET_IF_ERROR       // hata, retry bekleniyor
+    NET_IF_DOWN,
+    NET_IF_CONNECTING,
+    NET_IF_UP,
+    NET_IF_ERROR
 } NetIfState;
 
 /********************************** VARIABLES *********************************/
