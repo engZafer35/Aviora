@@ -67,7 +67,7 @@ static RETURN_STATUS priv_InitTCPIPStack(void)
     RETURN_STATUS retVal = SUCCESS;
 
     //TCP/IP stack initialization
-    if(0/*NO_ERROR != netInit()*/)
+    if(NO_ERROR != netInit())
     {
         retVal = FAILURE;
         DEBUG_ERROR("Failed to initialize TCP/IP stack!");
