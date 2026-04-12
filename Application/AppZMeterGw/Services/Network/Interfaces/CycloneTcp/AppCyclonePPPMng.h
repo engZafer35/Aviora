@@ -27,25 +27,25 @@
  * @brief   Initialize and start the PPP connection
  * @return  if everything is OK, return EN_SUCCESS
  */
-RETURN_STATUS CyclonePppMngStart(void);
+RETURN_STATUS appCyclonePppMngStart(void);
 
 /**
  * @brief   Close the PPP connection
  * @return  if everything is OK, return EN_SUCCESS
  */
-RETURN_STATUS CyclonePppMngClose(void);
+RETURN_STATUS appCyclonePppMngClose(void);
 
 /**
  * @brief   Reconnect to the network
  * @return  if everything is OK, return EN_SUCCESS
  */
-RETURN_STATUS CyclonePppMngReconnect(void);
+RETURN_STATUS appCyclonePppMngReconnect(void);
 
 /**
  * @brief   Check if the network is ready
  * @return  TRUE if the network is ready, FALSE otherwise
  */
-BOOL CyclonePppMngIsNetworkReady(void);
+BOOL appCyclonePppMngIsNetworkReady(void);
 #endif /* __APP_CYCLONE_PPP_MNG_H__ */
 
 /********************************* End Of File ********************************/

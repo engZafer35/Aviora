@@ -27,25 +27,25 @@
  * @brief   Initialize and start the Ethernet connection
  * @return  if everything is OK, return EN_SUCCESS
  */
-RETURN_STATUS CycloneEthMngStart(void);
+RETURN_STATUS appCycloneEthMngStart(void);
 
 /**
  * @brief   Close the Ethernet connection
  * @return  if everything is OK, return EN_SUCCESS
  */
-RETURN_STATUS CycloneEthMngClose(void);
+RETURN_STATUS appCycloneEthMngClose(void);
 
 /**
  * @brief   Reconnect to the network
  * @return  if everything is OK, return EN_SUCCESS
  */
-RETURN_STATUS CycloneEthMngReconnect(void);
+RETURN_STATUS appCycloneEthMngReconnect(void);
 
 /**
  * @brief   Check if the network is ready
  * @return  TRUE if the network is ready, FALSE otherwise
  */
-BOOL CycloneEthMngIsNetworkReady(void);
+BOOL appCycloneEthMngIsNetworkReady(void);
 #endif /* __APP_CYCLONE_ETH_MNG_H__ */
 
 /********************************* End Of File ********************************/
