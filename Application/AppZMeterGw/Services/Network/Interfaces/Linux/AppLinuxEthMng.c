@@ -11,6 +11,7 @@
 *******************************************************************************/
 #define DEBUG_LEVEL  (DEBUG_LEVEL_DEBUG)
 /********************************* INCLUDES ***********************************/
+#include "AppLinuxEthMng.h"
 #include "Customers/NetworkService_Config.h"
 
 #include "net_config.h"
@@ -19,8 +20,6 @@
 #include "AppTaskManager.h"
 #include "AppDataBus.h"
 #include "AppLogRecorder.h"
-
-#include "AppNetworkService_Config.h"
 
 #include "MiddEventTimer.h"
 /****************************** MACRO DEFINITIONS *****************************/
