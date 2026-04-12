@@ -1,0 +1,44 @@
+/******************************************************************************
+* #Author       : Zafer Satilmis
+* hype-man      : EPICA - Kingdom of Heaven
+* #File Name    : Cus_Network_Config.c
+* #Customer     : LinuxGcc
+* #Date         : 2026-04-13 00:28:30
+******************************************************************************/
+/******************************************************************************
+* AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
+* Customer Name: LinuxGcc
+* Generated from customer network_config.json via generate_network_config.py.
+******************************************************************************/
+
+#define SHOW_PAGE_DBG_MSG  (DISABLE)
+/********************************* INCLUDES ***********************************/
+#include "Cus_Network_Config.h"
+#include "Project_Conf.h"
+
+/****************************** MACRO DEFINITIONS *****************************/
+
+/******************************* TYPE DEFINITIONS *****************************/
+
+/********************************** VARIABLES *********************************/
+
+
+/***************************** STATIC FUNCTIONS *******************************/
+
+/***************************** PUBLIC FUNCTIONS *******************************/
+
+RETURN_STATUS networkServiceInitTCPIPStack(void)
+{
+    return appCycloneTcpIpStackInit();
+}
+
+RETURN_STATUS networkServiceStartInterfaces(void)
+{
+    RETURN_STATUS retVal = SUCCESS;
+    retVal |= appCycloneEthMngStart();
+    retVal |= appCyclonePppMngStart();
+    
+    return retVal;
+}
+
+/******************************** End Of File *********************************/
