@@ -3,7 +3,7 @@
   "customer": "LinuxGcc",
   "version": 1.1,
   "releaseDate": "2026-04-12",  
-  "activeNetworkStackName": "Linux",
+  "activeNetworkStackName": "CycloneTcp",
   "networkStack": [
     {      
       "name": "CycloneTcp",
@@ -18,63 +18,43 @@
           "8.8.8.8",
           "8.8.4.4"
         ]
-      }
-    },
-    {
-      "name": "lwIP",
-      "version": "2.1.0",
-      "configFilePath": "Services/Network/inc/lwip_config.h",
-      "stackPath": "Middleware/lwIP/",
-      "dhcpClient": false,
-      "dhcpServer": false,
-      "dns": {
-        "use": false,
-        "dnsServerList": [
-          "8.8.8.8",
-          "8.8.4.4"
-        ]
-      }
-    },
-    {
-      "name": "Linux",
-      "configFilePath": "Services/Network/inc/linux_config.h",
-      "appManager": "Services/Network/src/EthConn_ENC28j60.c"
-    }
-  ],
-  "interfaces": {
-    "__comment__": "if use is false, the interface will be ignored",
-    "ethInterfaces": [
+      },
+     "interfaces": {
+      "__comment__": "if use is false, the interface will be ignored",
+      "ethInterfaces": [
       {
-      "use": true,
-      "ifname": "eth0",
-      "type": "ethernet",
-      "description": "Ethernet interface",
-      "appManager": "Services/Network/src/EthConn_ENC28j60.c",
-      "macAddr": "02:03:04:05:06:07",
-      "hostname": "aviora",
-      "__comment__": "if dhcp-client is used, ipAddr, set null",
-      "ipAddr": "192.168.1.35",
-      "subnetMask": "255.255.255.0",
-      "defaultGateway": "192.168.1.254",
-      "nicDriver": {
-        "driver": "enc28j60Driver",
-        "driverPath": "Middleware/CycloneTcp/cyclone_tcp/drivers/eth/enc28j60_driver.h",
-        "driverConfig": {
-          "spiDriver": "spiDriver",
-          "spiDriverPath": "Drivers/ENC28J60/enc28j60_spi_driver.h",
-          "extIntDriver": "extIntDriver",
-          "extIntDriverPath": "Drivers/ENC28J60/enc28j60/enc28j60_extint_driver.h"
-        }
-      }       
+        "use": true,
+        "ifname": "eth0",
+        "type": "ethernet",
+        "description": "Ethernet interface",
+        "appManager": "Services/Network/Interfaces/CycloneTcp/AppCycloneEthMng.h",
+        "macAddr": "02:03:04:05:06:07",
+        "hostname": "aviora",
+        "__comment__": "if dhcp-client is used, ipAddr, set null",
+        "ipAddr": "192.168.1.35",
+        "subnetMask": "255.255.255.0",
+        "defaultGateway": "192.168.1.254",
+        "nicDriver": {
+          "driver": "enc28j60Driver",
+          "driverPath": "Middleware/CycloneTcp/cyclone_tcp/drivers/eth/enc28j60_driver.h",
+          "driverConfig": {
+            "spiDriver": "spiDriver",
+            "spiLine": "ETH_SPI_LINE_0",
+            "spiDriverPath": "Drivers/ENC28J60/enc28j60_spi_driver.h",
+            "extIntDriver": "extIntDriver",
+            "extIntLine": "ETH_EXTINT_LINE_0",
+            "extIntDriverPath": "Drivers/ENC28J60/enc28j60/enc28j60_extint_driver.h"
+          }
+        }       
       }
     ],
     "gsmInterfaces": [
-    {
-      "use": false,
+     {
+      "use": true,
       "ifname": "ppp0",
       "type": "ppp",
       "description": "PPP interface",
-      "appManager": "Services/Network/src/GsmConn_Comm.c",
+      "appManager": "Services/Network/Interfaces/CycloneTcp/AppCyclonePPPMng.h",
       "gsmModemConfig": {
         "__comment__": "set null to pin code is not used",
         "pinCode": null,
@@ -87,8 +67,75 @@
         "uartLine": "LINE_0",
         "uartDriverPath": "Units/System/src/uart_driver.h"
       }
-    }
-   ]
- }
+     }
+    ]
+   }
+  },
+  {
+    "name": "lwIP",
+    "version": "2.1.0",
+    "configFilePath": "Services/Network/inc/lwip_config.h",
+    "stackPath": "Middleware/lwIP/",
+    "dhcpClient": false,
+    "dhcpServer": false,
+    "dns": {
+      "use": false,
+      "dnsServerList": [
+        "8.8.8.8",
+        "8.8.4.4"
+      ]
+    },
+    "interfaces": {
+      "__comment__": "if use is false, the interface will be ignored",
+      "ethInterfaces": [
+        {
+        "use": true,
+        "ifname": "eth0",
+        "type": "ethernet",
+        "description": "Ethernet interface",
+        "appManager": "Services/Network/Interfaces/Linux/AppLinuxEthMng.h",
+        }
+      ],
+      "gsmInterfaces": [
+        {
+          "use": false,
+          "ifname": "ppp0",
+          "type": "ppp",
+          "description": "PPP interface",
+          "appManager": "Services/Network/src/GsmConn_Comm.c",
+          "gsmModemConfig": {
+            "__comment__": "set null to pin code is not used",
+            "pinCode": null,
+            "apn": "zd.iot",
+            "phoneNumber": "*99#",
+            "timeout": 10000
+          },
+          "driverConfig": {
+            "type": "uart",
+            "uartLine": "LINE_0",
+            "uartDriverPath": "Units/System/src/uart_driver.h"
+          }
+        }
+      ]
+    } 
+  },
+  {
+    "name": "Linux",
+    "configFilePath":"Services/Network/inc/linux_config.h",
+    "appManager":"AppZMeterGw/Services/Network/inc/AppLinuxEthNetworkMng.h",
+    "interfaces": {
+      "__comment__": "if use is false, the interface will be ignored",
+      "ethInterfaces": [
+        {
+        "use": true,
+        "ifname": "eth0",
+        "type": "ethernet",
+        "description": "Ethernet interface",
+        "appManager": "Services/Network/Interfaces/Linux/AppLinuxEthMng.h",
+        }
+      ]
+    } 
+  }
+ ]
 }
 
