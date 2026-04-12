@@ -346,7 +346,7 @@ static void updateGsmModemInfo(void)
 static PppContext pppContext;
 #define APP_IF_NAME "PPP0"
 
-static cyclonePppManagerTask(void* argument)
+static void cyclonePppManagerTask(void* argument)
 {    
     NetInterface *interface;
     PppSettings pppSettings;
@@ -465,7 +465,7 @@ static cyclonePppManagerTask(void* argument)
 }
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
-RETURN_STATUS CyclonePppMngStart(void)
+RETURN_STATUS appCyclonePppMngStart(void)
 {
     RETURN_STATUS retVal = SUCCESS;
     ZOsTaskParameters tempParam;
@@ -508,19 +508,21 @@ RETURN_STATUS CyclonePppMngStart(void)
     return retVal;
 }
 
-RETURN_STATUS CyclonePppMngClose(void)
+RETURN_STATUS appCyclonePppMngClose(void)
 {    
     gs_cyclonePppInitStep = CYCLONE_PPP_MODULE_STEP_DISCONNECTED;
     return SUCCESS;
 }
 
-RETURN_STATUS CyclonePppMngReconnect(void)
+RETURN_STATUS appCyclonePppMngReconnect(void)
 {    
     gs_cyclonePppInitStep = CYCLONE_PPP_MODULE_STEP_INIT_PPP_MODEM;
     return SUCCESS;
 }
 
-BOOL CyclonePppMngIsNetworkReady(void)
+BOOL appCyclonePppMngIsNetworkReady(void)
 {
     return gs_dataBusPck.pppLinkState;
 }
+
+/******************************** End Of File *********************************/
