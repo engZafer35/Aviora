@@ -1,0 +1,69 @@
+{
+  "fileName": "network_config.json",
+  "customer": "LinuxGcc",
+  "version": 1.1,
+  "releaseDate": "2026-04-12",  
+  "networkStack": {
+    "__comment__": "lwIP, CycloneTcp, Linux are supported",
+    "name": "CycloneTcp",
+    "version": "2.4.0",
+    "configFilePath": "Application/AppZMeterGw/Services/Network/inc/net_config.h",
+    "stackPath": "Middleware/CycloneTcp/",
+    "dhcpClient": false,
+    "dhcpServer": false,
+    "dns": {
+      "use": false,
+      "dnsServerList": [
+        "8.8.8.8",
+        "8.8.4.4"
+      ]
+    },
+
+    "ethInterfaces": [
+      {
+        "use": true,
+        "ifname": "eth0",
+        "type": "ethernet",
+        "description": "Ethernet interface",
+        "macAddr": "02:03:04:05:06:07",
+        "hostname": "aviora",
+        "__comment__": "if dhcp-client is used, ipAddr, set null",
+        "ipAddr": "192.168.1.35",
+        "subnetMask": "255.255.255.0",
+        "defaultGateway": "192.168.1.254",
+        "nicDriver": {
+          "driver": "enc28j60Driver",
+          "driverPath": "Middleware/CycloneTcp/cyclone_tcp/drivers/eth/enc28j60_driver.h",
+          "driverConfig": {
+            "spiDriver": "spiDriver",
+            "spiDriverPath": "Drivers/ENC28J60/enc28j60_spi_driver.h",
+            "extIntDriver": "extIntDriver",
+            "extIntDriverPath": "Drivers/ENC28J60/enc28j60/enc28j60_extint_driver.h"
+          }
+        }        
+      }
+    ],
+    "gsmInterfaces": [
+      {
+        "use": false,
+        "ifname": "ppp0",
+        "type": "ppp",
+        "description": "PPP interface",
+        "gsmManager": "Application/AppZMeterGw/Services/Network/src/GsmConn_Comm.c",
+        "gsmModemConfig": {
+          "__comment__": "set null to pin code is not used",
+          "pinCode": null,
+          "apn": "zd.iot",
+          "phoneNumber": "*99#",
+          "timeout": 10000
+        },
+        "driverConfig": {
+          "type": "uart",
+          "uartLine": "LINE_0",
+          "uartDriverPath": "Application/AppZMeterGw/Units/System/src/uart_driver.h"
+        }
+      }
+    ]
+  }
+}
+
