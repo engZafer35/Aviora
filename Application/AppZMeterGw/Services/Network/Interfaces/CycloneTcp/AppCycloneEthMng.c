@@ -1,6 +1,6 @@
 /******************************************************************************
 * #Author       : Zafer Satilmis
-* hype-man      : Epica - Cry For The Moon
+* hype-man      : Epica - Kingdom of Heaven
 * #Revision     : 1.0
 * #Date         : 12 Apr 2026 - 17:29:12
 * #File Name    : AppCycloneEthMng.h
@@ -57,7 +57,7 @@ static void cycloneEthPeriodicInfoCb (void)
     appDBusPublish(gs_cycloneEthDbusID, &dbPacket);
 }
 
-void cycloneEthLinkChangeCallback(NetInterface *interface, bool_t linkState)
+static void cycloneEthLinkChangeCallback(NetInterface *interface, bool_t linkState)
 {
     cycloneEthPeriodicInfoCb(); // publish the link state change immediately
 }
@@ -182,7 +182,7 @@ static void cycloneEthManagerTask(void* argument)
 }
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
-RETURN_STATUS CycloneEthMngStart(void)
+RETURN_STATUS appCycloneEthMngStart(void)
 {
     RETURN_STATUS retVal = SUCCESS;
     ZOsTaskParameters tempParam;
@@ -224,19 +224,21 @@ RETURN_STATUS CycloneEthMngStart(void)
     return retVal;
 }
 
-RETURN_STATUS CycloneEthMngClose(void)
+RETURN_STATUS appCycloneEthMngClose(void)
 {    
     gs_cycloneEthInitStep = CYCLONE_ETH_CONN_STEP_ETH_DOWN;
     return SUCCESS;
 }
 
-RETURN_STATUS CycloneEthMngReconnect(void)
+RETURN_STATUS appCycloneEthMngReconnect(void)
 {    
     gs_cycloneEthInitStep = CYCLONE_ETH_CONN_STEP_ETH_UP;
     return SUCCESS;
 }
 
-BOOL CycloneEthMngIsNetworkReady(void)
+BOOL appCycloneEthMngIsNetworkReady(void)
 {
     return netInterface[ETH_INTERFACE_NUMBER].linkState;
 }
+
+/******************************** End Of File *********************************/
