@@ -29,14 +29,14 @@
 
 RETURN_STATUS networkServiceInitTCPIPStack(void)
 {
-    return appCycloneTcpIpStackInit();
+    return NET_STACK_STACK_INIT_FUNCTION();
 }
 
 RETURN_STATUS networkServiceStartInterfaces(void)
 {
     RETURN_STATUS retVal = SUCCESS;
-    retVal |= appCycloneEthMngStart();
-    retVal |= appCyclonePppMngStart();
+    retVal |= ETH_APP_MANAGER_START_FUNCTION();
+    retVal |= PPP_APP_MANAGER_START_FUNCTION();
     
     return retVal;
 }

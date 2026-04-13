@@ -15,17 +15,35 @@
 
  
 #define NET_INTERFACE_COUNT     (2)
+#define NET_STACK_NAME          "CycloneTcp"
+#define NET_STACK_VERSION       "2.4.0"
+#define NET_STACK_CONFIG_FILE   "Application/AppZMeterGw/Services/Network/inc/net_config.h"
+#define NET_STACK_STACK_PATH    "Middleware/CycloneTcp/"
+
+#include "Services/Network/Interfaces/CycloneTcp/AppCycloneStack.h"
+#define NET_STACK_STACK_INIT_FUNCTION       (appCycloneTcpIpStackInit)
+
+#define NET_STACK_DHCP_CLIENT   false
+#define NET_STACK_DHCP_SERVER   false
+#define NET_STACK_DNS_USE       false
+#define NET_STACK_DNS_SERVER_LIST "8.8.8.8,8.8.4.4"
 
 /****** Ethernet Interface Configuration **************************************/
-#define ETH_APP_MANAGER_PATH    "Services/Network/Interfaces/CycloneTcp/AppCycloneEthMng.h"
-#define ETH_INTERFACE_NUMBER    (0)
-#define ETH_IF_NAME             "eth0"
-#define ETH_HOST_NAME           "aviora"
-#define ETH_MAC_ADDR            "02:03:04:05:06:07"
+#include "Services/Network/Interfaces/CycloneTcp/AppCycloneEthMng.h"
 
-#define ETH_IP_ADDR             "192.168.1.35"
-#define ETH_SUBNET_MASK         "255.255.255.0"
-#define ETH_DEFAULT_GATEWAY     "192.168.1.254"
+#define ETH_APP_MANAGER_START_FUNCTION            (appCycloneEthMngStart)
+#define ETH_APP_MANAGER_CLOSE_FUNCTION            (appCycloneEthMngClose)
+#define ETH_APP_MANAGER_RECONNECT_FUNCTION        (appCycloneEthMngReconnect)
+#define ETH_APP_MANAGER_IS_NETWORK_READY_FUNCTION (appCycloneEthMngIsNetworkReady)
+
+
+#define ETH_INTERFACE_NUMBER        (0)
+#define ETH_IF_NAME                 "eth0"
+#define ETH_HOST_NAME               "aviora"
+#define ETH_MAC_ADDR                "02:03:04:05:06:07"
+#define ETH_IP_ADDR                 "192.168.1.35"
+#define ETH_SUBNET_MASK             "255.255.255.0"
+#define ETH_DEFAULT_GATEWAY         "192.168.1.254"
 
 #define ETH_DRIVER_SPI_DRIVER           spiDriver
 #define ETH_DRIVER_SPI_LINE             ETH_SPI_LINE_0
@@ -35,7 +53,13 @@
 #define ETH_DRIVER_EXT_INT_DRIVER_PATH  "Drivers/ENC28J60/enc28j60/enc28j60_extint_driver.h"
 
 /****** PPP Interface Configuration ******************************************/
-#define PPP_APP_MANAGER_PATH      "Services/Network/Interfaces/CycloneTcp/AppCyclonePPPMng.h"
+#include "Services/Network/Interfaces/CycloneTcp/AppCyclonePPPMng.h"
+
+#define PPP_APP_MANAGER_START_FUNCTION            (appCyclonePppMngStart)
+#define PPP_APP_MANAGER_CLOSE_FUNCTION            (appCyclonePppMngClose)
+#define PPP_APP_MANAGER_RECONNECT_FUNCTION        (appCyclonePppMngReconnect)
+#define PPP_APP_MANAGER_IS_NETWORK_READY_FUNCTION (appCyclonePppMngIsNetworkReady)
+
 #define PPP_INTERFACE_NUMBER     (1)
 #define PPP_IF_NAME              "ppp0"
 
