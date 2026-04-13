@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Network — Linux — Aviora</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="../protocol/protocol-docs.css" />
+  <link rel="stylesheet" href="network-docs.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });
+    }
+  </script>
+</head>
+<body class="protocol-docs network-docs">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="../protocol/index.html">Protocol</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="index.html" class="active">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Network</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="json-config.html">JSON Configuration</a>
+        <a href="interface-cyclone-tcp.html">Stack: CycloneTcp</a>
+        <a href="interface-linux.html" class="active">Stack: Linux</a>
+        <a href="interface-lwip.html">Stack: LwIP</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1>Linux TCP/IP Stack</h1>
+          <p>
+            Source path: <code>Application/AppZMeterGw/Services/Network/Interfaces/Linux/</code>. This layer is for builds that run on Linux and rely on the operating system’s networking. The Aviora glue typically performs lightweight coordination (init hook, interface naming) while actual addresses and routes may follow OS configuration.
+          </p>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+          <article class="card col-12">
+            <h2>Key Source Files</h2>
+            <p>
+              The split mirrors CycloneTcp: one pair of files for “stack” init (even if minimal on Linux) and one pair for the Ethernet manager that matches your JSON function names.
+            </p>
+            <table class="network-table">
+              <thead>
+                <tr><th>File</th><th>Responsibility</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>AppLinuxTcpIpStack.h</code> / <code>AppLinuxTcpIpStack.c</code></td><td><code>appLinuxTcpIpStackInit()</code> — called from generated <code>networkServiceInitTCPIPStack()</code>.</td></tr>
+                <tr><td><code>AppLinuxEthMng.h</code> / <code>AppLinuxEthMng.c</code></td><td>Ethernet manager: start/close/reconnect/isNetworkReady for the Linux target.</td></tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Automatic Generation</h2>
+            <p>
+              When the first <code>use: true</code> stack in JSON is <code>"name": "Linux"</code>, the generator emits includes and macros pointing at <code>AppLinuxTcpIpStack.h</code> and <code>AppLinuxEthMng.h</code> (and any PPP rows if you add them later). <code>configFilePath</code> may be <code>null</code> if there is no separate chip-level config header for that product.
+            </p>
+            <p>
+              <code>networkServiceStartInterfaces()</code> only expands calls for interfaces with <code>use: true</code>. A Linux-only profile with a single active <code>eth0</code> entry therefore generates a single <code>ETH_APP_MANAGER_START_FUNCTION()</code> call and no PPP lines.
+            </p>
+            <div class="diagram-wrap">
+              <pre class="mermaid">
+flowchart TB
+  subgraph linux["Linux build"]
+    LINIT["appLinuxTcpIpStackInit"]
+    LETH["appLinuxEthMngStart"]
+  end
+  CUS["Cus_Network_Config.c"]
+  CUS --> LINIT
+  CUS --> LETH
+              </pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Example JSON (LinuxGcc-Style)</h2>
+            <pre class="code-block"><code>{
+  "use": true,
+  "name": "Linux",
+  "configFilePath": null,
+  "stackInitSourcePath": "Services/Network/Interfaces/Linux/AppLinuxTcpIpStack.h",
+  "stackInitFunction": "appLinuxTcpIpStackInit",
+  "interfaces": {
+    "ethInterfaces": [
+      {
+        "use": true,
+        "ifname": "eth0",
+        "ethAppManagerPath": "Services/Network/Interfaces/Linux/AppLinuxEthMng.h",
+        "ethAppManagerStartFunction": "appLinuxEthMngStart",
+        ...
+      }
+    ]
+  }
+}</code></pre>
+            <p>
+              If <code>gsmInterfaces</code> is empty or every entry has <code>use: false</code>, the generated <code>.c</code> file contains no PPP start calls.
+            </p>
+          </article>
+        </div>
+      </main>
+
+      <footer class="container">
+        <p><a href="interface-cyclone-tcp.html">← CycloneTcp</a> · <a href="interface-lwip.html">LwIP →</a></p>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>
