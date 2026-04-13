@@ -16,28 +16,11 @@ extern "C" {
 
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
-#include <stdbool.h>
+
 /****************************** MACRO DEFINITIONS *****************************/
 
 /******************************* TYPE DEFINITIONS *****************************/
-typedef struct {
-    bool enabled;                   /**< GSM interface enabled flag */
-    const char* devName;            /**< Device name (e.g., "quectelUC2000") */
-    bool usePPP;                    /**< Use PPP protocol for connection */
-    const char* connInterface;      /**< Connection interface (e.g., "huart1") */
-    const char* srcPath;            /**< Resource path (e.g., "/g/uc2000_atP") */
-} AppNetworkGsmConfig_t;
 
-/**
- * Ethernet Interface Configuration
- * Generated from JSON Ethernet configuration block
- */
-typedef struct {
-    bool enabled;                   /**< Ethernet interface enabled flag */
-    const char* devName;            /**< Device name (e.g., "ENC28J60") */
-    const char* connInterface;      /**< Connection interface (e.g., "hspi2") */
-    const char* srcPath;            /**< Resource path (e.g., "/e/ENC28J60") */
-} AppNetworkEthConfig_t;
 /************************* GLOBAL VARIBALE REFERENCES *************************/
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
@@ -47,7 +30,7 @@ typedef struct {
  * @return  if everything is OK, return EN_SUCCES
  *          otherwise return FAILURE
  */
-RETURN_STATUS AppNetworkService_Start(void);
+RETURN_STATUS appNetworkServiceStart(void);
 
 #ifdef __cplusplus
 }

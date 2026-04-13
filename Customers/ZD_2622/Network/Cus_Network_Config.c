@@ -2,12 +2,12 @@
 * #Author       : Auto-generated
 * hype-man      : EPICA - Kingdom of Heaven
 * #File Name    : Cus_Network_Config.c
-* #Customer     : LinuxGcc
-* #Date         : 2026-04-13 13:14:48
+* #Customer     : ZD_2622
+* #Date         : 2026-04-13 13:04:47
 ******************************************************************************/
 /******************************************************************************
 * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
-* Customer Name: LinuxGcc
+* Customer Name: ZD_2622
 * Generated from customer network_config.json via generate_network_service.py.
 ******************************************************************************/
 

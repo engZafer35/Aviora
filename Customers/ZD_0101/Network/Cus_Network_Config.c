@@ -2,12 +2,12 @@
 * #Author       : Auto-generated
 * hype-man      : EPICA - Kingdom of Heaven
 * #File Name    : Cus_Network_Config.c
-* #Customer     : LinuxGcc
-* #Date         : 2026-04-13 13:14:48
+* #Customer     : ZD_0101
+* #Date         : 2026-04-13 13:02:53
 ******************************************************************************/
 /******************************************************************************
 * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
-* Customer Name: LinuxGcc
+* Customer Name: ZD_0101
 * Generated from customer network_config.json via generate_network_service.py.
 ******************************************************************************/
 
@@ -35,6 +35,7 @@ RETURN_STATUS networkServiceStartInterfaces(void)
 {
     RETURN_STATUS retVal = SUCCESS;
     retVal |= ETH_APP_MANAGER_START_FUNCTION();
+    retVal |= PPP_APP_MANAGER_START_FUNCTION();
     return retVal;
 }
 
