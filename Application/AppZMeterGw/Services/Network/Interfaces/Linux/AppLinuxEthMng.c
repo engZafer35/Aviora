@@ -105,13 +105,7 @@ static void linuxEthConnManagerTask(void* argument)
 
 #endif
 /***************************** PUBLIC FUNCTIONS  ******************************/
-RETURN_STATUS AppLinuxEthMngTcpIpStackInit(void)
-{
-    //not needed for linux
-    return SUCCESS;
-}
-
-RETURN_STATUS AppLinuxEthMngStart(void)
+RETURN_STATUS appLinuxEthMngStart(void)
 {
     RETURN_STATUS retVal = SUCCESS;
     ZOsTaskParameters tempParam;
@@ -153,19 +147,19 @@ RETURN_STATUS AppLinuxEthMngStart(void)
     return retVal;
 }
 
-RETURN_STATUS AppLinuxEthMngClose(void)
+RETURN_STATUS appLinuxEthMngClose(void)
 {    
     gs_linuxEthInitStep = LINUX_ETH_CONN_STEP_ETH_DOWN;
     return SUCCESS;
 }
 
-RETURN_STATUS AppLinuxEthMngReconnect(void)
+RETURN_STATUS appLinuxEthMngReconnect(void)
 {    
     gs_linuxEthInitStep = LINUX_ETH_CONN_STEP_ETH_UP;
     return SUCCESS;
 }
 
-BOOL AppLinuxEthMngIsNetworkReady(void)
+BOOL appLinuxEthMngIsNetworkReady(void)
 {
     return TRUE;
 }
