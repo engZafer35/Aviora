@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Network — JSON Configuration — Aviora</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="../protocol/protocol-docs.css" />
+  <link rel="stylesheet" href="network-docs.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });
+    }
+  </script>
+</head>
+<body class="protocol-docs network-docs">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="../protocol/index.html">Protocol</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="index.html" class="active">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Network</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="json-config.html" class="active">JSON Configuration</a>
+        <a href="interface-cyclone-tcp.html">Stack: CycloneTcp</a>
+        <a href="interface-linux.html">Stack: Linux</a>
+        <a href="interface-lwip.html">Stack: LwIP</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1><code>network_config.json</code> Structure</h1>
+          <p>
+            Each customer owns <code>Customers/&lt;customer&gt;/Network/network_config.json</code>. The generator walks only one stack entry—the <strong>first</strong> in the <code>networkStack</code> array whose <code>use</code> property is boolean <code>true</code>. Under that stack, <code>interfaces.ethInterfaces</code> and <code>interfaces.gsmInterfaces</code> list Ethernet and PPP profiles; again, only objects with <code>use: true</code> participate in generated macros and startup order.
+          </p>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+          <article class="card col-12">
+            <h2>Root-Level Fields</h2>
+            <p>
+              These keys are mainly for documentation and traceability. The generator’s required input is <code>networkStack</code>; other root keys do not change code generation today but help teams know which file and revision they are editing.
+            </p>
+            <table class="network-table">
+              <thead>
+                <tr><th>Field</th><th>Meaning</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>customer</code></td><td>Human-readable customer name; should match the folder passed to <code>--customer</code> so operators do not confuse profiles.</td></tr>
+                <tr><td><code>version</code>, <code>releaseDate</code></td><td>Optional metadata for change control.</td></tr>
+                <tr><td><code>networkStack</code></td><td>Array of stack profiles (CycloneTcp, Linux, lwIP, …). Exactly one active profile is chosen by the first <code>use: true</code> entry.</td></tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Each <code>networkStack[]</code> Object</h2>
+            <p>
+              Think of each array element as a complete “network personality”: middleware path, optional Cyclone/lwIP config header path, stack init include, DHCP/DNS toggles, and the interface list. When you switch products, you often flip <code>use</code> flags so the same file can describe multiple targets while only one is compiled in.
+            </p>
+            <table class="network-table">
+              <thead>
+                <tr><th>Field</th><th>Typical Type</th><th>Effect In Generated C</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>use</code></td><td>boolean</td><td>If <code>true</code>, this object is a candidate; the generator picks the <strong>first</strong> <code>true</code> in file order.</td></tr>
+                <tr><td><code>name</code>, <code>version</code></td><td>string</td><td>Become <code>NET_STACK_NAME</code> and <code>NET_STACK_VERSION</code>.</td></tr>
+                <tr><td><code>configFilePath</code></td><td>string or <code>null</code></td><td><code>NET_STACK_CONFIG_FILE</code> — the string is emitted as a quoted path (empty if <code>null</code>); use the same relative path your build’s include paths expect.</td></tr>
+                <tr><td><code>stackPath</code></td><td>string</td><td><code>NET_STACK_STACK_PATH</code> (often a trailing slash).</td></tr>
+                <tr><td><code>stackInitSourcePath</code></td><td>string</td><td>Emitted as <code>#include "..."</code> so the declaration of the stack init function is visible.</td></tr>
+                <tr><td><code>stackInitFunction</code></td><td>string</td><td>Wrapped in <code>NET_STACK_STACK_INIT_FUNCTION</code>; <code>networkServiceInitTCPIPStack()</code> expands to a call to this symbol.</td></tr>
+                <tr><td><code>dhcpClient</code>, <code>dhcpServer</code></td><td>bool</td><td>Global feature macros for the profile.</td></tr>
+                <tr><td><code>dns</code></td><td>object</td><td><code>use</code> plus <code>dnsServerList</code> for <code>NET_STACK_DNS_*</code> macros.</td></tr>
+                <tr><td><code>interfaces</code></td><td>object</td><td>Contains <code>ethInterfaces</code> and <code>gsmInterfaces</code> arrays (see below).</td></tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>How Interfaces Are Filtered</h2>
+            <p>
+              The generator does not merge stacks: inactive stacks are skipped entirely. Inside the active stack, each interface row must opt in with <code>use: true</code>. Rows with <code>use: false</code> (or missing <code>use</code> treated as false by convention—always set it explicitly) are omitted from <code>NET_INTERFACE_COUNT</code> and from <code>networkServiceStartInterfaces()</code>.
+            </p>
+            <div class="diagram-wrap">
+              <pre class="mermaid">
+flowchart TB
+  S["networkStack[i]"]
+  S --> U{"use == true?"}
+  U -->|first match| I["interfaces"]
+  U -->|false| Skip["ignored"]
+  I --> E["ethInterfaces[]"]
+  I --> G["gsmInterfaces[]"]
+  E --> E1{"per item use?"}
+  G --> G1{"per item use?"}
+  E1 -->|true| EH["Ethernet macros + order"]
+  G1 -->|true| GH["PPP macros + order"]
+              </pre>
+            </div>
+            <p>
+              Global interface indices increment from zero: all active Ethernet entries first (in array order), then all active PPP entries. <code>NET_INTERFACE_COUNT</code> is the sum of those two counts.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Ethernet — <code>ethInterfaces</code></h2>
+            <p>
+              Each active entry describes one logical Ethernet link: Linux interface name, static IP fields or DHCP behaviour (depending on stack), hostname, MAC, and for embedded Cyclone builds, <code>nicDriver</code> with <code>driverConfig</code> for SPI and external interrupt lines. The generator maps <code>ethAppManagerPath</code> (or legacy <code>appManager</code>) to an <code>#include</code>, and the <code>ethAppManager*Function</code> strings to <code>*_APP_MANAGER_*_FUNCTION</code> macros.
+            </p>
+            <p>
+              If there is only one active Ethernet interface, macros use the <code>ETH_</code> prefix. If there are several, the generator uses <code>ETH0_</code>, <code>ETH1_</code>, … so each link has a unique macro set and <code>networkServiceStartInterfaces()</code> calls each start function in the same order as the JSON array.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>GSM / PPP — <code>gsmInterfaces</code></h2>
+            <p>
+              PPP entries reference an application manager header via <code>ppAppManagerPath</code> (or <code>appManager</code>), and function name fields for start/close/reconnect/ready. Modem parameters live under <code>gsmModemConfig</code> (PIN, APN, dial string, timeout). The physical link is described in <code>driverConfig</code> (for example UART line and driver header path). Multiple PPP links use <code>PPP0_</code>, <code>PPP1_</code>, … prefixes parallel to Ethernet numbering.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Stacks You Can Wire In JSON</h2>
+            <p>
+              The repository provides implementation folders under <code>Services/Network/Interfaces/</code>. You may list several stacks in JSON to document alternatives, but the build only uses the first <code>use: true</code> block.
+            </p>
+            <table class="network-table">
+              <thead>
+                <tr><th>Stack</th><th>Folder</th><th>Notes</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>CycloneTcp</td><td><code>Interfaces/CycloneTcp/</code></td><td>Embedded Cyclone TCP/IP; ENC28J60-style drivers and PPP over UART.</td></tr>
+                <tr><td>Linux</td><td><code>Interfaces/Linux/</code></td><td>Targets that use the host OS network stack; often Ethernet-only in JSON.</td></tr>
+                <tr><td>lwIP</td><td><code>Interfaces/LwIp/</code></td><td>Placeholder folder name <code>LwIp</code>; full sources can be added later. The generator already understands the same JSON fields.</td></tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>Snippet — Linux Profile (Illustrative)</h2>
+            <p>
+              Below, two stacks are disabled and the Linux stack is enabled. Only the Linux stack’s <code>interfaces</code> block is expanded; Cyclone and lwIP entries are ignored even if they contain data.
+            </p>
+            <pre class="code-block"><code>"networkStack": [
+  { "use": false, "name": "CycloneTcp", ... },
+  { "use": false, "name": "lwIP", ... },
+  {
+    "use": true,
+    "name": "Linux",
+    "stackInitSourcePath": "Services/Network/Interfaces/Linux/AppLinuxTcpIpStack.h",
+    "stackInitFunction": "appLinuxTcpIpStackInit",
+    "interfaces": {
+      "ethInterfaces": [
+        {
+          "use": true,
+          "ifname": "eth0",
+          "ethAppManagerPath": "Services/Network/Interfaces/Linux/AppLinuxEthMng.h",
+          "ethAppManagerStartFunction": "appLinuxEthMngStart",
+          ...
+        }
+      ]
+    }
+  }
+]</code></pre>
+          </article>
+        </div>
+      </main>
+
+      <footer class="container">
+        <p><a href="index.html">← Overview</a> · <a href="interface-cyclone-tcp.html">CycloneTcp →</a></p>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

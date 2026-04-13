@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Network — CycloneTcp — Aviora</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="../protocol/protocol-docs.css" />
+  <link rel="stylesheet" href="network-docs.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });
+    }
+  </script>
+</head>
+<body class="protocol-docs network-docs">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="../protocol/index.html">Protocol</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="index.html" class="active">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Network</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="json-config.html">JSON Configuration</a>
+        <a href="interface-cyclone-tcp.html" class="active">Stack: CycloneTcp</a>
+        <a href="interface-linux.html">Stack: Linux</a>
+        <a href="interface-lwip.html">Stack: LwIP</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1>CycloneTcp Stack</h1>
+          <p>
+            Source path: <code>Application/AppZMeterGw/Services/Network/Interfaces/CycloneTcp/</code>. This integration wraps the Cyclone TCP/IP stack for embedded targets: one module brings up the stack, separate modules manage Ethernet (for example ENC28J60 over SPI) and PPP over a UART-attached modem.
+          </p>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+          <article class="card col-12">
+            <h2>Key Source Files</h2>
+            <p>
+              Keep stack-wide logic separate from per-interface policy. The stack file exposes a single init entry point; Ethernet and PPP managers expose symmetric lifecycle APIs (start, close, reconnect, isNetworkReady) that JSON maps to macros.
+            </p>
+            <table class="network-table">
+              <thead>
+                <tr><th>File</th><th>Responsibility</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>AppCycloneStack.h</code> / <code>AppCycloneStack.c</code></td><td>Declares and implements <code>appCycloneTcpIpStackInit()</code>—call once before interfaces.</td></tr>
+                <tr><td><code>AppCycloneEthMng.h</code> / <code>.c</code></td><td>Ethernet: link setup, driver hooks, address configuration as required by your board.</td></tr>
+                <tr><td><code>AppCyclonePPPMng.h</code> / <code>.c</code></td><td>PPP/GSM: modem control, UART, dial-up context.</td></tr>
+              </tbody>
+            </table>
+          </article>
+
+          <article class="card col-12">
+            <h2>How Code Generation Wires It In</h2>
+            <p>
+              When the active JSON stack is CycloneTcp (first <code>use: true</code> in <code>networkStack</code>), the generator performs a predictable sequence: it emits an include for <code>stackInitSourcePath</code>, defines <code>NET_STACK_STACK_INIT_FUNCTION</code> to the string in <code>stackInitFunction</code>, then for each active Ethernet row includes <code>ethAppManagerPath</code> and defines the four manager macros, and similarly for each GSM row with <code>ppAppManagerPath</code> and PPP function fields.
+            </p>
+            <p>
+              At runtime, <code>networkServiceInitTCPIPStack()</code> resolves to your Cyclone init. <code>networkServiceStartInterfaces()</code> then calls every <code>ETH*_APP_MANAGER_START_FUNCTION()</code> and every <code>PPP*_APP_MANAGER_START_FUNCTION()</code> that JSON enabled—nothing else is invoked automatically.
+            </p>
+            <div class="diagram-wrap">
+              <pre class="mermaid">
+flowchart LR
+  JSON["network_config.json\nCycloneTcp + use:true"]
+  GEN["generate_network_service.py"]
+  CUS["Cus_Network_Config.h"]
+  APP["AppNetworkService"]
+  JSON --> GEN --> CUS
+  CUS --> APP
+  CUS -.-> ETH["AppCycloneEthMng"]
+  CUS -.-> PPP["AppCyclonePPPMng"]
+  CUS -.-> STK["AppCycloneStack"]
+              </pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Minimal JSON Excerpt</h2>
+            <pre class="code-block"><code>"name": "CycloneTcp",
+"stackInitSourcePath": "Services/Network/Interfaces/CycloneTcp/AppCycloneStack.h",
+"stackInitFunction": "appCycloneTcpIpStackInit",
+"interfaces": {
+  "ethInterfaces": [{
+    "use": true,
+    "ethAppManagerPath": "Services/Network/Interfaces/CycloneTcp/AppCycloneEthMng.h",
+    "ethAppManagerStartFunction": "appCycloneEthMngStart",
+    ...
+  }],
+  "gsmInterfaces": [{
+    "use": true,
+    "ppAppManagerPath": "Services/Network/Interfaces/CycloneTcp/AppCyclonePPPMng.h",
+    "ppAppManagerStartFunction": "appCyclonePppMngStart",
+    ...
+  }]
+}</code></pre>
+            <p>
+              Fill in MAC, IP, <code>nicDriver</code>, and modem fields according to your hardware; the generator copies literals into <code>#define</code> lines where applicable.
+            </p>
+          </article>
+        </div>
+      </main>
+
+      <footer class="container">
+        <p><a href="json-config.html">← JSON</a> · <a href="interface-linux.html">Linux →</a></p>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

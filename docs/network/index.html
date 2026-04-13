@@ -3,10 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>🛰️Aviora-Network</title>
+  <title>Network Service — Overview — Aviora</title>
   <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="../protocol/protocol-docs.css" />
+  <link rel="stylesheet" href="network-docs.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });
+    }
+  </script>
 </head>
-<body class="protocol-docs">
+<body class="protocol-docs network-docs">
   <div class="topbar">
     <div class="topbar-inner">
       <div class="brand">🛰️Zafer Satılmış - Aviora</div>
@@ -29,41 +37,214 @@
       <div class="sidebar-title">Network</div>
       <nav class="sidebar-nav">
         <a href="index.html" class="active">Overview</a>
+        <a href="json-config.html">JSON Configuration</a>
+        <a href="interface-cyclone-tcp.html">Stack: CycloneTcp</a>
+        <a href="interface-linux.html">Stack: Linux</a>
+        <a href="interface-lwip.html">Stack: LwIP</a>
       </nav>
     </aside>
     <div class="main-with-sidebar">
-  <section class="hero">
-    <div class="hero-card">
-      <h1>Network Service</h1>
-      <p>
-        Manages GSM and Ethernet interfaces. PPP, lwIP. Multi-interface support with config-driven initialization.
-      </p>
-    </div>
-  </section>
+      <section class="hero">
+        <div class="hero-card">
+          <h1>Network Service — Customer-Driven Generation</h1>
+          <p>
+            Ethernet and GSM (PPP) behaviour is declared per customer in <code>network_config.json</code> under
+            <code>Customers/&lt;customer&gt;/Network/</code>. The Python tool
+            <strong><code>Customers/generate_network_service.py</code></strong> reads that file and emits C headers and a small bridge so the application always compiles against one consistent profile—without hand-editing dozens of macros for each product.
+          </p>
+        </div>
+      </section>
 
-  <main class="container">
-    <div class="grid">
-      <article class="card col-8">
-        <h2>Overview</h2>
-        <p>
-          Network Service initializes and starts GSM (PPP) and Ethernet (lwIP) interfaces. Configuration is per-customer; interfaces can be enabled/disabled.
-        </p>
-        <ul>
-          <li>GSM: PPP over UART, modem AT commands</li>
-          <li>Ethernet: ENC28J60 (SPI), lwIP stack</li>
-        </ul>
-      </article>
+      <main class="container">
+        <div class="grid">
+          <article class="card col-12">
+            <h2>What The Generator Does</h2>
+            <p>
+              Run the script from the repository root (or any working directory, using paths relative to where you invoke Python). Pass <code>--customer &lt;FolderName&gt;</code> where <code>FolderName</code> matches <code>Customers/&lt;FolderName&gt;/Network/network_config.json</code>. The generator parses JSON only; it does not guess missing fields.
+            </p>
+            <p>
+              Inside <code>networkStack</code>, the tool selects the <strong>first object whose <code>use</code> field is exactly <code>true</code></strong>. Every other stack entry is ignored for code generation. That chosen stack defines which TCP/IP integration you build (CycloneTcp, Linux, lwIP profile, etc.), its init header and function name, and the <code>interfaces</code> subtree.
+            </p>
+            <p>
+              Under <code>interfaces</code>, only two arrays matter today: <code>ethInterfaces</code> and <code>gsmInterfaces</code>. Within each array, only entries with <code>use: true</code> become active. The generator assigns global interface indices in order: all active Ethernet entries first (in array order), then all active PPP/GSM entries (in array order). Those choices drive macro names (for example <code>ETH_</code> vs <code>ETH0_</code>/<code>ETH1_</code> when multiple links exist) and the call order in <code>networkServiceStartInterfaces()</code>.
+            </p>
 
-      <article class="card col-4">
-        <h2>API</h2>
-        <p><code>AppNetworkService_Start()</code></p>
-      </article>
-    </div>
-  </main>
+            <div class="terminal-shot">
+              <div class="tw-title"><span class="tw-dots"><span class="d1"></span><span class="d2"></span><span class="d3"></span></span> Example — PowerShell</div>
+              <pre><span class="prompt">PS&gt;</span> cd C:\Users\...\Aviora
+<span class="prompt">PS&gt;</span> python Customers/generate_network_service.py --customer LinuxGcc
 
-  <footer class="container">
-    <p><a href="../index.html">← Back to Aviora</a></p>
-  </footer>
+<span class="ok">- Generated network service for customer: LinuxGcc</span>
+<span class="ok">- ...\Customers\LinuxGcc\Network\Cus_Network_Config.h</span>
+<span class="ok">- ...\Customers\LinuxGcc\Network\Cus_Network_Config.c</span>
+<span class="ok">- ...\Customers\NetworkService_Config.h</span></pre>
+            </div>
+
+            <h3 class="sub-h3">Generated Files And Who Consumes Them</h3>
+            <table class="network-table">
+              <thead>
+                <tr>
+                  <th>File</th>
+                  <th>Role</th>
+                  <th>Consumed By</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>Customers/&lt;customer&gt;/Network/Cus_Network_Config.h</code></td>
+                  <td>
+                    Defines <code>NET_INTERFACE_COUNT</code>, stack name and version, paths to stack config, DHCP/DNS flags, <code>NET_STACK_STACK_INIT_FUNCTION</code>, and per-interface macros (IP, driver hooks, manager function names, etc.) derived from JSON.
+                  </td>
+                  <td>
+                    Included by <code>Cus_Network_Config.c</code> and, indirectly, by anything that needs the macros after including the customer bridge. Interface modules (Ethernet/PPP managers) implement the functions whose names appear in the macros.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>Customers/&lt;customer&gt;/Network/Cus_Network_Config.c</code></td>
+                  <td>
+                    Implements <code>networkServiceInitTCPIPStack()</code> (calls the stack init macro when present) and <code>networkServiceStartInterfaces()</code> (OR-combines return codes while calling each active interface’s start macro in Ethernet-then-PPP order).
+                  </td>
+                  <td>
+                    The network service layer (<code>AppNetworkService</code>) calls these two functions during startup. You normally add the generated <code>.c</code> file to the build for that customer.
+                  </td>
+                </tr>
+                <tr>
+                  <td><code>Customers/NetworkService_Config.h</code></td>
+                  <td>
+                    A single line including <code>"&lt;customer&gt;/Network/Cus_Network_Config.h"</code> so the application has one stable include path regardless of which customer tree is active.
+                  </td>
+                  <td>
+                    <code>AppNetworkService.c</code> includes <code>../../../../Customers/NetworkService_Config.h</code>. Switching customers is therefore a build or configuration step that points at the right generated bridge—not a sweep through application sources.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="network-callout">
+              <strong>Workflow:</strong> edit <code>network_config.json</code>, run <code>generate_network_service.py</code>, commit the three generated files. Do not hand-edit generated C/H files; they will be overwritten and your changes will be lost.
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Build-Time Data Flow (Mermaid)</h2>
+            <p>
+              The diagram below is the mental model: one JSON profile per customer folder drives one generator run, which always writes the same three output locations. Your CI can run the script to ensure headers match JSON.
+            </p>
+            <div class="diagram-wrap">
+              <pre class="mermaid">
+flowchart LR
+  subgraph cfg["Configuration"]
+    J["network_config.json"]
+  end
+  subgraph gen["Generation"]
+    P["generate_network_service.py\n--customer X"]
+  end
+  subgraph out["Outputs"]
+    H["Cus_Network_Config.h"]
+    C["Cus_Network_Config.c"]
+    R["NetworkService_Config.h"]
+  end
+  J --> P
+  P --> H
+  P --> C
+  P --> R
+              </pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Runtime Sequence</h2>
+            <p>
+              After linking, startup is linear. <code>appNetworkServiceStart()</code> first initializes the selected TCP/IP stack through the macro that points at your stack’s init function (for example <code>appCycloneTcpIpStackInit</code> or <code>appLinuxTcpIpStackInit</code>). The service then waits about one second so the stack can settle. Finally it calls <code>networkServiceStartInterfaces()</code>, which walks every active Ethernet manager start function, then every active PPP manager start function, combining status with bitwise OR so a partial failure is still visible in the return value.
+            </p>
+            <div class="diagram-wrap">
+              <pre class="mermaid">
+sequenceDiagram
+  participant App as AppNetworkService
+  participant Init as networkServiceInitTCPIPStack
+  participant Stack as NET_STACK_STACK_INIT_FUNCTION
+  participant Start as networkServiceStartInterfaces
+  participant Eth as ETH*_START
+  participant Ppp as PPP*_START
+  App->>Init: appNetworkServiceStart
+  Init->>Stack: stack init
+  Note over App: delay ~1s
+  App->>Start: start interfaces
+  Start->>Eth: Ethernet in order
+  Start->>Ppp: PPP/GSM in order
+              </pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Include Chain</h2>
+            <p>
+              The application never includes a long path into <code>Customers/LinuxGcc/...</code> directly. It includes <code>NetworkService_Config.h</code>, which is regenerated to point at the active customer’s <code>Cus_Network_Config.h</code>. That header in turn pulls in the stack’s public API header and each interface manager header listed in JSON, so the compiler sees the same symbols the macros reference.
+            </p>
+            <div class="diagram-wrap">
+              <pre class="mermaid">
+flowchart TB
+  A["AppNetworkService.c"] --> B["Customers/NetworkService_Config.h"]
+  B --> C["Customers&lt;customer&gt;/Network/Cus_Network_Config.h"]
+  C --> D["Stack header\ne.g. AppCycloneStack.h"]
+  C --> E["Interface headers\nAppCycloneEthMng.h ..."]
+              </pre>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Animated Overview (Four GIFs)</h2>
+            <p>
+              The following loops are produced by <code>docs/network/generate_network_docs_gifs.py</code> (requires Pillow). They are intentionally small so four of them fit in a 2×2 grid: top row shows the generator pipeline and runtime; bottom row shows the include chain and the JSON selection rules. Re-run the script after editing the Python drawer if you change the storyboard.
+            </p>
+            <div class="network-gif-grid">
+              <div class="network-gif-cell">
+                <img class="network-gif" src="media/network_generator_pipeline.gif" width="500" height="128" alt="Generator reads JSON and emits three files" />
+                <p class="gif-caption"><strong>Generator Pipeline.</strong> Customer <code>network_config.json</code> is the single source of truth. The script emits the customer <code>Cus_Network_Config.h</code> and <code>.c</code> plus the root <code>NetworkService_Config.h</code> bridge.</p>
+              </div>
+              <div class="network-gif-cell">
+                <img class="network-gif" src="media/network_runtime_startup.gif" width="500" height="128" alt="Runtime init then interface start" />
+                <p class="gif-caption"><strong>Runtime.</strong> Stack initialization runs first, then a short delay, then <code>networkServiceStartInterfaces()</code> invokes each active Ethernet and PPP start macro in order.</p>
+              </div>
+              <div class="network-gif-cell">
+                <img class="network-gif" src="media/network_include_chain.gif" width="500" height="128" alt="Include chain from app to customer macros" />
+                <p class="gif-caption"><strong>Include Chain.</strong> Application code includes one stable header; that header forwards to the generated customer header that carries stack and interface macros.</p>
+              </div>
+              <div class="network-gif-cell">
+                <img class="network-gif" src="media/network_selection_rules.gif" width="500" height="128" alt="First use true stack and interface filtering" />
+                <p class="gif-caption"><strong>Selection Rules.</strong> Only the first stack with <code>use: true</code> is used. Within it, only interface entries with <code>use: true</code> are expanded; Ethernet is ordered before PPP.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="card col-12">
+            <h2>Generated C Sketch</h2>
+            <p>
+              The exact macro names depend on how many Ethernet and PPP links are active. With one of each, the <code>.c</code> file looks like the fragment below. With multiple links, prefixes become <code>ETH0_</code>, <code>ETH1_</code>, <code>PPP0_</code>, etc., matching the order in JSON.
+            </p>
+            <p class="sub-h3">Typical <code>Cus_Network_Config.c</code> Body</p>
+            <pre class="code-block"><code>RETURN_STATUS networkServiceInitTCPIPStack(void)
+{
+    return NET_STACK_STACK_INIT_FUNCTION();
+}
+
+RETURN_STATUS networkServiceStartInterfaces(void)
+{
+    RETURN_STATUS retVal = SUCCESS;
+    retVal |= ETH_APP_MANAGER_START_FUNCTION();
+    retVal |= PPP_APP_MANAGER_START_FUNCTION();
+    return retVal;
+}</code></pre>
+            <p>
+              For field-by-field JSON reference and multi-interface naming, see <a href="json-config.html">JSON Configuration</a>. For stack-specific source layout, use the sidebar links for CycloneTcp, Linux, or lwIP.
+            </p>
+          </article>
+        </div>
+      </main>
+
+      <footer class="container">
+        <p><a href="../index.html">← Aviora Home</a> · <a href="json-config.html">JSON Configuration →</a></p>
+      </footer>
     </div>
   </div>
 </body>

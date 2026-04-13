@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Network — LwIP — Aviora</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="../protocol/protocol-docs.css" />
+  <link rel="stylesheet" href="network-docs.css" />
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+  <script>
+    if (window.mermaid) {
+      mermaid.initialize({ startOnLoad: true, theme: "dark", securityLevel: "loose" });
+    }
+  </script>
+</head>
+<body class="protocol-docs network-docs">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+      <nav class="nav">
+        <a href="../index.html">Aviora</a>
+        <a href="../fs/index.html">File System</a>
+        <a href="../protocol/index.html">Protocol</a>
+        <a href="../timeservice/index.html">TimeService</a>
+        <a href="index.html" class="active">Network</a>
+        <a href="../display/index.html">Display</a>
+        <a href="../sw_update/index.html">SW Update</a>
+        <a href="../office/index.html">Office</a>
+        <a href="../office-3d/index.html">Office 3D</a>
+      </nav>
+    </div>
+  </div>
+
+  <div class="layout-with-sidebar">
+    <aside class="sidebar">
+      <div class="sidebar-title">Network</div>
+      <nav class="sidebar-nav">
+        <a href="index.html">Overview</a>
+        <a href="json-config.html">JSON Configuration</a>
+        <a href="interface-cyclone-tcp.html">Stack: CycloneTcp</a>
+        <a href="interface-linux.html">Stack: Linux</a>
+        <a href="interface-lwip.html" class="active">Stack: LwIP</a>
+      </nav>
+    </aside>
+    <div class="main-with-sidebar">
+      <section class="hero">
+        <div class="hero-card">
+          <h1>LwIP Stack (Planned)</h1>
+          <p>
+            Folder: <code>Application/AppZMeterGw/Services/Network/Interfaces/LwIp/</code> (directory name <code>LwIp</code>). The tree may contain placeholders until a full lwIP integration is added. JSON can already describe an lwIP profile side by side with CycloneTcp and Linux so teams can prepare configuration without changing the generator.
+          </p>
+        </div>
+      </section>
+
+      <main class="container">
+        <div class="grid">
+          <article class="card col-12">
+            <h2>Compatibility With The Generator</h2>
+            <p>
+              <code>generate_network_service.py</code> does not special-case lwIP: the same keys apply—<code>stackInitSourcePath</code>, <code>stackInitFunction</code>, <code>configFilePath</code>, <code>stackPath</code>, and <code>interfaces</code>. When lwIP becomes the first <code>use: true</code> stack, the emitted headers will reference whatever function names and include paths you put in JSON.
+            </p>
+            <p>
+              A working build still requires real sources: for example <code>AppLwIPStack.h</code> implementing <code>AppLwIPStackInit</code> (or the name you configure), Ethernet/PPP managers, and middleware under <code>Middleware/lwIP/</code> if your project uses that layout. Until those exist, generated code alone will not link.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Template JSON Fragment</h2>
+            <pre class="code-block"><code>{
+  "use": false,
+  "name": "lwIP",
+  "version": "2.1.0",
+  "configFilePath": "Services/Network/inc/lwip_config.h",
+  "stackPath": "Middleware/lwIP/",
+  "stackInitSourcePath": "Services/Network/Interfaces/lwIP/AppLwIPStack.h",
+  "stackInitFunction": "AppLwIPStackInit",
+  "interfaces": { ... }
+}</code></pre>
+            <p>
+              Paths in your tree may use <code>LwIp</code> vs <code>lwIP</code> consistently with how the compiler include paths are set; fix JSON to match the actual filenames on disk.
+            </p>
+          </article>
+
+          <article class="card col-12">
+            <h2>Roadmap</h2>
+            <ul>
+              <li>Add concrete <code>AppLwIPStack</code> and interface manager sources under <code>Interfaces/LwIp/</code>.</li>
+              <li>Set the lwIP stack entry to <code>use: true</code> first in <code>networkStack</code> when you are ready to build that target.</li>
+              <li>Re-run the generator; <code>Cus_Network_Config.c</code> will call the configured init and start macros automatically.</li>
+            </ul>
+          </article>
+        </div>
+      </main>
+
+      <footer class="container">
+        <p><a href="interface-linux.html">← Linux</a> · <a href="index.html">Overview →</a></p>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>
