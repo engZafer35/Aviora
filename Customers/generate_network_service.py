@@ -119,12 +119,13 @@ def generate_cus_network_config_h(
     ]
 
     if stack is None:
+        print(f"\033[91m- !!ERROR: No network stack is configured!!\033[0m")
         lines += [
             "/* No networkStack with use: true — minimal placeholders */",
             "#define NET_INTERFACE_COUNT     (0)",
             "#define NET_STACK_NAME            \"NONE\"",
             "#define NET_STACK_VERSION         \"0\"",
-            "",
+            "#error \"No network stack is configured\"",
             "#endif /* __CUS_NETWORK_CONFIG_H__ */",
             "",
         ]
@@ -279,6 +280,21 @@ def generate_cus_network_config_h(
             if drv.get("uartDriverPath"):
                 lines.append(f'#define {prefix}_APP_UART_DRIVER_PATH  "{drv["uartDriverPath"]}"')
 
+    lines.append("")
+    lines.append("/****** PUBLIC FUNCTIONS **************************************/")
+    lines.append("/**")
+    lines.append(" * @brief   Initialize the TCP/IP stack")
+    lines.append(" * @return  if everything is OK, return SUCCESS")
+    lines.append(" *          otherwise return FAILURE")
+    lines.append(" */")
+    lines.append("RETURN_STATUS networkServiceInitTCPIPStack(void);")
+    lines.append("/**")
+    lines.append(" * @brief   Start the network interfaces")
+    lines.append(" * @return  if everything is OK, return SUCCESS")
+    lines.append(" *          otherwise return FAILURE")
+    lines.append(" */")
+    lines.append("RETURN_STATUS networkServiceStartInterfaces(void);")
+    lines.append("")
     lines.append("")
     lines.append("#endif /* __CUS_NETWORK_CONFIG_H__ */")
     lines.append("")
@@ -454,9 +470,10 @@ def main() -> None:
     out_c.write_text(generate_cus_network_config_c(cfg, args.customer), encoding="utf-8")
     out_root.write_text(generate_network_service_config_h(args.customer), encoding="utf-8")
 
-    print(f"Generated: {out_h}")
-    print(f"Generated: {out_c}")
-    print(f"Generated: {out_root}")
+    print(f"\033[91m- Generated network service for customer: {args.customer}\033[0m")
+    print(f"\033[92m- {out_h}\033[0m")
+    print(f"\033[92m- {out_c}\033[0m")
+    print(f"\033[92m- {out_root}\033[0m")
 
 
 if __name__ == "__main__":
