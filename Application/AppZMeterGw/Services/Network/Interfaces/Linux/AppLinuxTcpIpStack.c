@@ -12,7 +12,7 @@
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
 #include "AppLinuxTcpIpStack.h"
-#include "Customers/NetworkService_Config.h"
+#include "../../../../Customers/NetworkService_Config.h"
 
 /****************************** MACRO DEFINITIONS *****************************/
 

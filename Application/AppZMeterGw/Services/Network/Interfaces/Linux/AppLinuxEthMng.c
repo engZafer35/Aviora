@@ -12,7 +12,7 @@
 #define DEBUG_LEVEL  (DEBUG_LEVEL_DEBUG)
 /********************************* INCLUDES ***********************************/
 #include "AppLinuxEthMng.h"
-#include "Customers/NetworkService_Config.h"
+#include "../../../../Customers/NetworkService_Config.h"
 
 #include "net_config.h"
 
@@ -103,7 +103,6 @@ static void linuxEthConnManagerTask(void* argument)
     }
 }
 
-#endif
 /***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS appLinuxEthMngStart(void)
 {

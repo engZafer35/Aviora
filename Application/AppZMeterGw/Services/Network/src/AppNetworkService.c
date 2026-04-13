@@ -11,7 +11,7 @@
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
 #include "AppNetworkService.h"
-#include "Customers/NetworkService_Config.h"
+#include "../../../../Customers/NetworkService_Config.h"
 
 #include "AppTaskManager.h"
 #include "AppLogRecorder.h"
