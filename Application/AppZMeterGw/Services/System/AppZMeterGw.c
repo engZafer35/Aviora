@@ -208,7 +208,7 @@ static RETURN_STATUS initSWUnit(void)
             return FAILURE;
         }
 
-        if (FAILURE == AppNetworkService_Start())
+        if (FAILURE == appNetworkServiceStart())
         {
             DEBUG_ERROR("->[E] AppNetworkService_Start ERROR ");
             APP_LOG_REC(g_sysLoggerID, "Network Service start Error");
