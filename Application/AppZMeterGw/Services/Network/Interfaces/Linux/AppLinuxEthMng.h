@@ -24,43 +24,33 @@ extern "C" {
 /************************* GLOBAL VARIBALE REFERENCES *************************/
 
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
-
-
-/**
- * @brief   Initialize TCP/IP stack
- * @return  if everything is OK, return EN_SUCCES
- *          otherwise return FAILURE
- */
-RETURN_STATUS AppLinuxEthMngTcpIpStackInit(void);
-
-
 /**
  * @brief   Initialize Network Interfaces
  * @return  if everything is OK, return EN_SUCCES
  *          otherwise return FAILURE
  */
-RETURN_STATUS AppLinuxEthMngStart(void);
+RETURN_STATUS appLinuxEthMngStart(void);
 
 /**
  * @brief   Close LINUX_ETH MNG
  * @return  if everything is OK, return EN_SUCCES
  *          otherwise return FAILURE
  */
-RETURN_STATUS AppLinuxEthMngClose(void);
+RETURN_STATUS appLinuxEthMngClose(void);
 
 /**
  * @brief   Reconnect LINUX_ETH network manager
  * @return  if everything is OK, return EN_SUCCES
  *          otherwise return FAILURE
  */
-RETURN_STATUS AppLinuxEthMngReconnect(void);
+RETURN_STATUS appLinuxEthMngReconnect(void);
 
 /**
  * @brief   Check if LINUX_ETH network manager is ready
  * @return  if network is ready, return TRUE
  *          otherwise return FALSE
  */
-BOOL AppLinuxEthMngIsNetworkReady(void);
+BOOL appLinuxEthMngIsNetworkReady(void);
 
 #ifdef __cplusplus
 }
