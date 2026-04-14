@@ -1,0 +1,9 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/sntp/sntp_client_misc.c:56:9:sntpClientOpenConnection	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/sntp/sntp_client_misc.c:85:6:sntpClientCloseConnection	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/sntp/sntp_client_misc.c:103:9:sntpClientSendRequest	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/sntp/sntp_client_misc.c:249:9:sntpClientCheckResponse	8
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/sntp/sntp_client_misc.c:304:9:sntpClientParseResponse	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/sntp/sntp_client_misc.c:346:9:sntpClientCheckTimeout	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/sntp/sntp_client_misc.c:162:9:sntpClientReceiveResponse	5
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/sntp/sntp_client_misc.c:394:6:sntpClientDumpMessage	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/sntp/sntp_client_misc.c:478:6:sntpClientDumpTimestamp	1

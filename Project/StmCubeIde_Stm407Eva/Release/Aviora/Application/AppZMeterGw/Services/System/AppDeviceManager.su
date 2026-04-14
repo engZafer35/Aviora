@@ -1,0 +1,7 @@
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:63:15:appFeedWdt	0	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:68:6:appDevMngHwRestart	8	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:79:6:appDevMngSwRestart	0	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:84:15:appDevMngInitHwUnits	40	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:102:15:appDevMngCloseHw	0	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:107:15:appDevMngStartHw	0	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:112:15:appDevMngRestartHw	0	static

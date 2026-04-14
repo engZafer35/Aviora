@@ -1,0 +1,7 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_client_transport.c:53:9:ftpClientOpenChannel	6
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_client_transport.c:102:9:ftpClientOpenSecureChannel	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_client_transport.c:174:9:ftpClientEstablishSecureChannel	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_client_transport.c:192:9:ftpClientShutdownChannel	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_client_transport.c:229:6:ftpClientCloseChannel	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_client_transport.c:259:9:ftpClientWriteChannel	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_client_transport.c:293:9:ftpClientReadChannel	1

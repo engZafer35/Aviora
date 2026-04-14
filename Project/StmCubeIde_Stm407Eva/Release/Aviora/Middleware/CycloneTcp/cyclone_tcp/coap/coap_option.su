@@ -1,0 +1,11 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_option.c:133:9:coapParseOption	20	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_option.c:81:9:coapParseOptions	48	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_option.c:262:9:coapFormatOption	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_option.c:388:9:coapSetOption	80	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_option.c:543:9:coapSetUintOption	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_option.c:571:9:coapGetOption	56	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_option.c:651:9:coapGetUintOption	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_option.c:688:9:coapDeleteOption	80	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_option.c:822:9:coapSplitRepeatableOption	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_option.c:877:9:coapJoinRepeatableOption	64	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_option.c:950:29:coapGetOptionParameters	8	static

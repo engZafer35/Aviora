@@ -1,0 +1,7 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server.c:60:6:ftpServerGetDefaultSettings	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server.c:120:9:ftpServerInit	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server.c:210:9:ftpServerStart	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server.c:319:9:ftpServerStop	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server.c:368:9:ftpServerSetHomeDir	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server.c:395:6:ftpServerTask	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server.c:539:6:ftpServerDeinit	16	static

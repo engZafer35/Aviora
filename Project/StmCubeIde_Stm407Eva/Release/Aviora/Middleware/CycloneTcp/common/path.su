@@ -1,0 +1,10 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/path.c:41:8:pathIsAbsolute	0	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/path.c:57:8:pathIsRelative	0	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/path.c:73:15:pathGetFilename	8	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/path.c:112:6:pathRemoveFilename	8	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/path.c:129:6:pathCopy	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/path.c:150:6:pathCanonicalize	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/path.c:312:6:pathAddSlash	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/path.c:340:6:pathRemoveSlash	8	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/path.c:370:6:pathCombine	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/path.c:408:8:pathMatch	24	static

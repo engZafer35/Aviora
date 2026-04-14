@@ -1,0 +1,10 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_misc.c:56:9:coapClientProcessEvents	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_misc.c:198:9:coapClientProcessRequestEvents	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_misc.c:342:9:coapClientChangeRequestState	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_misc.c:432:9:coapClientMatchResponse	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_misc.c:570:9:coapClientProcessResponse	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_misc.c:658:9:coapClientRejectResponse	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_misc.c:703:9:coapClientSendAck	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_misc.c:736:9:coapClientSendReset	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_misc.c:768:6:coapClientGenerateMessageId	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_misc.c:786:6:coapClientGenerateToken	16	static

@@ -1,0 +1,12 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_fsm.c:73:6:tcpProcessSegment	64	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_fsm.c:439:6:tcpStateClosed	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_fsm.c:467:6:tcpStateListen	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_fsm.c:652:6:tcpStateSynSent	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_fsm.c:798:6:tcpStateSynReceived	64	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_fsm.c:900:6:tcpStateEstablished	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_fsm.c:986:6:tcpStateCloseWait	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_fsm.c:1045:6:tcpStateLastAck	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_fsm.c:1094:6:tcpStateFinWait1	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_fsm.c:1185:6:tcpStateFinWait2	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_fsm.c:1254:6:tcpStateClosing	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_fsm.c:1307:6:tcpStateTimeWait	32	static

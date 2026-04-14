@@ -1,0 +1,15 @@
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:31:15:middMCUClockInit	1
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:45:15:middMCUClockEnterSleepMode	1
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:55:15:middMCUGpioInit	1
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:67:15:middMCUI2CInit	1
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:80:15:middMCUSPIInit	1
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:92:15:middMCUI2SInit	1
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:99:15:middMCUDmaInit	1
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:110:15:middMCUTimers	1
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:124:15:middMCUUartInit	1
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:139:15:middMCUCanInit	1
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:152:15:middMCUADCInit	1
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:163:15:middMcuRTCInit	1
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:173:15:middMCUWdtInit	1
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:184:15:middMCUWdtStart	1
+C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddMCUCore.c:196:15:middMCUWdtFeed	1

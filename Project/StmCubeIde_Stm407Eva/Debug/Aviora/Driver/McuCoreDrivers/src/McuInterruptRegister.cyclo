@@ -1,0 +1,4 @@
+C:/Users/zafer/Aviora/Driver/McuCoreDrivers/src/McuInterruptRegister.c:27:13:runCallback	2
+C:/Users/zafer/Aviora/Driver/McuCoreDrivers/src/McuInterruptRegister.c:35:1:HAL_TIM_PeriodElapsedCallback	3
+C:/Users/zafer/Aviora/Driver/McuCoreDrivers/src/McuInterruptRegister.c:103:15:drvIntRegister	4
+C:/Users/zafer/Aviora/Driver/McuCoreDrivers/src/McuInterruptRegister.c:119:15:drvIntUnregister	2

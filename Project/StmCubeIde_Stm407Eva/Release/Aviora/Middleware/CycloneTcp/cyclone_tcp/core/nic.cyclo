@@ -1,0 +1,11 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/nic.c:52:15:nicGetLogicalInterface	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/nic.c:84:15:nicGetPhysicalInterface	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/nic.c:113:9:nicGetSwitchPort	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/nic.c:144:10:nicGetVlanId	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/nic.c:175:10:nicGetVmanId	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/nic.c:207:8:nicIsParentInterface	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/nic.c:250:6:nicTick	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/nic.c:280:9:nicSendPacket	6
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/nic.c:352:9:nicUpdateMacAddrFilter	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/nic.c:391:6:nicProcessPacket	5
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/nic.c:548:6:nicNotifyLinkChange	4

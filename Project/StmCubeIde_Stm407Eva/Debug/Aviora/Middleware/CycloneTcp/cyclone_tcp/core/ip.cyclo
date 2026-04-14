@@ -1,0 +1,17 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:66:9:ipSendDatagram	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:117:9:ipSelectSourceAddr	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:165:8:ipIsUnspecifiedAddr	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:210:8:ipIsLinkLocalAddr	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:248:8:ipIsMulticastAddr	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:286:8:ipIsBroadcastAddr	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:315:8:ipCompAddr	6
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:368:8:ipCompPrefix	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:408:9:ipJoinMulticastGroup	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:454:9:ipLeaveMulticastGroup	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:499:10:ipCalcChecksum	10
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:619:10:ipCalcChecksumEx	6
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:692:10:ipCalcUpperLayerChecksum	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:719:10:ipCalcUpperLayerChecksumEx	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:744:12:ipAllocBuffer	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:794:9:ipStringToAddr	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ip.c:838:9:ipAddrToString	3
