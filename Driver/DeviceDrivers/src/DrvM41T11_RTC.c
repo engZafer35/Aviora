@@ -38,7 +38,7 @@
 /******************************* TYPE DEFINITIONS *****************************/
 
 /********************************** VARIABLES *********************************/
-static M41T11_I2C gHwI2c;
+static RtcI2c_t gHwI2c;
 /***************************** STATIC FUNCTIONS  ******************************/
 static U8 bcd2bin (U8 bcd)
 {
@@ -50,7 +50,7 @@ static U8 bin2bcd (U8 bin)
     return (((bin / 10) << 4) | (bin % 10));
 }
 /***************************** PUBLIC FUNCTIONS  ******************************/
-RETURN_STATUS drvM41T11Init(const RtcStr_t *i2c)
+RETURN_STATUS drvM41T11Init(const RtcI2c_t *i2c)
 {
     RETURN_STATUS retVal = FAILURE;
 
@@ -76,7 +76,7 @@ RETURN_STATUS drvM41T11GetTime(RtcStr_t *getTime)
     {
         if (IS_SAFELY_PTR(getTime))
         {
-            if (SUCCESS == gHwI2c.read(gHwI2c.devAddr, RTC_SEC_ADDR, (U8 *)data, RTC_REG_CNT))
+            if (SUCCESS == gHwI2c.readI2C(gHwI2c.devAddr, RTC_SEC_ADDR, (U8 *)data, RTC_REG_CNT))
             {
                 //if 7.bit(ST bit) is 1 RTC, clock not working !!
                 if (FALSE == (data[RTC_SEC_ADDR] & 0x80)) //
@@ -132,7 +132,7 @@ RETURN_STATUS drvM41T11SetTime(const RtcStr_t *setTime)
 
                 //dont need to use below line. because related bit(B6) already is 0.
                 //data[RTC_HOUR_ADDR] &= (~(0x40)); // set CB bit. if it will be toggled 0 to 1, welcome 3000(2099 finished) :))
-                retVal = gHwI2c.write(gHwI2c.devAddr, RTC_SEC_ADDR, (U8 *)data, RTC_REG_CNT);
+                retVal = gHwI2c.writeI2C(gHwI2c.devAddr, RTC_SEC_ADDR, (U8 *)data, RTC_REG_CNT);
             }
         }
     }

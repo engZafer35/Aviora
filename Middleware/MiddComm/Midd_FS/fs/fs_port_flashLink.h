@@ -36,7 +36,7 @@
 #define _FS_PORT_FLASHLINK_H
 
 /*********************************INCLUDES*************************************/
-#include "os_port.h"
+#include "Midd_OSPort.h"
 #include "error.h"
 
 #ifdef __cplusplus

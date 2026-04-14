@@ -234,8 +234,8 @@ RETURN_STATUS middSerialCommInit(void)
 {
     RETURN_STATUS retVal = SUCCESS;
 
-    retVal = drvIntRegister(line_1_Tx_halfCompleted, EN_DMA2_Stream0_IRQ); //register our interrupt map
-    retVal = drvIntRegister(line_1_Tx_FullCompleted, EN_DMA2_Stream1_IRQ); //register our interrupt map
+   // retVal = drvIntRegister(line_1_Tx_halfCompleted, EN_DMA2_Stream0_IRQ); //register our interrupt map
+   // retVal = drvIntRegister(line_1_Tx_FullCompleted, EN_DMA2_Stream1_IRQ); //register our interrupt map
 
     return retVal;
 }

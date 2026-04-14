@@ -66,8 +66,8 @@ RETURN_STATUS middMCUGpioInit(void)
   */
 RETURN_STATUS middMCUI2CInit(void)
 {
-    I2C1_INIT();
-    I2C2_INIT();
+    //I2C1_INIT();
+    //I2C2_INIT();
     return SUCCESS;
 }
 
@@ -91,14 +91,14 @@ RETURN_STATUS middMCUSPIInit(void)
  */
 RETURN_STATUS middMCUI2SInit(void)
 {
-    I2S3_INIT();
-    I2S2_INIT();
+    //I2S3_INIT();
+    //I2S2_INIT();
     return SUCCESS;
 }
 
 RETURN_STATUS middMCUDmaInit(void)
 {
-   DMA_INIT();
+   //DMA_INIT();
    return SUCCESS;
 }
 /**
@@ -138,7 +138,7 @@ RETURN_STATUS middMCUUartInit(void)
 */
 RETURN_STATUS middMCUCanInit(void)
 {
-    CAN_INIT();
+    //CAN_INIT();
 
     return SUCCESS;
 }
@@ -172,7 +172,7 @@ RETURN_STATUS middMcuRTCInit(void)
   */
 RETURN_STATUS middMCUWdtInit(U32 timeMs)
 {
-    return WDT_INIT(timeMs);
+    return SUCCESS; //WDT_INIT(timeMs);
 }
 
 /**
@@ -183,7 +183,7 @@ RETURN_STATUS middMCUWdtInit(U32 timeMs)
  */
 RETURN_STATUS middMCUWdtStart(void)
 {
-    WDT_START();
+    //WDT_START();
     return SUCCESS;
 }
 
@@ -195,7 +195,7 @@ RETURN_STATUS middMCUWdtStart(void)
  */
 RETURN_STATUS middMCUWdtFeed(void)
 {
-    WDT_FEED();
+    //WDT_FEED();
     return SUCCESS;
 }
 
