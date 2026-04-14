@@ -30,9 +30,11 @@ static RETURN_STATUS initMcuCore(void)
 
     retVal |= middMCUClockInit(); //firstly init clock and system
     retVal |= middMCUGpioInit();
+    retVal |= middMCUSPIInit();
     retVal |= middMCUI2CInit();
     retVal |= middMCUUartInit();
     retVal |= middMCUTimers();
+    retVal |= middMcuRTCInit();
 
 //    retVal |= middUSB();
 
