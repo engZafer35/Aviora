@@ -12,7 +12,7 @@
 #define DEBUG_LEVEL  (DEBUG_LEVEL_DEBUG)
 /********************************* INCLUDES ***********************************/
 #include "AppCyclonePPPMng.h"
-#include "Customers/NetworkService_Config.h"
+#include "../../Customers/NetworkService_Config.h"
 
 #include "net_config.h"
 
@@ -57,20 +57,22 @@ static CyclonePppModuleStep_t gs_cyclonePppInitStep = CYCLONE_PPP_MODULE_STEP_PP
 static void cyclonePppTimerCb (void)
 {
     DBUS_PACKET dbPacket;
-    CyclonePppMsg cyclonePppMsg;
+//    CyclonePppMsg cyclonePppMsg;
 
     DEBUG_INFO("Published Gsm Data");
 
-    gsmMsg.modemStat   = gs_dataBusPck.modemState;
-    gsmMsg.signalLevel = gs_dataBusPck.gsmSignalLevel;
-    gsmMsg.connStat    = gs_dataBusPck.pppLinkState;
+//    gsmMsg.modemStat   = gs_dataBusPck.modemState;
+//    gsmMsg.signalLevel = gs_dataBusPck.gsmSignalLevel;
+//    gsmMsg.connStat    = gs_dataBusPck.pppLinkState;
 
     dbPacket.packetID   = 0;
     dbPacket.pri        = EN_PRIORITY_MED;
     dbPacket.retainFlag = TRUE;
     dbPacket.topic      = EN_DBUS_TOPIC_GSM;
 
-    appIntMsgCreateCyclonePppMsg(&cyclonePppMsg, dbPacket.payload.data, &dbPacket.payload.dataLeng);
+    dbPacket.payload.dataLeng = sizeof(gs_dataBusPck);
+    memcpy(dbPacket.payload.data, &gs_dataBusPck, dbPacket.payload.dataLeng);
+
     appDBusPublish(gs_cyclonePppDbusID, &dbPacket);
 
     gs_cyclonePppInitStep = CYCLONE_PPP_MODULE_STEP_GET_UPDATE_INFO; // after publish cyclone ppp info, update cyclone ppp info in next timer period
