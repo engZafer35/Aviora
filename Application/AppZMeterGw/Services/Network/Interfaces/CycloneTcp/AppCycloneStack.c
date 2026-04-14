@@ -12,7 +12,7 @@
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
 #include "AppCycloneStack.h"
-#include "Customers/NetworkService_Config.h"
+#include "../../Customers/NetworkService_Config.h"
 
 #include "net_config.h"
 

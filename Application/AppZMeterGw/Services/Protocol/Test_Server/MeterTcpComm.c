@@ -11,7 +11,8 @@
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 /********************************* INCLUDES ***********************************/
 #include "MeterTcpComm.h"
-
+#include <stdio.h>
+#include <string.h>
 
 #include "net_config.h"
 /****************************** MACRO DEFINITIONS *****************************/
@@ -25,13 +26,6 @@
 /***************************** STATIC FUNCTIONS  ******************************/
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <errno.h>
-#include <stdint.h>
 
 
 static int g_sock = -1;
@@ -42,7 +36,7 @@ int meterTcpCommInit(void)
     struct sockaddr_in server_addr;
     struct timeval timeout;
 
-    g_sock = socket(AF_INET, SOCK_STREAM, 0);
+    g_sock = SOCKET(AF_INET, SOCK_STREAM, 0);
     if (g_sock < 0) 
     {        
         return -1;
@@ -52,15 +46,15 @@ int meterTcpCommInit(void)
     timeout.tv_sec = 1;
     timeout.tv_usec = 0;
 
-    if (setsockopt(g_sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) < 0) 
+    if (SETSOCKOPT(g_sock, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout)) < 0)
     {
-        close(g_sock);
+        CLOSESOCKET(g_sock);
         return -1;
     }
 
-    if (setsockopt(g_sock, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout)) < 0) 
+    if (SETSOCKOPT(g_sock, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof(timeout)) < 0)
     {        
-        close(g_sock);
+        CLOSESOCKET(g_sock);
         return -1;
     }
 
@@ -70,13 +64,13 @@ int meterTcpCommInit(void)
 
     if (inet_pton(AF_INET, METER_TCP_SERVER_IP, &server_addr.sin_addr) <= 0) 
     {        
-        close(g_sock);
+        CLOSESOCKET(g_sock);
         return -1;
     }
 
-    if (connect(g_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) 
+    if (CONNECT(g_sock, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0)
     {
-        close(g_sock);
+        CLOSESOCKET(g_sock);
         return -1;
     }
 
@@ -104,18 +98,10 @@ int meterTcpCommSend(const U8 *data, U32 dataLeng, U32 timeout)
 
     while (total_sent < dataLeng) 
     {
-        int ret = send(g_sock, data + total_sent, dataLeng - total_sent, 0);
+        int ret = SEND(g_sock, data + total_sent, dataLeng - total_sent, 0);
 
         if (ret <= 0) 
         {
-            if (errno == EAGAIN || errno == EWOULDBLOCK)
-             {
-                printf("Send timeout\n");
-            } 
-            else
-            {
-                printf("send error");
-            }
             return -1;
         }
 
@@ -131,16 +117,10 @@ int meterTcpCommReceive(U8 *data, U32 *dataLeng, U32 timeout)
     if (g_sock < 0 || data == NULL || dataLeng == NULL)
         return -1;
 
-    int ret = recv(g_sock, data, *dataLeng, 0);
+    int ret = RECV(g_sock, data, *dataLeng, 0);
 
     if (ret < 0) 
     {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) 
-        {
-            printf("Receive timeout (1 sn)\n");
-        } else {
-            printf("recv error");
-        }
         return -1;
     }
     else if (ret == 0) 

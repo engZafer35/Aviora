@@ -85,9 +85,9 @@ static TaskSlot_t s_taskSlots[MAX_METER_TASKS];
 static S32 s_nextTaskId = 0;
 
 /* Mutexes */
-static OsMutex s_meterRegMux;
-static OsMutex s_directiveMux;
-static OsMutex s_taskMux;
+static ZOsMutex s_meterRegMux;
+static ZOsMutex s_directiveMux;
+static ZOsMutex s_taskMux;
 
 
 /***************************** STATIC FUNCTIONS  ******************************/
