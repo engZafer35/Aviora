@@ -12,9 +12,12 @@
 #define DEBUG_LEVEL  (DEBUG_LEVEL_DEBUG)
 /********************************* INCLUDES ***********************************/
 #include "AppCycloneEthMng.h"
-#include "Customers/NetworkService_Config.h"
+#include "../../Customers/NetworkService_Config.h"
 
 #include "net_config.h"
+#include "drivers/eth/enc28j60_driver.h"
+#include "../../Driver/DeviceDrivers/ENC28J60/inc/spi_driver.h"
+#include "../../Driver/DeviceDrivers/ENC28J60/inc/ext_int_driver.h"
 
 #include "AppGlobalVariables.h"
 #include "AppTaskManager.h"
@@ -52,12 +55,12 @@ static void cycloneEthPeriodicInfoCb (void)
     dbPacket.topic      = EN_DBUS_TOPIC_ETH;
 
     //1: link up, 0: link down
-    (netInterface[ETH_INTERFACE_NUMBER].linkState TRUE == TRUE) ? (dbPacket.payload.data[0] = 1) : (dbPacket.payload.data[0] = 0);
+    dbPacket.payload.data[0] = netInterface[ETH_INTERFACE_NUMBER].linkState;
 
     appDBusPublish(gs_cycloneEthDbusID, &dbPacket);
 }
 
-static void cycloneEthLinkChangeCallback(NetInterface *interface, bool_t linkState)
+static void cycloneEthLinkChangeCallback(NetInterface *interface, bool_t linkState, void *param)
 {
     cycloneEthPeriodicInfoCb(); // publish the link state change immediately
 }
@@ -90,7 +93,6 @@ static RETURN_STATUS ethUp(NetInterface *interface)
 static void cycloneEthManagerTask(void* argument)
 {    
     NetInterface *interface;
-    error_t error;
 
     (void)argument;
     zosDelayTask(1000);
@@ -102,7 +104,9 @@ static void cycloneEthManagerTask(void* argument)
         switch (gs_cycloneEthInitStep)
         {
             case CYCLONE_ETH_CONN_STEP_INIT_ETH_DRIVER:
-            {                
+            {
+                RETURN_STATUS retVal = SUCCESS;
+                MacAddr macAddr;
                 //Set interface name
                 netSetInterfaceName(interface, ETH_IF_NAME);
                 //Set host name
@@ -126,23 +130,25 @@ static void cycloneEthManagerTask(void* argument)
 
                 if (SUCCESS == retVal)
                 {
+                    Ipv4Addr ipv4Addr;
+
                     //Set IPv4 host address
-                    ipv4StringToAddr(ETH_IPV4_HOST_ADDR, &ipv4Addr);
+                    ipv4StringToAddr(ETH_IP_ADDR, &ipv4Addr);
                     ipv4SetHostAddr(interface, ipv4Addr);
 
                     //Set subnet mask
-                    ipv4StringToAddr(ETH_IPV4_SUBNET_MASK, &ipv4Addr);
                     ipv4SetSubnetMask(interface, ipv4Addr);
+                    ipv4StringToAddr(ETH_SUBNET_MASK, &ipv4Addr);
 
                     //Set default gateway
-                    ipv4StringToAddr(ETH_IPV4_DEFAULT_GATEWAY, &ipv4Addr);
+                    ipv4StringToAddr(ETH_DEFAULT_GATEWAY, &ipv4Addr);
                     ipv4SetDefaultGateway(interface, ipv4Addr);
                 }            
                 
                 if (SUCCESS == retVal)
                 {
                     gs_cycloneEthInitStep = CYCLONE_ETH_CONN_STEP_COMPLETED;
-                    netAttachLinkChangeCallback(interface, ethLinkChangeCallback, NULL);
+                    netAttachLinkChangeCallback(interface, cycloneEthLinkChangeCallback, NULL);
 
                     DEBUG_INFO("Cyclone-Eth driver initialized successfully");
                     APP_LOG_REC(g_sysLoggerID, "Cyclone-Eth driver initialized successfully");
