@@ -52,12 +52,12 @@ static void timerCb(void)
 				OsTaskInfo tinfo;
 
 				zosGetTaskInfo(gs_treads[i].tid, &tinfo);
-				DEBUG_ERROR("->[I] TMNG:Taskid %d not alive, Device will be restarted",gs_treads[i], gs_treads[i].tid);
+				DEBUG_ERROR("->[I] TMNG:Taskid %d not alive, Device will be restarted",gs_treads[i].tid);
 
 #ifdef USE_FREERTOS
 				char tempBuff[256];
 				sprintf(tempBuff, "Dead Task: name: %s - CurrState: %d - Total RunTime: %d - Free stack %d ", tinfo.pcTaskName, tinfo.eCurrentState, \
-																											  tinfo.ulRunTimeCounter, tinfo.usStackHighWaterMark )
+																											  tinfo.ulRunTimeCounter, tinfo.usStackHighWaterMark );
 				APP_LOG_REC(g_sysLoggerID, tempBuff);
 				DEBUG_ERROR("->[I] TMNG:Dead Task: name: %s - CurrState: %d - Total RunTime: %d - Free stack %d ", tinfo.pcTaskName, tinfo.eCurrentState, \
 																												   tinfo.ulRunTimeCounter, tinfo.usStackHighWaterMark) ;
