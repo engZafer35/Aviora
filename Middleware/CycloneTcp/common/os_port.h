@@ -292,14 +292,25 @@
 
 #if !defined(__linux__) && !defined(__FreeBSD__)
 
-//Delay routines
-#ifndef usleep
-   #define usleep(delay) {volatile uint32_t n = delay * 4; while(n > 0) n--;}
+#ifdef USE_FREERTOS
+    #include "FreeRTOS.h"
+    #include "task.h"
+#ifndef sleep
+    #define sleep(ms) vTaskDelay(pdMS_TO_TICKS(ms))
+#endif
+#else
+    #include "stm32fxxx_hal.h"
+    #define sleep(ms) HAL_Delay(ms)
 #endif
 
-#ifndef sleep
-   #define sleep(delay) {volatile uint32_t n = delay * 4000; while(n > 0) n--;}
-#endif
+//Delay routines
+//#ifndef usleep
+//   #define usleep(delay) {volatile uint32_t n = delay * 4; while(n > 0) n--;}
+//#endif
+//
+//#ifndef sleep
+//   #define sleep(delay) {volatile uint32_t n = delay * 4000; while(n > 0) n--;}
+//#endif
 
 #endif
 

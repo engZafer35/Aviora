@@ -22,7 +22,7 @@
 #ifndef __DRV_M41T11_RTC_H__
 #define __DRV_M41T11_RTC_H__
 /*********************************INCLUDES*************************************/
-#include "GlobalDefinitions.h"
+#include "Global_Definitions.h"
 /******************************MACRO DEFINITIONS*******************************/
 /** driver functions for external RTC. Each Rtch driver has its own implementation */
 #define EXT_RTC_INIT_FUNC(x)      drvM41T11Init(x)
@@ -47,8 +47,8 @@ typedef struct _RtcStr_t
  typedef struct _RtcI2c_t
  {
      U32 devAddr;
-     RETURN_STATUS (*write) (U32 memAdr, U8* buff, U32 bufLeng);
-     RETURN_STATUS (*read)  (U32 memAdr, U8* buff, U32 bufLeng);
+     RETURN_STATUS (*writeI2C) (U32 devAddr, U32 memAdr, U8* buff, U32 bufLeng);
+     RETURN_STATUS (*readI2C)  (U32 devAddr, U32 memAdr, U8* buff, U32 bufLeng);
  }RtcI2c_t;
 /************************* GLOBAL VARIBALE REFERENCES *************************/
 
@@ -60,7 +60,7 @@ typedef struct _RtcStr_t
 * @return if everything is OK, return SUCCES
 *         otherwise return FAILURE
  */
-RETURN_STATUS drvM41T11Init(const RtcStr_t *i2c);
+RETURN_STATUS drvM41T11Init(const RtcI2c_t *i2c);
 
 /**
  * @brief  get time
