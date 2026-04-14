@@ -21,7 +21,7 @@
 #include "AppLogRecorder.h"
 #include "ZDebug.h"
 
-#include "core/net.h"
+#include "net_config.h"
 #include "ftp/ftp_client.h"
 #include "fs_port.h"
 

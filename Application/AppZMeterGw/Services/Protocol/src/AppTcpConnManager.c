@@ -299,7 +299,7 @@ static void tcpConnectionThread(void *arg)
                     struct sockaddr_in client_ipv4_address = { 0 };
                     int addrlen = sizeof(client_ipv4_address);
 
-                    int newSocket = ACCEPT(gs_connInfo.pullSockID, (struct sockaddr *)&client_ipv4_address, (socklen_t *)&addrlen);
+                    int newSocket = ACCEPT(gs_connInfo.pullSockID, (struct sockaddr *)&client_ipv4_address, (SOCKLEN_t *)&addrlen);
                     if (newSocket <= 0)
                     {
                         DEBUG_ERROR("->[E] Pull Socket, ACCEPT Error.");
@@ -395,7 +395,7 @@ static void tcpConnectionThread(void *arg)
                 if (gs_connInfo.pushSockConnecting && FD_ISSET(gs_connInfo.pushSockID, &writefds))
                 {
                     int error = 0;
-                    socklen_t len = sizeof(error);
+                    SOCKLEN_t len = sizeof(error);
 
                     if (GETSOCKOPT(gs_connInfo.pushSockID, SOL_SOCKET, SO_ERROR, &error, &len) == 0)
                     {
