@@ -15,9 +15,9 @@
 #include "Project_Conf.h"
 /******************************MACRO DEFINITIONS*******************************/
 
-#define SERIAL_UART1
+//#define SERIAL_UART1
 #define SERIAL_UART2
-#define SERIAL_UART3
+//#define SERIAL_UART3
 //#define SERIAL_UART4
 //#define SERIAL_UART5
 //#define SERIAL_UART6

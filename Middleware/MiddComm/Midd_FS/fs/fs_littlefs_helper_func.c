@@ -11,7 +11,7 @@
 #define SHOW_PAGE_DBG_MSG  (DISABLE)
 
 /********************************* INCLUDES ***********************************/
-#include "fs_helper_func.h"
+#include "fs_littlefs_helper_func.h"
 #include "../../Midd_OS/inc/Midd_OSPort.h"
 /****************************** MACRO DEFINITIONS *****************************/
 
@@ -24,11 +24,11 @@
  * fs mutex is created before kernel starting. Because of that you have to use 
  * static mutex initialization. Especially if freeRtos or orther rtos is used 
  * be aware of that. 
- * OsMutex contains static mutex buffer and osCreateMutex can use this buffer. 
+ * ZOsMutex contains static mutex buffer and osCreateMutex can use this buffer.
  * You dont need to do anything for static mutex, just make sure that 
  * (configSUPPORT_STATIC_ALLOCATION 1) set to 1
  */
-static OsMutex g_fsMutex; 
+static ZOsMutex g_fsMutex;
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
 int fsHelperMutexCreate(void)

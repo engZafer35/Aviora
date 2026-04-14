@@ -2421,7 +2421,7 @@ int_t c_closesocket(int_t s)
  **/
 
 int_t c_select(int_t nfds, c_fd_set *readfds, c_fd_set *writefds, c_fd_set *exceptfds,
-   const struct timeval *timeout)
+   const TIMEVAL*timeout)
 {
    int_t i;
    int_t j;

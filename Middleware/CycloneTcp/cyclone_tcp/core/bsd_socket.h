@@ -31,7 +31,7 @@
 #ifndef _BSD_SOCKET_H
 #define _BSD_SOCKET_H
 
-#define BSD_SOCKET_SUPPORT DISABLE
+#define BSD_SOCKET_SUPPORT ENABLED
 
 //BSD socket support
 #ifndef BSD_SOCKET_SUPPORT
@@ -494,7 +494,6 @@ typedef struct addrinfo
 } ADDRINFO, *PADDRINFO;
 
 
-#ifndef _TIMEVAL_DEFINED
 
 /**
  * @brief Timeout structure
@@ -505,8 +504,13 @@ typedef struct _timeval
    int32_t tv_sec;
    int32_t tv_usec;
 } TIMEVAL, *PTIMEVAL;
+#include <time.h>
+//struct timeval
+//{
+//   int32_t tv_sec;
+//   int32_t tv_usec;
+//};
 
-#endif
 
 
 //Forward declaration of functions
@@ -572,8 +576,7 @@ int_t c_fcntl(int_t s, int_t cmd, int_t arg);
 int_t c_shutdown(int_t s, int_t how);
 int_t c_closesocket(int_t s);
 
-int_t c_select(int_t nfds, c_fd_set *readfds, c_fd_set *writefds, c_fd_set *exceptfds,
-   const struct timeval *timeout);
+int_t c_select(int_t nfds, c_fd_set *readfds, c_fd_set *writefds, c_fd_set *exceptfds, const TIMEVAL *timeout);
 
 int_t c_gethostname(char_t *name, size_t len);
 struct hostent *c_gethostbyname(const char_t *name);

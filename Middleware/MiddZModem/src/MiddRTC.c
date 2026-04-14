@@ -50,11 +50,11 @@ static RETURN_STATUS i2cReadFunc(U32 devAdr, U32 memAdr, U8* buff, U32 bufLeng)
 /***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS middRtcExtInit(void)
 {    
-    RtcI2c_t rtcI2c;
-
-    rtcI2c.devAddr = EXT_RTC_I2C_ADDR;
-    rtcI2c.read    = i2cReadFunc;
-    rtcI2c.write   = i2cWriteFunc;
+//    RtcI2c_t rtcI2c;
+//
+//    rtcI2c.devAddr = EXT_RTC_I2C_ADDR;
+//    rtcI2c.read    = i2cReadFunc;
+//    rtcI2c.write   = i2cWriteFunc;
 
     return EXT_RTC_INIT_FUNC(&rtcI2c);    
 }
