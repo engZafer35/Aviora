@@ -34,23 +34,23 @@ static void runCallback(EN_INTERRUPT_LIST intType, int val)
 
 CORE_TIMER_IT_FUNCTION
 {
-//    //for alert timer
-//    if (TRUE == IS_ALERT_TIMER_IT())
-//    {
-//        runCallback(TIMER_ALERT_IT_ID, 0);
-//    }
-//
-//    // for events timer
-//    if (TRUE == IS_EVENT_TIMER_IT())
-//    {
-//        runCallback(TIMER_EVENT_IT_ID, 0);
-//    }
+    //for alert timer
+    if (TRUE == IS_ALERT_TIMER_IT())
+    {
+        runCallback(TIMER_ALERT_IT_ID, 0);
+    }
+
+    // for events timer
+    if (TRUE == IS_EVENT_TIMER_IT())
+    {
+        runCallback(TIMER_EVENT_IT_ID, 0);
+    }
 
     //dont need to clear IT func for stm32. Check for other MCU
 }
 
-UART_RCV_IT_FUNCTION
-{
+//UART_RCV_IT_FUNCTION
+//{
 //    if (TRUE == IS_LINE1_UART_IT())
 //    {
 //        runCallback(LINE_UART1_RX_IT_ID, 1);
@@ -63,33 +63,33 @@ UART_RCV_IT_FUNCTION
 //    {
 //        runCallback(LINE_UART6_RX_IT_ID, 6);
 //    }
-}
+//}
 
-UART_DMA_TX_HALF_COMPLETED
-{
-    gInterruptCallbackList[EN_DMA2_Stream0_IRQ](1);
-}
+//UART_DMA_TX_HALF_COMPLETED
+//{
+//    gInterruptCallbackList[EN_DMA2_Stream0_IRQ](1);
+//}
 
-CORE_EXT_IT_FUNCTION
-{
-    if (IS_INPUT_AC_PIN(p_args))
-    {
-        runCallback(GPIO_AC_INT_CHNL, INPUT_AC_PIN);
-    }
-    else if (IS_INPUT_SCAP_PIN(p_args))
-    {
-        runCallback(GPIO_SCAP_INT_CHNL, INPUT_SCAP_PIN);
-    }
-}
+//CORE_EXT_IT_FUNCTION
+//{
+//    if (IS_INPUT_AC_PIN(p_args))
+//    {
+//        runCallback(GPIO_AC_INT_CHNL, INPUT_AC_PIN);
+//    }
+//    else if (IS_INPUT_SCAP_PIN(p_args))
+//    {
+//        runCallback(GPIO_SCAP_INT_CHNL, INPUT_SCAP_PIN);
+//    }
+//}
 
-COM_CAN_RX_IT_FUNC
-{
-#ifdef CAN1
-	runCallback(EN_CAN1_RX0_IRQ, 0);
-#elif CAN2
-	runCallback(EN_CAN2_RX0_IRQ, 0);
-#endif
-}
+//COM_CAN_RX_IT_FUNC
+//{
+//#ifdef CAN1
+//	runCallback(EN_CAN1_RX0_IRQ, 0);
+//#elif CAN2
+//	runCallback(EN_CAN2_RX0_IRQ, 0);
+//#endif
+//}
 
 
 

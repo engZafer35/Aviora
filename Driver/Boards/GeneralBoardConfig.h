@@ -14,7 +14,7 @@
 #define __GENERAL_BOARD_CONFIG_H__
 /*********************************INCLUDES*************************************/
 #define BOARD_LINUX_PC      (1)
-#define BOARD_STM_010101    (2)
+#define BOARD_STM_407EVA    (2)
 #define BOARD_STM_LP_010101 (3)
 #define BOARD_WINDOWS_PC    (4)
 #define BOARD_RA4M4_010101  (5)
@@ -26,16 +26,16 @@
     #define CURRENT_BOARD   (BOARD_LINUX_PC)
 #elif _WIN64
     #define CURRENT_BOARD   (BOARD_WINDOWS_PC)
-#elif
-    #define CURRENT_BOARD   (BOARD_RA4M4_010101) //select current embedded board here
+#else
+    #define CURRENT_BOARD   (BOARD_STM_407EVA) //select current embedded board here
 #endif
 
 #if (CURRENT_BOARD == BOARD_LINUX_PC)
     #include "BoardConfig_LinuxPC.h"
 #elif (CURRENT_BOARD == BOARD_WINDOWS_PC)
     #include "BoardConfig_WindowsPC.h"
-#elif (CURRENT_BOARD == BOARD_STM_010101)
-    #include "BoardConfig_STM_010101.h"
+#elif (CURRENT_BOARD == BOARD_STM_407EVA)
+    #include "BoardConfig_STM_407EVA.h"
 #elif (CURRENT_BOARD == BOARD_STM_LP_010101)
     #include "BoardConfig_STM_LP_010101.h"
 #else
@@ -215,16 +215,21 @@ typedef _EN_INTERRUPT_LIST EN_INTERRUPT_LIST;
 /****************** BOARD DMA CONTROL *******************/
 #define DMA_INIT()      _DMA_INIT()
 
-/****************** BOARD TIMER CONTROL *******************/
-#define TIMER_EVENT_IT_ID       _TIMER_EVENT_IT_ID
-#define TIMER_ALERT_INIT()      _TIMER_ALERT_INIT()
-#define TIMER_EVENT_INIT()      _TIMER_EVENT_INIT()
+/********************* BOARD TIMER CONTROL ******************/
+#define TIMER_ALERT_IT_ID               _TIMER_ALERT_IT_ID
+#define TIMER_EVENT_IT_ID               _TIMER_EVENT_IT_ID
 
+#define TIMER_ALERT_INIT()              _TIMER_ALERT_INIT()      //10ms for alert timer
+#define TIMER_EVENT_INIT()              _TIMER_EVENT_INIT()      //10ms for event timer
 
-#define TIMER_EVENT_START()     _TIMER_EVENT_START()
-#define TIMER_ALERT_START()     _TIMER_ALERT_START()
+#define CORE_TIMER_IT_FUNCTION          _CORE_TIMER_IT_FUNCTION
 
-#define CORE_TIMER_IT_FUNCTION  _CORE_TIMER_IT_FUNCTION
+#define TIMER_ALERT_START()             _TIMER_ALERT_START()
+#define TIMER_EVENT_START()             _TIMER_EVENT_START()
+
+#define IS_ALERT_TIMER_IT()             _IS_ALERT_TIMER_IT()
+#define IS_EVENT_TIMER_IT()             _IS_EVENT_TIMER_IT()
+
 /****************** BOARD CAN CONTROL *******************/
 #define CAN_1_START()           _CAN_1_START()
 #define CAN_2_START()           _CAN_2_START()

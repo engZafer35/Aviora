@@ -26,8 +26,8 @@
  * @version 2.4.0
  **/
 
-#ifndef _OS_PORT_FREERTOS_H
-#define _OS_PORT_FREERTOS_H
+#ifndef _ZOS_PORT_FREERTOS_H
+#define _ZOS_PORT_FREERTOS_H
 
 //Dependencies
 #ifdef IDF_VER
@@ -40,6 +40,12 @@
    #include "semphr.h"
 #endif
 
+//Types
+typedef char char_t;
+typedef signed int int_t;
+typedef unsigned int uint_t;
+typedef int bool_t;
+
 //Invalid task identifier
 #define OS_INVALID_TASK_ID NULL
 //Self task identifier
@@ -48,10 +54,11 @@
 #define OS_TASK_PRIORITY_HIGH          (configMAX_PRIORITIES - 1) //4
 #define OS_TASK_PRIORITY_UP_MEDIUM     (configMAX_PRIORITIES - 2) //3
 #define OS_TASK_PRIORITY_MEDIUM        (configMAX_PRIORITIES - 3) //2
-#define OS_TASK_PRIORITY_LOW           (configMAX_PRIORITIES - 4) //1
+#define ZOS_TASK_PRIORITY_LOW           (configMAX_PRIORITIES - 4) //1
 #define OS_TASK_PRIORITY_LOWEST        (tskIDLE_PRIORITY)         //0
 
-#define OS_MIN_STACK_SIZE               (configMINIMAL_STACK_SIZE)
+#define OS_TASK_PRIORITY_NORMAL        OS_TASK_PRIORITY_MEDIUM
+#define ZOS_MIN_STACK_SIZE               (configMINIMAL_STACK_SIZE)
 
 //Milliseconds to system ticks
 #ifndef OS_MS_TO_SYSTICKS
@@ -143,7 +150,7 @@ typedef struct
 #endif
    size_t stackSize;
    uint_t priority;
-} OsTaskParameters;
+} ZOsTaskParameters;
 
 
 /**
@@ -156,7 +163,7 @@ typedef struct
 #if (configSUPPORT_STATIC_ALLOCATION == 1)
    StaticSemaphore_t buffer;
 #endif
-} OsEvent;
+} ZOsEvent;
 
 
 /**
@@ -169,7 +176,7 @@ typedef struct
 #if (configSUPPORT_STATIC_ALLOCATION == 1)
    StaticSemaphore_t buffer;
 #endif
-} OsSemaphore;
+} ZOsSemaphore;
 
 
 /**
@@ -182,7 +189,7 @@ typedef struct
 #if (configSUPPORT_STATIC_ALLOCATION == 1)
    StaticSemaphore_t buffer;
 #endif
-} OsMutex;
+} ZOsMutex;
 
 
 /**
@@ -197,41 +204,45 @@ typedef void (*OsTaskCode)(void *arg);
 typedef TaskStatus_t OsTaskInfo;
 
 //Default task parameters
-extern const OsTaskParameters OS_TASK_DEFAULT_PARAMS;
+extern const ZOsTaskParameters ZOS_TASK_DEFAULT_PARAMS;
 
 //Kernel management
 void zosInitKernel(void);
 void zosStartKernel(void);
 
 //Task management
-OsTaskId zosCreateTask(const char_t *name, OsTaskCode taskCode, void *arg, const OsTaskParameters *params);
+OsTaskId zosCreateTask(const char_t *name, OsTaskCode taskCode, void *arg, const ZOsTaskParameters *params);
 void zosGetTaskInfo(OsTaskId task, OsTaskInfo *info);
 
 void zosDeleteTask(OsTaskId taskId);
 void zosDelayTask(systime_t delay);
 void zosSwitchTask(void);
+
+void zosSuspendTask(OsTaskId task);
+void zosResumeTask(OsTaskId task);
+
 void zosSuspendAllTasks(void);
 void zosResumeAllTasks(void);
 
 //Event management
-bool_t zosCreateEvent(OsEvent *event);
-void zosDeleteEvent(OsEvent *event);
-void zosSetEvent(OsEvent *event);
-void zosResetEvent(OsEvent *event);
-bool_t zosWaitForEvent(OsEvent *event, systime_t timeout);
-bool_t zosSetEventFromIsr(OsEvent *event);
+bool_t zosCreateEvent(ZOsEvent *event);
+void zosDeleteEvent(ZOsEvent *event);
+void zosSetEvent(ZOsEvent *event);
+void zosResetEvent(ZOsEvent *event);
+bool_t zosWaitForEvent(ZOsEvent *event, systime_t timeout);
+bool_t zosSetEventFromIsr(ZOsEvent *event);
 
 //Semaphore management
-bool_t zosCreateSemaphore(OsSemaphore *semaphore, uint_t count);
-void zosDeleteSemaphore(OsSemaphore *semaphore);
-bool_t zosWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout);
-void zosReleaseSemaphore(OsSemaphore *semaphore);
+bool_t zosCreateSemaphore(ZOsSemaphore *semaphore, uint_t count);
+void zosDeleteSemaphore(ZOsSemaphore *semaphore);
+bool_t zosWaitForSemaphore(ZOsSemaphore *semaphore, systime_t timeout);
+void zosReleaseSemaphore(ZOsSemaphore *semaphore);
 
 //Mutex management
-bool_t zosCreateMutex(OsMutex *mutex);
-void zosDeleteMutex(OsMutex *mutex);
-void zosAcquireMutex(OsMutex *mutex);
-void zosReleaseMutex(OsMutex *mutex);
+bool_t zosCreateMutex(ZOsMutex *mutex);
+void zosDeleteMutex(ZOsMutex *mutex);
+void zosAcquireMutex(ZOsMutex *mutex);
+void zosReleaseMutex(ZOsMutex *mutex);
 
 //System time
 systime_t zosGetSystemTime(void);
@@ -239,6 +250,58 @@ systime_t zosGetSystemTime(void);
 //Memory management
 void *zosAllocMem(size_t size);
 void zosFreeMem(void *p);
+
+/***********************************************************************
+ **********************************************************************/
+typedef QueueHandle_t OsQueue;
+#define OS_INVALID_QUEUE   NULL
+#define QUEUE_SUCCESS      (0)
+#define QUEUE_FAILURE      (-1)
+
+#define QUEUE_NAME(x)      x
+/*
+ * @brief  Open posix queque
+ * @param  Queue name,
+ * @param  Total gueue leng, total item count
+ * @param  Item size
+ * @return Returns a message queue descriptor on success, or –1 (INVALID_QUEUE) on error
+ */
+OsQueue zosMsgQueueCreate(const char *name, unsigned int queLeng, unsigned int itemSize);
+
+/**
+ * @brief Send message
+ * @param Queue ID
+ * @param message
+ * @param message length
+ * @param timeout, in posix queue it isn't not used. it could be set any value.
+ * @return Returns QUEUE_SUCCESS on success, QUEUE_FAILURE on error
+ */
+int zosMsgQueueSend(OsQueue queue, const char * const msg, size_t msgLeng, unsigned int timeOut);
+
+/**
+ * @brief Receive message
+ * @param Queue ID
+ * @param message buff
+ * @param message buff length
+ * @param timeout, in posix queue, it isn't not used. it could be set any value.
+ * @return Returns QUEUE_SUCCESS on success, QUEUE_FAILURE on error
+ */
+int zosMsgQueueReceive(OsQueue queue, char * msg, size_t msgLeng, unsigned int timeOutSec);
+
+/**
+ * @brief Close the queue
+ * @param Queue ID
+ * @return Returns QUEUE_SUCCESS on success, QUEUE_FAILURE on error
+ */
+int zosMsgQueueClose(OsQueue queue);
+
+/**
+ * @brief Clear queue
+ * @param Queue ID
+ * @return Returns QUEUE_SUCCESS on success, QUEUE_FAILURE on error
+ */
+int zosMsgQueueClear(OsQueue queue);
+
 
 //C++ guard
 #ifdef __cplusplus

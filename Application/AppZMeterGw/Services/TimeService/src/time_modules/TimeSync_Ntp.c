@@ -42,7 +42,7 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
     char portStr[8];
 
     memset(&hints, 0, sizeof(hints));
-    hints.ai_family   = AF_UNSPEC;
+    hints.ai_family   = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
 
     (void)snprintf(portStr, sizeof(portStr), "%u", (unsigned)gs_ntpPort);

@@ -27,7 +27,7 @@
  **/
 
 
-#if 0
+#if 1
 
 //Dependencies
 #include <stdio.h>
@@ -36,7 +36,7 @@
 #include "Midd_OSPort_FreeRTOS.h"
 
 //Default task parameters
-const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
+const ZOsTaskParameters ZOS_TASK_DEFAULT_PARAMS =
 {
 #if (configSUPPORT_STATIC_ALLOCATION == 1)
    NULL,                     //Task control block
@@ -51,7 +51,7 @@ const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
  * @brief Kernel initialization
  **/
 
-void osInitKernel(void)
+void zosInitKernel(void)
 {
 }
 
@@ -60,7 +60,7 @@ void osInitKernel(void)
  * @brief Start kernel
  **/
 
-void osStartKernel(void)
+void zosStartKernel(void)
 {
    //Start the scheduler
    vTaskStartScheduler();
@@ -76,8 +76,8 @@ void osStartKernel(void)
  * @return Task identifier referencing the newly created task
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
-   const OsTaskParameters *params)
+OsTaskId zosCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
+   const ZOsTaskParameters *params)
 {
    portBASE_TYPE status;
    TaskHandle_t handle;
@@ -115,13 +115,22 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
    return (OsTaskId) handle;
 }
 
+void zosGetTaskInfo(OsTaskId task, OsTaskInfo *info)
+{
+    if (task == NULL || info == NULL)
+    {
+        return;
+    }
+
+    vTaskGetInfo(task, info, pdTRUE, eInvalid);
+}
 
 /**
  * @brief Delete a task
  * @param[in] taskId Task identifier referencing the task to be deleted
  **/
 
-void osDeleteTask(OsTaskId taskId)
+void zosDeleteTask(OsTaskId taskId)
 {
    //Delete the specified task
    vTaskDelete((TaskHandle_t) taskId);
@@ -133,7 +142,7 @@ void osDeleteTask(OsTaskId taskId)
  * @param[in] delay Amount of time for which the calling task should block
  **/
 
-void osDelayTask(systime_t delay)
+void zosDelayTask(systime_t delay)
 {
    //Delay the task for the specified duration
    vTaskDelay(OS_MS_TO_SYSTICKS(delay));
@@ -144,7 +153,7 @@ void osDelayTask(systime_t delay)
  * @brief Yield control to the next task
  **/
 
-void osSwitchTask(void)
+void zosSwitchTask(void)
 {
    //Force a context switch
    taskYIELD();
@@ -155,7 +164,7 @@ void osSwitchTask(void)
  * @brief Suspend scheduler activity
  **/
 
-void osSuspendAllTasks(void)
+void zosSuspendAllTasks(void)
 {
    //Make sure the operating system is running
    if(xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
@@ -170,7 +179,7 @@ void osSuspendAllTasks(void)
  * @brief Resume scheduler activity
  **/
 
-void osResumeAllTasks(void)
+void zosResumeAllTasks(void)
 {
    //Make sure the operating system is running
    if(xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
@@ -188,7 +197,7 @@ void osResumeAllTasks(void)
  *   created. Otherwise, FALSE is returned
  **/
 
-bool_t osCreateEvent(OsEvent *event)
+bool_t zosCreateEvent(ZOsEvent *event)
 {
 #if (configSUPPORT_STATIC_ALLOCATION == 1)
    //Create a binary semaphore
@@ -215,7 +224,7 @@ bool_t osCreateEvent(OsEvent *event)
  * @param[in] event Pointer to the event object
  **/
 
-void osDeleteEvent(OsEvent *event)
+void zosDeleteEvent(ZOsEvent *event)
 {
    //Make sure the handle is valid
    if(event->handle != NULL)
@@ -231,7 +240,7 @@ void osDeleteEvent(OsEvent *event)
  * @param[in] event Pointer to the event object
  **/
 
-void osSetEvent(OsEvent *event)
+void zosSetEvent(ZOsEvent *event)
 {
    //Set the specified event to the signaled state
    xSemaphoreGive(event->handle);
@@ -243,7 +252,7 @@ void osSetEvent(OsEvent *event)
  * @param[in] event Pointer to the event object
  **/
 
-void osResetEvent(OsEvent *event)
+void zosResetEvent(ZOsEvent *event)
 {
    //Force the specified event to the nonsignaled state
    xSemaphoreTake(event->handle, 0);
@@ -258,7 +267,7 @@ void osResetEvent(OsEvent *event)
  *   signaled. FALSE is returned if the timeout interval elapsed
  **/
 
-bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
+bool_t zosWaitForEvent(ZOsEvent *event, systime_t timeout)
 {
    portBASE_TYPE ret;
 
@@ -287,7 +296,7 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
  *   and the unblocked task has a priority higher than the currently running task
  **/
 
-bool_t osSetEventFromIsr(OsEvent *event)
+bool_t zosSetEventFromIsr(ZOsEvent *event)
 {
    portBASE_TYPE flag = FALSE;
 
@@ -308,7 +317,7 @@ bool_t osSetEventFromIsr(OsEvent *event)
  *   created. Otherwise, FALSE is returned
  **/
 
-bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
+bool_t zosCreateSemaphore(ZOsSemaphore *semaphore, uint_t count)
 {
 #if (configSUPPORT_STATIC_ALLOCATION == 1)
    //Create a semaphore
@@ -336,7 +345,7 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
  * @param[in] semaphore Pointer to the semaphore object
  **/
 
-void osDeleteSemaphore(OsSemaphore *semaphore)
+void zosDeleteSemaphore(ZOsSemaphore *semaphore)
 {
    //Make sure the handle is valid
    if(semaphore->handle != NULL)
@@ -355,7 +364,7 @@ void osDeleteSemaphore(OsSemaphore *semaphore)
  *   returned if the timeout interval elapsed
  **/
 
-bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
+bool_t zosWaitForSemaphore(ZOsSemaphore *semaphore, systime_t timeout)
 {
    portBASE_TYPE ret;
 
@@ -381,7 +390,7 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
  * @param[in] semaphore Pointer to the semaphore object
  **/
 
-void osReleaseSemaphore(OsSemaphore *semaphore)
+void zosReleaseSemaphore(ZOsSemaphore *semaphore)
 {
    //Release the semaphore
    xSemaphoreGive(semaphore->handle);
@@ -395,7 +404,7 @@ void osReleaseSemaphore(OsSemaphore *semaphore)
  *   created. Otherwise, FALSE is returned
  **/
 
-bool_t osCreateMutex(OsMutex *mutex)
+bool_t zosCreateMutex(ZOsMutex *mutex)
 {
 #if (configSUPPORT_STATIC_ALLOCATION == 1)
    //Create a mutex object
@@ -422,7 +431,7 @@ bool_t osCreateMutex(OsMutex *mutex)
  * @param[in] mutex Pointer to the mutex object
  **/
 
-void osDeleteMutex(OsMutex *mutex)
+void zosDeleteMutex(ZOsMutex *mutex)
 {
    //Make sure the handle is valid
    if(mutex->handle != NULL)
@@ -438,7 +447,7 @@ void osDeleteMutex(OsMutex *mutex)
  * @param[in] mutex Pointer to the mutex object
  **/
 
-void osAcquireMutex(OsMutex *mutex)
+void zosAcquireMutex(ZOsMutex *mutex)
 {
    //Obtain ownership of the mutex object
    xSemaphoreTake(mutex->handle, portMAX_DELAY);
@@ -450,7 +459,7 @@ void osAcquireMutex(OsMutex *mutex)
  * @param[in] mutex Pointer to the mutex object
  **/
 
-void osReleaseMutex(OsMutex *mutex)
+void zosReleaseMutex(ZOsMutex *mutex)
 {
    //Release ownership of the mutex object
    xSemaphoreGive(mutex->handle);
@@ -462,7 +471,7 @@ void osReleaseMutex(OsMutex *mutex)
  * @return Number of milliseconds elapsed since the system was last started
  **/
 
-systime_t osGetSystemTime(void)
+systime_t zosGetSystemTime(void)
 {
    systime_t time;
 
@@ -481,16 +490,12 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-__weak_func void *osAllocMem(size_t size)
+void *zosAllocMem(size_t size)
 {
    void *p;
 
    //Allocate a memory block
    p = pvPortMalloc(size);
-
-   //Debug message
-   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n",
-      size, (uintptr_t) p);
 
    //Return a pointer to the newly allocated memory block
    return p;
@@ -502,18 +507,93 @@ __weak_func void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-__weak_func void osFreeMem(void *p)
+void zosFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)
    {
-      //Debug message
-      TRACE_DEBUG("Freeing memory at 0x%08" PRIXPTR "\r\n", (uintptr_t) p);
-
       //Free memory block
       vPortFree(p);
    }
 }
+
+
+OsQueue zosMsgQueueCreate(const char *name, unsigned int queLeng, unsigned int itemSize)
+{
+    (void)name; // FreeRTOS queue name kullanmaz
+
+    QueueHandle_t queue = xQueueCreate(queLeng, itemSize);
+
+    if (queue == NULL)
+    {
+        return OS_INVALID_QUEUE;
+    }
+
+    return queue;
+}
+
+int zosMsgQueueSend(OsQueue queue, const char * const msg, size_t msgLeng, unsigned int timeOut)
+{
+    (void)msgLeng;
+
+    if (queue == NULL || msg == NULL)
+    {
+        return QUEUE_FAILURE;
+    }
+
+    BaseType_t ret = xQueueSend(
+        queue,
+        msg,
+        pdMS_TO_TICKS(timeOut)   // timeout ms kabul ettim
+    );
+
+    return (ret == pdPASS) ? QUEUE_SUCCESS : QUEUE_FAILURE;
+}
+
+int zosMsgQueueReceive(OsQueue queue, char *msg, size_t msgLeng, unsigned int timeOutSec)
+{
+    (void)msgLeng;
+
+    if (queue == NULL || msg == NULL)
+    {
+        return QUEUE_FAILURE;
+    }
+
+    BaseType_t ret = xQueueReceive(
+        queue,
+        msg,
+        pdMS_TO_TICKS(timeOutSec * 1000)
+    );
+
+    return (ret == pdPASS) ? QUEUE_SUCCESS : QUEUE_FAILURE;
+}
+
+int zosMsgQueueClose(OsQueue queue)
+{
+    if (queue == NULL)
+    {
+        return QUEUE_FAILURE;
+    }
+
+    vQueueDelete(queue);
+    return QUEUE_SUCCESS;
+}
+
+void zosSuspendTask(OsTaskId task)
+{
+    vTaskSuspend(task);
+}
+
+void zosResumeTask(OsTaskId task)
+{
+    if (task != NULL)
+    {
+        vTaskResume(task);
+    }
+}
+
+
+
 
 
 #if (configSUPPORT_STATIC_ALLOCATION == 1 && !defined(IDF_VER))

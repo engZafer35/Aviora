@@ -239,7 +239,7 @@ error_t uartInit(void)
 
     uart_writen(&uartDev, "ATE0\r", sizeof("ATE0")+1);
     uart_writen(&uartDev, "AT+IPR=921600\r", sizeof("AT+IPR=921600")+1);
-    sleep(1);
+    zosDelayTask(1000);
     //Create a new thread
     if(0 != pthread_create(&gs_uartRx, NULL, uartRxFunc, NULL))
     {

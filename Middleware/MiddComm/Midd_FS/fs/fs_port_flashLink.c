@@ -285,7 +285,7 @@ static int flFindHeadByName(const char_t *name)
          continue;
 
       // name is zero-terminated in header; compare
-      if((cellName[0] != '\0') && (cellName[0] != (char_t)0xFF) && (0 == sStrcmp(cellName, name)))
+      if((cellName[0] != '\0') && (cellName[0] != (char_t)0xFF) && (0 == osStrcmp(cellName, name)))
       {
          return (int)i;
       }
@@ -753,7 +753,7 @@ error_t fsGetFileSize(const char_t *path, uint32_t *size)
 {
    char_t name[FLASHLINK_NAME_SIZE + 1];
 
-   if((NULL == path) || ((NULL == size) || (FALSE == g_flashLink.ready))
+   if((NULL == path) || (NULL == size) || (FALSE == g_flashLink.ready))
       return ERROR_INVALID_PARAMETER;
    if(NULL == flPathToName(path, name, sizeof(name)))
       return ERROR_INVALID_PARAMETER;
