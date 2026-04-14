@@ -30,6 +30,6 @@
 #define _OS_PORT_CONFIG_H
 
 //Select underlying RTOS
-//#define USE_FREERTOS
+#define USE_FREERTOS
 
 #endif

@@ -60,12 +60,12 @@ union
     };
 }g_localEvents;
 
-struct DevVar
-{
-    BOOL AC;    /** 1:AC input exists, 0: doesn't */
-    BOOL SCAP;  /** 1:SCAP is full */
-    DEV_WORKING_MODE wmode;
-}x;
+//struct DevVar
+//{
+//    BOOL AC;    /** 1:AC input exists, 0: doesn't */
+//    BOOL SCAP;  /** 1:SCAP is full */
+//    DEV_WORKING_MODE wmode;
+//}x;
 
 static DevInfoMsg gs_devVar;
 
@@ -177,7 +177,7 @@ static RETURN_STATUS initSWUnit(void)
         DEBUG_INFO("->[I] %s fs ready", FS_NAME);
 
         zosInitKernel();
-        zosStartKernel();
+        //zosStartKernel();
 
         if (FAILURE == appTskMngInit())
         {
@@ -366,12 +366,12 @@ RETURN_STATUS appZMGwInit(void)
     RETURN_STATUS retVal;
     ZOsTaskParameters tempParam;
 
+    retVal = appDevMngInitHwUnits();
+
     tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
     tempParam.stackSize = ZOS_MIN_STACK_SIZE;
 
     g_localEvents.events = FALSE; //clear all local events
-
-    retVal = appDevMngInitHwUnits();
 
     if (SUCCESS == retVal)
     {
