@@ -1,0 +1,6 @@
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/DataBus/AppDataBus.c:38:15:appDBusInit	2
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/DataBus/AppDataBus.c:50:15:appDBusRegister	4
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/DataBus/AppDataBus.c:75:15:appDBusUnregister	3
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/DataBus/AppDataBus.c:93:15:appDBusPublish	7
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/DataBus/AppDataBus.c:120:15:appDBusReceive	3
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/DataBus/AppDataBus.c:134:15:appDBusRequest	1

@@ -1,0 +1,14 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_fsm.c:50:6:pppUpEvent	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_fsm.c:84:6:pppDownEvent	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_fsm.c:135:6:pppOpenEvent	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_fsm.c:189:6:pppCloseEvent	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_fsm.c:257:6:pppTimeoutEvent	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_fsm.c:335:6:pppRcvConfigureReqEvent	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_fsm.c:524:6:pppRcvConfigureAckEvent	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_fsm.c:586:6:pppRcvConfigureNakEvent	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_fsm.c:648:6:pppRcvTerminateReqEvent	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_fsm.c:697:6:pppRcvTerminateAckEvent	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_fsm.c:757:6:pppRcvUnknownCodeEvent	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_fsm.c:792:6:pppRcvCodeRejEvent	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_fsm.c:889:6:pppRcvEchoReqEvent	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_fsm.c:924:6:pppChangeState	16	static

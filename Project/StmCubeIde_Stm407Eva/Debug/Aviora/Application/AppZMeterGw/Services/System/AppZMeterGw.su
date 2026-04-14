@@ -1,0 +1,16 @@
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:73:13:inputACIn	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:78:13:inputSCap	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:83:13:inputEAIn_1	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:88:13:inputEAIn_2	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:93:13:inputCover	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:98:13:inputBody	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:103:13:inputDigital_1	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:108:13:inputDigital_2	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:113:13:inputDigital_3	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:118:13:inputDigital_4	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:123:13:inputDigital_5	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:128:13:inputDigital_6	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:133:22:initSWUnit	72	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:256:13:zmgTask	80	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:364:15:appZMGwInit	24	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppZMeterGw.c:423:15:appZMGwStart	8	static

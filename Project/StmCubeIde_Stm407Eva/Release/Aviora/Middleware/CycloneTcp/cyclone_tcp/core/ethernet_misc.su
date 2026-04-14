@@ -1,0 +1,11 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet_misc.c:147:9:ethPadFrame	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet_misc.c:190:9:ethEncodeVlanTag	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet_misc.c:243:9:ethDecodeVlanTag	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet_misc.c:279:9:ethCheckDestAddr	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet_misc.c:351:8:ethTrapIgmpPacket	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet_misc.c:383:6:ethUpdateInStats	0	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet_misc.c:421:6:ethUpdateOutStats	0	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet_misc.c:464:6:ethUpdateErrorStats	0	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet_misc.c:502:10:ethCalcCrc	12	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet_misc.c:567:10:ethCalcCrcEx	20	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet_misc.c:644:9:ethCheckCrc	16	static

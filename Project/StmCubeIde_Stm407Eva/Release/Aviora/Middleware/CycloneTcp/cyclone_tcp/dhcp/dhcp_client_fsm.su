@@ -1,0 +1,10 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client_fsm.c:56:6:dhcpClientStateInit	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client_fsm.c:96:6:dhcpClientStateSelecting	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client_fsm.c:161:6:dhcpClientStateRequesting	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client_fsm.c:241:6:dhcpClientStateInitReboot	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client_fsm.c:281:6:dhcpClientStateRebooting	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client_fsm.c:363:6:dhcpClientStateProbing	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client_fsm.c:430:6:dhcpClientStateAnnouncing	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client_fsm.c:489:6:dhcpClientStateBound	8	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client_fsm.c:535:6:dhcpClientStateRenewing	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client_fsm.c:606:6:dhcpClientStateRebinding	16	static

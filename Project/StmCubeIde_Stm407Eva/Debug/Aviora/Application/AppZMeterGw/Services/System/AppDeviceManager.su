@@ -1,0 +1,9 @@
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:27:22:initMcuCore	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:48:22:initDeviceDrivers	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:63:15:appFeedWdt	4	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:68:6:appDevMngHwRestart	8	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:79:6:appDevMngSwRestart	4	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:84:15:appDevMngInitHwUnits	32	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:102:15:appDevMngCloseHw	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:107:15:appDevMngStartHw	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppDeviceManager.c:112:15:appDevMngRestartHw	16	static

@@ -1,0 +1,6 @@
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/DataBus/AppInternalMsgFrame.c:23:15:appIntMsgParseDevMsg	8	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/DataBus/AppInternalMsgFrame.c:29:6:appIntMsgCreateDevMsg	0	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/DataBus/AppInternalMsgFrame.c:38:15:appIntMsgParseGsmMsg	8	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/DataBus/AppInternalMsgFrame.c:44:6:appIntMsgCreateGsmMsg	0	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/DataBus/AppInternalMsgFrame.c:53:6:appIntMsgCreateTaskMngMsg	0	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/DataBus/AppInternalMsgFrame.c:62:15:appIntMsgParseTaskMngMsg	0	static

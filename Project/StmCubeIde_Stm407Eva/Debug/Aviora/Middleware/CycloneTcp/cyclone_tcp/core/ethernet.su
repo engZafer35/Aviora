@@ -1,0 +1,14 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet.c:64:9:ethInit	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet.c:84:6:ethProcessFrame	48	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet.c:399:9:ethSendFrame	48	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet.c:594:9:ethAcceptMacAddr	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet.c:664:9:ethDropMacAddr	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet.c:719:9:ethAttachLlcRxCalback	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet.c:747:9:ethDetachLlcRxCalback	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet.c:775:12:ethAllocBuffer	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet.c:819:9:macStringToAddr	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet.c:917:9:macAddrToString	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet.c:944:6:macAddrToEui64	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet.c:971:6:ethDumpHeader	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet.c:993:9:eui64StringToAddr	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ethernet.c:1093:9:eui64AddrToString	56	static

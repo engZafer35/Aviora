@@ -1,0 +1,7 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_transport.c:50:9:coapClientOpenConnection	4
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_transport.c:139:9:coapClientEstablishConnection	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_transport.c:179:9:coapClientShutdownConnection	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_transport.c:205:6:coapClientCloseConnection	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_transport.c:239:9:coapClientSendDatagram	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_transport.c:273:9:coapClientReceiveDatagram	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_transport.c:308:9:coapClientWaitForDatagram	2

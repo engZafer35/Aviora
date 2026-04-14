@@ -1,0 +1,5 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_debug.c:122:9:coapDumpMessage	0	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_debug.c:182:9:coapDumpMessageHeader	0	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_debug.c:234:9:coapDumpOptions	48	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_debug.c:288:9:coapDumpOption	0	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_debug.c:402:15:coapGetParamName	8	static

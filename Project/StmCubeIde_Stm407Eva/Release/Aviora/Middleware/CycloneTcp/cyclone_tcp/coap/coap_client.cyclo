@@ -1,0 +1,9 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client.c:130:9:coapClientSetTransportProtocol	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client.c:186:9:coapClientSetTimeout	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client.c:211:9:coapClientSetTokenLength	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client.c:240:9:coapClientBindToInterface	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client.c:267:9:coapClientConnect	10
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client.c:373:9:coapClientTask	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client.c:399:9:coapClientDisconnect	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client.c:438:6:coapClientDeinit	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client.c:53:9:coapClientInit	4

@@ -1,0 +1,17 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:50:9:coapServerGetMethodCode	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:69:9:coapServerGetUriPath	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:90:9:coapServerGetUriQuery	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:113:9:coapServerGetOpaqueOption	4
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:136:9:coapServerGetStringOption	1
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:158:9:coapServerGetUintOption	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:179:9:coapServerGetPayload	4
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:200:9:coapServerReadPayload	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:219:9:coapServerSetResponseCode	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:237:9:coapServerSetLocationPath	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:257:9:coapServerSetLocationQuery	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:280:9:coapServerSetOpaqueOption	4
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:306:9:coapServerSetStringOption	3
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:333:9:coapServerSetUintOption	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:354:9:coapServerDeleteOption	2
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:374:9:coapServerSetPayload	4
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:398:9:coapServerWritePayload	3

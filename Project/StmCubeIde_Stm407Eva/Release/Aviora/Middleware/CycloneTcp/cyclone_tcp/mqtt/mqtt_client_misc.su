@@ -1,0 +1,13 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.c:52:6:mqttClientChangeState	0	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.c:165:9:mqttClientCheckKeepAlive	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.c:67:9:mqttClientProcessEvents	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.c:230:9:mqttSerializeHeader	20	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.c:309:9:mqttSerializeByte	12	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.c:341:9:mqttSerializeShort	12	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.c:375:9:mqttSerializeString	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.c:412:9:mqttSerializeData	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.c:448:9:mqttDeserializeHeader	20	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.c:526:9:mqttDeserializeByte	12	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.c:558:9:mqttDeserializeShort	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.c:591:9:mqttDeserializeString	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.c:627:9:mqttClientCheckTimeout	0	static

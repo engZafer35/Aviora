@@ -1,0 +1,17 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:50:9:coapServerGetMethodCode	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:69:9:coapServerGetUriPath	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:90:9:coapServerGetUriQuery	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:113:9:coapServerGetOpaqueOption	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:136:9:coapServerGetStringOption	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:158:9:coapServerGetUintOption	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:179:9:coapServerGetPayload	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:200:9:coapServerReadPayload	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:219:9:coapServerSetResponseCode	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:237:9:coapServerSetLocationPath	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:257:9:coapServerSetLocationQuery	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:280:9:coapServerSetOpaqueOption	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:306:9:coapServerSetStringOption	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:333:9:coapServerSetUintOption	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:354:9:coapServerDeleteOption	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:374:9:coapServerSetPayload	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_request.c:398:9:coapServerWritePayload	24	static

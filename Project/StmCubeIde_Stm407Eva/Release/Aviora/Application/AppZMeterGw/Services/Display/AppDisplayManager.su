@@ -1,0 +1,10 @@
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Display/AppDisplayManager.c:36:13:displayTask	8	static
+C:/Users/zafer/Aviora/Customers/LinuxGcc/Display/DisplayCustom_LED.c:117:13:startingWind	104	static
+C:/Users/zafer/Aviora/Customers/LinuxGcc/Display/DisplayCustom_LED.c:52:13:clearDisplay	8	static
+C:/Users/zafer/Aviora/Customers/LinuxGcc/Display/DisplayCustom_LED.c:338:13:failureWind	80	static
+C:/Users/zafer/Aviora/Customers/LinuxGcc/Display/DisplayCustom_LED.c:293:13:noGsmConnWind	80	static
+C:/Users/zafer/Aviora/Customers/LinuxGcc/Display/DisplayCustom_LED.c:246:13:swUpdatingWind	80	static
+C:/Users/zafer/Aviora/Customers/LinuxGcc/Display/DisplayCustom_LED.c:67:13:showGsmLevel	8	static
+C:/Users/zafer/Aviora/Customers/LinuxGcc/Display/DisplayCustom_LED.c:184:13:mainWind	96	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Display/AppDisplayManager.c:48:15:AppDisplayInit	24	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Display/AppDisplayManager.c:73:6:AppDisplayStart	0	static

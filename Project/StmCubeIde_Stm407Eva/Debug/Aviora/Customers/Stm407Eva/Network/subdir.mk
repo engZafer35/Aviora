@@ -1,0 +1,27 @@
+################################################################################
+# Automatically-generated file. Do not edit!
+# Toolchain: GNU Tools for STM32 (13.3.rel1)
+################################################################################
+
+# Add inputs and outputs from these tool invocations to the build variables 
+C_SRCS += \
+C:/Users/zafer/Aviora/Customers/Stm407Eva/Network/Cus_Network_Config.c 
+
+OBJS += \
+./Aviora/Customers/Stm407Eva/Network/Cus_Network_Config.o 
+
+C_DEPS += \
+./Aviora/Customers/Stm407Eva/Network/Cus_Network_Config.d 
+
+
+# Each subdirectory must supply rules for building sources it contributes
+Aviora/Customers/Stm407Eva/Network/Cus_Network_Config.o: C:/Users/zafer/Aviora/Customers/Stm407Eva/Network/Cus_Network_Config.c Aviora/Customers/Stm407Eva/Network/subdir.mk
+	arm-none-eabi-gcc "$<" -mcpu=cortex-m4 -std=gnu11 -g3 -DDEBUG -DGPL_LICENSE_TERMS_ACCEPTED -DUSE_FREERTOS -DUSE_HAL_DRIVER -DSTM32F407xx -c -I"C:/Users/zafer/Aviora/Project/StmCubeIde_Stm407Eva/Aviora" -I"C:/Users/zafer/Aviora/Application/AppComm/inc" -I"C:/Users/zafer/Aviora/Driver/StmCubeIDE/CMSIS/Device/ST/STM32F4xx/Include" -I"C:/Users/zafer/Aviora/Driver/StmCubeIDE/CMSIS/Include" -I"C:/Users/zafer/Aviora/Application" -I"C:/Users/zafer/Aviora/Application" -I"C:/Users/zafer/Aviora/Application/AppComm" -I"C:/Users/zafer/Aviora/Application/AppComm/inc" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Services" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/BIT" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Display" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Logger" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Network" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Network/inc" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Network/Interfaces" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Network/Interfaces/CycloneTcp" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/inc" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/SW_Update" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/TimeService" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/TimeService/inc" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Units" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/DataBus" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/System" -I"C:/Users/zafer/Aviora/Application/AppZMeterGw/Units/System/inc" -I"C:/Users/zafer/Aviora/Customers" -I"C:/Users/zafer/Aviora/Customers/Stm407Eva" -I"C:/Users/zafer/Aviora/Customers/Stm407Eva/Display" -I"C:/Users/zafer/Aviora/Customers/Stm407Eva/Fs" -I"C:/Users/zafer/Aviora/Customers/Stm407Eva/Logger" -I"C:/Users/zafer/Aviora/Customers/Stm407Eva/Network" -I"C:/Users/zafer/Aviora/Customers/Stm407Eva/Protocol" -I"C:/Users/zafer/Aviora/Customers/Stm407Eva/Time" -I"C:/Users/zafer/Aviora/Driver" -I"C:/Users/zafer/Aviora/Driver/Boards" -I"C:/Users/zafer/Aviora/Driver/DeviceDrivers" -I"C:/Users/zafer/Aviora/Driver/DeviceDrivers/inc" -I"C:/Users/zafer/Aviora/Driver/DeviceDrivers/ENC28J60" -I"C:/Users/zafer/Aviora/Driver/DeviceDrivers/ENC28J60/inc" -I"C:/Users/zafer/Aviora/Driver/McuCoreDrivers" -I"C:/Users/zafer/Aviora/Driver/McuCoreDrivers/inc" -I"C:/Users/zafer/Aviora/Driver/StmCubeIDE" -I"C:/Users/zafer/Aviora/Driver/StmCubeIDE/CMSIS/Device/ST/STM32F4xx/Include" -I"C:/Users/zafer/Aviora/Driver/StmCubeIDE/CMSIS/Include" -I"C:/Users/zafer/Aviora/Driver/StmCubeIDE/Inc" -I"C:/Users/zafer/Aviora/Driver/StmCubeIDE/STM32F4xx_HAL_Driver" -I"C:/Users/zafer/Aviora/Driver/StmCubeIDE/STM32F4xx_HAL_Driver/Inc" -I"C:/Users/zafer/Aviora/Driver/StmCubeIDE/STM32F4xx_HAL_Driver/Inc/Legacy" -I"C:/Users/zafer/Aviora/Middleware" -I"C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core" -I"C:/Users/zafer/Aviora/Middleware/CycloneTcp" -I"C:/Users/zafer/Aviora/Middleware/CycloneTcp/common" -I"C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp" -I"C:/Users/zafer/Aviora/Middleware/MiddComm" -I"C:/Users/zafer/Aviora/Middleware/MiddComm/Midd_FS" -I"C:/Users/zafer/Aviora/Middleware/MiddComm/Midd_FS/drivers" -I"C:/Users/zafer/Aviora/Middleware/MiddComm/Midd_FS/fs" -I"C:/Users/zafer/Aviora/Middleware/MiddComm/Midd_OS" -I"C:/Users/zafer/Aviora/Middleware/MiddComm/Midd_OS/inc" -I"C:/Users/zafer/Aviora/Middleware/MiddZModem" -I"C:/Users/zafer/Aviora/Middleware/MiddZModem/inc" -I"C:/Users/zafer/Aviora/Middleware/MiddComm/Midd_FS/fs" -I"C:/Users/zafer/Aviora/Middleware/FreeRTOS/Source/include" -I"C:/Users/zafer/Aviora/Middleware/FreeRTOS/Source/CMSIS_RTOS_V2" -I"C:/Users/zafer/Aviora/Middleware/FreeRTOS/Source/portable/GCC/ARM_CM4F" -O0 -ffunction-sections -fdata-sections -Wall -fstack-usage -fcyclomatic-complexity -MMD -MP -MF"$(@:%.o=%.d)" -MT"$@" --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -o "$@"
+
+clean: clean-Aviora-2f-Customers-2f-Stm407Eva-2f-Network
+
+clean-Aviora-2f-Customers-2f-Stm407Eva-2f-Network:
+	-$(RM) ./Aviora/Customers/Stm407Eva/Network/Cus_Network_Config.cyclo ./Aviora/Customers/Stm407Eva/Network/Cus_Network_Config.d ./Aviora/Customers/Stm407Eva/Network/Cus_Network_Config.o ./Aviora/Customers/Stm407Eva/Network/Cus_Network_Config.su
+
+.PHONY: clean-Aviora-2f-Customers-2f-Stm407Eva-2f-Network
+

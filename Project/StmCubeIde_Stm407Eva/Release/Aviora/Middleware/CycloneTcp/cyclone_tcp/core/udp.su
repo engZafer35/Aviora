@@ -1,0 +1,12 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/udp.c:62:9:udpInit	8	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/udp.c:80:10:udpGetDynamicPort	8	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/udp.c:627:9:udpSendBuffer	72	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/udp.c:905:12:udpAllocBuffer	8	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/udp.c:492:9:udpSendDatagram	80	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/udp.c:928:6:udpUpdateEvents	8	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/udp.c:800:9:udpReceiveDatagram	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/udp.c:978:9:udpAttachRxCallback	20	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/udp.c:1019:9:udpDetachRxCallback	12	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/udp.c:1065:9:udpInvokeRxCallback	56	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/udp.c:123:9:udpProcessDatagram	56	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/udp.c:1128:6:udpDumpHeader	0	static
