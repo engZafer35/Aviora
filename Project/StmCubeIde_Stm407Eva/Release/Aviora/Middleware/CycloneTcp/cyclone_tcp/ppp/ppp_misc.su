@@ -1,0 +1,7 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_misc.c:56:9:pppSendConfigureAckNak	48	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_misc.c:166:9:pppSendTerminateReq	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_misc.c:215:9:pppSendTerminateAck	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_misc.c:265:9:pppSendCodeRej	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_misc.c:325:9:pppSendProtocolRej	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_misc.c:385:9:pppSendEchoRep	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ppp/ppp_misc.c:448:9:pppAddOption	16	static

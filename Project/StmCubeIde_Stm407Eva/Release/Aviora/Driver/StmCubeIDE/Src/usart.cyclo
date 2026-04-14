@@ -1,0 +1,5 @@
+C:/Users/zafer/Aviora/Driver/StmCubeIDE/Src/usart.c:32:6:MX_USART2_UART_Init	2
+C:/Users/zafer/Aviora/Driver/StmCubeIDE/Src/usart.c:61:6:MX_USART6_UART_Init	2
+C:/Users/zafer/Aviora/Driver/StmCubeIDE/Src/usart.c:89:6:HAL_UART_MspInit	3
+C:/Users/zafer/Aviora/Driver/StmCubeIDE/Src/usart.c:149:6:HAL_UART_MspDeInit	3
+C:/Users/zafer/Aviora/Driver/StmCubeIDE/Src/usart.c:195:5:_write	1

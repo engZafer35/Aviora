@@ -1,0 +1,6 @@
+C:/Users/zafer/Aviora/Driver/StmCubeIDE/CMSIS/Include/core_cm4.h:1684:22:__NVIC_EnableIRQ	2
+C:/Users/zafer/Aviora/Driver/StmCubeIDE/CMSIS/Include/core_cm4.h:1722:22:__NVIC_DisableIRQ	2
+C:/Users/zafer/Aviora/Driver/DeviceDrivers/ENC28J60/src/ext_int_driver.c:55:9:extIntInit	1
+C:/Users/zafer/Aviora/Driver/DeviceDrivers/ENC28J60/src/ext_int_driver.c:67:6:extIntEnableIrq	1
+C:/Users/zafer/Aviora/Driver/DeviceDrivers/ENC28J60/src/ext_int_driver.c:78:6:extIntDisableIrq	1
+C:/Users/zafer/Aviora/Driver/DeviceDrivers/ENC28J60/src/ext_int_driver.c:89:6:HAL_GPIO_EXTI_Callback	2

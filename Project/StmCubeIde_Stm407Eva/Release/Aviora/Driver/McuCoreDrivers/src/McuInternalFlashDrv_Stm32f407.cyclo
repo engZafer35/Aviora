@@ -1,0 +1,4 @@
+C:/Users/zafer/Aviora/Driver/McuCoreDrivers/src/McuInternalFlashDrv_Stm32f407.c:48:5:internalStm32f407FlashRead	3
+C:/Users/zafer/Aviora/Driver/McuCoreDrivers/src/McuInternalFlashDrv_Stm32f407.c:58:5:internalStm32f407FlashProg	7
+C:/Users/zafer/Aviora/Driver/McuCoreDrivers/src/McuInternalFlashDrv_Stm32f407.c:92:5:internalStm32f407FlashErase	12
+C:/Users/zafer/Aviora/Driver/McuCoreDrivers/src/McuInternalFlashDrv_Stm32f407.c:117:5:internalStm32f407FlashSync	1

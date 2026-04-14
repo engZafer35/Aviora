@@ -1,0 +1,6 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_misc.c:52:6:coapServerTick	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_misc.c:114:9:coapServerProcessRequest	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_misc.c:255:9:coapServerRejectRequest	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_misc.c:301:9:coapServerInitResponse	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_misc.c:349:9:coapServerSendResponse	48	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server_misc.c:412:9:coapServerFormatReset	24	static

@@ -1,0 +1,6 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_cache.c:60:9:dnsInit	8	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_cache.c:153:6:dnsDeleteEntry	8	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_cache.c:75:6:dnsFlushCache	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_cache.c:104:16:dnsCreateEntry	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_cache.c:187:16:dnsFindEntry	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_cache.c:229:6:dnsTick	16	static

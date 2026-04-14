@@ -1,0 +1,6 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_common.c:58:8:dnsEncodeName	8	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_common.c:132:8:dnsParseName	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_common.c:242:7:dnsCompareName	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_common.c:341:7:dnsCompareEncodedName	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_common.c:479:6:dnsGenerateIpv4ReverseName	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_common.c:498:6:dnsGenerateIpv6ReverseName	24	static

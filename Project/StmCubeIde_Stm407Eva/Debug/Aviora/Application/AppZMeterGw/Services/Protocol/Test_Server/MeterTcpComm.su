@@ -1,0 +1,5 @@
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/Test_Server/MeterTcpComm.c:34:5:meterTcpCommInit	48	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/Test_Server/MeterTcpComm.c:81:5:meterTcpCommDeinit	8	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/Test_Server/MeterTcpComm.c:92:5:meterTcpCommSend	32	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/Test_Server/MeterTcpComm.c:115:5:meterTcpCommReceive	32	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/Test_Server/MeterTcpComm.c:136:5:meterTcpCommSetBaudrate	16	static

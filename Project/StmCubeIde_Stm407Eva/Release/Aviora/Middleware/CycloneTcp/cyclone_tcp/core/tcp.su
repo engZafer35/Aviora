@@ -1,0 +1,12 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp.c:60:9:tcpInit	0	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp.c:77:9:tcpSetInitialRto	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp.c:106:10:tcpGetDynamicPort	8	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp.c:146:9:tcpConnect	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp.c:294:9:tcpListen	8	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp.c:532:9:tcpSend	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp.c:659:9:tcpReceive	48	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp.c:820:9:tcpShutdown	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp.c:958:9:tcpAbort	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp.c:1021:10:tcpGetState	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp.c:321:9:tcpAccept	48	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp.c:1045:9:tcpKillOldestConnection	16	static

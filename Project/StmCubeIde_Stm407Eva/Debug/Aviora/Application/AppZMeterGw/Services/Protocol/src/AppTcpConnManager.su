@@ -1,0 +1,16 @@
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:65:12:isTherePushTxFile	4	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:70:12:closePullSocket	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:101:12:createPullSocket	48	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:141:12:disconnectPushSocket	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:155:12:connectPushSocket	40	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:216:13:tcpConnectionThread	128	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:451:5:appTcpConnManagerStart	40	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:487:5:appTcpConnManagerStop	8	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:508:6:appTcpConnManagerAnyPullClient	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:524:6:appTcpConnManagerIsPullReady	4	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:529:6:appTcpConnManagerIsConnectedPush	4	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:534:6:appTcpConnManagerRequestPushConnect	4	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:539:6:appTcpConnManagerRequestPushDisconnect	4	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:544:5:appTcpConnManagerRequestConnect	4	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:552:5:appTcpConnManagerRequestDisconnect	8	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Protocol/src/AppTcpConnManager.c:560:5:appTcpConnManagerSend	32	static

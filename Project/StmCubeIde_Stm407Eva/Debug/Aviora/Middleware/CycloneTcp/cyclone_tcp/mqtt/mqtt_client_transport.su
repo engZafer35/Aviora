@@ -1,0 +1,7 @@
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_transport.c:76:9:mqttClientOpenConnection	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_transport.c:240:9:mqttClientEstablishConnection	32	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_transport.c:337:9:mqttClientShutdownConnection	24	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_transport.c:409:6:mqttClientCloseConnection	16	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_transport.c:466:9:mqttClientSendData	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_transport.c:538:9:mqttClientReceiveData	40	static
+C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/mqtt/mqtt_client_transport.c:621:9:mqttClientWaitForData	24	static

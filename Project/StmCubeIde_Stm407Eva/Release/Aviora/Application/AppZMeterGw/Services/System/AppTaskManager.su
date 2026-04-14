@@ -1,0 +1,9 @@
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppTaskManager.c:34:13:timerCb	336	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppTaskManager.c:80:15:appTskMngInit	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppTaskManager.c:98:10:appTskMngCreate	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppTaskManager.c:124:15:appTskMngDelete	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppTaskManager.c:149:15:appTskMngSuspend	8	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppTaskManager.c:170:6:appTskMngSuspendAll	8	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppTaskManager.c:187:6:appTskMngResumeAll	8	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppTaskManager.c:203:15:appTskMngResume	16	static
+C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/System/AppTaskManager.c:225:15:appTskMngImOK	8	static

@@ -1,0 +1,4 @@
+node_modules/
+dist/
+*.log
+ba_server_log_*.txt
