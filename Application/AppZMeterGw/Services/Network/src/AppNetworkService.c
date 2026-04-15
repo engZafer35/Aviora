@@ -39,7 +39,7 @@ RETURN_STATUS appNetworkServiceStart(void)
         if (SUCCESS == retVal)
         {
             //someone may need to know network service is ready, so network ready flag is set here
-            zosEventGroupSet(gp_systemSetupEventGrp, NETWORK_SERVICE_READY_FLAG);
+//            zosEventGroupSet(gp_systemSetupEventGrp, NETWORK_SERVICE_READY_FLAG);
             DEBUG_INFO("->[I] Network Service started");
         }
     }

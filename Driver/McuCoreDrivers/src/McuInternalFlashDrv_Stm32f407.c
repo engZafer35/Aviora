@@ -19,7 +19,7 @@
 
 #include "stm32f4xx_hal.h"
 #include <string.h>
-
+#include "tim.h"
 /****************************** MACRO DEFINITIONS *****************************/
 
 /******************************* TYPE DEFINITIONS *****************************/
@@ -68,6 +68,11 @@ int internalStm32f407FlashProg(unsigned int addr, const void *data, size_t len)
    if((addr % 4u) != 0u || (len % 4u) != 0u)
       return HAL_ERROR;
 
+   HAL_TIM_Base_Stop_IT(&htim6);
+   HAL_TIM_Base_Stop_IT(&htim7);
+
+   __disable_irq();
+
    st = HAL_FLASH_Unlock();
    if(st != HAL_OK)
       return st;
@@ -80,38 +85,58 @@ int internalStm32f407FlashProg(unsigned int addr, const void *data, size_t len)
       st = HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, addr + (uint32_t)i, (uint64_t)word);
       if(st != HAL_OK)
       {
-         (void)HAL_FLASH_Lock();
-         return st;
+          break;
       }
    }
 
-   st = HAL_FLASH_Lock();
+   __enable_irq();
+
+   HAL_FLASH_Lock();
+
+   HAL_TIM_Base_Start_IT(&htim6);
+   HAL_TIM_Base_Start_IT(&htim7);
    return st;
 }
 
+
 int internalStm32f407FlashErase(unsigned int addr)
 {
-   FLASH_EraseInitTypeDef erase;
-   unsigned int sectorError = 0;
-   HAL_StatusTypeDef st;
+    FLASH_EraseInitTypeDef erase;
+    uint32_t sectorError = 0;
+    HAL_StatusTypeDef st;
 
-   unsigned int sector = prvGetSectorForAddress(addr);
+    uint32_t sector = prvGetSectorForAddress(addr);
 
-   st = HAL_FLASH_Unlock();
-   if(st != HAL_OK)
-      return st;
+    HAL_TIM_Base_Stop_IT(&htim6);
+    HAL_TIM_Base_Stop_IT(&htim7);
 
-   memset(&erase, 0, sizeof(erase));
-   erase.TypeErase    = FLASH_TYPEERASE_SECTORS;
-   erase.VoltageRange = FLASH_VOLTAGE_RANGE_3;
-   erase.Sector       = sector;
-   erase.NbSectors    = 1;
+    __disable_irq();
 
-   st = HAL_FLASHEx_Erase(&erase, &sectorError);
 
-   (void)HAL_FLASH_Lock();
+    HAL_FLASH_Unlock();
 
-   return HAL_OK;
+    __HAL_FLASH_CLEAR_FLAG(FLASH_FLAG_EOP |
+                           FLASH_FLAG_OPERR |
+                           FLASH_FLAG_WRPERR |
+                           FLASH_FLAG_PGAERR |
+                           FLASH_FLAG_PGSERR);
+
+    memset(&erase, 0, sizeof(erase));
+    erase.TypeErase = FLASH_TYPEERASE_SECTORS;
+    erase.VoltageRange = FLASH_VOLTAGE_RANGE_3;
+    erase.Sector = sector;
+    erase.NbSectors = 1;
+
+
+    st = HAL_FLASHEx_Erase(&erase, &sectorError);
+    __enable_irq();
+
+    HAL_FLASH_Lock();
+
+    HAL_TIM_Base_Start_IT(&htim6);
+    HAL_TIM_Base_Start_IT(&htim7);
+
+    return st;
 }
 
 int internalStm32f407FlashSync(void)

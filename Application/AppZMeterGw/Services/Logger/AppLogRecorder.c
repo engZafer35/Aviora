@@ -131,7 +131,7 @@ static void loggerWriterTask(void *arg)
 
     while (svc->taskRunning)
     {
-        if (QUEUE_SUCCESS == zosMsgQueueReceive(svc->queue, (char *)&item, sizeof(item), TIME_OUT_50MS))
+        if (QUEUE_SUCCESS == zosMsgQueueReceive(svc->queue, (char *)&item, sizeof(item), TIME_OUT_500MS))
         {            
             if (NULL == svc->logFile)
             {
