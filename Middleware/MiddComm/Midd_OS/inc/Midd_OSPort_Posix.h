@@ -232,6 +232,62 @@ int zosMsgQueueClose(OsQueue queue);
  */
 int zosMsgQueueClear(OsQueue queue);
 
+/***********************************************************************
+ * Event handling
+ **********************************************************************/
+
+typedef void* OsEventGroup;
+
+/**
+ * @brief Wait options
+ * OS_EVENT_WAIT_ALL: Wait until all specified flags are set
+ * OS_EVENT_CLEAR: Clear the specified flags when the wait condition is satisfied
+ * 
+ * Note: To set both options, use bitwise OR (OS_EVENT_WAIT_ALL | OS_EVENT_CLEAR)
+ */
+#define OS_EVENT_WAIT_ALL   (0x1)
+#define OS_EVENT_CLEAR      (0x2)
+
+/**
+ * @brief Create an event group
+ * @return Pointer to the newly created event group, NULL on error
+ */
+OsEventGroup osEventGroupCreate(void);
+
+/**
+ * @brief Delete an event group
+ * @param[in] ev Pointer to the event group to be deleted
+ */
+void osEventGroupDelete(OsEventGroup ev);
+
+/**
+ * @brief Set event flags
+ * @param[in] ev Pointer to the event group
+ * @param[in] flags Event flags to set
+ * @return The function returns TRUE if the operation succeeded, FALSE on error
+ */
+int osEventGroupSet(OsEventGroup ev, uint32_t flags);
+
+
+/**
+ * @brief Clear event flags
+ * @param[in] ev Pointer to the event group
+ * @param[in] flags Event flags to clear
+ * @return The function returns TRUE if the operation succeeded, FALSE on error
+ */
+int osEventGroupClear(OsEventGroup ev, uint32_t flags);
+
+/**
+ * @brief Wait for event flags
+ * @param[in] ev Pointer to the event group
+ * @param[in] flags Event flags to wait for
+ * @param[in] timeoutMs Timeout in milliseconds
+ * @param[in] options Wait options (OS_EVENT_WAIT_ALL, OS_EVENT_CLEAR)
+ * @return The function returns the current value of the event flags if the specified flags were set, 0 on timeout, -1 on error
+ */
+int osEventGroupWait(OsEventGroup ev, uint32_t flags, uint32_t timeoutMs, uint32_t options);
+
+
 
 //C++ guard
 #ifdef __cplusplus
