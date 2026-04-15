@@ -638,15 +638,10 @@ int zosMsgQueueClear(OsQueue queue)
 }
 
 /***********************************************************************
- * Event handling
+ * Event Group handling
  **********************************************************************/
 #include <pthread.h>
 #include <time.h>
-
-typedef void* OsEventGroup;
-
-#define OS_EVENT_WAIT_ALL   (1)
-#define OS_EVENT_CLEAR      (2)
 
 /* Internal structure */
 typedef struct
@@ -657,7 +652,7 @@ typedef struct
 } OsEventInternal;
 
 /* Create */
-OsEventGroup osEventGroupCreate(void)
+ZOsEventGroup zosEventGroupCreate(void)
 {
     OsEventInternal *e = malloc(sizeof(OsEventInternal));
 
@@ -671,7 +666,7 @@ OsEventGroup osEventGroupCreate(void)
 }
 
 /* Delete */
-void osEventGroupDelete(OsEventGroup ev)
+void zosEventGroupDelete(ZOsEventGroup ev)
 {
     OsEventInternal *e = (OsEventInternal*)ev;
 
@@ -683,7 +678,7 @@ void osEventGroupDelete(OsEventGroup ev)
 }
 
 /* Set */
-int osEventGroupSet(OsEventGroup ev, uint32_t flags)
+int zosEventGroupSet(ZOsEventGroup ev, uint32_t flags)
 {
     OsEventInternal *e = (OsEventInternal*)ev;
 
@@ -698,7 +693,7 @@ int osEventGroupSet(OsEventGroup ev, uint32_t flags)
 }
 
 /* Clear */
-int osEventGroupClear(OsEventGroup ev, uint32_t flags)
+int zosEventGroupClear(ZOsEventGroup ev, uint32_t flags)
 {
     OsEventInternal *e = (OsEventInternal*)ev;
 
@@ -712,7 +707,7 @@ int osEventGroupClear(OsEventGroup ev, uint32_t flags)
 }
 
 /* Wait */
-int osEventGroupWait(OsEventGroup ev,
+int zosEventGroupWait(ZOsEventGroup ev,
                 uint32_t flags,
                 uint32_t timeoutMs,
                 uint32_t options)

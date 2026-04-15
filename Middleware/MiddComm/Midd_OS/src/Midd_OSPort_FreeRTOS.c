@@ -592,6 +592,67 @@ void zosResumeTask(OsTaskId task)
     }
 }
 
+/***********************************************************************
+ * Event Group handling
+ **********************************************************************/
+#include <stdint.h>
+#include "FreeRTOS.h"
+
+ZOsEventGroup zosEventGroupCreate(void)
+{
+    return (ZOsEventGroup)xEventGroupCreate();
+}
+
+void zosEventGroupDelete(ZOsEventGroup ev)
+{
+    if (!ev) return;
+
+    vEventGroupDelete((EventGroupHandle_t)ev);
+}
+
+int zosEventGroupSet(ZOsEventGroup ev, uint32_t flags)
+{
+    if (!ev) return -1;
+
+    xEventGroupSetBits((EventGroupHandle_t)ev, flags);
+    return 0;
+}
+
+int zosEventGroupClear(ZOsEventGroup ev, uint32_t flags)
+{
+    if (!ev) return -1;
+
+    xEventGroupClearBits((EventGroupHandle_t)ev, flags);
+    return 0;
+}
+
+int zosEventGroupWait(ZOsEventGroup ev, uint32_t flags, uint32_t timeoutMs, uint32_t options)
+{
+    if (!ev) return -1;
+
+    BaseType_t waitAll = (options & ZOS_EVENT_WAIT_ALL);
+    BaseType_t clear   = (options & ZOS_EVENT_CLEAR);
+
+    EventBits_t ret = xEventGroupWaitBits(
+        (EventGroupHandle_t)ev,
+        flags,
+        clear,
+        waitAll,
+        pdMS_TO_TICKS(timeoutMs)
+    );
+
+    if (waitAll)
+    {
+        return ((ret & flags) == flags) ? 0 : -1;
+    }
+    else
+    {
+        return (ret & flags) ? 0 : -1;
+    }
+}
+
+
+
 
 
 

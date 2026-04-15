@@ -236,29 +236,29 @@ int zosMsgQueueClear(OsQueue queue);
  * Event handling
  **********************************************************************/
 
-typedef void* OsEventGroup;
+typedef void* ZOsEventGroup;
 
 /**
  * @brief Wait options
  * OS_EVENT_WAIT_ALL: Wait until all specified flags are set
  * OS_EVENT_CLEAR: Clear the specified flags when the wait condition is satisfied
  * 
- * Note: To set both options, use bitwise OR (OS_EVENT_WAIT_ALL | OS_EVENT_CLEAR)
+ * Note: To set both options, use bitwise OR (ZOS_EVENT_WAIT_ALL | ZOS_EVENT_CLEAR)
  */
-#define OS_EVENT_WAIT_ALL   (0x1)
-#define OS_EVENT_CLEAR      (0x2)
+#define ZOS_EVENT_WAIT_ALL   (0x1)
+#define ZOS_EVENT_CLEAR      (0x2)
 
 /**
  * @brief Create an event group
  * @return Pointer to the newly created event group, NULL on error
  */
-OsEventGroup osEventGroupCreate(void);
+ZOsEventGroup zosEventGroupCreate(void);
 
 /**
  * @brief Delete an event group
  * @param[in] ev Pointer to the event group to be deleted
  */
-void osEventGroupDelete(OsEventGroup ev);
+void zosEventGroupDelete(ZOsEventGroup ev);
 
 /**
  * @brief Set event flags
@@ -266,7 +266,7 @@ void osEventGroupDelete(OsEventGroup ev);
  * @param[in] flags Event flags to set
  * @return The function returns TRUE if the operation succeeded, FALSE on error
  */
-int osEventGroupSet(OsEventGroup ev, uint32_t flags);
+int zosEventGroupSet(ZOsEventGroup ev, uint32_t flags);
 
 
 /**
@@ -275,7 +275,7 @@ int osEventGroupSet(OsEventGroup ev, uint32_t flags);
  * @param[in] flags Event flags to clear
  * @return The function returns TRUE if the operation succeeded, FALSE on error
  */
-int osEventGroupClear(OsEventGroup ev, uint32_t flags);
+int zosEventGroupClear(ZOsEventGroup ev, uint32_t flags);
 
 /**
  * @brief Wait for event flags
@@ -285,7 +285,7 @@ int osEventGroupClear(OsEventGroup ev, uint32_t flags);
  * @param[in] options Wait options (OS_EVENT_WAIT_ALL, OS_EVENT_CLEAR)
  * @return The function returns the current value of the event flags if the specified flags were set, 0 on timeout, -1 on error
  */
-int osEventGroupWait(OsEventGroup ev, uint32_t flags, uint32_t timeoutMs, uint32_t options);
+int zosEventGroupWait(ZOsEventGroup ev, uint32_t flags, uint32_t timeoutMs, uint32_t options);
 
 
 
