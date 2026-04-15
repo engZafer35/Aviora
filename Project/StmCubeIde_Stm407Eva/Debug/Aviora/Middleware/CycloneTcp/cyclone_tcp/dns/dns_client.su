@@ -1,4 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_client.c:54:9:dnsResolve	48	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_client.c:218:9:dnsSendQuery	104	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_client.c:382:6:dnsProcessResponse	72	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dns/dns_client.c:590:6:dnsSelectNextServer	24	static

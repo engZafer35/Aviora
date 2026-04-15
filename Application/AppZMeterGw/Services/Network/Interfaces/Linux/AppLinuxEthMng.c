@@ -60,7 +60,20 @@ static void linuxEthPeriodicInfoCb (void)
 static void linuxEthConnManagerTask(void* argument)
 {      
     (void)argument;
-    zosDelayTask(1000);
+    zosDelayTask(2000);
+
+    /* network service does not have any critical dependency, so we can start network task without waiting for any event.
+     * If there will be a dependency in future, we can use the below code to wait for the dependencies.
+     * For now, it is commented to avoid unnecessary waiting.
+     * */
+    /*
+    if (-1 == zosEventGroupWait(gp_systemSetupEventGrp, NETWORK_START_DEPENDENCY_FLAGS, INFINITE_DELAY, ZOS_EVENT_WAIT_ALL))
+    {
+        DEBUG_ERROR("->[E] Display Task: Wait for zosEventGroupWait failed");
+        APP_LOG_REC(g_sysLoggerID, "Display Task: Wait for zosEventGroupWait failed");
+        appTskMngDelete(&gs_dpTaskID);        
+    }
+    */
 
     while(666)
     { 

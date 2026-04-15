@@ -14,6 +14,8 @@
 #include "AppTaskManager.h"
 #include "ZDJson.h"
 #include "AppLogRecorder.h"
+#include "AppGlobalVariables.h"
+
 #include "fs_port.h"
 
 #include <string.h>
@@ -70,9 +72,9 @@ typedef struct
 
 /********************************** VARIABLES *********************************/
 static MeterCommInterface_t s_meterIf;
-static OsTaskId s_workerTid = OS_INVALID_TASK_ID;
-static OsQueue s_jobQueue = OS_INVALID_QUEUE;
-static bool s_running = false;
+static OsTaskId gs_moTaskId = OS_INVALID_TASK_ID;
+static OsQueue gs_jobQueue = OS_INVALID_QUEUE;
+static bool gs_running = false;
 
 static U32 s_meterCount = 0;
 
@@ -584,24 +586,40 @@ static ERR_CODE_T iecDoProfile(S32 taskId, const char *t0, const char *t1)
 
 static S32 enqueueMeterJob(const MeterJobMsg_t *job)
 {
-    if (s_jobQueue == OS_INVALID_QUEUE || !s_running)
+    if (gs_jobQueue == OS_INVALID_QUEUE || !gs_running)
         return (S32)EN_ERR_CODE_FAILURE;
-    if (QUEUE_SUCCESS != zosMsgQueueSend(s_jobQueue, (const char *)job, sizeof(*job), TIME_OUT_500MS))
+    if (QUEUE_SUCCESS != zosMsgQueueSend(gs_jobQueue, (const char *)job, sizeof(*job), TIME_OUT_500MS))
         return (S32)EN_ERR_CODE_NO_RESOURCES;
     return job->taskId;
 }
 
 static void meterOpsWorkerTask(void *arg)
 {
+    if (-1 == zosEventGroupWait(gp_systemSetupEventGrp, PROTOCOL_WAIT_DEPENDENCY_FLAGS, INFINITE_DELAY, ZOS_EVENT_WAIT_ALL))
+    {
+        DEBUG_ERROR("->[E] Display Task: Wait for zosEventGroupWait failed");
+        APP_LOG_REC(g_sysLoggerID, "Display Task: Wait for zosEventGroupWait failed");
+        appTskMngDelete(&gs_moTaskId);        
+    }
+
     (void)arg;
     MeterJobMsg_t job;
+    BOOL meterCommInitialized = FALSE;
 
     DEBUG_INFO("->[I] %s worker started", METER_OPS_TASK_NAME);
-    appTskMngImOK(s_workerTid);
+    appTskMngImOK(gs_moTaskId);
 
-    while (s_running)
+    while (gs_running)
     {
-        if (0 < zosMsgQueueReceive(s_jobQueue, (char *)&job, sizeof(job), TIME_OUT_500MS))
+        if ((FALSE == meterCommInitialized) && (NULL != s_meterIf.meterCommInit))
+        {
+            if (SUCCESS == s_meterIf.meterCommInit())
+            {
+                meterCommInitialized = TRUE;
+            }            
+        }
+
+        if (0 < zosMsgQueueReceive(gs_jobQueue, (char *)&job, sizeof(job), TIME_OUT_500MS))
         {
             taskSlotMarkRunning(job.taskId);
             ERR_CODE_T res = EN_ERR_CODE_FAILURE;
@@ -615,14 +633,14 @@ static void meterOpsWorkerTask(void *arg)
             if (job.callback != NULL)
                 job.callback(job.taskId, res);
         }
-        appTskMngImOK(s_workerTid);
+        appTskMngImOK(gs_moTaskId);
         zosDelayTask(WAIT_1_SEC);
     }
 
     DEBUG_WARNING("->[W] %s worker stopping", METER_OPS_TASK_NAME);
-    zosMsgQueueClose(s_jobQueue);
-    s_jobQueue = OS_INVALID_QUEUE;
-    appTskMngDelete(&s_workerTid);
+    zosMsgQueueClose(gs_jobQueue);
+    gs_jobQueue = OS_INVALID_QUEUE;
+    appTskMngDelete(&gs_moTaskId);
 }
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
@@ -633,7 +651,7 @@ RETURN_STATUS appMeterOperationsStart(MeterCommInterface_t *meterComm)
         (NULL == meterComm->meterCommReceive) || (NULL == meterComm->meterCommSetBaudrate))
         return FAILURE;
 
-    if (s_running)
+    if (gs_running)
         return SUCCESS;
 
     s_meterIf = *meterComm;
@@ -646,12 +664,6 @@ RETURN_STATUS appMeterOperationsStart(MeterCommInterface_t *meterComm)
     meterListRefreshCount();
     unlockMeterReg();
 
-    if (s_meterIf.meterCommInit != NULL)
-    {
-        if (s_meterIf.meterCommInit() != SUCCESS)
-            return FAILURE;
-    }
-
     lockDirective();
     directiveIndexLoad();
     unlockDirective();
@@ -663,12 +675,12 @@ RETURN_STATUS appMeterOperationsStart(MeterCommInterface_t *meterComm)
         s_taskSlots[i].result = EN_ERR_CODE_SUCCESS;
     }
 
-    s_running = true;
+    gs_running = true;
 
-    s_jobQueue = zosMsgQueueCreate(QUEUE_NAME("MeterOpsQ"), METER_OPS_QUEUE_DEPTH, sizeof(MeterJobMsg_t));
-    if (s_jobQueue == OS_INVALID_QUEUE)
+    gs_jobQueue = zosMsgQueueCreate(QUEUE_NAME("MeterOpsQ"), METER_OPS_QUEUE_DEPTH, sizeof(MeterJobMsg_t));
+    if (gs_jobQueue == OS_INVALID_QUEUE)
     {
-        s_running = false;
+        gs_running = false;
         return FAILURE;
     }
 
@@ -676,12 +688,12 @@ RETURN_STATUS appMeterOperationsStart(MeterCommInterface_t *meterComm)
     taskParam.priority = ZOS_TASK_PRIORITY_LOW;
     taskParam.stackSize = METER_OPS_TASK_STACK;
 
-    s_workerTid = appTskMngCreate(METER_OPS_TASK_NAME, meterOpsWorkerTask, NULL, &taskParam);
-    if (OS_INVALID_TASK_ID == s_workerTid)
+    gs_moTaskId = appTskMngCreate(METER_OPS_TASK_NAME, meterOpsWorkerTask, NULL, &taskParam);
+    if (OS_INVALID_TASK_ID == gs_moTaskId)
     {
-        zosMsgQueueClose(s_jobQueue);
-        s_jobQueue = OS_INVALID_QUEUE;
-        s_running = false;
+        zosMsgQueueClose(gs_jobQueue);
+        gs_jobQueue = OS_INVALID_QUEUE;
+        gs_running = false;
         return FAILURE;
     }
 

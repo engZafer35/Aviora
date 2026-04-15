@@ -1,6 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client.c:57:6:dhcpClientGetDefaultSettings	8	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client.c:92:9:dhcpClientInit	24	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client.c:135:9:dhcpClientStart	16	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client.c:194:9:dhcpClientStop	8	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client.c:237:9:dhcpClientRelease	16	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/dhcp/dhcp_client.c:296:11:dhcpClientGetState	16	static

@@ -1,4 +1,0 @@
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/TimeService/src/time_modules/TimeBackend_SoftTick.c:29:13:softTickCb	0	static
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/TimeService/src/time_modules/TimeBackend_SoftTick.c:35:15:appTimeSoftTickInit	16	static
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/TimeService/src/time_modules/TimeBackend_SoftTick.c:59:5:appTimeSoftTickGetEpoch	0	static
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/TimeService/src/time_modules/TimeBackend_SoftTick.c:64:15:appTimeSoftTickSetEpoch	0	static

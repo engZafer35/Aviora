@@ -1,8 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/drivers/loopback/loopback_driver.c:109:6:loopbackDriverTick	1
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/drivers/loopback/loopback_driver.c:281:9:loopbackDriverUpdateMacAddrFilter	1
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/drivers/loopback/loopback_driver.c:78:9:loopbackDriverInit	1
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/drivers/loopback/loopback_driver.c:177:9:loopbackDriverSendPacket	3
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/drivers/loopback/loopback_driver.c:131:6:loopbackDriverDisableIrq	1
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/drivers/loopback/loopback_driver.c:120:6:loopbackDriverEnableIrq	1
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/drivers/loopback/loopback_driver.c:237:9:loopbackDriverReceivePacket	3
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/drivers/loopback/loopback_driver.c:142:6:loopbackDriverEventHandler	3

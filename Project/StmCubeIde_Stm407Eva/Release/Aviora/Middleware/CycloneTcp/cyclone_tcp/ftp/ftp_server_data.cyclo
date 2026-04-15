@@ -1,7 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_data.c:52:6:ftpServerRegisterDataChannelEvents	6
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_data.c:364:6:ftpServerAcceptDataChannel	5
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_data.c:756:6:ftpServerCloseDataChannel	4
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_data.c:269:9:ftpServerOpenDataChannel	10
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_data.c:453:6:ftpServerWriteDataChannel	14
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_data.c:647:6:ftpServerReadDataChannel	8
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_data.c:137:6:ftpServerProcessDataChannelEvents	7

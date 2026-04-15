@@ -1,7 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server.c:51:6:coapServerGetDefaultSettings	16	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server.c:84:9:coapServerInit	32	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server.c:140:9:coapServerSetCookieSecret	24	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server.c:170:9:coapServerStart	24	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server.c:268:9:coapServerStop	16	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server.c:319:6:coapServerTask	64	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_server.c:397:6:coapServerDeinit	16	static

@@ -1,7 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ipv4/ipv4_frag.c:72:9:ipv4FragmentDatagram	72	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ipv4/ipv4_frag.c:184:6:ipv4ReassembleDatagram	56	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ipv4/ipv4_frag.c:488:6:ipv4FragTick	48	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ipv4/ipv4_frag.c:557:15:ipv4SearchFragQueue	40	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ipv4/ipv4_frag.c:661:6:ipv4FlushFragQueue	24	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ipv4/ipv4_frag.c:682:15:ipv4FindHole	16	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ipv4/ipv4_frag.c:694:6:ipv4DumpHoleList	16	static

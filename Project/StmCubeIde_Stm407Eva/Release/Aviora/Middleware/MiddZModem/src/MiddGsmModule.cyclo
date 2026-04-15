@@ -1,9 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:25:15:middGsmInitModule	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:30:15:middGsmPPPConnection	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:35:15:middGsmPower	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:40:15:middGsmSwReset	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:45:15:middGsmATCommand	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:50:15:middGsmGetConnStatus	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:55:5:middGsmGetSignalLevel	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:60:15:middGsmSetWorkingMode	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:65:15:middGsmGetWorkingMode	1
