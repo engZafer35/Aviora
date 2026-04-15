@@ -575,6 +575,7 @@ void zosFreeMem(void *p)
 }
 
 /***********************************************************************
+ * Message queue
  **********************************************************************/
 #include <mqueue.h>
 OsQueue zosMsgQueueCreate(const char *name, unsigned int queLeng, unsigned int itemSize)
@@ -634,4 +635,139 @@ int zosMsgQueueClear(OsQueue queue)
     }
 
     return QUEUE_SUCCESS;
+}
+
+/***********************************************************************
+ * Event handling
+ **********************************************************************/
+#include <pthread.h>
+#include <time.h>
+
+typedef void* OsEventGroup;
+
+#define OS_EVENT_WAIT_ALL   (1)
+#define OS_EVENT_CLEAR      (2)
+
+/* Internal structure */
+typedef struct
+{
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    uint32_t flags;
+} OsEventInternal;
+
+/* Create */
+OsEventGroup osEventGroupCreate(void)
+{
+    OsEventInternal *e = malloc(sizeof(OsEventInternal));
+
+    if (!e) return NULL;
+
+    pthread_mutex_init(&e->mutex, NULL);
+    pthread_cond_init(&e->cond, NULL);
+    e->flags = 0;
+
+    return (OsEventGroup)e;
+}
+
+/* Delete */
+void osEventGroupDelete(OsEventGroup ev)
+{
+    OsEventInternal *e = (OsEventInternal*)ev;
+
+    if (!e) return;
+
+    pthread_mutex_destroy(&e->mutex);
+    pthread_cond_destroy(&e->cond);
+    free(e);
+}
+
+/* Set */
+int osEventGroupSet(OsEventGroup ev, uint32_t flags)
+{
+    OsEventInternal *e = (OsEventInternal*)ev;
+
+    if (!e) return -1;
+
+    pthread_mutex_lock(&e->mutex);
+    e->flags |= flags;
+    pthread_cond_broadcast(&e->cond);
+    pthread_mutex_unlock(&e->mutex);
+
+    return 0;
+}
+
+/* Clear */
+int osEventGroupClear(OsEventGroup ev, uint32_t flags)
+{
+    OsEventInternal *e = (OsEventInternal*)ev;
+
+    if (!e) return -1;
+
+    pthread_mutex_lock(&e->mutex);
+    e->flags &= ~flags;
+    pthread_mutex_unlock(&e->mutex);
+
+    return 0;
+}
+
+/* Wait */
+int osEventGroupWait(OsEventGroup ev,
+                uint32_t flags,
+                uint32_t timeoutMs,
+                uint32_t options)
+{
+    OsEventInternal *e = (OsEventInternal*)ev;
+
+    if (!e) return -1;
+
+    int waitAll = (options & OS_EVENT_WAIT_ALL);
+    int clear   = (options & OS_EVENT_CLEAR);
+
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+
+    ts.tv_sec  += timeoutMs / 1000;
+    ts.tv_nsec += (timeoutMs % 1000) * 1000000;
+
+    if (ts.tv_nsec >= 1000000000)
+    {
+        ts.tv_sec++;
+        ts.tv_nsec -= 1000000000;
+    }
+
+    pthread_mutex_lock(&e->mutex);
+
+    while (1)
+    {
+        int condition = waitAll ?
+            ((e->flags & flags) == flags) :
+            (e->flags & flags);
+
+        if (condition)
+        {
+            if (clear)
+            {
+                /* FreeRTOS ile birebir davranış */
+                e->flags &= ~flags;
+            }
+
+            pthread_mutex_unlock(&e->mutex);
+            return 0;
+        }
+
+        if (timeoutMs == 0)
+        {
+            pthread_mutex_unlock(&e->mutex);
+            return -1;
+        }
+
+        int ret = pthread_cond_timedwait(&e->cond, &e->mutex, &ts);
+
+        if (ret != 0)
+        {
+            pthread_mutex_unlock(&e->mutex);
+            return -1;
+        }
+    }
 }
