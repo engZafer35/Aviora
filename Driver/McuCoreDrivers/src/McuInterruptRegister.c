@@ -70,17 +70,27 @@ CORE_TIMER_IT_FUNCTION
 //    gInterruptCallbackList[EN_DMA2_Stream0_IRQ](1);
 //}
 
-//CORE_EXT_IT_FUNCTION
-//{
-//    if (IS_INPUT_AC_PIN(p_args))
-//    {
-//        runCallback(GPIO_AC_INT_CHNL, INPUT_AC_PIN);
-//    }
+#include "enc28j60Config.h"
+#include "../../CycloneTcp/common/debug.h"
+#include "../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../CycloneTcp/cyclone_tcp/drivers/eth/enc28j60_driver.h"
+CORE_EXT_IT_FUNCTION
+{
+    if (IS_INPUT_AC_PIN(GPIO_Pin))
+    {
+        runCallback(GPIO_AC_INT_CHNL, INPUT_AC_PIN);
+    }
+    else if(GPIO_Pin == ENJ_INT_Pin)
+    {
+        NetInterface *interface;
+        interface = &netInterface[0];
+        enc28j60IrqHandler(interface);
+    }
 //    else if (IS_INPUT_SCAP_PIN(p_args))
 //    {
 //        runCallback(GPIO_SCAP_INT_CHNL, INPUT_SCAP_PIN);
 //    }
-//}
+}
 
 //COM_CAN_RX_IT_FUNC
 //{

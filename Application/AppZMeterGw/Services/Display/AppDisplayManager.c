@@ -45,14 +45,16 @@ static void displayTask(void * pvParameters)
     */
 
     //someone may need to know display task is ready, so display ready flag is set here
-    zosEventGroupSet(gp_systemSetupEventGrp, DISPLAY_SERVICE_READY_FLAG);
+    //zosEventGroupSet(gp_systemSetupEventGrp, DISPLAY_SERVICE_READY_FLAG);
     DEBUG_INFO("->[I] Display Service Task started");
 
     while (1)
     {
-        gs_currWind(); //run current window function
+        //gs_currWind(); //run current window function
 
+        middIOCtrlToggleLed(EN_OUT_JOB_STATUS_LED);
         appTskMngImOK(gs_dpTaskID);
+        zosDelayTask(1000);
     }
 }
 

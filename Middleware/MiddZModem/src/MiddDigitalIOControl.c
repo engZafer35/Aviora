@@ -28,10 +28,10 @@ static VUICallback gCbList[EN_IN_MAX_NUM];
 /***************************** STATIC FUNCTIONS  ******************************/
 void cbGpioExtInt(int pin)
 {
-//    if ((INPUT_AC_PIN == pin) && (NULL != gCbList[EN_IN_AC_INPUT]))
-//    {
-//        gCbList[EN_IN_AC_INPUT](READ_AC_INPUT());
-//    }
+    if ((INPUT_AC_PIN == pin) && (NULL != gCbList[EN_IN_AC_INPUT]))
+    {
+        gCbList[EN_IN_AC_INPUT](READ_AC_INPUT());
+    }
 //    else if ((INPUT_SCAP_PIN == pin) && (NULL != gCbList[EN_IN_SCAP_STAT]))
 //    {
 //        gCbList[EN_IN_SCAP_STAT](READ_SCAP_INPUT());
@@ -61,7 +61,7 @@ RETURN_STATUS middIOInit(void)
     RETURN_STATUS retVal = SUCCESS;
 
     retVal = drvIntRegister(cbGpioExtInt, GPIO_AC_INT_CHNL);
-    /* drvIntRegister(cbGpioExtInt, GPIO_SCAP_INT_CHNL); -> AC and SCAP inputs are in the same ext interrupt channel, so don't need to call this line */
+    //drvIntRegister(cbGpioExtInt, GPIO_SCAP_INT_CHNL);// -> AC and SCAP inputs are in the same ext interrupt channel, so don't need to call this line */
 
     /** Clear all outputs */
     middIOWrite(EN_OUT_GSM_LED_1, DISABLE);
@@ -174,7 +174,7 @@ RETURN_STATUS middIOCtrlToggleLed(EN_OUT_LIST out)
 
     switch(out)
     {
-//        case EN_OUT_JOB_STATUS_LED: TOGGLE_JOB_STATUS_LED();     break;
+        case EN_OUT_JOB_STATUS_LED: TOGGLE_JOB_STATUS_LED();     break;
         case EN_OUT_POWER_LED:      TOGGLE_POWER_STATUS_LED();   break;
 //
 //        case EN_OUT_GSM_LED_1:      TOGGLE_GSM_LEVEL_LED_1();    break;
