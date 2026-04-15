@@ -120,7 +120,7 @@ int main (void)
             HAL_GPIO_TogglePin(NETWORK_STAT_LED_GPIO_Port, NETWORK_STAT_LED_Pin);
             HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
             HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-            zosDelayTask(pdMS_TO_TICKS(500));
+            HAL_Delay(500);
         }
     }
 

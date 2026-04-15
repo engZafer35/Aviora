@@ -1,4 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_control.c:52:6:ftpServerRegisterControlChannelEvents	0	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_control.c:143:6:ftpServerProcessControlChannelEvents	32	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_control.c:277:6:ftpServerAcceptControlChannel	48	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_control.c:417:6:ftpServerCloseControlChannel	32	static

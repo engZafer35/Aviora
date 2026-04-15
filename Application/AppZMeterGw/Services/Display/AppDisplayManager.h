@@ -29,15 +29,21 @@
  * @return  if everything is OK, return EN_SUCCES
  *          otherwise return FAILURE
  */
-RETURN_STATUS AppDisplayInit(void);
+RETURN_STATUS appDisplayInit(void);
 
 /**
  * @brief   Start the display manager task
  * @return  void
  */
-void AppDisplayStart(void);
+void appDisplayStart(void);
 
-//RETURN_STATUS AppDisplayRefresh(void);
+/**
+ * @brief Stop the display manager task, after this call, 
+ *        display manager will not update display until 
+ *        appDisplayStart is called again.
+ * @return  void
+ */
+void appDisplayStop(void);
 
 #endif /* __APP_DISPLAY_MANAGER_H__ */
 

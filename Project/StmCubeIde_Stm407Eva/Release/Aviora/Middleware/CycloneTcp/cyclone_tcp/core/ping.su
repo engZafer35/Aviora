@@ -1,9 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ping.c:125:6:pingInit	8	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ping.c:146:9:pingSetTimeout	0	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ping.c:167:9:pingBindToInterface	0	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ping.c:190:9:pingSendRequest	56	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ping.c:365:9:pingCheckReply	16	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ping.c:459:9:pingWaitForReply.part.0	72	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ping.c:459:9:pingWaitForReply	0	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ping.c:557:6:pingRelease	8	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/ping.c:69:9:ping	96	static

@@ -36,6 +36,11 @@ int meterTcpCommInit(void)
     struct sockaddr_in server_addr;
     struct timeval timeout;
 
+    if (g_sock >= 0)
+    {
+        return RET_SUCCESS; // Already initialized
+    }
+
     g_sock = SOCKET(AF_INET, SOCK_STREAM, 0);
     if (g_sock < 0) 
     {        

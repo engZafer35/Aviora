@@ -1,7 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddDigitalIOControl.c:29:6:cbGpioExtInt	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddDigitalIOControl.c:59:15:middIOInit	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddDigitalIOControl.c:87:15:middIOIntListen	2
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddDigitalIOControl.c:100:15:middIOIntStopListen	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddDigitalIOControl.c:121:15:middIOWrite	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddDigitalIOControl.c:150:6:middIORead	2
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddDigitalIOControl.c:171:15:middIOCtrlToggleLed	1

@@ -15,7 +15,9 @@
 #include "AppLogRecorder.h"
 #include "AppTaskManager.h"
 #include "AppTimeService.h"
-#include <stdbool.h>
+#include "AppGlobalVariables.h"
+#include "Midd_OSPort.h"
+
 
 #include <stdio.h>
 #include <string.h>
@@ -39,7 +41,7 @@ typedef struct
     char serviceName[SERVICE_NAME_MAX];
     OsQueue queue;
     OsTaskId writerTask;
-    bool taskRunning;
+    BOOL taskRunning;
     FsFile *logFile;
     U32 currentFileSize;
     char currentLogFile[LOG_FILE_PATH_MAX];
@@ -101,11 +103,31 @@ static RETURN_STATUS openNewLogFile(LoggerService *svc)
 
 static void loggerWriterTask(void *arg)
 {
-    LoggerService *svc = (LoggerService *)arg;
+    LoggerService *svc = (LoggerService *)arg;    
+
+    DEBUG_INFO("->[I] %s Logger writer task waiting for eventsGroup", svc->serviceName);
+    if (-1 == zosEventGroupWait(gp_systemSetupEventGrp, LOGGER_WAIT_DEPENDENCY_FLAGS, INFINITE_DELAY, ZOS_EVENT_WAIT_ALL))
+    {
+        DEBUG_ERROR("->[E] %s failed to wait for logger dependencies", svc->serviceName);
+        //don't need to check queue if it is valid or not, because if task is running, queue should be valid.
+        zosMsgQueueClose(svc->queue);
+        svc->queue = OS_INVALID_QUEUE;  
+
+        svc->serviceName[0] = '\0';
+        svc->loggerID = -1;
+        svc->currentFileSize = 0;
+        svc->currentLogFile[0] = '\0';
+
+        //ctx->writerTask, task id is clear in task delete function, no need to set it again.
+        appTskMngDelete(&svc->writerTask);
+    }
+    
     LoggerQueueItem item;
 
     DEBUG_INFO("->[I] %s Logger writer task started", svc->serviceName);
     appTskMngImOK(svc->writerTask);
+
+    zosEventGroupSet(gp_systemSetupEventGrp, LOGGER_SERVICE_READY_FLAG);
 
     while (svc->taskRunning)
     {
@@ -169,7 +191,7 @@ RETURN_STATUS appLogRecInit(void)
         services[i].loggerID = -1;
         services[i].serviceName[0] = '\0';
         services[i].queue = OS_INVALID_QUEUE;
-        services[i].taskRunning = false;
+        services[i].taskRunning = FALSE;
         services[i].logFile = NULL;
         services[i].currentFileSize = 0;
         services[i].currentLogFile[0] = '\0';        
@@ -201,7 +223,7 @@ RETURN_STATUS appLogRecRegister(logRecConf_t *logger, const char *srvName, S32 *
                 return FAILURE;
             }
 
-            services[i].taskRunning = true;
+            services[i].taskRunning = TRUE;
             services[i].logFile = NULL;
             services[i].currentFileSize = 0;
             services[i].currentLogFile[0] = '\0';
@@ -252,7 +274,7 @@ RETURN_STATUS appLogRecUnregister(const char *srvName, S32 loggerID)
     * task will be stopped in loggerWriterTask when taskRunning is set to false,
     * and task will be deleted in loggerWriterTask before exiting.
     */
-    svc->taskRunning = false;
+    svc->taskRunning = FALSE;
 
     DEBUG_WARNING("->[W] %s unregistered with logger ID %d", srvName, loggerID);
     return SUCCESS;

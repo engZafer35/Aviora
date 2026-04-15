@@ -1,9 +1,0 @@
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Logger/AppLogRecorder.c:52:13:getCurrentDate_.constprop	1
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Logger/AppLogRecorder.c:69:22:openNewLogFile.isra	3
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Logger/AppLogRecorder.c:102:13:loggerWriterTask	8
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Logger/AppLogRecorder.c:165:15:appLogRecInit	1
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Logger/AppLogRecorder.c:180:15:appLogRecRegister	8
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Logger/AppLogRecorder.c:238:15:appLogRecUnregister	4
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Logger/AppLogRecorder.c:261:15:appLogRec	6
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Logger/AppLogRecorder.c:286:5:appLogRecRead	5
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/Logger/AppLogRecorder.c:304:5:appLogRecGetLoggerID	5

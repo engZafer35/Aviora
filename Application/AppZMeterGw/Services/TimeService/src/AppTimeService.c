@@ -332,8 +332,7 @@ RETURN_STATUS appTimeServiceInit(const char *ntpHost, U16 ntpPort)
 
     if (SUCCESS != appTimeServiceAutogenInit(ntpHost, ntpPort))
     {
-        DEBUG_ERROR("->[E] autogen init failed");
-        APP_LOG_REC(g_sysLoggerID, "TimeSrv: autogen init failed");
+        DEBUG_ERROR("->[E] autogen init failed");        
         return FAILURE;
     }
 

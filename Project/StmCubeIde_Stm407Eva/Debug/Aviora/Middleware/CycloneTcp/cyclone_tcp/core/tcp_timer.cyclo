@@ -1,7 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_timer.c:56:6:tcpTick	4
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_timer.c:96:6:tcpCheckRetransmitTimer	6
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_timer.c:183:6:tcpCheckPersistTimer	6
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_timer.c:240:6:tcpCheckKeepAliveTimer	1
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_timer.c:320:6:tcpCheckOverrideTimer	9
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_timer.c:393:6:tcpCheckFinWait2Timer	3
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/tcp_timer.c:419:6:tcpCheckTimeWaitTimer	4

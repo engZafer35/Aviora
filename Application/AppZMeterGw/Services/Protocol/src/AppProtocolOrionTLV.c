@@ -25,6 +25,7 @@
 /********************************* INCLUDES ***********************************/
 #include "AppProtocolOrionTLV.h"
 #include "AppProtocol.h"
+#include "AppGlobalVariables.h"
 #include "MiddEventTimer.h"
 #include "AppTcpConnManager.h"
 
@@ -252,7 +253,7 @@ static char gs_deviceIP[20];
 static int  gs_pullPort;
 
 static BOOL gs_registered = FALSE;
-static OsTaskId gs_taskId = OS_INVALID_TASK_ID;
+static OsTaskId gs_orionTaskId = OS_INVALID_TASK_ID;
 
 static PendingJob_t gs_pendingJobs[MAX_PENDING_JOBS];
 
@@ -2009,16 +2010,23 @@ static void handleEvent(OrionEventMsg_t *evt)
 
 static void protocolTaskFunc(void *arg)
 {
+    if (-1 == zosEventGroupWait(gp_systemSetupEventGrp, PROTOCOL_WAIT_DEPENDENCY_FLAGS, INFINITE_DELAY, ZOS_EVENT_WAIT_ALL))
+    {
+        DEBUG_ERROR("->[E] Display Task: Wait for zosEventGroupWait failed");
+        APP_LOG_REC(g_sysLoggerID, "Display Task: Wait for zosEventGroupWait failed");
+        appTskMngDelete(&gs_orionTaskId);        
+    }
+
     (void)arg;
     DEBUG_INFO("->[I] %s task started", ORION_TASK_NAME);
-    appTskMngImOK(gs_taskId);
+    appTskMngImOK(gs_orionTaskId);
 
     if (0 != appTcpConnManagerStart(gs_serverIP, gs_serverPort,
                                      gs_pullPort, appProtocolOrionTLVPutIncomingMessage))
     {
         DEBUG_ERROR("->[E] OrionTLV: TCP start failed");
         APP_LOG_REC(g_sysLoggerID, "OrionTLV: TCP start fail");
-        return;
+        appTskMngDelete(&gs_orionTaskId);
     }
     appTcpConnManagerRequestConnect();
     zosDelayTask(500);
@@ -2035,9 +2043,11 @@ static void protocolTaskFunc(void *arg)
         DEBUG_INFO("->[I] OrionTLV: already registered");
     }
 
+    zosEventGroupSet(gp_systemSetupEventGrp, PROTOCOL_SERVICE_READY_FLAG);
+
     while (666)
     {
-        appTskMngImOK(gs_taskId);
+        appTskMngImOK(gs_orionTaskId);
 
         /* 1. Incoming messages (push + pull) */
         {
@@ -2106,7 +2116,7 @@ RETURN_STATUS appProtocolOrionTLVInit(const char *serialNumber)
     gs_evHead = gs_evTail = gs_evCount = 0;
 
     gs_registered = registerStateLoad();
-    gs_taskId     = OS_INVALID_TASK_ID;
+    gs_orionTaskId     = OS_INVALID_TASK_ID;
     gs_periodicTimerId = -1;
     gsFlagList.sendIdent  = FALSE;
     gsFlagList.sendAlive  = FALSE;
@@ -2124,8 +2134,8 @@ RETURN_STATUS appProtocolOrionTLVStart(void)
     taskParam.priority  = ZOS_TASK_PRIORITY_LOW;
     taskParam.stackSize = ORION_TASK_STACK_SIZE;
 
-    gs_taskId = appTskMngCreate(ORION_TASK_NAME, protocolTaskFunc, NULL, &taskParam);
-    if (OS_INVALID_TASK_ID == gs_taskId)
+    gs_orionTaskId = appTskMngCreate(ORION_TASK_NAME, protocolTaskFunc, NULL, &taskParam);
+    if (OS_INVALID_TASK_ID == gs_orionTaskId)
     {
         DEBUG_ERROR("->[E] OrionTLV: task creation failed");
         APP_LOG_REC(g_sysLoggerID, "OrionTLV task creation failed");
@@ -2158,10 +2168,10 @@ RETURN_STATUS appProtocolOrionTLVStop(void)
 
     zosDelayTask(500);
 
-    if (OS_INVALID_TASK_ID != gs_taskId)
+    if (OS_INVALID_TASK_ID != gs_orionTaskId)
     {
-        appTskMngDelete(&gs_taskId);
-        gs_taskId = OS_INVALID_TASK_ID;
+        appTskMngDelete(&gs_orionTaskId);
+        gs_orionTaskId = OS_INVALID_TASK_ID;
     }
 
     DEBUG_INFO("->[I] OrionTLV: stopped");

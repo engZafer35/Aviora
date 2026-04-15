@@ -1,8 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddRTC.c:27:22:i2cWriteFunc	32	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddRTC.c:39:22:i2cReadFunc	32	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddRTC.c:51:15:middRtcExtInit	4	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddRTC.c:62:15:middRtcExtGetTime	24	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddRTC.c:74:15:middRtcExtSetTime	24	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddRTC.c:87:15:middRtcIntInit	4	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddRTC.c:92:15:middRtcIntGetTime	16	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddRTC.c:97:15:middRtcIntSetTime	16	static

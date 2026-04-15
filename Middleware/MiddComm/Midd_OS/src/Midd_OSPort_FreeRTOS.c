@@ -66,7 +66,6 @@ void zosStartKernel(void)
    vTaskStartScheduler();
 }
 
-
 /**
  * @brief Create a task
  * @param[in] name NULL-terminated string identifying the task
@@ -597,6 +596,8 @@ void zosResumeTask(OsTaskId task)
  **********************************************************************/
 #include <stdint.h>
 #include "FreeRTOS.h"
+#include "FreeRTOS.h"
+#include "event_groups.h"
 
 ZOsEventGroup zosEventGroupCreate(void)
 {

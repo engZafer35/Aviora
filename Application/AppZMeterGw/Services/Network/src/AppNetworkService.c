@@ -13,6 +13,7 @@
 #include "AppNetworkService.h"
 #include "../../../../Customers/NetworkService_Config.h"
 
+#include "AppGlobalVariables.h"
 #include "AppTaskManager.h"
 #include "AppLogRecorder.h"
 
@@ -35,6 +36,12 @@ RETURN_STATUS appNetworkServiceStart(void)
     {
         zosDelayTask(1000); //wait for the stack to be ready before starting interfaces
         retVal = networkServiceStartInterfaces();
+        if (SUCCESS == retVal)
+        {
+            //someone may need to know network service is ready, so network ready flag is set here
+            zosEventGroupSet(gp_systemSetupEventGrp, NETWORK_SERVICE_READY_FLAG);
+            DEBUG_INFO("->[I] Network Service started");
+        }
     }
 
     return retVal;

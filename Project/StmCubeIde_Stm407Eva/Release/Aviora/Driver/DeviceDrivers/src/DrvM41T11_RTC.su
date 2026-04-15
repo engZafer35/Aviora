@@ -1,3 +1,0 @@
-C:/Users/zafer/Aviora/Driver/DeviceDrivers/src/DrvM41T11_RTC.c:53:15:drvM41T11Init	0	static
-C:/Users/zafer/Aviora/Driver/DeviceDrivers/src/DrvM41T11_RTC.c:70:15:drvM41T11GetTime	24	static
-C:/Users/zafer/Aviora/Driver/DeviceDrivers/src/DrvM41T11_RTC.c:109:15:drvM41T11SetTime	32	static

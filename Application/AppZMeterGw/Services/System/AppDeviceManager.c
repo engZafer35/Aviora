@@ -70,10 +70,15 @@ void appDevMngHwRestart(void)
     //TODO: stop all thread/task
     //TODO: stop feed wdt
     //todo: call hw reset func
+#if defined(USE_FREERTOS)
+    __disable_irq();
 
+    HAL_NVIC_SystemReset();
+
+    while(1); // güvenlik
+#else
     exit(0);
-    while(1) /* wait until hw reset */
-        ;
+#endif
 }
 
 void appDevMngSwRestart(void)
