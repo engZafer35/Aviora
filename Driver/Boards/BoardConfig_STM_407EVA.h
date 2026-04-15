@@ -171,15 +171,21 @@ typedef void (*InterruptCallback)(_EN_INTERRUPT_LIST intList);
 #define _GPIO_KEYPAD_CHNL               EN_EXTI3_IRQ
 #define _GPIO5_9_EXT_INT_ID             EN_EXTI9_5_IRQ
 
-#define _GPIO_AC_INT_CHNL              EN_EXTI0_IRQ
-#define _GPIO_SCAP_INT_CHNL            EN_EXTI0_IRQ
+#define _GPIO_AC_INT_CHNL               EN_EXTI0_IRQ
+#define _GPIO_SCAP_INT_CHNL             EN_EXTI0_IRQ
 
-#define _READ_AC_INPUT()               _GPIO_READ(B1_GPIO_Port, B1_Pin)
-#define _READ_SCAP_INPUT()             _GPIO_READ
+#define _READ_AC_INPUT()                _GPIO_READ(B1_GPIO_Port, B1_Pin)
+#define _INPUT_AC_PIN                   B1_Pin
+#define _IS_INPUT_AC_PIN(x)             (x == _INPUT_AC_PIN)
 
-#define _TOGGLE_POWER_STATUS_LED()     _GPIO_TOGGLE(POWER_LED_GPIO_Port, POWER_LED_Pin)
-#define _PWR_STAT_LED(x)               _WRITE_GPIO(POWER_LED_GPIO_Port, POWER_LED_Pin, x)
-#define _JOB_STAT_LED(x)               _WRITE_GPIO(LD4_GPIO_Port, LD4_Pin, x)
+
+#define _READ_SCAP_INPUT()
+
+#define _TOGGLE_POWER_STATUS_LED()      _GPIO_TOGGLE(POWER_LED_GPIO_Port, POWER_LED_Pin)
+#define _PWR_STAT_LED(x)                _WRITE_GPIO(POWER_LED_GPIO_Port, POWER_LED_Pin, x)
+#define _JOB_STAT_LED(x)                _WRITE_GPIO(LD4_GPIO_Port, LD4_Pin, x)
+
+#define _TOGGLE_JOB_STATUS_LED()        _GPIO_TOGGLE(LD4_GPIO_Port, LD4_Pin)
 
 #define _CORE_EXT_IT_FUNCTION     		void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 

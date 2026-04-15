@@ -85,13 +85,13 @@ void extIntDisableIrq(void)
 /**
  * @brief External interrupt handler
  **/
-
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
-{
-  NetInterface *interface;
-	if(GPIO_Pin == _ENC28J60_EXT_PIN)
-	{
-		interface = &netInterface[0];
-		enc28j60IrqHandler(interface);
-	}	
-}
+//
+//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+//{
+//  NetInterface *interface;
+//	if(GPIO_Pin == _ENC28J60_EXT_PIN)
+//	{
+//		interface = &netInterface[0];
+//		enc28j60IrqHandler(interface);
+//	}
+//}

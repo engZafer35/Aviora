@@ -367,6 +367,8 @@ static error_t flWriteChain(const char_t *name, const void *data, size_t len,
       // last = head (single cell)
       *headIdxInOut = headIdx;      
       *lastIdxInOut = (uint16_t)headIdx;
+
+      lastIdx = *lastIdxInOut;
    }
 
    if(flReadHeader(lastIdx, tmpName, &nextIdx, &curDataLen))

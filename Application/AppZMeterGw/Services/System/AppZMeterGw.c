@@ -407,6 +407,8 @@ RETURN_STATUS appZMGwInit(void)
     
     retVal = appDevMngInitHwUnits();
 
+    middIOWrite(EN_OUT_POWER_LED, ENABLE);
+
     g_localEvents.events = FALSE; //clear all local events
 
     if (SUCCESS == retVal)
