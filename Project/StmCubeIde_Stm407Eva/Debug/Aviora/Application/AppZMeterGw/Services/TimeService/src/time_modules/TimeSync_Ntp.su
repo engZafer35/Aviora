@@ -1,3 +1,0 @@
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/TimeService/src/time_modules/TimeSync_Ntp.c:33:22:udpNtpQuery	176	static
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/TimeService/src/time_modules/TimeSync_Ntp.c:113:15:appTimeNtpSetServer	16	static
-C:/Users/zafer/Aviora/Application/AppZMeterGw/Services/TimeService/src/time_modules/TimeSync_Ntp.c:127:5:appTimeNtpGetEpochUtc	16	static

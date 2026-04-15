@@ -1,8 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_misc.c:51:6:ftpServerTick	4
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_misc.c:88:10:ftpServerGetPassivePort	4
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_misc.c:130:9:ftpServerGetPath	5
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_misc.c:182:8:ftpServerGetFilePermissions	3
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_misc.c:233:8:ftpServerFormatDirEntry	7
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_misc.c:324:15:ftpServerStripRootDir	3
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_misc.c:362:15:ftpServerStripHomeDir	3
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_misc.c:398:6:ftpServerCloseConnection	3

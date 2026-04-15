@@ -1,8 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddEventTimer.c:40:13:timerEventCallback	6
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddEventTimer.c:90:15:middEventTimerInit	2
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddEventTimer.c:123:15:middEventTimerRegister	5
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddEventTimer.c:160:15:middEventTimerStart	2
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddEventTimer.c:173:15:middEventTimerStop	3
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddEventTimer.c:192:15:middEventTimerStopAll	3
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddEventTimer.c:209:15:middEventTimerDelete	2
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddEventTimer.c:226:15:middEventTimerDeleteAll	2

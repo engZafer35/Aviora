@@ -1,5 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/llmnr/llmnr_responder.c:50:9:llmnrResponderInit	8	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/llmnr/llmnr_responder.c:415:9:llmnrFormatIpv4AddrRecord	24	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/llmnr/llmnr_responder.c:236:9:llmnrSendResponse	104	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/llmnr/llmnr_responder.c:94:6:llmnrProcessQuery	48	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/llmnr/llmnr_responder.c:475:9:llmnrFormatIpv6AddrRecord	0	static

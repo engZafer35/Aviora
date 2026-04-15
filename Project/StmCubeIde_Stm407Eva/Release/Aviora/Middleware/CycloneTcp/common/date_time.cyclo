@@ -1,8 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/date_time.c:77:15:formatSystemTime	4
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/date_time.c:133:15:formatDate	2
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/date_time.c:180:20:getCurrentUnixTime	1
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/date_time.c:260:8:convertDateToUnixTime	2
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/date_time.c:304:7:compareDateTime	14
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/date_time.c:353:9:computeDayOfWeek	2
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/date_time.c:198:6:convertUnixTimeToDate	2
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/date_time.c:165:6:getCurrentDate	1

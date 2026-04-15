@@ -121,7 +121,8 @@
    #include "os_port_zephyr.h"
 //Windows port?
 #elif defined(_WIN32)
-   #include "os_port_windows.h"
+   //#include "os_port_windows.h"
+   #include "Midd_OSPort_Posix.h"
 //POSIX Threads port?
 #elif defined(__linux__) || defined(__FreeBSD__)
    #include "Midd_OSPort_Posix.h"

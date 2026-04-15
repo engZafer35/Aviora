@@ -1,6 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddRTC.c:51:15:middRtcExtInit	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddRTC.c:62:15:middRtcExtGetTime	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddRTC.c:74:15:middRtcExtSetTime	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddRTC.c:87:15:middRtcIntInit	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddRTC.c:92:15:middRtcIntGetTime	1
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddRTC.c:97:15:middRtcIntSetTime	1

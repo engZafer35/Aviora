@@ -1,4 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/socket_misc.c:52:9:socketAllocate	10
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/socket_misc.c:195:6:socketRegisterEvents	7
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/socket_misc.c:250:6:socketUnregisterEvents	2
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/socket_misc.c:273:8:socketGetEvents	2

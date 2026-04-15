@@ -1,9 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:25:15:middGsmInitModule	0	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:30:15:middGsmPPPConnection	0	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:35:15:middGsmPower	0	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:40:15:middGsmSwReset	0	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:45:15:middGsmATCommand	0	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:50:15:middGsmGetConnStatus	0	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:55:5:middGsmGetSignalLevel	0	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:60:15:middGsmSetWorkingMode	0	static
-C:/Users/zafer/Aviora/Middleware/MiddZModem/src/MiddGsmModule.c:65:15:middGsmGetWorkingMode	0	static

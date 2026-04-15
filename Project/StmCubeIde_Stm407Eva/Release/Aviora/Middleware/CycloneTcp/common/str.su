@@ -1,5 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/str.c:42:9:strDuplicate	16	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/str.c:78:9:strTrimWhitespace	12	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/str.c:115:6:strRemoveTrailingSpace	8	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/str.c:141:6:strReplaceChar	0	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/common/str.c:164:9:strSafeCopy	16	static

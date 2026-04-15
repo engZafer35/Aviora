@@ -1,4 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_transport.c:53:9:ftpServerOpenSecureChannel	0	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_transport.c:124:9:ftpServerEstablishSecureChannel	0	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_transport.c:146:9:ftpServerWriteChannel	0	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/ftp/ftp_server_transport.c:180:9:ftpServerReadChannel	0	static

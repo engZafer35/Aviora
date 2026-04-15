@@ -14,6 +14,7 @@
 /*********************************INCLUDES*************************************/
 #include "GeneralBoardConfig.h"
 #include "Global_Definitions.h"
+#include "Midd_OSPort.h"
 #include "ZDebug.h"
 /******************************MACRO DEFINITIONS*******************************/
 #define SW_VERSION_MAJOR (0x01)

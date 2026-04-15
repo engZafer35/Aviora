@@ -1,5 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_block.c:52:9:coapClientSetTxBlockSize	7
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_block.c:112:9:coapClientSetRxBlockSize	7
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_block.c:175:9:coapClientWriteBody	30
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_block.c:400:9:coapClientReadBody	17
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/coap/coap_client_block.c:600:15:coapClientGetMaxBlockSize	1

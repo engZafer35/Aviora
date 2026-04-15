@@ -13,17 +13,13 @@
 #include "AppDisplayManager.h"
 #include "AppDataBus.h"
 #include "AppTaskManager.h"
-
+#include "AppGlobalVariables.h"
+#include "AppLogRecorder.h"
 
 /****************************** MACRO DEFINITIONS *****************************/
 
-/* Auto-generated display configuration - Include customer display implementation */
-
-
 /******************************* TYPE DEFINITIONS *****************************/
-
 typedef void (*WindFunc) (void);
-
 
 /********************************** VARIABLES *********************************/
 static WindFunc gs_currWind = NULL;
@@ -35,7 +31,23 @@ static OsTaskId gs_dpTaskID;
 
 static void displayTask(void * pvParameters)
 {
-    zosDelayTask(1000); //wait once before starting
+    /* display service does not have any critical dependency, so we can start display task without waiting for any event.
+     * If there will be a dependency in future, we can use the below code to wait for the dependencies.
+     * For now, it is commented to avoid unnecessary waiting.
+     */
+    /*
+    if (-1 == zosEventGroupWait(gp_systemSetupEventGrp, DISPLAY_START_DEPENDENCY_FLAGS, INFINITE_DELAY, ZOS_EVENT_WAIT_ALL))
+    {
+        DEBUG_ERROR("->[E] Display Task: Wait for zosEventGroupWait failed");
+        APP_LOG_REC(g_sysLoggerID, "Display Task: Wait for zosEventGroupWait failed");
+        appTskMngDelete(&gs_dpTaskID);        
+    }
+    */
+
+    //someone may need to know display task is ready, so display ready flag is set here
+    zosEventGroupSet(gp_systemSetupEventGrp, DISPLAY_SERVICE_READY_FLAG);
+    DEBUG_INFO("->[I] Display Service Task started");
+
     while (1)
     {
         gs_currWind(); //run current window function
@@ -45,7 +57,7 @@ static void displayTask(void * pvParameters)
 }
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
-RETURN_STATUS AppDisplayInit(void)
+RETURN_STATUS appDisplayInit(void)
 {
     RETURN_STATUS retVal = FAILURE;
     gs_currWind = startingWind;
@@ -57,8 +69,7 @@ RETURN_STATUS AppDisplayInit(void)
     gs_dpTaskID = appTskMngCreate("DISPLAY_TASK", displayTask, NULL, &tempParam);
 
     if (OS_INVALID_TASK_ID != gs_dpTaskID)
-    {
-        zosSuspendTask(gs_dpTaskID);
+    {        
         retVal = appDBusRegister(EN_DBUS_TOPIC_GSM | EN_DBUS_TOPIC_ETH | EN_DBUS_TOPIC_DEVICE, &gs_dbusID);
     }
     else
@@ -70,9 +81,14 @@ RETURN_STATUS AppDisplayInit(void)
     return retVal;
 }
 
-void AppDisplayStart(void)
+void appDisplayStart(void)
 {
     zosResumeTask(gs_dpTaskID);
+}
+
+void appDisplayStop(void)
+{
+    zosSuspendTask(gs_dpTaskID);
 }
 
 /******************************** End Of File *********************************/

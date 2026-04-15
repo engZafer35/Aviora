@@ -1,7 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/raw_socket.c:67:9:rawSocketProcessIpPacket	72	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/raw_socket.c:360:6:rawSocketProcessEthPacket	48	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/raw_socket.c:512:9:rawSocketSendIpPacket	104	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/raw_socket.c:706:9:rawSocketSendEthPacket	88	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/raw_socket.c:798:9:rawSocketReceiveIpPacket	32	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/raw_socket.c:904:9:rawSocketReceiveEthPacket	32	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/raw_socket.c:999:6:rawSocketUpdateEvents	16	static

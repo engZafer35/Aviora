@@ -1,8 +1,0 @@
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/bsd_socket_misc.c:50:17:socketCmsgFirstHdr	0	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/bsd_socket_misc.c:80:17:socketCmsgNextHdr	0	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/bsd_socket_misc.c:118:6:socketFdZero	0	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/bsd_socket_misc.c:131:6:socketFdSet	12	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/bsd_socket_misc.c:160:6:socketFdClr	12	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/bsd_socket_misc.c:194:7:socketFdIsSet	8	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/bsd_socket_misc.c:219:6:socketSetErrnoCode	0	static
-C:/Users/zafer/Aviora/Middleware/CycloneTcp/cyclone_tcp/core/bsd_socket_misc.c:239:6:socketTranslateErrorCode	0	static

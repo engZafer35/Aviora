@@ -1,6 +1,0 @@
-C:/Users/zafer/Aviora/Driver/DeviceDrivers/ENC28J60/src/spi_driver.c:59:9:spiInit	4	static
-C:/Users/zafer/Aviora/Driver/DeviceDrivers/ENC28J60/src/spi_driver.c:71:9:spiSetMode	16	static
-C:/Users/zafer/Aviora/Driver/DeviceDrivers/ENC28J60/src/spi_driver.c:83:9:spiSetBitrate	16	static
-C:/Users/zafer/Aviora/Driver/DeviceDrivers/ENC28J60/src/spi_driver.c:94:6:spiAssertCs	16	static
-C:/Users/zafer/Aviora/Driver/DeviceDrivers/ENC28J60/src/spi_driver.c:106:6:spiDeassertCs	16	static
-C:/Users/zafer/Aviora/Driver/DeviceDrivers/ENC28J60/src/spi_driver.c:122:9:spiTransfer	32	static
