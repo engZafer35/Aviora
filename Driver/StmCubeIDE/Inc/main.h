@@ -51,9 +51,9 @@ extern "C" {
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
-
-/* USER CODE BEGIN EFP */
 void SystemClock_Config(void);
+/* USER CODE BEGIN EFP */
+
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -63,10 +63,12 @@ void SystemClock_Config(void);
 #define PC15_OSC32_OUT_GPIO_Port GPIOC
 #define B1_Pin GPIO_PIN_0
 #define B1_GPIO_Port GPIOA
+#define B1_EXTI_IRQn EXTI0_IRQn
 #define ENJ_CS_Pin GPIO_PIN_4
 #define ENJ_CS_GPIO_Port GPIOC
 #define ENJ_INT_Pin GPIO_PIN_5
 #define ENJ_INT_GPIO_Port GPIOC
+#define ENJ_INT_EXTI_IRQn EXTI9_5_IRQn
 #define BOOT1_Pin GPIO_PIN_2
 #define BOOT1_GPIO_Port GPIOB
 #define LD4_Pin GPIO_PIN_12

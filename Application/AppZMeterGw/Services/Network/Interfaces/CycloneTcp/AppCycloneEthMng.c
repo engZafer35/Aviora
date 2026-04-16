@@ -15,7 +15,7 @@
 #include "../../Customers/NetworkService_Config.h"
 
 #include "net_config.h"
-#include "drivers/eth/enc28j60_driver.h"
+#include <CycloneTcp/cyclone_tcp/drivers/eth/enc28j60_driver.h>
 #include "../../Driver/DeviceDrivers/ENC28J60/inc/spi_driver.h"
 #include "../../Driver/DeviceDrivers/ENC28J60/inc/ext_int_driver.h"
 
@@ -43,7 +43,7 @@ OsTaskId gs_cycloneEthTaskID;
 static CycloneEthModuleStep_t gs_cycloneEthInitStep = CYCLONE_ETH_CONN_STEP_INIT_ETH_DRIVER;
 
 /***************************** STATIC FUNCTIONS  ******************************/
-static void cycloneEthPeriodicInfoCb (void)
+static void cycloneEthPeriodicInfoCb (NetInterface *interface, bool_t linkState)
 {
     DBUS_PACKET dbPacket;
     
@@ -57,12 +57,20 @@ static void cycloneEthPeriodicInfoCb (void)
     //1: link up, 0: link down
     dbPacket.payload.data[0] = netInterface[ETH_INTERFACE_NUMBER].linkState;
 
-    appDBusPublish(gs_cycloneEthDbusID, &dbPacket);
+    if (netInterface[ETH_INTERFACE_NUMBER].linkState)
+    {
+
+        Ipv4Addr add = interface->ipv4Context.addrList[0].addr;
+
+        //zosEventGroupSet(gp_systemSetupEventGrp, NETWORK_SERVICE_READY_FLAG);
+    }
+
+    //appDBusPublish(gs_cycloneEthDbusID, &dbPacket);
 }
 
 static void cycloneEthLinkChangeCallback(NetInterface *interface, bool_t linkState, void *param)
 {
-    cycloneEthPeriodicInfoCb(); // publish the link state change immediately
+    cycloneEthPeriodicInfoCb(interface, linkState); // publish the link state change immediately
 }
 
 static RETURN_STATUS ethDown(NetInterface *interface)
@@ -93,6 +101,9 @@ static RETURN_STATUS ethUp(NetInterface *interface)
 static void cycloneEthManagerTask(void* argument)
 {    
     NetInterface *interface;
+    MacAddr macAddr;
+    Ipv4Addr ipv4Addr;
+    error_t error;
 
     (void)argument;
     zosDelayTask(1000);
@@ -106,44 +117,43 @@ static void cycloneEthManagerTask(void* argument)
             case CYCLONE_ETH_CONN_STEP_INIT_ETH_DRIVER:
             {
                 RETURN_STATUS retVal = SUCCESS;
-                MacAddr macAddr;
                 //Set interface name
-                netSetInterfaceName(interface, ETH_IF_NAME);
-                //Set host name
-                netSetHostname(interface, ETH_HOST_NAME);
-                //Set host MAC address
-                macStringToAddr(ETH_MAC_ADDR, &macAddr);
-                netSetMacAddr(interface, &macAddr);
-                //Select the relevant network adapter
+                       netSetInterfaceName(interface, ETH_IF_NAME);
+                       //Set host name
+                       netSetHostname(interface, ETH_HOST_NAME);
+                       //Set host MAC address
+                       macStringToAddr(ETH_MAC_ADDR, &macAddr);
+                       netSetMacAddr(interface, &macAddr);
+                       //Select the relevant network adapter
 
-                netSetDriver(interface, &enc28j60Driver);
-                netSetSpiDriver(interface, &spiDriver);
-                netSetExtIntDriver(interface, &extIntDriver);
+                       netSetDriver(interface, &enc28j60Driver);
+                       netSetSpiDriver(interface, &spiDriver);
+                       netSetExtIntDriver(interface, &extIntDriver);
 
-                //Initialize network interface
-                if(NO_ERROR != netConfigInterface(interface))
-                {                    
-                    DEBUG_ERROR("Failed to configure Cyclone-Ethernet interface %s!\r\n", interface->name);
-                    APP_LOG_REC(g_sysLoggerID, "Failed to configure Cyclone-Ethernet interface");
-                    retVal = FAILURE;
-                }
+                       //Initialize network interface
+                       error = netConfigInterface(interface);
+                       //Any error to report?
+                       if(error)
+                       {
+                           DEBUG_ERROR("Failed to configure interface %s!\r\n", interface->name);
+                           retVal = FAILURE;
+                       }
 
-                if (SUCCESS == retVal)
-                {
-                    Ipv4Addr ipv4Addr;
+                       if (SUCCESS == retVal)
+                       {
+                           //Set IPv4 host address
+                           ipv4StringToAddr(ETH_IP_ADDR, &ipv4Addr);
+                           ipv4SetHostAddr(interface, ipv4Addr);
 
-                    //Set IPv4 host address
-                    ipv4StringToAddr(ETH_IP_ADDR, &ipv4Addr);
-                    ipv4SetHostAddr(interface, ipv4Addr);
+                           //Set subnet mask
+                           ipv4StringToAddr(ETH_SUBNET_MASK, &ipv4Addr);
+                           ipv4SetSubnetMask(interface, ipv4Addr);
 
-                    //Set subnet mask
-                    ipv4SetSubnetMask(interface, ipv4Addr);
-                    ipv4StringToAddr(ETH_SUBNET_MASK, &ipv4Addr);
+                           //Set default gateway
+                           ipv4StringToAddr(ETH_DEFAULT_GATEWAY, &ipv4Addr);
+                           ipv4SetDefaultGateway(interface, ipv4Addr);
+                       }
 
-                    //Set default gateway
-                    ipv4StringToAddr(ETH_DEFAULT_GATEWAY, &ipv4Addr);
-                    ipv4SetDefaultGateway(interface, ipv4Addr);
-                }            
                 
                 if (SUCCESS == retVal)
                 {
@@ -194,7 +204,7 @@ RETURN_STATUS appCycloneEthMngStart(void)
     ZOsTaskParameters tempParam;
 
     tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
-    tempParam.stackSize = ZOS_MIN_STACK_SIZE;
+    tempParam.stackSize = ZOS_MIN_STACK_SIZE*5;
 
     retVal = appDBusRegister(EN_DBUS_TOPIC_DEVICE, &gs_cycloneEthDbusID);
     if (SUCCESS != retVal)

@@ -12,7 +12,7 @@
 /********************************* INCLUDES ***********************************/
 #include "AppZMeterGw.h"
 
-#include "core/net.h"
+#include <CycloneTcp/cyclone_tcp/core/net.h>
 
 #include "AppDeviceManager.h"
 #include "AppTimeService.h"
@@ -279,7 +279,7 @@ static void startAppServices(void)
         APP_LOG_REC(g_sysLoggerID, "Network Service start Error");
         appDevMngHwRestart(); //system cannot continue to run without network service, so restart the system        
     }
-
+#if 0
     /* initialize display after time service */
     if (FAILURE == appDisplayInit())
     {
@@ -309,7 +309,7 @@ static void startAppServices(void)
 
     ZOsTaskParameters tempParam;
     tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
-    tempParam.stackSize = ZOS_MIN_STACK_SIZE;
+    tempParam.stackSize = ZOS_MIN_STACK_SIZE*5;
 
     gs_zmgTaskID = appTskMngCreate("ZMG_TASK", zmgTask, NULL, &tempParam);
     if (OS_INVALID_TASK_ID == gs_zmgTaskID)
@@ -318,9 +318,12 @@ static void startAppServices(void)
         APP_LOG_REC(g_sysLoggerID, "ZMG init Error");
         //retVal = FAILURE; //system can continue to run without zmgTask(system event handler), so we don't return failure here
     }
-
-    zosDelayTask(5000); //wait for a while to let all services start
-
+#endif
+    while(1)
+    {
+        middIOCtrlToggleLed(EN_OUT_POWER_LED);
+        zosDelayTask(500); //wait for a while to let all services start
+    }
     zosDeleteTask(NULL);
 }
 
@@ -451,7 +454,7 @@ RETURN_STATUS appZMGwStart(void)
 {
     ZOsTaskParameters tempParam;
     tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
-    tempParam.stackSize = ZOS_MIN_STACK_SIZE;
+    tempParam.stackSize = ZOS_MIN_STACK_SIZE*5;
 
     zosCreateTask("startAppSrvc", startAppServices, NULL, &tempParam);
 

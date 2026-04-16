@@ -104,6 +104,37 @@ static void keyboardInput(void *arg)
 /***************************** PUBLIC FUNCTIONS  ******************************/
 int main (void)
 {
+    uint32_t resetFlags = RCC->CSR;
+    int retval = 0;
+
+    if (resetFlags & RCC_CSR_IWDGRSTF)
+    {
+        // Watchdog reset
+        retval = 1;
+    }
+
+    if (resetFlags & RCC_CSR_PORRSTF)
+    {
+        // Power-on reset
+        retval = 2;
+    }
+
+    if (resetFlags & RCC_CSR_SFTRSTF)
+    {
+        // Software reset
+        retval = 3;
+    }
+
+    if (resetFlags & RCC_CSR_PINRSTF)
+    {
+        // NRST pin reset
+        retval = 4;
+    }
+
+    RCC->CSR |= RCC_CSR_RMVF; // clear flags
+
+    printf("%d", retval);
+
     if (SUCCESS == appZMGwInit())
     {
         appZMGwStart(); //run baby run

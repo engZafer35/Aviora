@@ -686,7 +686,7 @@ RETURN_STATUS appMeterOperationsStart(MeterCommInterface_t *meterComm)
 
     ZOsTaskParameters taskParam;
     taskParam.priority = ZOS_TASK_PRIORITY_LOW;
-    taskParam.stackSize = METER_OPS_TASK_STACK;
+    taskParam.stackSize = METER_OPS_TASK_STACK*5;
 
     gs_moTaskId = appTskMngCreate(METER_OPS_TASK_NAME, meterOpsWorkerTask, NULL, &taskParam);
     if (OS_INVALID_TASK_ID == gs_moTaskId)

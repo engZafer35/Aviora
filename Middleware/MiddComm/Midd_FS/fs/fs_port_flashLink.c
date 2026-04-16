@@ -5,7 +5,7 @@
 * #File Name    : AppSWUpdate.c
 *******************************************************************************/
 /******************************************************************************
-* This file implements the flashLink storage in MCU internal flash. 
+* This file implements the flashLink storage in MCU internal flash.
 * The flashLink storage is a simple linked-cell storage in MCU internal flash.
 * The flashLink storage is used to store the files in the MCU internal flash.
 * The flashLink storage is used to store the files in the MCU internal flash.
@@ -327,7 +327,7 @@ static error_t flClearCellHeader(uint16_t index)
       return ERROR_INVALID_PARAMETER;
    }
 
-   // Tombstone delete for flash (only 1->0 allowed): program first name byte to 0x00. 
+   // Tombstone delete for flash (only 1->0 allowed): program first name byte to 0x00.
    addr = flCellAddr(index);
    return flProg(addr, &b, 1); //it is enough to clear first byte of string
 }
@@ -365,7 +365,7 @@ static error_t flWriteChain(const char_t *name, const void *data, size_t len,
          return error;
 
       // last = head (single cell)
-      *headIdxInOut = headIdx;      
+      *headIdxInOut = headIdx;
       *lastIdxInOut = (uint16_t)headIdx;
 
       lastIdx = *lastIdxInOut;
@@ -481,7 +481,7 @@ error_t flashLinkFormat(void)
       if(error)
       {
          break;
-      }         
+      }
    }
 
    return error;
@@ -605,7 +605,7 @@ static const char_t *flPathToName(const char_t *path, char_t *nameBuf, size_t bu
    {
       path++;
    }
-     
+
    osStrncpy(nameBuf, path, (bufLen - 1));
    nameBuf[(bufLen - 1)] = '\0';
 
@@ -807,7 +807,7 @@ error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
       return ERROR_INVALID_PARAMETER;
    if(NULL == flPathToName(newPath, newName, sizeof(newName)))
       return ERROR_INVALID_PARAMETER;
-   
+
       if(flFindHeadByName(newName) >= 0)
       return ERROR_ALREADY_EXISTS;
 
