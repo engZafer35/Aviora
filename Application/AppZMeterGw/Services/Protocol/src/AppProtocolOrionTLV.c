@@ -2132,7 +2132,7 @@ RETURN_STATUS appProtocolOrionTLVStart(void)
 {
     ZOsTaskParameters taskParam;
     taskParam.priority  = ZOS_TASK_PRIORITY_LOW;
-    taskParam.stackSize = ORION_TASK_STACK_SIZE;
+    taskParam.stackSize = ORION_TASK_STACK_SIZE*5;
 
     gs_orionTaskId = appTskMngCreate(ORION_TASK_NAME, protocolTaskFunc, NULL, &taskParam);
     if (OS_INVALID_TASK_ID == gs_orionTaskId)

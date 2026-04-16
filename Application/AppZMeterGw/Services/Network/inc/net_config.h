@@ -42,6 +42,8 @@
 #include "core/bsd_socket.h"
 #include "core/net.h"
 
+//#define NET_TASK_STACK_SIZE 2048
+
 //Trace level for TCP/IP stack debugging
 #define MEM_TRACE_LEVEL          4
 #define NIC_TRACE_LEVEL          4
@@ -138,7 +140,7 @@
 //Default buffer size for reception
 #define TCP_DEFAULT_RX_BUFFER_SIZE (5430*2)
 //Default SYN queue size for listening sockets
-#define TCP_DEFAULT_SYN_QUEUE_SIZE 16//4 zafer
+#define TCP_DEFAULT_SYN_QUEUE_SIZE 4//4 zafer
 //Maximum number of retransmissions
 #define TCP_MAX_RETRIES 5
 //Selective acknowledgment support
@@ -152,10 +154,10 @@
 //Raw socket support
 #define RAW_SOCKET_SUPPORT ENABLED//DISABLED
 //Receive queue depth for raw sockets
-#define RAW_SOCKET_RX_QUEUE_SIZE 16//4 zafer
+#define RAW_SOCKET_RX_QUEUE_SIZE 4//4 zafer
 
 //Number of sockets that can be opened simultaneously
-#define SOCKET_MAX_COUNT 8 //2  Zafer
+#define SOCKET_MAX_COUNT 4 //2  Zafer
 
 //LLMNR responder support
 #define LLMNR_RESPONDER_SUPPORT ENABLED
@@ -168,12 +170,14 @@
 #define NBNS_RESPONDER_SUPPORT  DISABLED
 #define PPP_SUPPORT             ENABLED
 #define PING_SUPPORT            ENABLED
+#define DHCP_CLIENT_SUPPORT     DISABLED
 
 /*
  * Use the following macro in linux OS, you can separate Cyclone bsd-func and linux bsd-func
  * Wiht this way, we can use both linux-bsd and Cyclone-bsd together
  */
 //BSD socket related functions
+
 #define SOCKET          c_socket
 #define BIND            c_bind
 #define CONNECT         c_connect
@@ -209,6 +213,7 @@
 #define inet_pton       c_inet_pton
 #define inet_ntop       c_inet_ntop
 #define SOCKLEN_t       c_socklen_t
+
 #else
 
 #include <sys/socket.h>
