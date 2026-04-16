@@ -3,11 +3,11 @@
  * @brief File system abstraction layer (simple internal FlashFS)
  **/
 
+#include <CycloneTcp/common/date_time.h>
+#include <CycloneTcp/common/str.h>
 #include <string.h>
 #include "fs_port.h"
 #include "fs_port_flashFS.h"
-#include "str.h"
-#include "date_time.h"
 
 /**
  * This is a very simple append-only log-structured filesystem intended for use on MCU internal flash ranges. It is not designed for performance or long-term endurance, but rather to provide a simple way to store files in flash without needing an external SPI flash or more complex filesystem. The on-flash format is intentionally simple and hardware-agnostic, relying on user-provided callbacks for flash read/prog/erase operations. The filesystem maintains an in-memory index of files for fast lookup, which is rebuilt on mount by scanning the log. When the log is full, the user can call flashFsFormat() to erase and start fresh.
@@ -434,8 +434,8 @@ error_t flashFsConfigure(const FlashFsOps *ops, const FlashFsGeom *geom)
       return ERROR_INVALID_PARAMETER;
    if((geom->progMinSize & (geom->progMinSize - 1)) != 0)
       return ERROR_INVALID_PARAMETER;
-   if(geom->totalSize < (sizeof(FlashFsSuper) + geom->eraseBlockSize))
-      return ERROR_INVALID_PARAMETER;
+//   if(geom->totalSize < (sizeof(FlashFsSuper) + geom->eraseBlockSize))
+//      return ERROR_INVALID_PARAMETER;
 
    osMemset(&g_fs, 0, sizeof(g_fs));
    g_fs.ops = *ops;
@@ -807,16 +807,20 @@ error_t fsWriteFile(FsFile *file, void *data, size_t length)
       return ERROR_OUT_OF_RESOURCES;
 
    // enforce prog granularity alignment on writes (simple policy)
-   if((h->writePos % g_fs.geom.progMinSize) != 0 || (length % g_fs.geom.progMinSize) != 0)
+   if((h->writePos % g_fs.geom.progMinSize) != 0)
       return ERROR_INVALID_PARAMETER;
 
    error = flashProg(h->writeDataOff + h->writePos, data, length);
    if(error)
       return error;
 
-   h->writePos += (uint32_t)length;
+   int pad = (length % g_fs.geom.progMinSize);
+
+   h->writePos += (uint32_t)length + (pad ? 4-pad : 0);
    if(h->writePos > h->size)
       h->size = h->writePos;
+
+   g_fs.logWriteOff += h->writePos;
 
    return flashSync();
 }

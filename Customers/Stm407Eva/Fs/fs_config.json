@@ -4,7 +4,7 @@
     "releaseDate": "2026-04-13",
     "store": {
       "useStore": true,
-      "activeFsName": "flashlink",
+      "activeFsName": "flashfs",
       "fsLib": {
         "flashlink": {
           "use": true,          
@@ -17,7 +17,7 @@
                 "cellCount": 10
             },          
             "geometry": {
-              "baseAddr": "0x8004000",
+              "baseAddr": "0x08040000",
               "regionSize": 16384,            
               "eraseBlockSize": 4096           
             }
@@ -98,18 +98,18 @@
           "name": "flashfs",
           "flash": {                
             "geometry": {
-              "baseAddr": "0x080A0000",
+              "baseAddr": "0x08040000",
               "totalSize": 131072,              
-              "eraseBlockSize": 4096,
-              "progMinSize": 1024            
+              "eraseBlockSize": 131072,
+              "progMinSize": 4            
             }
           },
           "flashHwFunc": {
-            "drvSrcPath": "StorageFlashPort_flashLink_stm32f407.h",
-            "readFunc": "stmFlashRead",
-            "writeFunc": "stmFlashProg",
-            "eraseFunc": "stmFlashErase",
-            "syncFunc": "stmFlashSync"
+            "drvSrcPath": "Driver/McuCoreDrivers/inc/McuInternalFlashDrv_Stm32f407.h",
+            "readFunc": "internalStm32f407FlashRead",
+            "writeFunc": "internalStm32f407FlashProg",
+            "eraseFunc": "internalStm32f407FlashErase",
+            "syncFunc": "internalStm32f407FlashSync"
           }    
         },
         "pc_simulator": {

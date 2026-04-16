@@ -392,7 +392,7 @@ RETURN_STATUS appTimeServiceGetTime(struct tm *tmValue)
     }
 
     epoch = appTimeServiceAutogenGetEpochFromPreferredSource();
-    if (epoch > 0)
+//    if (epoch > 0)
     {
         retVal = appTimeServiceEpochToTm(epoch, tmValue);        
     }

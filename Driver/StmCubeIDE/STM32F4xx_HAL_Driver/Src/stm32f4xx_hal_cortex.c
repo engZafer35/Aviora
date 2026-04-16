@@ -207,6 +207,9 @@ void HAL_NVIC_DisableIRQ(IRQn_Type IRQn)
   NVIC_DisableIRQ(IRQn);
 }
 
+
+#include "FreeRTOS.h"
+#include "task.h"
 /**
   * @brief  Initiates a system reset request to reset the MCU.
   * @retval None
@@ -214,6 +217,9 @@ void HAL_NVIC_DisableIRQ(IRQn_Type IRQn)
 void HAL_NVIC_SystemReset(void)
 {
   /* System Reset */
+    TaskHandle_t currentTask = xTaskGetCurrentTaskHandle();
+
+    volatile const char *taskName =  pcTaskGetName(currentTask);
   NVIC_SystemReset();
 }
 

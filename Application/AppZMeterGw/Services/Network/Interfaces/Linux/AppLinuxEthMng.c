@@ -123,7 +123,7 @@ RETURN_STATUS appLinuxEthMngStart(void)
     ZOsTaskParameters tempParam;
 
     tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
-    tempParam.stackSize = ZOS_MIN_STACK_SIZE;
+    tempParam.stackSize = ZOS_MIN_STACK_SIZE*3;
 
     retVal = appDBusRegister(EN_DBUS_TOPIC_DEVICE, &gs_linuxEthDbusID);
     if (SUCCESS != retVal)

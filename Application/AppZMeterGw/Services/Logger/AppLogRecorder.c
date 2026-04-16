@@ -157,10 +157,11 @@ static void loggerWriterTask(void *arg)
                         svc->currentFileSize += (U32)lineLen;
                     }
                 }
-            }            
+            }
         }
 
         appTskMngImOK(svc->writerTask);
+        zosDelayTask(1000);
     }
 
     DEBUG_WARNING("->[W] %s Logger writer task stopped", svc->serviceName);
@@ -232,15 +233,15 @@ RETURN_STATUS appLogRecRegister(logRecConf_t *logger, const char *srvName, S32 *
             taskParam.priority  = ZOS_TASK_PRIORITY_LOW;
             taskParam.stackSize = 2048;
 
-            services[i].writerTask = appTskMngCreate(services[i].serviceName, loggerWriterTask, &services[i], &taskParam);
-            if (OS_INVALID_TASK_ID == services[i].writerTask)
-            {
-                zosMsgQueueClose(services[i].queue);
-                services[i].queue = OS_INVALID_QUEUE;
-                services[i].loggerID = -1;
-                services[i].serviceName[0] = '\0';
-                return FAILURE;
-            }
+//            services[i].writerTask = appTskMngCreate(services[i].serviceName, loggerWriterTask, &services[i], &taskParam);
+//            if (OS_INVALID_TASK_ID == services[i].writerTask)
+//            {
+//                zosMsgQueueClose(services[i].queue);
+//                services[i].queue = OS_INVALID_QUEUE;
+//                services[i].loggerID = -1;
+//                services[i].serviceName[0] = '\0';
+//                return FAILURE;
+//            }
 
             //dont need to create mutex here, because log file operations are done in the writer task, and there is no concurrent access to log file.
             // If in the future, if log file operations are needed to be done in other tasks, then we can create mutex here and use it in those tasks
@@ -297,10 +298,10 @@ RETURN_STATUS appLogRec(S32 loggerID, const char *logStr)
     strncpy(item.text, logStr, LOGGER_LOG_MAX_LENGTH - 1);
     item.text[LOGGER_LOG_MAX_LENGTH - 1] = '\0';
 
-    if (QUEUE_SUCCESS != zosMsgQueueSend(svc->queue, (const char *)&item, sizeof(item), TIME_OUT_10MS))
-    {
-        return FAILURE;
-    }
+//    if (QUEUE_SUCCESS != zosMsgQueueSend(svc->queue, (const char *)&item, sizeof(item), TIME_OUT_10MS))
+//    {
+//        return FAILURE;
+//    }
 
     return SUCCESS;
 }

@@ -16,8 +16,8 @@
 #define _FS_PORT_FLASHFS_H
 
 //Dependencies
-#include "os_port.h"
-#include "error.h"
+#include <CycloneTcp/common/error.h>
+#include <CycloneTcp/common/os_port.h>
 
 //C++ guard
 #ifdef __cplusplus

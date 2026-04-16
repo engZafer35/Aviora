@@ -54,7 +54,7 @@ static void displayTask(void * pvParameters)
 
         middIOCtrlToggleLed(EN_OUT_JOB_STATUS_LED);
         appTskMngImOK(gs_dpTaskID);
-        zosDelayTask(1000);
+        zosDelayTask(200);
     }
 }
 
@@ -66,12 +66,12 @@ RETURN_STATUS appDisplayInit(void)
     ZOsTaskParameters tempParam;
 
     tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
-    tempParam.stackSize = ZOS_MIN_STACK_SIZE;
+    tempParam.stackSize = ZOS_MIN_STACK_SIZE*3;
 
     gs_dpTaskID = appTskMngCreate("DISPLAY_TASK", displayTask, NULL, &tempParam);
 
     if (OS_INVALID_TASK_ID != gs_dpTaskID)
-    {        
+    {
         retVal = appDBusRegister(EN_DBUS_TOPIC_GSM | EN_DBUS_TOPIC_ETH | EN_DBUS_TOPIC_DEVICE, &gs_dbusID);
     }
     else

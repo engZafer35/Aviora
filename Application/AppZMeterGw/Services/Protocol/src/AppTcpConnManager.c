@@ -85,7 +85,7 @@ static int closePullSocket(void)
         }
     }
 
-    if (gs_connInfo.pullSockID > 0)
+    if (gs_connInfo.pullSockID >= 0)
     {
         retVal = RET_FAILURE;
 
@@ -130,7 +130,7 @@ static int createPullSocket(void)
     if (RET_FAILURE == retVal)
     {
         CLOSESOCKET(sock);
-        zosDelayTask(200);
+        zosDelayTask(500);
         DEBUG_ERROR("->[E] Pull Socket could not be created");
         APP_LOG_REC(g_sysLoggerID, "Pull Socket could not be created");
     }
@@ -158,7 +158,7 @@ static int connectPushSocket(void)
     struct sockaddr_in server_ipv4_address = { 0 };
     int flags;
 
-    if (gs_connInfo.pushSockID > 0)
+    if (gs_connInfo.pushSockID >= 0)
     {
         return RET_SUCCESS;
     }
@@ -230,7 +230,7 @@ static void tcpConnectionThread(void *arg)
 
     while (1)
     {
-        if ((TRUE == gs_taskList.taskKeepDisconnect) && ((gs_connInfo.pullSockID > 0) || (gs_connInfo.pushSockID > 0)))
+        if ((TRUE == gs_taskList.taskKeepDisconnect) && ((gs_connInfo.pullSockID >= 0) || (gs_connInfo.pushSockID >= 0)))
         {
             gs_taskList.taskClosePushSock = TRUE;
             gs_taskList.taskClosePullSock = TRUE;
@@ -239,7 +239,7 @@ static void tcpConnectionThread(void *arg)
         /*****************************************************/
         if (TRUE == gs_taskList.taskPullSocCreat)
         {
-            if (gs_connInfo.pullSockID > 0 || RET_SUCCESS == createPullSocket())
+            if (gs_connInfo.pullSockID >= 0 || RET_SUCCESS == createPullSocket())
             {
                 gs_taskList.taskPullSocCreat = FALSE;
             }
@@ -272,7 +272,7 @@ static void tcpConnectionThread(void *arg)
         }
 
         /******************************* Pull Socket *****************************/
-        if (gs_connInfo.pullSockID > 0)
+        if (gs_connInfo.pullSockID >= 0)
         {
             FD_ZERO(&readfds);
 
@@ -288,7 +288,7 @@ static void tcpConnectionThread(void *arg)
                     max_sd = gs_connInfo.clientSocList[i];
             }
 
-            timeout.tv_sec  = 0;
+            timeout.tv_sec  = 10;
             timeout.tv_usec = 10000;
             activity = SELECT(max_sd + 1, &readfds, NULL, NULL, &timeout);
 
@@ -370,7 +370,7 @@ static void tcpConnectionThread(void *arg)
 
 
         /******************************* Push Socket *****************************/
-        if (gs_connInfo.pushSockID > 0)
+        if (gs_connInfo.pushSockID >= 0)
         {
             FD_ZERO(&readfds);
             FD_SET(gs_connInfo.pushSockID, &readfds);
@@ -454,6 +454,9 @@ int appTcpConnManagerStart(const char *serverIP, int serverPort, int pullPort, I
 
     gs_taskList.taskKeepDisconnect = TRUE;
 
+    gs_connInfo.pullSockID = -1;
+    gs_connInfo.pushSockID = -1;
+
     gs_serverIP   = serverIP;
     gs_serverPort = serverPort;
     gs_pullPort   = pullPort;
@@ -461,7 +464,7 @@ int appTcpConnManagerStart(const char *serverIP, int serverPort, int pullPort, I
 
     ZOsTaskParameters taskParam;
     taskParam.priority  = ZOS_TASK_PRIORITY_LOW;
-    taskParam.stackSize = ZOS_MIN_STACK_SIZE;
+    taskParam.stackSize = ZOS_MIN_STACK_SIZE*5;
 
     gs_tcpTaskId = appTskMngCreate("TcpConn", tcpConnectionThread, NULL, &taskParam);
     if (OS_INVALID_TASK_ID == gs_tcpTaskId)
@@ -507,7 +510,7 @@ int appTcpConnManagerStop(void)
 
 BOOL appTcpConnManagerAnyPullClient(void)
 {
-    if (gs_connInfo.pullSockID <= 0)
+    if (gs_connInfo.pullSockID < 0)
     {
         return FALSE;
     }
@@ -523,7 +526,7 @@ BOOL appTcpConnManagerAnyPullClient(void)
 
 BOOL appTcpConnManagerIsPullReady(void)
 {
-    return (gs_connInfo.pullSockID > 0);
+    return (gs_connInfo.pullSockID >= 0);
 }
 
 BOOL appTcpConnManagerIsConnectedPush(void)

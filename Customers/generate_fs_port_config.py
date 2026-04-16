@@ -196,21 +196,18 @@ def _append_flashlink_defines(lines: list, fs: dict) -> None:
                             .prog = STORAGE_DRV_FUNC_PROG, \\
                             .erase = STORAGE_DRV_FUNC_ERASE, \\
                             .sync = STORAGE_DRV_FUNC_SYNC \\
-                        }; \\
-                        
+                        }; \\                        
                         FlashLinkConfig cfg = { \\
                             .baseAddr = FLASHLINK_BASE_ADDR, \\
                             .regionSize = FLASHLINK_REGION_SIZE, \\
                             .cellCount = FLASHLINK_CELL_COUNT, \\
                             .eraseBlockSize = FLASHLINK_ERASE_BLOCK_SIZE \\
-                        }; \\
-                        
+                        }; \\                        
                         error_out = flashLinkInit(&ops, &cfg); \\
                         if(NO_ERROR == error_out) \\
                         { \\
                             error_out = flashLinkFormat(); \\ 
-                        }\\
-                                               
+                        }\\                                               
                     } while (0)"""
     )
 
@@ -452,15 +449,13 @@ def _append_flashfs_defines(lines: list, fs: dict) -> None:
                             .prog = STORAGE_DRV_FUNC_PROG, \\
                             .erase = STORAGE_DRV_FUNC_ERASE, \\
                             .sync = STORAGE_DRV_FUNC_SYNC \\
-                        }; \\
-                        
+                        }; \\                        
                         FlashFsGeom cfg = { \\
                             .baseAddr = FLASHFS_BASE_ADDR, \\
                             .totalSize = FLASHFS_TOTAL_SIZE, \\
                             .eraseBlockSize = FLASHFS_ERASE_BLOCK_SIZE, \\
                             .progMinSize = FLASHFS_PROG_MIN_SIZE \\
-                        }; \\
-                        
+                        }; \\                        
                         error_out = flashFsConfigure(&ops, &cfg); \\
                         if(NO_ERROR == error_out) \\
                         { \\
