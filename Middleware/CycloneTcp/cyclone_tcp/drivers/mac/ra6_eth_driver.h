@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _RA6_ETH_DRIVER_H
 #define _RA6_ETH_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //Number of TX buffers
 #ifndef RA6_ETH_TX_BUFFER_COUNT
@@ -83,19 +83,9 @@
    #error RA6_ETH_IRQ_SUB_PRIORITY parameter is not valid
 #endif
 
-//Name of the section where to place DMA buffers
-#ifndef RA6_ETH_RAM_SECTION
-   #define RA6_ETH_RAM_SECTION ".ns_buffer"
-#endif
-
-//Ethernet DMA controller
+//Ethernet DMA Controller
 #ifndef R_ETHERC_EDMAC
    #define R_ETHERC_EDMAC ((R_ETHERC_EDMAC_Type *) R_ETHERC_EDMAC_BASE)
-#endif
-
-//MSTPCRB15 bitfield
-#ifndef R_MSTP_MSTPCRB_MSTPB15_Msk
-   #define R_MSTP_MSTPCRB_MSTPB15_Msk (R_MSTP_MSTPCRB_MSTPB_Msk << 15)
 #endif
 
 //Transmit DMA descriptor flags
@@ -149,7 +139,7 @@ typedef struct
    uint32_t td1;
    uint32_t td2;
    uint32_t padding;
-} Ra6EthTxDmaDesc;
+} Ra6TxDmaDesc;
 
 
 /**
@@ -162,7 +152,7 @@ typedef struct
    uint32_t rd1;
    uint32_t rd2;
    uint32_t padding;
-} Ra6EthRxDmaDesc;
+} Ra6RxDmaDesc;
 
 
 //RA6 Ethernet MAC driver

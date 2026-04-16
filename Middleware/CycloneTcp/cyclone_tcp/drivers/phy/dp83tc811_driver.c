@@ -1,12 +1,12 @@
 /**
  * @file dp83tc811_driver.c
- * @brief DP83TC811 100Base-T1 Ethernet PHY driver
+ * @brief DP83TC811 Ethernet PHY driver
  *
  * @section License
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "drivers/phy/dp83tc811_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/phy/dp83tc811_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -92,9 +92,6 @@ error_t dp83tc811Init(NetInterface *interface)
    //Dump PHY registers for debugging purpose
    dp83tc811DumpPhyReg(interface);
 
-   //Perform custom configuration
-   dp83tc811InitHook(interface);
-
    //Force the TCP/IP stack to poll the link state at startup
    interface->phyEvent = TRUE;
    //Notify the TCP/IP stack of the event
@@ -102,16 +99,6 @@ error_t dp83tc811Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief DP83TC811 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void dp83tc811InitHook(NetInterface *interface)
-{
 }
 
 
@@ -198,11 +185,9 @@ void dp83tc811EventHandler(NetInterface *interface)
    //Link is up?
    if((value & DP83TC811_BMSR_LINK_STATUS) != 0)
    {
-      //The PHY is only able to operate in 100 Mbps mode
+      //Adjust MAC configuration parameters for proper operation
       interface->linkSpeed = NIC_LINK_SPEED_100MBPS;
       interface->duplexMode = NIC_FULL_DUPLEX_MODE;
-
-      //Adjust MAC configuration parameters for proper operation
       interface->nicDriver->updateMacConfig(interface);
 
       //Update link state
@@ -306,14 +291,14 @@ void dp83tc811WriteMmdReg(NetInterface *interface, uint8_t devAddr,
 {
    //Select register operation
    dp83tc811WritePhyReg(interface, DP83TC811_REGCR,
-      DP83TC811_REGCR_CMD_ADDR | (devAddr & DP83TC811_REGCR_DEVAD));
+      DP83TC811_REGCR_COMMAND_ADDR | (devAddr & DP83TC811_REGCR_DEVAD));
 
    //Write MMD register address
    dp83tc811WritePhyReg(interface, DP83TC811_ADDAR, regAddr);
 
    //Select data operation
    dp83tc811WritePhyReg(interface, DP83TC811_REGCR,
-      DP83TC811_REGCR_CMD_DATA_NO_POST_INC | (devAddr & DP83TC811_REGCR_DEVAD));
+      DP83TC811_REGCR_COMMAND_DATA_NO_POST_INC | (devAddr & DP83TC811_REGCR_DEVAD));
 
    //Write the content of the MMD register
    dp83tc811WritePhyReg(interface, DP83TC811_ADDAR, data);
@@ -333,14 +318,14 @@ uint16_t dp83tc811ReadMmdReg(NetInterface *interface, uint8_t devAddr,
 {
    //Select register operation
    dp83tc811WritePhyReg(interface, DP83TC811_REGCR,
-      DP83TC811_REGCR_CMD_ADDR | (devAddr & DP83TC811_REGCR_DEVAD));
+      DP83TC811_REGCR_COMMAND_ADDR | (devAddr & DP83TC811_REGCR_DEVAD));
 
    //Write MMD register address
    dp83tc811WritePhyReg(interface, DP83TC811_ADDAR, regAddr);
 
    //Select data operation
    dp83tc811WritePhyReg(interface, DP83TC811_REGCR,
-      DP83TC811_REGCR_CMD_DATA_NO_POST_INC | (devAddr & DP83TC811_REGCR_DEVAD));
+      DP83TC811_REGCR_COMMAND_DATA_NO_POST_INC | (devAddr & DP83TC811_REGCR_DEVAD));
 
    //Read the content of the MMD register
    return dp83tc811ReadPhyReg(interface, DP83TC811_ADDAR);

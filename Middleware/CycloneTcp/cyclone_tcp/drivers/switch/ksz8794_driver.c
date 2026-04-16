@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,17 +25,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/ethernet_misc.h"
-#include "drivers/switch/ksz8794_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/ethernet_misc.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/switch/ksz8794_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -117,21 +117,11 @@ error_t ksz8794Init(NetInterface *interface)
       temp = ksz8794ReadSwitchReg(interface, KSZ8794_GLOBAL_CTRL10);
       temp |= KSZ8794_GLOBAL_CTRL10_TAIL_TAG_EN;
       ksz8794WriteSwitchReg(interface, KSZ8794_GLOBAL_CTRL10, temp);
-
-      //Disable packet size check
-      temp = ksz8794ReadSwitchReg(interface, KSZ8794_GLOBAL_CTRL2);
-      temp |= KSZ8794_GLOBAL_CTRL2_MAX_PKT_SIZE_CHECK_DIS;
-      ksz8794WriteSwitchReg(interface, KSZ8794_GLOBAL_CTRL2, temp);
 #else
       //Disable tail tag feature
       temp = ksz8794ReadSwitchReg(interface, KSZ8794_GLOBAL_CTRL10);
       temp &= ~KSZ8794_GLOBAL_CTRL10_TAIL_TAG_EN;
       ksz8794WriteSwitchReg(interface, KSZ8794_GLOBAL_CTRL10, temp);
-
-      //Enable packet size check
-      temp = ksz8794ReadSwitchReg(interface, KSZ8794_GLOBAL_CTRL2);
-      temp &= ~KSZ8794_GLOBAL_CTRL2_MAX_PKT_SIZE_CHECK_DIS;
-      ksz8794WriteSwitchReg(interface, KSZ8794_GLOBAL_CTRL2, temp);
 #endif
 
       //Loop through the ports
@@ -188,9 +178,6 @@ error_t ksz8794Init(NetInterface *interface)
       }
    }
 
-   //Perform custom configuration
-   ksz8794InitHook(interface);
-
    //Force the TCP/IP stack to poll the link state at startup
    interface->phyEvent = TRUE;
    //Notify the TCP/IP stack of the event
@@ -198,16 +185,6 @@ error_t ksz8794Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief KSZ8794 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void ksz8794InitHook(NetInterface *interface)
-{
 }
 
 
@@ -894,23 +871,7 @@ void ksz8794EnableIgmpSnooping(NetInterface *interface, bool_t enable)
 
 void ksz8794EnableMldSnooping(NetInterface *interface, bool_t enable)
 {
-   uint8_t temp;
-
-   //Read global control 21 register
-   temp = ksz8794ReadSwitchReg(interface, KSZ8794_GLOBAL_CTRL21);
-
-   //Enable or disable MLD snooping
-   if(enable)
-   {
-      temp |= KSZ8794_GLOBAL_CTRL21_MLD_SNOOP_EN;
-   }
-   else
-   {
-      temp &= ~KSZ8794_GLOBAL_CTRL21_MLD_SNOOP_EN;
-   }
-
-   //Write the value back to global control 21 register
-   ksz8794WriteSwitchReg(interface, KSZ8794_GLOBAL_CTRL21, temp);
+   //Not implemented
 }
 
 

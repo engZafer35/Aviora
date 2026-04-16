@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,24 +25,24 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL SNMP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "snmp/snmp_agent.h"
-#include "snmp/snmp_agent_dispatch.h"
-#include "snmp/snmp_agent_pdu.h"
-#include "snmp/snmp_agent_misc.h"
-#include "mibs/mib2_module.h"
-#include "mibs/snmp_mib_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_dispatch.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_pdu.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib2_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/snmp_mib_module.h"
 #include "core/crypto.h"
 #include "encoding/asn1.h"
 #include "encoding/oid.h"
-#include "debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (SNMP_AGENT_SUPPORT == ENABLED)
@@ -60,7 +60,7 @@ error_t snmpProcessMessage(SnmpAgentContext *context)
 
    //Total number of messages delivered to the SNMP entity from the
    //transport service
-   MIB2_SNMP_INC_COUNTER32(snmpInPkts, 1);
+   MIB2_INC_COUNTER32(snmpGroup.snmpInPkts, 1);
    SNMP_MIB_INC_COUNTER32(snmpGroup.snmpInPkts, 1);
 
 #if (SNMP_V3_SUPPORT == ENABLED)
@@ -122,7 +122,7 @@ error_t snmpProcessMessage(SnmpAgentContext *context)
 
       //Total number of SNMP messages which were delivered to the SNMP
       //protocol entity and were for an unsupported SNMP version
-      MIB2_SNMP_INC_COUNTER32(snmpInBadVersions, 1);
+      MIB2_INC_COUNTER32(snmpGroup.snmpInBadVersions, 1);
       SNMP_MIB_INC_COUNTER32(snmpGroup.snmpInBadVersions, 1);
 
       //Discard incoming SNMP message
@@ -134,13 +134,13 @@ error_t snmpProcessMessage(SnmpAgentContext *context)
    {
       //Total number of messages which were passed from the SNMP protocol
       //entity to the transport service
-      MIB2_SNMP_INC_COUNTER32(snmpOutPkts, 1);
+      MIB2_INC_COUNTER32(snmpGroup.snmpOutPkts, 1);
    }
    else if(error == ERROR_INVALID_TAG)
    {
       //Total number of ASN.1 or BER errors encountered by the SNMP protocol
       //entity when decoding received SNMP messages
-      MIB2_SNMP_INC_COUNTER32(snmpInASNParseErrs, 1);
+      MIB2_INC_COUNTER32(snmpGroup.snmpInASNParseErrs, 1);
       SNMP_MIB_INC_COUNTER32(snmpGroup.snmpInASNParseErrs, 1);
    }
    else if(error == ERROR_BUFFER_OVERFLOW)
@@ -187,7 +187,7 @@ error_t snmpv1ProcessMessage(SnmpAgentContext *context)
 
       //Total number of SNMP messages delivered to the SNMP protocol entity
       //which used a SNMP community name not known to said entity
-      MIB2_SNMP_INC_COUNTER32(snmpInBadCommunityNames, 1);
+      MIB2_INC_COUNTER32(snmpGroup.snmpInBadCommunityNames, 1);
       SNMP_MIB_INC_COUNTER32(snmpGroup.snmpInBadCommunityNames, 1);
 
       //Report an error
@@ -250,7 +250,7 @@ error_t snmpv2cProcessMessage(SnmpAgentContext *context)
 
       //Total number of SNMP messages delivered to the SNMP protocol entity
       //which used a SNMP community name not known to said entity
-      MIB2_SNMP_INC_COUNTER32(snmpInBadCommunityNames, 1);
+      MIB2_INC_COUNTER32(snmpGroup.snmpInBadCommunityNames, 1);
       SNMP_MIB_INC_COUNTER32(snmpGroup.snmpInBadCommunityNames, 1);
 
       //Report an error
@@ -334,8 +334,8 @@ error_t snmpv3ProcessMessage(SnmpAgentContext *context)
          //Save the security profile associated with the current user
          context->user = *user;
 
-         //Localize the authentication key with the engine ID of the remote
-         //SNMP device
+         //Localize the authentication key with the engine ID of the
+         //remote SNMP device
          if(context->user.authProtocol != SNMP_AUTH_PROTOCOL_NONE)
          {
             //Key localization algorithm
@@ -347,8 +347,9 @@ error_t snmpv3ProcessMessage(SnmpAgentContext *context)
                break;
          }
 
-         //Localize the privacy key with the engine ID of the remote SNMP device
-         if(context->user.privProtocol != SNMP_PRIV_PROTOCOL_NONE)
+         //Localize the privacy key with the engine ID of the remote
+         //SNMP device
+         if(context->user.privProtocol != SNMP_AUTH_PROTOCOL_NONE)
          {
             //Key localization algorithm
             error = snmpLocalizeKey(context->user.authProtocol,
@@ -414,7 +415,7 @@ error_t snmpv3ProcessMessage(SnmpAgentContext *context)
       error = snmpProcessPdu(context);
       //Any error to report?
       if(error)
-         break;
+        break;
 
       //End of exception handling block
    } while(0);

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -33,17 +33,17 @@
  * - RFC 4039: Rapid Commit Option for the DHCP version 4
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL DHCP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "dhcp/dhcp_client.h"
-#include "dhcp/dhcp_client_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_client_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV4_SUPPORT == ENABLED && DHCP_CLIENT_SUPPORT == ENABLED)
@@ -211,65 +211,6 @@ error_t dhcpClientStop(DhcpClientContext *context)
    //Check whether the DHCP client is running
    if(context->running)
    {
-      //Unregister callback function
-      udpDetachRxCallback(interface, DHCP_CLIENT_PORT);
-
-      //Stop DHCP client
-      context->running = FALSE;
-      //Reinitialize state machine
-      context->state = DHCP_STATE_INIT;
-   }
-
-   //Release exclusive access
-   osReleaseMutex(&netMutex);
-
-   //Successful processing
-   return NO_ERROR;
-}
-
-
-/**
- * @brief Release DHCP lease
- * @param[in] context Pointer to the DHCP client context
- * @return Error code
- **/
-
-error_t dhcpClientRelease(DhcpClientContext *context)
-{
-   NetInterface *interface;
-
-   //Check parameter
-   if(context == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Debug message
-   TRACE_INFO("Releasing DHCP lease...\r\n");
-
-   //Get exclusive access
-   osAcquireMutex(&netMutex);
-
-   //Point to the underlying network interface
-   interface = context->settings.interface;
-
-   //Check whether the DHCP client is running
-   if(context->running)
-   {
-      //Check current state
-      if(context->state == DHCP_STATE_BOUND ||
-         context->state == DHCP_STATE_RENEWING ||
-         context->state == DHCP_STATE_REBINDING)
-      {
-         //Select a new transaction identifier
-         context->transactionId = netGenerateRand();
-
-         //The client may choose to relinquish its lease on a network address
-         //by sending a DHCPRELEASE message to the server
-         dhcpClientSendRelease(context);
-
-         //The host address is no longer valid
-         dhcpClientResetConfig(context);
-      }
-
       //Unregister callback function
       udpDetachRxCallback(interface, DHCP_CLIENT_PORT);
 

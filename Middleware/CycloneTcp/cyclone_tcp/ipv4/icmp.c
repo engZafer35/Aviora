@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,79 +25,25 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL ICMP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/ip.h"
-#include "ipv4/ipv4.h"
-#include "ipv4/ipv4_misc.h"
-#include "ipv4/icmp.h"
-#include "mibs/mib2_module.h"
-#include "mibs/ip_mib_module.h"
-#include "debug.h"
+#include <string.h>
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ip.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/icmp.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib2_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/ip_mib_module.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV4_SUPPORT == ENABLED)
-
-
-/**
- * @brief Enable support for ICMP Echo Request messages
- * @param[in] interface Underlying network interface
- * @param[in] enable This flag specifies whether the host will respond to
- *   ICMP Echo Requests. When the flag is set to FALSE, incoming ICMP Echo
- *   Request messages will be dropped
- * @return Error code
- **/
-
-error_t icmpEnableEchoRequests(NetInterface *interface, bool_t enable)
-{
-   //Check parameters
-   if(interface == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Get exclusive access
-   osAcquireMutex(&netMutex);
-   //Enable or disable support for Echo Request messages
-   interface->ipv4Context.enableEchoReq = enable;
-   //Release exclusive access
-   osReleaseMutex(&netMutex);
-
-   //Successful processing
-   return NO_ERROR;
-}
-
-
-/**
- * @brief Enable support for broadcast ICMP Echo Request messages
- * @param[in] interface Underlying network interface
- * @param[in] enable This flag specifies whether the host will respond to
- *   broadcast ICMP Echo Requests. When the flag is set to FALSE, incoming ICMP
- *   Echo Request messages destined to a broadcast address will be dropped
- * @return Error code
- **/
-
-error_t icmpEnableBroadcastEchoRequests(NetInterface *interface,
-   bool_t enable)
-{
-   //Check parameters
-   if(interface == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Get exclusive access
-   osAcquireMutex(&netMutex);
-   //Enable or disable support for broadcast Echo Request messages
-   interface->ipv4Context.enableBroadcastEchoReq = enable;
-   //Release exclusive access
-   osReleaseMutex(&netMutex);
-
-   //Successful processing
-   return NO_ERROR;
-}
 
 
 /**
@@ -109,14 +55,14 @@ error_t icmpEnableBroadcastEchoRequests(NetInterface *interface,
  **/
 
 void icmpProcessMessage(NetInterface *interface,
-   const Ipv4PseudoHeader *requestPseudoHeader, const NetBuffer *buffer,
+   Ipv4PseudoHeader *requestPseudoHeader, const NetBuffer *buffer,
    size_t offset)
 {
    size_t length;
    IcmpHeader *header;
 
    //Total number of ICMP messages which the entity received
-   MIB2_ICMP_INC_COUNTER32(icmpInMsgs, 1);
+   MIB2_INC_COUNTER32(icmpGroup.icmpInMsgs, 1);
    IP_MIB_INC_COUNTER32(icmpStats.icmpStatsInMsgs, 1);
 
    //Retrieve the length of the ICMP message
@@ -127,7 +73,7 @@ void icmpProcessMessage(NetInterface *interface,
    {
       //Number of ICMP messages which the entity received but determined
       //as having ICMP-specific errors
-      MIB2_ICMP_INC_COUNTER32(icmpInErrors, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpInErrors, 1);
       IP_MIB_INC_COUNTER32(icmpStats.icmpStatsInErrors, 1);
 
       //Silently discard incoming message
@@ -153,7 +99,7 @@ void icmpProcessMessage(NetInterface *interface,
 
       //Number of ICMP messages which the entity received but determined
       //as having ICMP-specific errors
-      MIB2_ICMP_INC_COUNTER32(icmpInErrors, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpInErrors, 1);
       IP_MIB_INC_COUNTER32(icmpStats.icmpStatsInErrors, 1);
 
       //Drop incoming message
@@ -171,7 +117,6 @@ void icmpProcessMessage(NetInterface *interface,
       //Process Echo Request message
       icmpProcessEchoRequest(interface, requestPseudoHeader, buffer, offset);
       break;
-
    //Unknown type?
    default:
       //Debug message
@@ -191,7 +136,7 @@ void icmpProcessMessage(NetInterface *interface,
  **/
 
 void icmpProcessEchoRequest(NetInterface *interface,
-   const Ipv4PseudoHeader *requestPseudoHeader, const NetBuffer *request,
+   Ipv4PseudoHeader *requestPseudoHeader, const NetBuffer *request,
    size_t requestOffset)
 {
    error_t error;
@@ -220,11 +165,6 @@ void icmpProcessEchoRequest(NetInterface *interface,
    TRACE_INFO("ICMP Echo Request message received (%" PRIuSIZE " bytes)...\r\n", requestLength);
    //Dump message contents for debugging purpose
    icmpDumpEchoMessage(requestHeader);
-
-   //If support for Echo Request messages has been explicitly disabled, then
-   //the host shall not respond to the incoming request
-   if(!interface->ipv4Context.enableEchoReq)
-      return;
 
    //Check whether the destination address of the Echo Request message is
    //a broadcast or a multicast address
@@ -275,17 +215,8 @@ void icmpProcessEchoRequest(NetInterface *interface,
    requestOffset += sizeof(IcmpEchoMessage);
    requestLength -= sizeof(IcmpEchoMessage);
 
-   //Check the length of the payload
-   if(requestLength > 0)
-   {
-      //Copy payload data
-      error = netBufferConcat(reply, request, requestOffset, requestLength);
-   }
-   else
-   {
-      //The Echo Request message is empty
-      error = NO_ERROR;
-   }
+   //Copy data
+   error = netBufferConcat(reply, request, requestOffset, requestLength);
 
    //Check status code
    if(!error)
@@ -335,9 +266,8 @@ void icmpProcessEchoRequest(NetInterface *interface,
  * @return Error code
  **/
 
-error_t icmpSendErrorMessage(NetInterface *interface, uint8_t type,
-   uint8_t code, uint8_t parameter, const NetBuffer *ipPacket,
-   size_t ipPacketOffset)
+error_t icmpSendErrorMessage(NetInterface *interface, uint8_t type, uint8_t code,
+   uint8_t parameter, const NetBuffer *ipPacket, size_t ipPacketOffset)
 {
    error_t error;
    size_t offset;
@@ -445,59 +375,48 @@ void icmpUpdateInStats(uint8_t type)
    {
    case ICMP_TYPE_DEST_UNREACHABLE:
       //Number of ICMP Destination Unreachable messages received
-      MIB2_ICMP_INC_COUNTER32(icmpInDestUnreachs, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpInDestUnreachs, 1);
       break;
-
    case ICMP_TYPE_TIME_EXCEEDED:
       //Number of ICMP Time Exceeded messages received
-      MIB2_ICMP_INC_COUNTER32(icmpInTimeExcds, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpInTimeExcds, 1);
       break;
-
    case ICMP_TYPE_PARAM_PROBLEM:
       //Number of ICMP Parameter Problem messages received
-      MIB2_ICMP_INC_COUNTER32(icmpInParmProbs, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpInParmProbs, 1);
       break;
-
    case ICMP_TYPE_SOURCE_QUENCH:
       //Number of ICMP Source Quench messages received
-      MIB2_ICMP_INC_COUNTER32(icmpInSrcQuenchs, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpInSrcQuenchs, 1);
       break;
-
    case ICMP_TYPE_REDIRECT:
       //Number of ICMP Redirect messages received
-      MIB2_ICMP_INC_COUNTER32(icmpInRedirects, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpInRedirects, 1);
       break;
-
    case ICMP_TYPE_ECHO_REQUEST:
       //Number of ICMP Echo Request messages received
-      MIB2_ICMP_INC_COUNTER32(icmpInEchos, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpInEchos, 1);
       break;
-
    case ICMP_TYPE_INFO_REPLY:
       //Number of ICMP Echo Reply messages received
-      MIB2_ICMP_INC_COUNTER32(icmpInEchoReps, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpInEchoReps, 1);
       break;
-
    case ICMP_TYPE_TIMESTAMP_REQUEST:
       //Number of ICMP Timestamp Request messages received
-      MIB2_ICMP_INC_COUNTER32(icmpInTimestamps, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpInTimestamps, 1);
       break;
-
    case ICMP_TYPE_TIMESTAMP_REPLY:
       //Number of ICMP Timestamp Reply messages received
-      MIB2_ICMP_INC_COUNTER32(icmpInTimestampReps, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpInTimestampReps, 1);
       break;
-
    case ICMP_TYPE_ADDR_MASK_REQUEST:
       //Number of ICMP Address Mask Request messages received
-      MIB2_ICMP_INC_COUNTER32(icmpInAddrMasks, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpInAddrMasks, 1);
       break;
-
    case ICMP_TYPE_ADDR_MASK_REPLY:
       //Number of ICMP Address Mask Reply messages received
-      MIB2_ICMP_INC_COUNTER32(icmpInAddrMaskReps, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpInAddrMaskReps, 1);
       break;
-
    default:
       //Just for sanity
       break;
@@ -516,7 +435,7 @@ void icmpUpdateInStats(uint8_t type)
 void icmpUpdateOutStats(uint8_t type)
 {
    //Total number of ICMP messages which this entity attempted to send
-   MIB2_ICMP_INC_COUNTER32(icmpOutMsgs, 1);
+   MIB2_INC_COUNTER32(icmpGroup.icmpOutMsgs, 1);
    IP_MIB_INC_COUNTER32(icmpStats.icmpStatsOutMsgs, 1);
 
    //Check ICMP message type
@@ -524,59 +443,48 @@ void icmpUpdateOutStats(uint8_t type)
    {
    case ICMP_TYPE_DEST_UNREACHABLE:
       //Number of ICMP Destination Unreachable messages sent
-      MIB2_ICMP_INC_COUNTER32(icmpOutDestUnreachs, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpOutDestUnreachs, 1);
       break;
-
    case ICMP_TYPE_TIME_EXCEEDED:
       //Number of ICMP Time Exceeded messages sent
-      MIB2_ICMP_INC_COUNTER32(icmpOutTimeExcds, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpOutTimeExcds, 1);
       break;
-
    case ICMP_TYPE_PARAM_PROBLEM:
       //Number of ICMP Parameter Problem messages sent
-      MIB2_ICMP_INC_COUNTER32(icmpOutParmProbs, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpOutParmProbs, 1);
       break;
-
    case ICMP_TYPE_SOURCE_QUENCH:
       //Number of ICMP Source Quench messages sent
-      MIB2_ICMP_INC_COUNTER32(icmpOutSrcQuenchs, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpOutSrcQuenchs, 1);
       break;
-
    case ICMP_TYPE_REDIRECT:
       //Number of ICMP Redirect messages sent
-      MIB2_ICMP_INC_COUNTER32(icmpOutRedirects, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpOutRedirects, 1);
       break;
-
    case ICMP_TYPE_ECHO_REQUEST:
       //Number of ICMP Echo Request messages sent
-      MIB2_ICMP_INC_COUNTER32(icmpOutEchos, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpOutEchos, 1);
       break;
-
    case ICMP_TYPE_INFO_REPLY:
       //Number of ICMP Echo Reply messages sent
-      MIB2_ICMP_INC_COUNTER32(icmpOutEchoReps, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpOutEchoReps, 1);
       break;
-
    case ICMP_TYPE_TIMESTAMP_REQUEST:
       //Number of ICMP Timestamp Request messages sent
-      MIB2_ICMP_INC_COUNTER32(icmpOutTimestamps, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpOutTimestamps, 1);
       break;
-
    case ICMP_TYPE_TIMESTAMP_REPLY:
       //Number of ICMP Timestamp Reply messages sent
-      MIB2_ICMP_INC_COUNTER32(icmpOutTimestampReps, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpOutTimestampReps, 1);
       break;
-
    case ICMP_TYPE_ADDR_MASK_REQUEST:
       //Number of ICMP Address Mask Request messages sent
-      MIB2_ICMP_INC_COUNTER32(icmpOutAddrMasks, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpOutAddrMasks, 1);
       break;
-
    case ICMP_TYPE_ADDR_MASK_REPLY:
       //Number of ICMP Address Mask Reply messages sent
-      MIB2_ICMP_INC_COUNTER32(icmpOutAddrMaskReps, 1);
+      MIB2_INC_COUNTER32(icmpGroup.icmpOutAddrMaskReps, 1);
       break;
-
    default:
       //Just for sanity
       break;

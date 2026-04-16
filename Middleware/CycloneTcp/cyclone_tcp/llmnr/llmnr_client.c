@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,18 +25,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL LLMNR_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "ipv4/ipv4_misc.h"
-#include "llmnr/llmnr_client.h"
-#include "dns/dns_debug.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/llmnr/llmnr_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/llmnr/llmnr_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (LLMNR_CLIENT_SUPPORT == ENABLED)
@@ -70,7 +71,7 @@ error_t llmnrResolve(NetInterface *interface, const char_t *name,
    entry = dnsFindEntry(interface, name, type, HOST_NAME_RESOLVER_LLMNR);
 
    //Check whether a matching entry has been found
-   if(entry != NULL)
+   if(entry)
    {
       //Host name already resolved?
       if(entry->state == DNS_STATE_RESOLVED ||
@@ -83,7 +84,7 @@ error_t llmnrResolve(NetInterface *interface, const char_t *name,
       }
       else
       {
-         //Host name resolution is in progress
+         //Host name resolution is in progress...
          error = ERROR_IN_PROGRESS;
       }
    }
@@ -103,9 +104,9 @@ error_t llmnrResolve(NetInterface *interface, const char_t *name,
       //Get an ephemeral port number
       entry->port = udpGetDynamicPort();
 
-      //An identifier is used by the LLMNR client to match replies with
-      //corresponding requests
-      entry->id = (uint16_t) netGenerateRand();
+      //An identifier is used by the LLMNR client to match replies
+      //with corresponding requests
+      entry->id = (uint16_t) netGetRand();
 
       //Callback function to be called when a LLMNR response is received
       error = udpAttachRxCallback(interface, entry->port, llmnrProcessResponse,
@@ -163,7 +164,7 @@ error_t llmnrResolve(NetInterface *interface, const char_t *name,
       entry = dnsFindEntry(interface, name, type, HOST_NAME_RESOLVER_LLMNR);
 
       //Check whether a matching entry has been found
-      if(entry != NULL)
+      if(entry)
       {
          //Host name successfully resolved?
          if(entry->state == DNS_STATE_RESOLVED)
@@ -251,7 +252,7 @@ error_t llmnrSendQuery(DnsCacheEntry *entry)
    }
 
    //Allocate a memory buffer to hold the LLMNR query message
-   buffer = udpAllocBuffer(LLMNR_MESSAGE_MAX_SIZE, &offset);
+   buffer = udpAllocBuffer(DNS_MESSAGE_MAX_SIZE, &offset);
    //Failed to allocate buffer?
    if(buffer == NULL)
       return ERROR_OUT_OF_MEMORY;
@@ -267,7 +268,7 @@ error_t llmnrSendQuery(DnsCacheEntry *entry)
    message->tc = 0;
    message->t = 0;
    message->z = 0;
-   message->rcode = DNS_RCODE_NOERROR;
+   message->rcode = DNS_RCODE_NO_ERROR;
 
    //The LLMNR query contains one question
    message->qdcount = HTONS(1);
@@ -317,12 +318,6 @@ error_t llmnrSendQuery(DnsCacheEntry *entry)
    //Additional options can be passed to the stack along with the packet
    ancillary = NET_DEFAULT_TX_ANCILLARY;
 
-   //For UDP queries, the Hop Limit field in the IPv6 header and the TTL
-   //field in the IPV4 header MAY be set to any value. However, it is
-   //recommended that the value 255 be used for compatibility with early
-   //implementations (refer to RFC 4795, section 2.5)
-   ancillary.ttl = LLMNR_DEFAULT_QUERY_IP_TTL;
-
    //LLMNR queries are sent to and received on port 5355
    error = udpSendBuffer(entry->interface, NULL, entry->port, &destIpAddr,
       LLMNR_PORT, buffer, offset, &ancillary);
@@ -367,7 +362,7 @@ void llmnrProcessResponse(NetInterface *interface,
    //Ensure the LLMNR message is valid
    if(length < sizeof(LlmnrHeader))
       return;
-   if(length > LLMNR_MESSAGE_MAX_SIZE)
+   if(length > DNS_MESSAGE_MAX_SIZE)
       return;
 
    //Point to the LLMNR message header
@@ -392,7 +387,7 @@ void llmnrProcessResponse(NetInterface *interface,
 
    //LLMNR messages received with non-zero response codes must be silently
    //ignored
-   if(message->rcode != DNS_RCODE_NOERROR)
+   if(message->rcode != DNS_RCODE_NO_ERROR)
       return;
 
    //LLMNR senders must silently discard LLMNR responses with QDCOUNT not
@@ -444,17 +439,10 @@ void llmnrProcessResponse(NetInterface *interface,
                break;
 
             //Check the type of the query
-            if(entry->type == HOST_TYPE_IPV4 &&
-               ntohs(question->qtype) != DNS_RR_TYPE_A)
-            {
+            if(entry->type == HOST_TYPE_IPV4 && ntohs(question->qtype) != DNS_RR_TYPE_A)
                break;
-            }
-
-            if(entry->type == HOST_TYPE_IPV6 &&
-               ntohs(question->qtype) != DNS_RR_TYPE_AAAA)
-            {
+            if(entry->type == HOST_TYPE_IPV6 && ntohs(question->qtype) != DNS_RR_TYPE_AAAA)
                break;
-            }
 
             //Point to the first answer
             pos += sizeof(DnsQuestion);

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _DHCPV6_COMMON_H
 #define _DHCPV6_COMMON_H
 
 //Dependencies
-#include "core/net.h"
-#include "core/ethernet.h"
-#include "ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ethernet.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
 
 //UDP ports used by DHCPv6 clients and servers
 #define DHCPV6_CLIENT_PORT 546
@@ -46,7 +46,7 @@
 #define DHCPV6_MAX_DUID_SIZE 130
 
 //Maximum hop count in a relay-forward message
-#define DHCPV6_HOP_COUNT_LIMIT 8
+#define DHCPV6_HOP_COUNT_LIMIT 32
 //Highest server preference value
 #define DHCPV6_MAX_SERVER_PREFERENCE 255
 //Infinite lifetime representation
@@ -109,32 +109,31 @@ typedef enum
 
 typedef enum
 {
-   DHCPV6_OPT_CLIENT_ID         = 1,
-   DHCPV6_OPT_SERVER_ID         = 2,
-   DHCPV6_OPT_IA_NA             = 3,
-   DHCPV6_OPT_IA_TA             = 4,
-   DHCPV6_OPT_IA_ADDR           = 5,
-   DHCPV6_OPT_ORO               = 6,
-   DHCPV6_OPT_PREFERENCE        = 7,
-   DHCPV6_OPT_ELAPSED_TIME      = 8,
-   DHCPV6_OPT_RELAY_MSG         = 9,
-   DHCPV6_OPT_AUTH              = 11,
-   DHCPV6_OPT_UNICAST           = 12,
-   DHCPV6_OPT_STATUS_CODE       = 13,
-   DHCPV6_OPT_RAPID_COMMIT      = 14,
-   DHCPV6_OPT_USER_CLASS        = 15,
-   DHCPV6_OPT_VENDOR_CLASS      = 16,
-   DHCPV6_OPT_VENDOR_OPTS       = 17,
-   DHCPV6_OPT_INTERFACE_ID      = 18,
-   DHCPV6_OPT_RECONF_MSG        = 19,
-   DHCPV6_OPT_RECONF_ACCEPT     = 20,
-   DHCPV6_OPT_DNS_SERVERS       = 23,
-   DHCPV6_OPT_DOMAIN_LIST       = 24,
-   DHCPV6_OPT_IA_PD             = 25,
-   DHCPV6_OPT_IA_PREFIX         = 26,
-   DHCPV6_OPT_INFO_REFRESH_TIME = 32,
-   DHCPV6_OPT_FQDN              = 39,
-   DHCPV6_OPT_CAPTIVE_PORTAL    = 103
+   DHCPV6_OPT_CLIENT_ID      = 1,
+   DHCPV6_OPT_SERVER_ID      = 2,
+   DHCPV6_OPT_IA_NA          = 3,
+   DHCPV6_OPT_IA_TA          = 4,
+   DHCPV6_OPT_IA_ADDR        = 5,
+   DHCPV6_OPT_ORO            = 6,
+   DHCPV6_OPT_PREFERENCE     = 7,
+   DHCPV6_OPT_ELAPSED_TIME   = 8,
+   DHCPV6_OPT_RELAY_MSG      = 9,
+   DHCPV6_OPT_AUTH           = 11,
+   DHCPV6_OPT_UNICAST        = 12,
+   DHCPV6_OPT_STATUS_CODE    = 13,
+   DHCPV6_OPT_RAPID_COMMIT   = 14,
+   DHCPV6_OPT_USER_CLASS     = 15,
+   DHCPV6_OPT_VENDOR_CLASS   = 16,
+   DHCPV6_OPT_VENDOR_OPTS    = 17,
+   DHCPV6_OPT_INTERFACE_ID   = 18,
+   DHCPV6_OPT_RECONF_MSG     = 19,
+   DHCPV6_OPT_RECONF_ACCEPT  = 20,
+   DHCPV6_OPT_DNS_SERVERS    = 23,
+   DHCPV6_OPT_DOMAIN_LIST    = 24,
+   DHCPV6_OPT_IA_PD          = 25,
+   DHCPV6_OPT_IA_PREFIX      = 26,
+   DHCPV6_OPT_FQDN           = 39,
+   DHCPV6_OPT_CAPTIVE_PORTAL = 103
 } Dhcpv6OptionCode;
 
 
@@ -153,10 +152,8 @@ typedef enum
 } Dhcpv6StatusCode;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -165,32 +162,32 @@ typedef enum
  * @brief DUID-LLT structure
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t type;           //0-1
    uint16_t hardwareType;   //2-3
    uint32_t time;           //4-7
    MacAddr linkLayerAddr;   //8-13
-} Dhcpv6DuidLlt;
+} __end_packed Dhcpv6DuidLlt;
 
 
 /**
  * @brief DUID-EN structure
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t type;             //0-1
    uint32_t enterpriseNumber; //2-5
    uint8_t identifier[];      //6
-} Dhcpv6DuidEn;
+} __end_packed Dhcpv6DuidEn;
 
 
 /**
  * @brief DUID-LL structure
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t type;         //0-1
    uint16_t hardwareType; //2-3
@@ -199,65 +196,65 @@ typedef __packed_struct
 #else
    Eui64 linkLayerAddr;   //4-11
 #endif
-} Dhcpv6DuidLl;
+} __end_packed Dhcpv6DuidLl;
 
 
 /**
  * @brief DHCPv6 message
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t msgType;          //0
    uint8_t transactionId[3]; //1-3
    uint8_t options[];        //4
-} Dhcpv6Message;
+} __end_packed Dhcpv6Message;
 
 
 /**
  * @brief DHCPv6 relay agent message
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t msgType;      //0
    uint8_t hopCount;     //1
    Ipv6Addr linkAddress; //2-17
    Ipv6Addr peerAddress; //18-33
    uint8_t options[];    //34
-} Dhcpv6RelayMessage;
+} __end_packed Dhcpv6RelayMessage;
 
 
 /**
  * @brief DHCPv6 option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t code;   //0-1
    uint16_t length; //2-3
    uint8_t value[]; //4
-} Dhcpv6Option;
+} __end_packed Dhcpv6Option;
 
 
 /**
  * @brief Identity Association for Non-temporary Addresses option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint32_t iaId;     //0-3
    uint32_t t1;       //4-7
    uint32_t t2;       //8-11
    uint8_t options[]; //12
-} Dhcpv6IaNaOption;
+} __end_packed Dhcpv6IaNaOption;
 
 
 /**
  * @brief Identity Association for Temporary Addresses option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint32_t iaId;     //0-3
    uint8_t options[]; //4
@@ -268,142 +265,142 @@ typedef __packed_struct
  * @brief IA Address option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    Ipv6Addr address;           //0-15
    uint32_t preferredLifetime; //16-19
    uint32_t validLifetime;     //20-23
    uint8_t options[];          //24
-} Dhcpv6IaAddrOption;
+} __end_packed Dhcpv6IaAddrOption;
 
 
 /**
  * @brief Option Request option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t requestedOption[1]; //0-1
-} Dhcpv6OroOption;
+} __end_packed Dhcpv6OroOption;
 
 
 /**
  * @brief Preference option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t value; //0
-} Dhcpv6PreferenceOption;
+} __end_packed Dhcpv6PreferenceOption;
 
 
 /**
  * @brief Elapsed Time option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t value; //0-1
-} Dhcpv6ElapsedTimeOption;
+} __end_packed Dhcpv6ElapsedTimeOption;
 
 
 /**
  * @brief Authentication option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t protocol;           //0
    uint8_t algorithm;          //1
    uint8_t rdm;                //2
    uint8_t replayDetection[8]; //3-10
    uint8_t authInfo[];         //11
-} Dhcpv6AuthOption;
+} __end_packed Dhcpv6AuthOption;
 
 
 /**
  * @brief Server Unicast option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    Ipv6Addr serverAddr; //0-15
-} Dhcpv6ServerUnicastOption;
+} __end_packed Dhcpv6ServerUnicastOption;
 
 
 /**
  * @brief Status Code option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t statusCode;    //0-1
    char_t statusMessage[]; //2
-} Dhcpv6StatusCodeOption;
+} __end_packed Dhcpv6StatusCodeOption;
 
 
 /**
  * @brief Reconfigure Message option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t msgType; //0
-} Dhcpv6ReconfMessageOption;
+} __end_packed Dhcpv6ReconfMessageOption;
 
 
 /**
  * @brief DNS Recursive Name Server option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    Ipv6Addr address[1]; //0-15
-} Dhcpv6DnsServersOption;
+} __end_packed Dhcpv6DnsServersOption;
 
 
 /**
  * @brief Domain Search List option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t searchList[1]; //0
-} Dhcpv6DomainListOption;
+} __end_packed Dhcpv6DomainListOption;
 
 
 /**
  * @brief Identity Association for Prefix Delegation Option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint32_t iaId;     //0-3
    uint32_t t1;       //4-7
    uint32_t t2;       //8-11
    uint8_t options[]; //12
-} Dhcpv6IaPdOption;
+} __end_packed Dhcpv6IaPdOption;
 
 
 /**
  * @brief IA_PD Prefix option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint32_t preferredLifetime; //0-3
    uint32_t validLifetime;     //4-7
    uint8_t prefixLen;          //8
    Ipv6Addr prefix;            //9-24
    uint8_t options[];          //25
-} Dhcpv6IaPrefixOption;
+} __end_packed Dhcpv6IaPrefixOption;
 
 
 /**
  * @brief Fully Qualified Domain Name option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
 #if defined(_CPU_BIG_ENDIAN) && !defined(__ICCRX__)
    uint8_t mbz : 5;      //0
@@ -417,15 +414,14 @@ typedef __packed_struct
    uint8_t mbz : 5;
 #endif
    uint8_t domainName[]; //1
-} Dhcpv6FqdnOption;
+} __end_packed Dhcpv6FqdnOption;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
+
 
 //DHCPv6 related constants
 extern const Ipv6Addr DHCPV6_ALL_RELAY_AGENTS_AND_SERVERS_ADDR;
@@ -442,6 +438,9 @@ Dhcpv6Option *dhcpv6AddSubOption(Dhcpv6Option *baseOption, size_t *messageLen,
 
 Dhcpv6Option *dhcpv6GetOption(const uint8_t *options,
    size_t optionsLength, uint16_t optionCode);
+
+int32_t dhcpv6Rand(int32_t value);
+int32_t dhcpv6RandRange(int32_t min, int32_t max);
 
 //C++ guard
 #ifdef __cplusplus

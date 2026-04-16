@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -35,16 +35,16 @@
  * - RFC 1784: TFTP Timeout Interval and Transfer Size Options
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL TFTP_TRACE_LEVEL
 
 //Dependencies
-#include "tftp/tftp_server.h"
-#include "tftp/tftp_server_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/tftp/tftp_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/tftp/tftp_server_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (TFTP_SERVER_SUPPORT == ENABLED)
@@ -57,11 +57,6 @@
 
 void tftpServerGetDefaultSettings(TftpServerSettings *settings)
 {
-   //Default task parameters
-   settings->task = OS_TASK_DEFAULT_PARAMS;
-   settings->task.stackSize = TFTP_SERVER_STACK_SIZE;
-   settings->task.priority = TFTP_SERVER_PRIORITY;
-
    //The TFTP server is not bound to any interface
    settings->interface = NULL;
 
@@ -101,10 +96,6 @@ error_t tftpServerInit(TftpServerContext *context,
    //Clear the TFTP server context
    osMemset(context, 0, sizeof(TftpServerContext));
 
-   //Initialize task parameters
-   context->taskParams = settings->task;
-   context->taskId = OS_INVALID_TASK_ID;
-
    //Save user settings
    context->settings = *settings;
 
@@ -139,6 +130,7 @@ error_t tftpServerInit(TftpServerContext *context,
 error_t tftpServerStart(TftpServerContext *context)
 {
    error_t error;
+   OsTask *task;
 
    //Make sure the TFTP server context is valid
    if(context == NULL)
@@ -181,12 +173,11 @@ error_t tftpServerStart(TftpServerContext *context)
       context->stop = FALSE;
       context->running = TRUE;
 
-      //Create a task
-      context->taskId = osCreateTask("TFTP Server", (OsTaskCode) tftpServerTask,
-         context, &context->taskParams);
-
+      //Create the TFTP server task
+      task = osCreateTask("TFTP Server", (OsTaskCode) tftpServerTask,
+         context, TFTP_SERVER_STACK_SIZE, TFTP_SERVER_PRIORITY);
       //Failed to create task?
-      if(context->taskId == OS_INVALID_TASK_ID)
+      if(task == OS_INVALID_HANDLE)
       {
          //Report an error
          error = ERROR_OUT_OF_RESOURCES;
@@ -306,18 +297,15 @@ void tftpServerTask(TftpServerContext *context)
          &context->event, TFTP_SERVER_TICK_INTERVAL);
 
       //Check status code
-      if(error == NO_ERROR || error == ERROR_TIMEOUT ||
-         error == ERROR_WAIT_CANCELED)
+      if(error == NO_ERROR || error == ERROR_TIMEOUT)
       {
          //Stop request?
          if(context->stop)
          {
             //Stop TFTP server operation
             context->running = FALSE;
-            //Task epilogue
-            osExitTask();
             //Kill ourselves
-            osDeleteTask(OS_SELF_TASK_ID);
+            osDeleteTask(NULL);
          }
 
          //Event-driven processing

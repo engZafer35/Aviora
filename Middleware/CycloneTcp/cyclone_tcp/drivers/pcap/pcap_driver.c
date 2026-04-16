@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,9 +33,9 @@
 
 //Dependencies
 #include <stdlib.h>
-#include "core/net.h"
-#include "drivers/pcap/pcap_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/pcap/pcap_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Undefine conflicting definitions
 #undef Socket
@@ -118,14 +118,14 @@ error_t pcapDriverInit(NetInterface *interface)
    char_t errorBuffer[PCAP_ERRBUF_SIZE];
    PcapDriverContext *context;
 #if (NET_RTOS_SUPPORT == ENABLED)
-   OsTaskId taskId;
+   OsTask *task;
 #endif
 
    //Debug message
    TRACE_INFO("Initializing PCAP driver...\r\n");
 
    //Allocate PCAP driver context
-   context = (PcapDriverContext *) osAllocMem(sizeof(PcapDriverContext));
+   context = (PcapDriverContext *) malloc(sizeof(PcapDriverContext));
 
    //Failed to allocate memory?
    if(context == NULL)
@@ -209,24 +209,15 @@ error_t pcapDriverInit(NetInterface *interface)
          i++;
       }
 
-      //Valid network adapter identifier?
-      if(interface->phyAddr >= 1 && interface->phyAddr <= i)
-      {
-         j = interface->phyAddr;
-         break;
-      }
-      else
-      {
-         //Display message
-         printf("Select network adapter for %s interface (1-%u):", interface->name, i);
-         //Get user choice
-         scanf("%d", &j);
+      //Display message
+      printf("Select network adapter for %s interface (1-%u):", interface->name, i);
+      //Get user choice
+      scanf("%d", &j);
 
-         //Valid selection?
-         if(j >= 1 && j <= i)
-         {
-            break;
-         }
+      //Valid selection?
+      if(j >= 1 && j <= i)
+      {
+         break;
       }
    }
 
@@ -304,10 +295,10 @@ error_t pcapDriverInit(NetInterface *interface)
 
 #if (NET_RTOS_SUPPORT == ENABLED)
    //Create the receive task
-   taskId = osCreateTask("PCAP", (OsTaskCode) pcapDriverTask, interface, NULL);
+   task = osCreateTask("PCAP", (OsTaskCode) pcapDriverTask, interface, 0, 0);
 
    //Failed to create the task?
-   if(taskId == OS_INVALID_TASK_ID)
+   if(task == OS_INVALID_HANDLE)
    {
       //Debug message
       printf("Failed to create task!\r\n");

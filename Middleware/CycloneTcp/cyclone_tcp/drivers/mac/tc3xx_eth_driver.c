@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -38,9 +38,9 @@
 #include TC_INCLUDE(TCPATH/Ifx_reg.h)
 #include TC_INCLUDE(TCPATH/IfxCpu_bf.h)
 #include "interrupts.h"
-#include "core/net.h"
-#include "drivers/mac/tc3xx_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/tc3xx_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -59,7 +59,7 @@ static Tc3xxTxDmaDesc txDmaDesc[TC3XX_ETH_TX_BUFFER_COUNT]
    __align(4);
 //Receive DMA descriptors
 static Tc3xxRxDmaDesc rxDmaDesc[TC3XX_ETH_RX_BUFFER_COUNT]
-   __align(4);
+  __align(4);
 
 //GCC compiler?
 #else
@@ -129,7 +129,7 @@ error_t tc3xxEthInit(NetInterface *interface)
 
    //The lock bit indicates if the CCUCON5 register can be updated with a new
    //value
-   while(SCU_CCUCON5.B.LCK != 0)
+   while (SCU_CCUCON5.B.LCK != 0)
    {
    }
 
@@ -146,7 +146,7 @@ error_t tc3xxEthInit(NetInterface *interface)
    lock_safety_wdtcon();
 
    //The lock bit is released when the update is complete
-   while(SCU_CCUCON5.B.LCK != 0)
+   while (SCU_CCUCON5.B.LCK != 0)
    {
    }
 
@@ -218,18 +218,19 @@ error_t tc3xxEthInit(NetInterface *interface)
    MODULE_GETH.MAC_CONFIGURATION.B.PS = 1;
    MODULE_GETH.MAC_CONFIGURATION.B.DO = 1;
 
+   //Set the MAC address of the station
+   MODULE_GETH.MAC_ADDRESS_LOW0.U = interface->macAddr.w[0] | (interface->macAddr.w[1] << 16);
+   MODULE_GETH.MAC_ADDRESS_HIGH0.U = interface->macAddr.w[2];
+
    //Configure the receive filter
    MODULE_GETH.MAC_PACKET_FILTER.U = 0;
-
-   //Configure MAC address filtering
-   tc3xxEthUpdateMacAddrFilter(interface);
 
    //Disable flow control
    MODULE_GETH.MAC_Q0_TX_FLOW_CTRL.U = 0;
    MODULE_GETH.MAC_RX_FLOW_CTRL.U = 0;
 
    //Enable the first RX queue
-   MODULE_GETH.MAC_RXQ_CTRL0.B.RXQ0EN = 2;
+   MODULE_GETH.MAC_RXQ_CTRL0.B.RXQ0EN = 1;
 
    //Configure DMA operating mode
    MODULE_GETH.DMA_MODE.B.INTM = 0;
@@ -241,19 +242,19 @@ error_t tc3xxEthInit(NetInterface *interface)
    //The DMA takes the descriptor table as contiguous
    MODULE_GETH.DMA_CH[0].CONTROL.B.DSL = 0;
    //Configure TX features
-   MODULE_GETH.DMA_CH[0].TX_CONTROL.B.TXPBL = 32;
+   MODULE_GETH.DMA_CH[0].TX_CONTROL.B.TXPBL = 1;
 
    //Configure RX features
-   MODULE_GETH.DMA_CH[0].RX_CONTROL.B.RXPBL = 32;
+   MODULE_GETH.DMA_CH[0].RX_CONTROL.B.RXPBL = 1;
    MODULE_GETH.DMA_CH[0].RX_CONTROL.B.RBSZ_13_Y = TC3XX_ETH_RX_BUFFER_SIZE / 4;
 
    //Enable store and forward mode for transmission
-   MODULE_GETH.MTL_TXQ0.OPERATION_MODE.B.TQS = 15;
+   MODULE_GETH.MTL_TXQ0.OPERATION_MODE.B.TQS = 7;
    MODULE_GETH.MTL_TXQ0.OPERATION_MODE.B.TXQEN = 2;
    MODULE_GETH.MTL_TXQ0.OPERATION_MODE.B.TSF = 1;
 
    //Enable store and forward mode for reception
-   MODULE_GETH.MTL_RXQ0.OPERATION_MODE.B.RQS = 31;
+   MODULE_GETH.MTL_RXQ0.OPERATION_MODE.B.RQS = 7;
    MODULE_GETH.MTL_RXQ0.OPERATION_MODE.B.RSF = 1;
 
    //Initialize DMA descriptor lists
@@ -289,15 +290,16 @@ error_t tc3xxEthInit(NetInterface *interface)
 }
 
 
+//AURIX TC397 TFT Application Kit?
+#if defined(USE_KIT_A2G_TC397_TFT)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void tc3xxEthInitGpio(NetInterface *interface)
+void tc3xxEthInitGpio(NetInterface *interface)
 {
-//AURIX TC397 TFT Application Kit?
-#if defined(USE_KIT_A2G_TC397_TFT)
    //Configure GETH_TXD3 (P11.0)
    MODULE_P11.IOCR0.B.PC0 = 22;
 
@@ -409,8 +411,9 @@ __weak_func void tc3xxEthInitGpio(NetInterface *interface)
    //Set delay for RGMII TX and RX clocks
    MODULE_GETH.SKEWCTL.B.TXCFG = 5;
    MODULE_GETH.SKEWCTL.B.RXCFG = 5;
-#endif
 }
+
+#endif
 
 
 /**
@@ -581,8 +584,8 @@ void tc3xxEthIrqHandler(int_t arg)
    //Packet received?
    if((status & ETH_DMA_CH_STATUS_RI) != 0)
    {
-      //Clear RI interrupt flag
-      MODULE_GETH.DMA_CH[0].STATUS.U = ETH_DMA_CH_STATUS_RI;
+      //Disable RIE interrupt
+      MODULE_GETH.DMA_CH[0].INTERRUPT_ENABLE.B.RIE = 0;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -607,14 +610,25 @@ void tc3xxEthEventHandler(NetInterface *interface)
 {
    error_t error;
 
-   //Process all pending packets
-   do
+   //Packet received?
+   if((MODULE_GETH.DMA_CH[0].STATUS.U & ETH_DMA_CH_STATUS_RI) != 0)
    {
-      //Read incoming packet
-      error = tc3xxEthReceivePacket(interface);
+      //Clear interrupt flag
+      MODULE_GETH.DMA_CH[0].STATUS.U = ETH_DMA_CH_STATUS_RI;
 
-      //No more data in the receive buffer?
-   } while(error != ERROR_BUFFER_EMPTY);
+      //Process all pending packets
+      do
+      {
+         //Read incoming packet
+         error = tc3xxEthReceivePacket(interface);
+
+         //No more data in the receive buffer?
+      } while(error != ERROR_BUFFER_EMPTY);
+   }
+
+   //Re-enable DMA interrupts
+   MODULE_GETH.DMA_CH[0].INTERRUPT_ENABLE.U = ETH_DMA_CH_INTERRUPT_ENABLE_NIE |
+      ETH_DMA_CH_INTERRUPT_ENABLE_RIE | ETH_DMA_CH_INTERRUPT_ENABLE_TIE;
 }
 
 
@@ -776,10 +790,7 @@ error_t tc3xxEthReceivePacket(NetInterface *interface)
 error_t tc3xxEthUpdateMacAddrFilter(NetInterface *interface)
 {
    uint_t i;
-   uint_t j;
-   MacFilterEntry *entry;
-   volatile Ifx_GETH_MAC_ADDRESS_LOW *macAddressLow;
-   volatile Ifx_GETH_MAC_ADDRESS_HIGH *macAddressHigh;
+   bool_t acceptMulticast;
 
    //Debug message
    TRACE_DEBUG("Updating MAC filter...\r\n");
@@ -788,44 +799,31 @@ error_t tc3xxEthUpdateMacAddrFilter(NetInterface *interface)
    MODULE_GETH.MAC_ADDRESS_LOW0.U = interface->macAddr.w[0] | (interface->macAddr.w[1] << 16);
    MODULE_GETH.MAC_ADDRESS_HIGH0.U = interface->macAddr.w[2];
 
+   //This flag will be set if multicast addresses should be accepted
+   acceptMulticast = FALSE;
+
    //The MAC address filter contains the list of MAC addresses to accept
    //when receiving an Ethernet frame
-   for(i = 0, j = 0; i < MAC_ADDR_FILTER_SIZE && j < 31; i++)
+   for(i = 0; i < MAC_ADDR_FILTER_SIZE; i++)
    {
-      //Point to the current entry
-      entry = &interface->macAddrFilter[i];
-
       //Valid entry?
-      if(entry->refCount > 0)
+      if(interface->macAddrFilter[i].refCount > 0)
       {
-         //The MAC_ADDRESSi_LOW register holds the lower 32 bits of the MAC address
-         macAddressLow = &MODULE_GETH.MAC_ADDRESS_LOW1 + 2 * j;
-         //The MAC_ADDRESSi_HIGH register holds the upper 16 bits of the MAC address
-         macAddressHigh = &MODULE_GETH.MAC_ADDRESS_HIGH1 + 2 * j;
-
-         //When the AE bit is set, the entry is used for perfect filtering
-         macAddressLow->U = entry->addr.w[0] | (entry->addr.w[1] << 16);
-         macAddressHigh->U = entry->addr.w[2] | ETH_MAC_ADDRESS_HIGH_AE;
-
-         //Next entry
-         j++;
+         //Accept multicast addresses
+         acceptMulticast = TRUE;
+         //We are done
+         break;
       }
    }
 
-   //Clear unused entries
-   while(j < 31)
+   //Enable or disable the reception of multicast frames
+   if(acceptMulticast)
    {
-      //The MAC_ADDRESSi_LOW register holds the lower 32 bits of the MAC address
-      macAddressLow = &MODULE_GETH.MAC_ADDRESS_LOW1 + 2 * j;
-      //The MAC_ADDRESSi_HIGH register holds the upper 16 bits of the MAC address
-      macAddressHigh = &MODULE_GETH.MAC_ADDRESS_HIGH1 + 2 * j;
-
-      //When the AE bit is cleared, the entry is ignored
-      macAddressLow->U = 0;
-      macAddressHigh->U = 0;
-
-      //Next entry
-      j++;
+      MODULE_GETH.MAC_PACKET_FILTER.B.PM = 1;
+   }
+   else
+   {
+      MODULE_GETH.MAC_PACKET_FILTER.B.PM = 0;
    }
 
    //Successful processing

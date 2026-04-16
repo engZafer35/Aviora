@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _ICMPV6_H
 #define _ICMPV6_H
 
 //Dependencies
-#include "core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -104,10 +104,8 @@ typedef enum
 } Icmpv6ParamProblemCode;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -116,27 +114,27 @@ typedef enum
  * @brief ICMPv6 header
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;      //0
    uint8_t code;      //1
    uint16_t checksum; //2-3
    uint8_t data[];    //4
-} Icmpv6Header;
+} __end_packed Icmpv6Header;
 
 
 /**
  * @brief ICMPv6 Error message
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;       //0
    uint8_t code;       //1
    uint16_t checksum;  //2-3
    uint32_t parameter; //4-7
    uint8_t data[];     //8
-} Icmpv6ErrorMessage;
+} __end_packed Icmpv6ErrorMessage;
 
 
 /**
@@ -148,14 +146,14 @@ typedef __packed_struct
  *
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;      //0
    uint8_t code;      //1
    uint16_t checksum; //2-3
    uint32_t unused;   //4-7
    uint8_t data[];    //8
-} Icmpv6DestUnreachableMessage;
+} __end_packed Icmpv6DestUnreachableMessage;
 
 
 /**
@@ -167,14 +165,14 @@ typedef __packed_struct
  *
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;      //0
    uint8_t code;      //1
    uint16_t checksum; //2-3
    uint32_t mtu;      //4-7
    uint8_t data[];    //8
-} Icmpv6PacketTooBigMessage;
+} __end_packed Icmpv6PacketTooBigMessage;
 
 
 /**
@@ -185,14 +183,14 @@ typedef __packed_struct
  *
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;      //0
    uint8_t code;      //1
    uint16_t checksum; //2-3
    uint32_t unused;   //4-7
    uint8_t data[];    //8
-} Icmpv6TimeExceededMessage;
+} __end_packed Icmpv6TimeExceededMessage;
 
 
 /**
@@ -204,14 +202,14 @@ typedef __packed_struct
  *
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;      //0
    uint8_t code;      //1
    uint16_t checksum; //2-3
    uint32_t pointer;  //4-7
    uint8_t data[];    //8
-} Icmpv6ParamProblemMessage;
+} __end_packed Icmpv6ParamProblemMessage;
 
 
 /**
@@ -222,7 +220,7 @@ typedef __packed_struct
  *
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;            //0
    uint8_t code;            //1
@@ -230,41 +228,32 @@ typedef __packed_struct
    uint16_t identifier;     //4-6
    uint16_t sequenceNumber; //7-8
    uint8_t data[];          //8
-} Icmpv6EchoMessage;
+} __end_packed Icmpv6EchoMessage;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
 
+
 //ICMPv6 related functions
-error_t icmpv6EnableEchoRequests(NetInterface *interface, bool_t enable);
+error_t icmpv6EnableMulticastEchoRequest(NetInterface *interface, bool_t enable);
 
-error_t icmpv6EnableMulticastEchoRequests(NetInterface *interface,
-   bool_t enable);
-
-void icmpv6ProcessMessage(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, uint8_t hopLimit);
+void icmpv6ProcessMessage(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, uint8_t hopLimit);
 
 void icmpv6ProcessDestUnreachable(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset);
+   Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer, size_t offset);
 
 void icmpv6ProcessPacketTooBig(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset);
+   Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer, size_t offset);
 
-void icmpv6ProcessEchoRequest(NetInterface *interface,
-   const Ipv6PseudoHeader *requestPseudoHeader, const NetBuffer *request,
-   size_t requestOffset);
+void icmpv6ProcessEchoRequest(NetInterface *interface, Ipv6PseudoHeader *requestPseudoHeader,
+   const NetBuffer *request, size_t requestOffset);
 
-error_t icmpv6SendErrorMessage(NetInterface *interface, uint8_t type,
-   uint8_t code, uint32_t parameter, const NetBuffer *ipPacket,
-   size_t ipPacketOffset);
+error_t icmpv6SendErrorMessage(NetInterface *interface, uint8_t type, uint8_t code,
+   uint32_t parameter, const NetBuffer *ipPacket, size_t ipPacketOffset);
 
 void icmpv6DumpMessage(const Icmpv6Header *message);
 void icmpv6DumpDestUnreachableMessage(const Icmpv6DestUnreachableMessage *message);

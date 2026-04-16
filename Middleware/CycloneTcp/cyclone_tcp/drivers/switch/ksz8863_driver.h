@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _KSZ8863_DRIVER_H
 #define _KSZ8863_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //Port identifiers
 #define KSZ8863_PORT1 1
@@ -571,11 +571,7 @@
 
 //Fiber Signal Threshold register
 #define KSZ8863_FIBER_SIGNAL_THRESHOLD_P2_THRESHOLD                0x80
-#define KSZ8863_FIBER_SIGNAL_THRESHOLD_P2_THRESHOLD_1_2V           0x00
-#define KSZ8863_FIBER_SIGNAL_THRESHOLD_P2_THRESHOLD_2_0V           0x80
 #define KSZ8863_FIBER_SIGNAL_THRESHOLD_P1_THRESHOLD                0x40
-#define KSZ8863_FIBER_SIGNAL_THRESHOLD_P1_THRESHOLD_1_2V           0x00
-#define KSZ8863_FIBER_SIGNAL_THRESHOLD_P1_THRESHOLD_2_0V           0x40
 
 //Internal 1.8V LDO Control register
 #define KSZ8863_INTERNAL_LDO_CTRL_INTERNAL_LDO_DIS                 0x40
@@ -619,10 +615,8 @@
 extern "C" {
 #endif
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -683,10 +677,8 @@ typedef struct
 } Ksz8863DynamicMacEntry;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
 
@@ -695,7 +687,6 @@ extern const SwitchDriver ksz8863SwitchDriver;
 
 //KSZ8863 related functions
 error_t ksz8863Init(NetInterface *interface);
-void ksz8863InitHook(NetInterface *interface);
 
 void ksz8863Tick(NetInterface *interface);
 

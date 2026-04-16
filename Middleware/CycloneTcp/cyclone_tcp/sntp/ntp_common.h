@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _NTP_COMMON_H
 #define _NTP_COMMON_H
 
 //Dependencies
-#include "core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //NTP port number
 #define NTP_PORT 123
@@ -118,10 +118,8 @@ typedef enum
 } NtpKissCode;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -130,18 +128,18 @@ typedef enum
  * @brief NTP timestamp representation
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint32_t seconds;
    uint32_t fraction;
-} NtpTimestamp;
+} __end_packed NtpTimestamp;
 
 
 /**
  * @brief NTP packet header
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
 #if defined(_CPU_BIG_ENDIAN) && !defined(__ICCRX__)
    uint8_t li : 2;                  //0
@@ -162,24 +160,22 @@ typedef __packed_struct
    NtpTimestamp originateTimestamp; //24-31
    NtpTimestamp receiveTimestamp;   //32-39
    NtpTimestamp transmitTimestamp;  //40-47
-} NtpHeader;
+} __end_packed NtpHeader;
 
 
 /**
  * @brief NTP authenticator
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint32_t keyId;            //0-3
    uint8_t messageDigest[16]; //4-19
-} NtpAuthenticator;
+} __end_packed NtpAuthenticator;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
 

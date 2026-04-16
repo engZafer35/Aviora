@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,18 +33,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "os_port.h"
-#include "os_port_embos.h"
-#include "debug.h"
+#include "../../CycloneTcp/common/os_port.h"
+#include "../../CycloneTcp/common/os_port_embos.h"
+#include "../../CycloneTcp/common/debug.h"
 
-//Default task parameters
-const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
-{
-   NULL, //Task control block
-   NULL, //Stack
-   0,    //Size of the stack
-   1     //Task priority
-};
+//Forward declaration of functions
+void osIdleTaskHook(void);
+
+//Variables
+static OS_TASK *tcbTable[OS_PORT_MAX_TASKS];
+static void *stkTable[OS_PORT_MAX_TASKS];
 
 
 /**
@@ -53,6 +51,10 @@ const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
 
 void osInitKernel(void)
 {
+   //Initialize tables
+   osMemset(tcbTable, 0, sizeof(tcbTable));
+   osMemset(stkTable, 0, sizeof(stkTable));
+
    //Disable interrupts
    OS_IncDI();
    //Kernel initialization
@@ -74,49 +76,114 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a task
- * @param[in] name NULL-terminated string identifying the task
+ * @brief Create a static task
+ * @param[out] task Pointer to the task structure
+ * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] arg Argument passed to the task function
- * @param[in] params Task parameters
- * @return Task identifier referencing the newly created task
+ * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] stack Pointer to the stack
+ * @param[in] stackSize The initial size of the stack, in words
+ * @param[in] priority The priority at which the task should run
+ * @return The function returns TRUE if the task was successfully
+ *   created. Otherwise, FALSE is returned
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
-   const OsTaskParameters *params)
+bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
+   void *param, void *stack, size_t stackSize, int_t priority)
 {
-   OsTaskId taskId;
+   //Create a new task
+   OS_CreateTaskEx(task, name, priority, taskCode,
+      stack, stackSize * sizeof(uint_t), 1, param);
 
-   //Check parameters
-   if(params->tcb != NULL && params->stack != NULL)
+   //The task was successfully created
+   return TRUE;
+}
+
+
+/**
+ * @brief Create a new task
+ * @param[in] name A name identifying the task
+ * @param[in] taskCode Pointer to the task entry function
+ * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] stackSize The initial size of the stack, in words
+ * @param[in] priority The priority at which the task should run
+ * @return If the function succeeds, the return value is a pointer to the
+ *   new task. If the function fails, the return value is NULL
+ **/
+
+OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
+   void *param, size_t stackSize, int_t priority)
+{
+   uint_t i;
+   OS_TASK *task;
+   void *stack;
+
+   //Enter critical section
+   osSuspendAllTasks();
+
+   //Loop through TCB table
+   for(i = 0; i < OS_PORT_MAX_TASKS; i++)
    {
-      //Create a new task
-      OS_CreateTaskEx(params->tcb, name, params->priority, taskCode,
-         params->stack, params->stackSize * sizeof(uint32_t), 1, arg);
+      //Check whether the current entry is free
+      if(tcbTable[i] == NULL)
+         break;
+   }
 
-      //The task was successfully created
-      taskId = (OsTaskId) params->tcb;
+   //Any entry available in the table?
+   if(i < OS_PORT_MAX_TASKS)
+   {
+      //Allocate a memory block to hold the task's control block
+      task = osAllocMem(sizeof(OS_TASK));
+
+      //Successful memory allocation?
+      if(task != NULL)
+      {
+         //Allocate a memory block to hold the task's stack
+         stack = osAllocMem(stackSize * sizeof(uint_t));
+
+         //Successful memory allocation?
+         if(stack != NULL)
+         {
+            //Create a new task
+            OS_CreateTaskEx(task, name, priority, taskCode,
+               stack, stackSize * sizeof(uint_t), 1, param);
+
+            //Save TCB base address
+            tcbTable[i] = task;
+            //Save stack base address
+            stkTable[i] = stack;
+         }
+         else
+         {
+            osFreeMem(task);
+            //Memory allocation failed
+            task = NULL;
+         }
+      }
    }
    else
    {
-      //Invalid parameters
-      taskId = OS_INVALID_TASK_ID;
+      //Memory allocation failed
+      task = NULL;
    }
 
-   //Return the handle referencing the newly created task
-   return taskId;
+   //Leave critical section
+   osResumeAllTasks();
+
+   //Return task pointer
+   return task;
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] taskId Task identifier referencing the task to be deleted
+ * @param[in] task Pointer to the task to be deleted
  **/
 
-void osDeleteTask(OsTaskId taskId)
+void osDeleteTask(OsTask *task)
 {
    //Delete the specified task
-   OS_TerminateTask((OS_TASK *) taskId);
+   OS_TerminateTask(task);
 }
 
 
@@ -241,8 +308,8 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 {
    bool_t ret;
 
-   //Wait until the specified event is in the signaled state or the timeout
-   //interval elapses
+   //Wait until the specified event is in the signaled
+   //state or the timeout interval elapses
    if(timeout == 0)
    {
       //Non-blocking call
@@ -445,7 +512,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-__weak_func void *osAllocMem(size_t size)
+void *osAllocMem(size_t size)
 {
    void *p;
 
@@ -453,8 +520,7 @@ __weak_func void *osAllocMem(size_t size)
    p = OS_malloc(size);
 
    //Debug message
-   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n",
-      size, (uintptr_t) p);
+   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n", size, (uintptr_t) p);
 
    //Return a pointer to the newly allocated memory block
    return p;
@@ -466,7 +532,7 @@ __weak_func void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-__weak_func void osFreeMem(void *p)
+void osFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)

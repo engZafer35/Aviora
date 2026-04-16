@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _TFTP_COMMON_H
 #define _TFTP_COMMON_H
 
 //Dependencies
-#include "core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //TFTP port number
 #define TFTP_PORT 69
@@ -75,10 +75,8 @@ typedef enum
 } TftpErrorCode;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -87,63 +85,61 @@ typedef enum
  * @brief Read request packet (RRQ)
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t opcode;   //0-1
    char_t filename[]; //2
-} TftpRrqPacket;
+} __end_packed TftpRrqPacket;
 
 
 /**
  * @brief Write request packet (WRQ)
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t opcode;   //0-1
    char_t filename[]; //2
-} TftpWrqPacket;
+} __end_packed TftpWrqPacket;
 
 
 /**
  * @brief Data packet (DATA)
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t opcode; //0-1
    uint16_t block;  //2-3
    uint8_t data[];  //4
-} TftpDataPacket;
+} __end_packed TftpDataPacket;
 
 
 /**
  * @brief Acknowledgment packet (ACK)
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t opcode; //0-1
    uint16_t block;  //2-3
-} TftpAckPacket;
+} __end_packed TftpAckPacket;
 
 
 /**
  * @brief Error packet (ERROR)
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t opcode;    //0-1
    uint16_t errorCode; //2-3
    char_t errorMsg[];  //4
-} TftpErrorPacket;
+} __end_packed TftpErrorPacket;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
 

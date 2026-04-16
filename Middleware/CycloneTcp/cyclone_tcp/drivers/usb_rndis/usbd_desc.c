@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Dependencies
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/usb_rndis/usbd_desc.h"
+
+#include "../../../../CycloneTcp/common/cpu_endian.h"
+#include "../../../../CycloneTcp/common/debug.h"
+#include "../../../../CycloneTcp/common/os_port.h"
 #include "usbd_def.h"
 #include "usbd_ctlreq.h"
-#include "usbd_desc.h"
-#include "os_port.h"
-#include "cpu_endian.h"
-#include "debug.h"
 
 //Vendor identifier
 #define USBD_VENDOR_ID  0x0483

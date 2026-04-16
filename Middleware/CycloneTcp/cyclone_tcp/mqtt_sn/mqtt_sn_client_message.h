@@ -1,12 +1,12 @@
 /**
  * @file mqtt_sn_client_message.h
- * @brief MQTT-SN message formatting and parsing
+ * @brief MQTT-SN message parsing and formatting
  *
  * @section License
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _MQTT_SN_CLIENT_MESSAGE_H
 #define _MQTT_SN_CLIENT_MESSAGE_H
 
 //Dependencies
-#include "core/net.h"
-#include "mqtt_sn/mqtt_sn_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt_sn/mqtt_sn_client.h"
 
 //C++ guard
 #ifdef __cplusplus

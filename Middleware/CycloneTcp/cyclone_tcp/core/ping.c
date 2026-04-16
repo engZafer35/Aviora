@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,27 +25,27 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL PING_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/ping.h"
-#include "core/ip.h"
-#include "ipv4/ipv4.h"
-#include "ipv4/ipv4_misc.h"
-#include "ipv4/icmp.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_misc.h"
-#include "ipv6/icmpv6.h"
-#include "core/socket.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ping.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ip.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/icmp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/icmpv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
-#if (PING_SUPPORT == ENABLED && RAW_SOCKET_SUPPORT == ENABLED)
+#if (PING_SUPPORT == ENABLED)
 
 //Sequence number field
 static uint16_t pingSequenceNumber = 0;
@@ -232,9 +232,7 @@ error_t pingSendRequest(PingContext *context,
 
    //Initialize data payload
    for(i = 0; i < context->dataPayloadSize; i++)
-   {
       message->data[i] = i & 0xFF;
-   }
 
    //Length of the complete ICMP message including header and data
    length = sizeof(IcmpEchoMessage) + context->dataPayloadSize;
@@ -478,13 +476,9 @@ error_t pingWaitForReply(PingContext *context,
 
       //Compute the timeout to be used
       if(timeCompare(time, context->timestamp + context->timeout) < 0)
-      {
          timeout = context->timestamp + context->timeout - time;
-      }
       else
-      {
          timeout = 0;
-      }
 
       //Adjust receive timeout
       error = socketSetTimeout(context->socket, timeout);

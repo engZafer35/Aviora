@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,21 +25,21 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL PPP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_misc.h"
-#include "ppp/ppp_fsm.h"
-#include "ppp/ppp_misc.h"
-#include "ppp/ppp_debug.h"
-#include "ppp/ipv6cp.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ppp_fsm.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ppp_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ppp_debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ipv6cp.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (PPP_SUPPORT == ENABLED && IPV6_SUPPORT == ENABLED)
@@ -593,8 +593,20 @@ void ipv6cpThisLayerUp(PppContext *context)
    //Point to the underlying interface
    interface = context->interface;
 
-   //Set the EUI-64 interface identifier
-   interface->eui64 = context->localConfig.interfaceId;
+   //Generate an IPv6 address from the local interface identifier
+   ipv6GenerateLinkLocalAddr(&context->localConfig.interfaceId, &ipAddr);
+
+   //Update IPv6 configuration
+   ipv6SetAddr(interface, 0, &ipAddr, IPV6_ADDR_STATE_PREFERRED,
+      NDP_INFINITE_LIFETIME, NDP_INFINITE_LIFETIME, TRUE);
+
+   //Generate an IPv6 address from the remote interface identifier
+   ipv6GenerateLinkLocalAddr(&context->peerConfig.interfaceId, &ipAddr);
+
+   //Update IPv6 configuration
+   interface->ipv6Context.routerList[0].addr = ipAddr;
+   interface->ipv6Context.routerList[0].permanent = TRUE;
+
    //Link is up
    interface->linkState = TRUE;
 

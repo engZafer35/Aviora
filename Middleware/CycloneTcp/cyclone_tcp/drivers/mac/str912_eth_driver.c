@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,9 +33,9 @@
 
 //Dependencies
 #include "91x_lib.h"
-#include "core/net.h"
-#include "drivers/mac/str912_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/str912_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -211,15 +211,16 @@ error_t str912EthInit(NetInterface *interface)
 }
 
 
+//STR-E912 evaluation board?
+#if defined(USE_STR_E912)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void str912EthInitGpio(NetInterface *interface)
+void str912EthInitGpio(NetInterface *interface)
 {
-//STR-E912 evaluation board?
-#if defined(USE_STR_E912)
    GPIO_InitTypeDef GPIO_InitStructure;
 
    //Enable GPIO clocks
@@ -265,8 +266,9 @@ __weak_func void str912EthInitGpio(NetInterface *interface)
    GPIO_InitStructure.GPIO_IPInputConnected = GPIO_IPInputConnected_Disable;
    GPIO_InitStructure.GPIO_Alternate = GPIO_OutputAlt2;
    GPIO_Init(GPIO5, &GPIO_InitStructure);
-#endif
 }
+
+#endif
 
 
 /**

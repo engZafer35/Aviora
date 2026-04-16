@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,9 +33,9 @@
 
 //Dependencies
 #include "bsp_api.h"
-#include "core/net.h"
-#include "drivers/mac/ra6_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/ra6_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -45,36 +45,32 @@ static NetInterface *nicDriverInterface;
 
 //Transmit buffer
 #pragma data_alignment = 32
-#pragma location = RA6_ETH_RAM_SECTION
 static uint8_t txBuffer[RA6_ETH_TX_BUFFER_COUNT][RA6_ETH_TX_BUFFER_SIZE];
 //Receive buffer
 #pragma data_alignment = 32
-#pragma location = RA6_ETH_RAM_SECTION
 static uint8_t rxBuffer[RA6_ETH_RX_BUFFER_COUNT][RA6_ETH_RX_BUFFER_SIZE];
 //Transmit DMA descriptors
-#pragma data_alignment = 16
-#pragma location = RA6_ETH_RAM_SECTION
-static Ra6EthTxDmaDesc txDmaDesc[RA6_ETH_TX_BUFFER_COUNT];
+#pragma data_alignment = 32
+static Ra6TxDmaDesc txDmaDesc[RA6_ETH_TX_BUFFER_COUNT];
 //Receive DMA descriptors
-#pragma data_alignment = 16
-#pragma location = RA6_ETH_RAM_SECTION
-static Ra6EthRxDmaDesc rxDmaDesc[RA6_ETH_RX_BUFFER_COUNT];
+#pragma data_alignment = 32
+static Ra6RxDmaDesc rxDmaDesc[RA6_ETH_RX_BUFFER_COUNT];
 
 //ARM or GCC compiler?
 #else
 
 //Transmit buffer
 static uint8_t txBuffer[RA6_ETH_TX_BUFFER_COUNT][RA6_ETH_TX_BUFFER_SIZE]
-   __attribute__((aligned(32), __section__(RA6_ETH_RAM_SECTION)));
+   __attribute__((aligned(32)));
 //Receive buffer
 static uint8_t rxBuffer[RA6_ETH_RX_BUFFER_COUNT][RA6_ETH_RX_BUFFER_SIZE]
-   __attribute__((aligned(32), __section__(RA6_ETH_RAM_SECTION)));
+   __attribute__((aligned(32)));
 //Transmit DMA descriptors
-static Ra6EthTxDmaDesc txDmaDesc[RA6_ETH_TX_BUFFER_COUNT]
-   __attribute__((aligned(16), __section__(RA6_ETH_RAM_SECTION)));
+static Ra6TxDmaDesc txDmaDesc[RA6_ETH_TX_BUFFER_COUNT]
+   __attribute__((aligned(32)));
 //Receive DMA descriptors
-static Ra6EthRxDmaDesc rxDmaDesc[RA6_ETH_RX_BUFFER_COUNT]
-   __attribute__((aligned(16), __section__(RA6_ETH_RAM_SECTION)));
+static Ra6RxDmaDesc rxDmaDesc[RA6_ETH_RX_BUFFER_COUNT]
+   __attribute__((aligned(32)));
 
 #endif
 
@@ -137,7 +133,6 @@ error_t ra6EthInit(NetInterface *interface)
 
    //Reset EDMAC0 module
    R_ETHERC_EDMAC->EDMR |= R_ETHERC_EDMAC_EDMR_SWR_Msk;
-   //Wait for the reset to complete
    sleep(10);
 
    //Valid Ethernet PHY or switch driver?
@@ -185,19 +180,17 @@ error_t ra6EthInit(NetInterface *interface)
    //Use store and forward mode
    R_ETHERC_EDMAC->TFTR = 0;
 
-   //Set transmit FIFO size (2048 bytes) and receive FIFO size (4096 bytes)
+   //Set transmit and receive FIFO size (2048 bytes)
    R_ETHERC_EDMAC->FDR = (7 << R_ETHERC_EDMAC_FDR_TFD_Pos) |
-      (15 << R_ETHERC_EDMAC_FDR_RFD_Pos);
+      (7 << R_ETHERC_EDMAC_FDR_RFD_Pos);
 
    //Enable continuous reception of multiple frames
-   R_ETHERC_EDMAC->RMCR = R_ETHERC_EDMAC_RMCR_RNR_Msk;
+   R_ETHERC_EDMAC->RMCR |= R_ETHERC_EDMAC_RMCR_RNR_Msk;
 
-   //Select write-back complete interrupt mode and enable transmit interrupts
-   R_ETHERC_EDMAC->TRIMD = R_ETHERC_EDMAC_TRIMD_TIM_Msk |
-      R_ETHERC_EDMAC_TRIMD_TIS_Msk;
-
-   //Disable all ETHERC interrupts
-   R_ETHERC0->ECSIPR = 0;
+   //Select write-back complete interrupt mode
+   R_ETHERC_EDMAC->TRIMD &= ~R_ETHERC_EDMAC_TRIMD_TIM_Msk;
+   //Enable transmit Interrupts
+   R_ETHERC_EDMAC->TRIMD |= R_ETHERC_EDMAC_TRIMD_TIS_Msk;
 
    //Enable the desired EDMAC interrupts
    R_ETHERC_EDMAC->EESIPR = R_ETHERC_EDMAC_EESIPR_TWBIP_Msk |
@@ -224,12 +217,16 @@ error_t ra6EthInit(NetInterface *interface)
 }
 
 
+//EK-RA6M3, EK-RA6M4, EK-RA6M5 or M13-RA6M3-EK evaluation board?
+#if defined(USE_EK_RA6M3) || defined(USE_EK_RA6M4) || defined(USE_EK_RA6M5) || \
+   defined(USE_M13_RA6M3_EK)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void ra6EthInitGpio(NetInterface *interface)
+void ra6EthInitGpio(NetInterface *interface)
 {
 //EK-RA6M3, EK-RA6M4 or EK-RA6M5 evaluation board?
 #if defined(USE_EK_RA6M3) || defined(USE_EK_RA6M4) || defined(USE_EK_RA6M5)
@@ -291,61 +288,6 @@ __weak_func void ra6EthInitGpio(NetInterface *interface)
    R_PMISC->PWPR &= ~R_PMISC_PWPR_PFSWE_Msk;
    R_PMISC->PWPR |= R_PMISC_PWPR_B0WI_Msk;
 
-//M13-RA6M2-EK, M13-RA6M4-EK or M13-RA6M5-EK evaluation board?
-#elif defined(USE_M13_RA6M2_EK) || defined(USE_M13_RA6M4_EK) || \
-   defined(USE_M13_RA6M5_EK)
-   //Unlock PFS registers
-   R_PMISC->PWPR &= ~R_PMISC_PWPR_B0WI_Msk;
-   R_PMISC->PWPR |= R_PMISC_PWPR_PFSWE_Msk;
-
-   //Select RMII interface mode
-   R_PMISC->PFENET &= ~R_PMISC_PFENET_PHYMODE0_Msk;
-
-   //Configure RMII0_TXD_EN_B (P4_5)
-   R_PFS->PORT[4].PIN[5].PmnPFS = (23 << R_PFS_PORT_PIN_PmnPFS_PSEL_Pos) |
-      R_PFS_PORT_PIN_PmnPFS_PMR_Msk | (3 << R_PFS_PORT_PIN_PmnPFS_DSCR_Pos);
-
-   //Configure RMII0_TXD1_B (P4_6)
-   R_PFS->PORT[4].PIN[6].PmnPFS = (23 << R_PFS_PORT_PIN_PmnPFS_PSEL_Pos) |
-      R_PFS_PORT_PIN_PmnPFS_PMR_Msk | (3 << R_PFS_PORT_PIN_PmnPFS_DSCR_Pos);
-
-   //Configure RMII0_TXD0_B (P7_0)
-   R_PFS->PORT[7].PIN[0].PmnPFS = (23 << R_PFS_PORT_PIN_PmnPFS_PSEL_Pos) |
-      R_PFS_PORT_PIN_PmnPFS_PMR_Msk | (3 << R_PFS_PORT_PIN_PmnPFS_DSCR_Pos);
-
-   //Configure REF50CK0_B (P7_1)
-   R_PFS->PORT[7].PIN[1].PmnPFS = (23 << R_PFS_PORT_PIN_PmnPFS_PSEL_Pos) |
-      R_PFS_PORT_PIN_PmnPFS_PMR_Msk | (3 << R_PFS_PORT_PIN_PmnPFS_DSCR_Pos);
-
-   //Configure RMII0_RXD0_B (P7_2)
-   R_PFS->PORT[7].PIN[2].PmnPFS = (23 << R_PFS_PORT_PIN_PmnPFS_PSEL_Pos) |
-      R_PFS_PORT_PIN_PmnPFS_PMR_Msk | (3 << R_PFS_PORT_PIN_PmnPFS_DSCR_Pos);
-
-   //Configure RMII0_RXD1_B (P7_3)
-   R_PFS->PORT[7].PIN[3].PmnPFS = (23 << R_PFS_PORT_PIN_PmnPFS_PSEL_Pos) |
-      R_PFS_PORT_PIN_PmnPFS_PMR_Msk | (3 << R_PFS_PORT_PIN_PmnPFS_DSCR_Pos);
-
-   //Configure RMII0_RX_ER_B (P7_4)
-   R_PFS->PORT[7].PIN[4].PmnPFS = (23 << R_PFS_PORT_PIN_PmnPFS_PSEL_Pos) |
-      R_PFS_PORT_PIN_PmnPFS_PMR_Msk | (3 << R_PFS_PORT_PIN_PmnPFS_DSCR_Pos);
-
-   //Configure RMII0_CRS_DV_B (P7_5)
-   R_PFS->PORT[7].PIN[5].PmnPFS = (23 << R_PFS_PORT_PIN_PmnPFS_PSEL_Pos) |
-      R_PFS_PORT_PIN_PmnPFS_PMR_Msk | (3 << R_PFS_PORT_PIN_PmnPFS_DSCR_Pos);
-
-   //Configure PHY reset pin (P6_5)
-   R_PFS->PORT[6].PIN[5].PmnPFS = R_PFS_PORT_PIN_PmnPFS_PDR_Msk;
-
-   //Lock PFS registers
-   R_PMISC->PWPR &= ~R_PMISC_PWPR_PFSWE_Msk;
-   R_PMISC->PWPR |= R_PMISC_PWPR_B0WI_Msk;
-
-   //Reset PHY transceiver
-   R_PORT6->PCNTR3 = (1 << 5) << R_PORT0_PCNTR3_PORR_Pos;
-   sleep(10);
-   R_PORT6->PCNTR3 = (1 << 5) << R_PORT0_PCNTR3_POSR_Pos;
-   sleep(10);
-
 //M13-RA6M3-EK evaluation board?
 #elif defined(USE_M13_RA6M3_EK)
    //Disable protection
@@ -403,6 +345,8 @@ __weak_func void ra6EthInitGpio(NetInterface *interface)
    R_PMISC->PWPR |= R_PMISC_PWPR_B0WI_Msk;
 #endif
 }
+
+#endif
 
 
 /**
@@ -577,8 +521,8 @@ void EDMAC0_EINT_IRQHandler(void)
    //Packet received?
    if((status & R_ETHERC_EDMAC_EESR_FR_Msk) != 0)
    {
-      //Clear FR interrupt flag
-      R_ETHERC_EDMAC->EESR = R_ETHERC_EDMAC_EESR_FR_Msk;
+      //Disable FR interrupts
+      R_ETHERC_EDMAC->EESIPR &= ~R_ETHERC_EDMAC_EESIPR_FRIP_Msk;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -603,14 +547,25 @@ void ra6EthEventHandler(NetInterface *interface)
 {
    error_t error;
 
-   //Process all pending packets
-   do
+   //Packet received?
+   if((R_ETHERC_EDMAC->EESR & R_ETHERC_EDMAC_EESR_FR_Msk) != 0)
    {
-      //Read incoming packet
-      error = ra6EthReceivePacket(interface);
+      //Clear FR interrupt flag
+      R_ETHERC_EDMAC->EESR = R_ETHERC_EDMAC_EESR_FR_Msk;
 
-      //No more data in the receive buffer?
-   } while(error != ERROR_BUFFER_EMPTY);
+      //Process all pending packets
+      do
+      {
+         //Read incoming packet
+         error = ra6EthReceivePacket(interface);
+
+         //No more data in the receive buffer?
+      } while(error != ERROR_BUFFER_EMPTY);
+   }
+
+   //Re-enable EDMAC interrupts
+   R_ETHERC_EDMAC->EESIPR = R_ETHERC_EDMAC_EESIPR_TWBIP_Msk |
+      R_ETHERC_EDMAC_EESIPR_FRIP_Msk;
 }
 
 

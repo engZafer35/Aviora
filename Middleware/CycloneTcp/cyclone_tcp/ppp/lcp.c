@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,23 +25,23 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL PPP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "ppp/ppp_fsm.h"
-#include "ppp/ppp_misc.h"
-#include "ppp/ppp_debug.h"
-#include "ppp/lcp.h"
-#include "ppp/ipcp.h"
-#include "ppp/ipv6cp.h"
-#include "ppp/pap.h"
-#include "ppp/chap.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ppp_fsm.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ppp_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ppp_debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/lcp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ipcp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ipv6cp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/pap.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/chap.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (PPP_SUPPORT == ENABLED)
@@ -862,23 +862,15 @@ void lcpThisLayerUp(PppContext *context)
 
    //Check whether the other end of the PPP link is being authenticated
    if(context->localConfig.authProtocol != 0)
-   {
       context->localAuthDone = FALSE;
-   }
    else
-   {
       context->localAuthDone = TRUE;
-   }
 
    //Check whether the other end of the PPP link is the authenticator
    if(context->peerConfig.authProtocol != 0)
-   {
       context->peerAuthDone = FALSE;
-   }
    else
-   {
       context->peerAuthDone = TRUE;
-   }
 
 #if (PAP_SUPPORT == ENABLED)
    //PAP authentication required?

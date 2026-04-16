@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -32,7 +32,7 @@
  * Refer to RFC 4861 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -40,17 +40,18 @@
 
 //Dependencies
 #include <limits.h>
-#include "core/net.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_misc.h"
-#include "ipv6/icmpv6.h"
-#include "ipv6/ndp.h"
-#include "ipv6/ndp_cache.h"
-#include "ipv6/ndp_misc.h"
-#include "ipv6/slaac.h"
-#include "ipv6/slaac_misc.h"
-#include "mibs/ip_mib_module.h"
-#include "debug.h"
+#include <string.h>
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/icmpv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_cache.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/slaac.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/slaac_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/ip_mib_module.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV6_SUPPORT == ENABLED && NDP_SUPPORT == ENABLED)
@@ -84,168 +85,8 @@ error_t ndpInit(NetInterface *interface)
    context->rtrSolicitationInterval = NDP_RTR_SOLICITATION_INTERVAL;
    context->maxRtrSolicitations = NDP_MAX_RTR_SOLICITATIONS;
 
-   //Enable Neighbor Discovery protocol
-   context->enable = TRUE;
-
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief Enable address resolution using Neighbor Discovery protocol
- * @param[in] interface Underlying network interface
- * @param[in] enable This flag specifies whether the host is allowed to send
- *   Neighbor solicitations and respond to incoming Neighbor solicitations.
- *   When the flag is set to FALSE, the host relies exclusively on static
- *   Neighbor cache entries to map IPv6 addresses into MAC addresses and
- *   silently drop incoming Neighbor solicitations
- * @return Error code
- **/
-
-error_t ndpEnable(NetInterface *interface, bool_t enable)
-{
-   //Check parameters
-   if(interface == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Get exclusive access
-   osAcquireMutex(&netMutex);
-
-   //Enable or disable Neighbor Discovery protocol
-   interface->ndpContext.enable = enable;
-
-   //If Neighbor Discovery protocol is disabled then flush dynamic entries
-   //from the Neighbor cache
-   if(!enable)
-   {
-      ndpFlushNeighborCache(interface);
-   }
-
-   //Release exclusive access
-   osReleaseMutex(&netMutex);
-
-   //Successful processing
-   return NO_ERROR;
-}
-
-
-/**
- * @brief Add a static entry in the Neighbor cache
- * @param[in] interface Underlying network interface
- * @param[in] ipAddr IPv6 address
- * @param[in] macAddr MAC address
- * @return Error code
- **/
-
-error_t ndpAddStaticEntry(NetInterface *interface, const Ipv6Addr *ipAddr,
-   const MacAddr *macAddr)
-{
-   error_t error;
-   NdpNeighborCacheEntry *entry;
-
-   //Check parameters
-   if(interface == NULL || ipAddr == NULL || macAddr == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Get exclusive access
-   osAcquireMutex(&netMutex);
-
-   //Search the Neighbor cache for the specified IPv6 address
-   entry = ndpFindNeighborCacheEntry(interface, ipAddr);
-
-   //Check whether a matching entry exists
-   if(entry != NULL)
-   {
-      //Check the state of the Neighbor cache entry
-      if(entry->state == NDP_STATE_INCOMPLETE)
-      {
-         //Record the corresponding MAC address
-         entry->macAddr = *macAddr;
-         //Send all the packets that are pending for transmission
-         ndpSendQueuedPackets(interface, entry);
-      }
-   }
-   else
-   {
-      //Create a new entry in the Neighbor cache
-      entry = ndpCreateNeighborCacheEntry(interface);
-   }
-
-   //Neighbor cache entry successfully created?
-   if(entry != NULL)
-   {
-      //Record the IPv6 address and the corresponding MAC address
-      entry->ipAddr = *ipAddr;
-      entry->macAddr = *macAddr;
-
-      //Unused parameters
-      entry->isRouter = FALSE;
-      entry->timeout = 0;
-      entry->retransmitCount = 0;
-      entry->queueSize = 0;
-
-      //Update entry state
-      ndpChangeState(entry, NDP_STATE_PERMANENT);
-
-      //Successful processing
-      error = NO_ERROR;
-   }
-   else
-   {
-      //Failed to create Neighbor cache entry
-      error = ERROR_OUT_OF_RESOURCES;
-   }
-
-   //Release exclusive access
-   osReleaseMutex(&netMutex);
-
-   //Return status code
-   return error;
-}
-
-
-/**
- * @brief Remove a static entry from the Neighbor cache
- * @param[in] interface Underlying network interface
- * @param[in] ipAddr IPv6 address
- * @return Error code
- **/
-
-error_t ndpRemoveStaticEntry(NetInterface *interface, const Ipv6Addr *ipAddr)
-{
-   error_t error;
-   NdpNeighborCacheEntry *entry;
-
-   //Check parameters
-   if(interface == NULL || ipAddr == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Get exclusive access
-   osAcquireMutex(&netMutex);
-
-   //Search the Neighbor cache for the specified IPv6 address
-   entry = ndpFindNeighborCacheEntry(interface, ipAddr);
-
-   //Check whether a matching entry has been found
-   if(entry != NULL && entry->state == NDP_STATE_PERMANENT)
-   {
-      //Delete Neighbor cache entry
-      ndpChangeState(entry, NDP_STATE_NONE);
-      //Successful processing
-      error = NO_ERROR;
-   }
-   else
-   {
-      //No matching entry in Neighbor cache
-      error = ERROR_NOT_FOUND;
-   }
-
-   //Release exclusive access
-   osReleaseMutex(&netMutex);
-
-   //Return status code
-   return error;
 }
 
 
@@ -280,10 +121,12 @@ error_t ndpResolve(NetInterface *interface, const Ipv6Addr *ipAddr,
          //Copy the MAC address associated with the specified IPv6 address
          *macAddr = entry->macAddr;
 
+         //Start delay timer
+         entry->timestamp = osGetSystemTime();
          //Delay before sending the first probe
          entry->timeout = NDP_DELAY_FIRST_PROBE_TIME;
          //Switch to the DELAY state
-         ndpChangeState(entry, NDP_STATE_DELAY);
+         entry->state = NDP_STATE_DELAY;
 
          //Successful address resolution
          error = NO_ERROR;
@@ -299,44 +142,37 @@ error_t ndpResolve(NetInterface *interface, const Ipv6Addr *ipAddr,
    }
    else
    {
-      //Check whether Neighbor Discovery protocol is enabled
-      if(interface->ndpContext.enable)
+      //If no entry exists, then create a new one
+      entry = ndpCreateNeighborCacheEntry(interface);
+
+      //Neighbor Cache entry successfully created?
+      if(entry != NULL)
       {
-         //If no entry exists, then create a new one
-         entry = ndpCreateNeighborCacheEntry(interface);
+         //Record the IPv6 address whose MAC address is unknown
+         entry->ipAddr = *ipAddr;
 
-         //Neighbor cache entry successfully created?
-         if(entry != NULL)
-         {
-            //Record the IPv6 address whose MAC address is unknown
-            entry->ipAddr = *ipAddr;
+         //Reset retransmission counter
+         entry->retransmitCount = 0;
+         //No packet are pending in the transmit queue
+         entry->queueSize = 0;
 
-            //Reset retransmission counter
-            entry->retransmitCount = 0;
-            //No packet are pending in the transmit queue
-            entry->queueSize = 0;
+         //Send a multicast Neighbor Solicitation message
+         ndpSendNeighborSol(interface, ipAddr, TRUE);
 
-            //Send a multicast Neighbor Solicitation message
-            ndpSendNeighborSol(interface, ipAddr, TRUE);
+         //Save the time at which the message was sent
+         entry->timestamp = osGetSystemTime();
+         //Set timeout value
+         entry->timeout = interface->ndpContext.retransTimer;
+         //Enter INCOMPLETE state
+         entry->state = NDP_STATE_INCOMPLETE;
 
-            //Set timeout value
-            entry->timeout = interface->ndpContext.retransTimer;
-            //Enter INCOMPLETE state
-            ndpChangeState(entry, NDP_STATE_INCOMPLETE);
-
-            //The address resolution is in progress
-            error = ERROR_IN_PROGRESS;
-         }
-         else
-         {
-            //Failed to create Neighbor cache entry
-            error = ERROR_OUT_OF_RESOURCES;
-         }
+         //The address resolution is in progress
+         error = ERROR_IN_PROGRESS;
       }
       else
       {
-         //Neighbor Discovery protocol is disabled
-         error = ERROR_INVALID_ADDRESS;
+         //Failed to create Neighbor Cache entry...
+         error = ERROR_OUT_OF_RESOURCES;
       }
    }
 
@@ -359,7 +195,7 @@ error_t ndpResolve(NetInterface *interface, const Ipv6Addr *ipAddr,
 
 error_t ndpEnqueuePacket(NetInterface *srcInterface,
    NetInterface *destInterface, const Ipv6Addr *ipAddr, NetBuffer *buffer,
-   size_t offset, NetTxAncillary *ancillary)
+      size_t offset, NetTxAncillary *ancillary)
 {
    error_t error;
    uint_t i;
@@ -375,14 +211,13 @@ error_t ndpEnqueuePacket(NetInterface *srcInterface,
    //Check whether a matching entry exists
    if(entry != NULL)
    {
-      //Check the state of the Neighbor cache entry
+      //Check current state
       if(entry->state == NDP_STATE_INCOMPLETE)
       {
          //Check whether the packet queue is full
          if(entry->queueSize >= NDP_MAX_PENDING_PACKETS)
          {
-            //When the queue overflows, the new arrival should replace the
-            //oldest entry
+            //When the queue overflows, the new arrival should replace the oldest entry
             netBufferFree(entry->queue[0].buffer);
 
             //Make room for the new packet
@@ -462,8 +297,7 @@ void ndpTick(NetInterface *interface)
    //Solicitation messages to obtain Router Advertisements quickly
    if(interface->linkState && !interface->ipv6Context.isRouter)
    {
-      //Make sure that a valid link-local address has been assigned to the
-      //interface
+      //Make sure that a valid link-local address has been assigned to the interface
       if(ipv6GetLinkLocalAddrState(interface) == IPV6_ADDR_STATE_PREFERRED)
       {
          //The host should transmit up to MAX_RTR_SOLICITATIONS Router
@@ -477,9 +311,9 @@ void ndpTick(NetInterface *interface)
             //Detection for the link-local address
             if(context->dupAddrDetectTransmits > 0)
             {
-               //If a host has already performed a random delay since the
-               //interface became enabled, there is no need to delay again
-               //before sending the first Router Solicitation message
+               //If a host has already performed a random delay since the interface
+               //became enabled, there is no need to delay again before sending the
+               //first Router Solicitation message
                context->timeout = 0;
             }
             else
@@ -487,7 +321,7 @@ void ndpTick(NetInterface *interface)
                //Before a host sends an initial solicitation, it should delay the
                //transmission for a random amount of time in order to alleviate
                //congestion when many hosts start up on a link at the same time
-               context->timeout = netGenerateRandRange(context->minRtrSolicitationDelay,
+               context->timeout = netGetRandRange(context->minRtrSolicitationDelay,
                   context->maxRtrSolicitationDelay);
             }
 
@@ -575,9 +409,8 @@ void ndpLinkChangeEvent(NetInterface *interface)
  * @param[in] hopLimit Hop Limit field from IPv6 header
  **/
 
-void ndpProcessRouterAdv(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, uint8_t hopLimit)
+void ndpProcessRouterAdv(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, uint8_t hopLimit)
 {
    error_t error;
    uint32_t n;
@@ -613,8 +446,8 @@ void ndpProcessRouterAdv(NetInterface *interface,
    if(!ipv6IsLinkLocalUnicastAddr(&pseudoHeader->srcAddr))
       return;
 
-   //The IPv6 Hop Limit field must have a value of 255 to ensure that the
-   //packet has not been forwarded by a router
+   //The IPv6 Hop Limit field must have a value of 255 to ensure
+   //that the packet has not been forwarded by a router
    if(hopLimit != NDP_HOP_LIMIT)
       return;
 
@@ -675,7 +508,7 @@ void ndpProcessRouterAdv(NetInterface *interface,
       interface->ipv6Context.curHopLimit = message->curHopLimit;
    }
 
-   //A value of zero means unspecified
+   //A value of zero means unspecified...
    if(message->reachableTime != 0)
    {
       //The Reachable Time field holds the time, in milliseconds, that
@@ -684,18 +517,18 @@ void ndpProcessRouterAdv(NetInterface *interface,
       interface->ndpContext.reachableTime = ntohl(message->reachableTime);
    }
 
-   //A value of zero means unspecified
+   //A value of zero means unspecified...
    if(message->retransTimer != 0)
    {
-      //The Retrans Timer field holds the time, in milliseconds, between
-      //retransmitted Neighbor Solicitation messages
+      //The Retrans Timer field holds the time, in milliseconds,
+      //between retransmitted Neighbor Solicitation messages
       interface->ndpContext.retransTimer = ntohl(message->retransTimer);
    }
 
 #if (ETH_SUPPORT == ENABLED)
    //Search for the Source Link-Layer Address option
-   linkLayerAddrOption = ndpGetOption(message->options, length,
-      NDP_OPT_SOURCE_LINK_LAYER_ADDR);
+   linkLayerAddrOption = ndpGetOption(message->options,
+      length, NDP_OPT_SOURCE_LINK_LAYER_ADDR);
 
    //Source Link-Layer Address option found?
    if(linkLayerAddrOption != NULL && linkLayerAddrOption->length == 1)
@@ -714,55 +547,47 @@ void ndpProcessRouterAdv(NetInterface *interface,
    entry = ndpFindNeighborCacheEntry(interface, &pseudoHeader->srcAddr);
 
    //No matching entry has been found?
-   if(entry == NULL)
+   if(!entry)
    {
       //If the advertisement contains a Source Link-Layer Address option,
       //the link-layer address should be recorded in the Neighbor cache
       if(linkLayerAddrOption)
       {
-         //Check whether Neighbor Discovery protocol is enabled
-         if(interface->ndpContext.enable)
+         //Create an entry for the router
+         entry = ndpCreateNeighborCacheEntry(interface);
+
+         //Neighbor cache entry successfully created?
+         if(entry)
          {
-            //Create an entry for the router
-            entry = ndpCreateNeighborCacheEntry(interface);
-
-            //Neighbor cache entry successfully created?
-            if(entry != NULL)
-            {
-               //Record the IPv6 address and the corresponding MAC address
-               entry->ipAddr = pseudoHeader->srcAddr;
-               entry->macAddr = linkLayerAddrOption->linkLayerAddr;
-
-               //The IsRouter flag must be set to TRUE
-               entry->isRouter = TRUE;
-
-               //The reachability state must be set to STALE
-               ndpChangeState(entry, NDP_STATE_STALE);
-            }
+            //Record the IPv6 address and the corresponding MAC address
+            entry->ipAddr = pseudoHeader->srcAddr;
+            entry->macAddr = linkLayerAddrOption->linkLayerAddr;
+            //The IsRouter flag must be set to TRUE
+            entry->isRouter = TRUE;
+            //Save current time
+            entry->timestamp = osGetSystemTime();
+            //The reachability state must be set to STALE
+            entry->state = NDP_STATE_STALE;
          }
       }
    }
    else
    {
-      //The sender of a Router Advertisement is implicitly assumed to be a
-      //router
+      //The sender of a Router Advertisement is implicitly assumed to be a router
       entry->isRouter = TRUE;
 
       //Check if the advertisement contains a Source Link-Layer Address option
       if(linkLayerAddrOption)
       {
-         //Check the state of the Neighbor cache entry
-         if(entry->state == NDP_STATE_PERMANENT)
-         {
-            //Static Neighbor cache entries are never updated
-         }
-         else if(entry->state == NDP_STATE_INCOMPLETE)
+         //INCOMPLETE state?
+         if(entry->state == NDP_STATE_INCOMPLETE)
          {
             //Record link-layer address
             entry->macAddr = linkLayerAddrOption->linkLayerAddr;
-
             //Send all the packets that are pending for transmission
             n = ndpSendQueuedPackets(interface, entry);
+            //Save current time
+            entry->timestamp = osGetSystemTime();
 
             //Check whether any packets have been sent
             if(n > 0)
@@ -770,14 +595,15 @@ void ndpProcessRouterAdv(NetInterface *interface,
                //Start delay timer
                entry->timeout = NDP_DELAY_FIRST_PROBE_TIME;
                //Switch to the DELAY state
-               ndpChangeState(entry, NDP_STATE_DELAY);
+               entry->state = NDP_STATE_DELAY;
             }
             else
             {
                //Enter the STALE state
-               ndpChangeState(entry, NDP_STATE_STALE);
+               entry->state = NDP_STATE_STALE;
             }
          }
+         //REACHABLE, STALE, DELAY or PROBE state?
          else
          {
             //Different link-layer address than cached?
@@ -785,9 +611,10 @@ void ndpProcessRouterAdv(NetInterface *interface,
             {
                //Update link-layer address
                entry->macAddr = linkLayerAddrOption->linkLayerAddr;
-
+               //Save current time
+               entry->timestamp = osGetSystemTime();
                //The reachability state must be set to STALE
-               ndpChangeState(entry, NDP_STATE_STALE);
+               entry->state = NDP_STATE_STALE;
             }
          }
       }
@@ -825,16 +652,16 @@ void ndpProcessRouterAdv(NetInterface *interface,
    while(1)
    {
       //Search the Options field for any Prefix Information options
-      prefixInfoOption = ndpGetOption(message->options + n, length - n,
-         NDP_OPT_PREFIX_INFORMATION);
+      prefixInfoOption = ndpGetOption(message->options + n,
+         length - n, NDP_OPT_PREFIX_INFORMATION);
 
       //No more option of the specified type?
       if(prefixInfoOption == NULL)
          break;
 
-      //Hosts use the advertised on-link prefixes to build and maintain a list
-      //that is used in deciding when a packet's destination is on-link or
-      //beyond a router
+      //Hosts use the advertised on-link prefixes to build and maintain
+      //a list that is used in deciding when a packet's destination is
+      //on-link or beyond a router
       ndpParsePrefixInfoOption(interface, prefixInfoOption);
 
       //Retrieve the offset to the current position
@@ -864,9 +691,8 @@ void ndpProcessRouterAdv(NetInterface *interface,
  * @param[in] hopLimit Hop Limit field from IPv6 header
  **/
 
-void ndpProcessNeighborSol(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, uint8_t hopLimit)
+void ndpProcessNeighborSol(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, uint8_t hopLimit)
 {
 #if (ETH_SUPPORT == ENABLED)
    error_t error;
@@ -897,8 +723,8 @@ void ndpProcessNeighborSol(NetInterface *interface,
    //Dump message contents for debugging purpose
    ndpDumpNeighborSolMessage(message);
 
-   //The IPv6 Hop Limit field must have a value of 255 to ensure that the
-   //packet has not been forwarded by a router
+   //The IPv6 Hop Limit field must have a value of 255 to ensure
+   //that the packet has not been forwarded by a router
    if(hopLimit != NDP_HOP_LIMIT)
       return;
 
@@ -906,8 +732,8 @@ void ndpProcessNeighborSol(NetInterface *interface,
    if(message->code)
       return;
 
-   //If the IP source address is the unspecified address, the IP destination
-   //address must be a solicited-node multicast address
+   //If the IP source address is the unspecified address, the IP
+   //destination address must be a solicited-node multicast address
    if(ipv6CompAddr(&pseudoHeader->srcAddr, &IPV6_UNSPECIFIED_ADDR) &&
       !ipv6IsSolicitedNodeAddr(&pseudoHeader->destAddr))
    {
@@ -927,8 +753,8 @@ void ndpProcessNeighborSol(NetInterface *interface,
       return;
 
    //Search for the Source Link-Layer Address option
-   option = ndpGetOption(message->options, length,
-      NDP_OPT_SOURCE_LINK_LAYER_ADDR);
+   option = ndpGetOption(message->options,
+      length, NDP_OPT_SOURCE_LINK_LAYER_ADDR);
 
    //The target address must a valid unicast or anycast address assigned to
    //the interface or a tentative address on which DAD is being performed
@@ -947,12 +773,12 @@ void ndpProcessNeighborSol(NetInterface *interface,
          if(addrEntry->state == IPV6_ADDR_STATE_TENTATIVE)
          {
             //If the source address of the Neighbor Solicitation is the
-            //unspecified address, the solicitation is from a node performing
-            //Duplicate Address Detection
+            //unspecified address, the solicitation is from a node
+            //performing Duplicate Address Detection
             if(ipv6CompAddr(&pseudoHeader->srcAddr, &IPV6_UNSPECIFIED_ADDR))
             {
                //The source link-layer address must not be included when the
-               //source IP address is the unspecified address
+               //source IP address is the unspecified address...
                if(option == NULL)
                {
                   //Debug message
@@ -1005,44 +831,37 @@ void ndpProcessNeighborSol(NetInterface *interface,
          return;
 
       //Search the Neighbor Cache for the source address of the solicitation
-      neighborCacheEntry = ndpFindNeighborCacheEntry(interface,
-         &pseudoHeader->srcAddr);
+      neighborCacheEntry = ndpFindNeighborCacheEntry(interface, &pseudoHeader->srcAddr);
 
       //No matching entry has been found?
-      if(neighborCacheEntry == NULL)
+      if(!neighborCacheEntry)
       {
-         //Check whether Neighbor Discovery protocol is enabled
-         if(interface->ndpContext.enable)
+         //Create an entry
+         neighborCacheEntry = ndpCreateNeighborCacheEntry(interface);
+
+         //Neighbor Cache entry successfully created?
+         if(neighborCacheEntry)
          {
-            //Create an entry
-            neighborCacheEntry = ndpCreateNeighborCacheEntry(interface);
-
-            //Neighbor cache entry successfully created?
-            if(neighborCacheEntry != NULL)
-            {
-               //Record the IPv6 and the corresponding MAC address
-               neighborCacheEntry->ipAddr = pseudoHeader->srcAddr;
-               neighborCacheEntry->macAddr = option->linkLayerAddr;
-
-               //Enter the STALE state
-               ndpChangeState(neighborCacheEntry, NDP_STATE_STALE);
-            }
+            //Record the IPv6 and the corresponding MAC address
+            neighborCacheEntry->ipAddr = pseudoHeader->srcAddr;
+            neighborCacheEntry->macAddr = option->linkLayerAddr;
+            //Save current time
+            neighborCacheEntry->timestamp = osGetSystemTime();
+            //Enter the STALE state
+            neighborCacheEntry->state = NDP_STATE_STALE;
          }
       }
       else
       {
-         //Check the state of the Neighbor cache entry
-         if(neighborCacheEntry->state == NDP_STATE_PERMANENT)
-         {
-            //Static Neighbor cache entries are never updated
-         }
-         else if(neighborCacheEntry->state == NDP_STATE_INCOMPLETE)
+         //INCOMPLETE state?
+         if(neighborCacheEntry->state == NDP_STATE_INCOMPLETE)
          {
             //Record link-layer address
             neighborCacheEntry->macAddr = option->linkLayerAddr;
-
             //Send all the packets that are pending for transmission
             n = ndpSendQueuedPackets(interface, neighborCacheEntry);
+            //Save current time
+            neighborCacheEntry->timestamp = osGetSystemTime();
 
             //Check whether any packets have been sent
             if(n > 0)
@@ -1050,14 +869,15 @@ void ndpProcessNeighborSol(NetInterface *interface,
                //Start delay timer
                neighborCacheEntry->timeout = NDP_DELAY_FIRST_PROBE_TIME;
                //Switch to the DELAY state
-               ndpChangeState(neighborCacheEntry, NDP_STATE_DELAY);
+               neighborCacheEntry->state = NDP_STATE_DELAY;
             }
             else
             {
                //Enter the STALE state
-               ndpChangeState(neighborCacheEntry, NDP_STATE_STALE);
+               neighborCacheEntry->state = NDP_STATE_STALE;
             }
          }
+         //REACHABLE, STALE, DELAY or PROBE state?
          else
          {
             //Different link-layer address than cached?
@@ -1065,9 +885,10 @@ void ndpProcessNeighborSol(NetInterface *interface,
             {
                //Update link-layer address
                neighborCacheEntry->macAddr = option->linkLayerAddr;
-
+               //Save current time
+               neighborCacheEntry->timestamp = osGetSystemTime();
                //Enter the STALE state
-               ndpChangeState(neighborCacheEntry, NDP_STATE_STALE);
+               neighborCacheEntry->state = NDP_STATE_STALE;
             }
          }
       }
@@ -1088,14 +909,9 @@ void ndpProcessNeighborSol(NetInterface *interface,
       }
    }
 
-   //Check whether a Neighbor Advertisement should be sent in response
-   if(interface->ndpContext.enable)
-   {
-      //After any updates to the Neighbor cache, the node sends a Neighbor
-      //Advertisement response as described in RFC 4861 7.2.4
-      ndpSendNeighborAdv(interface, &message->targetAddr,
-         &pseudoHeader->srcAddr);
-   }
+   //After any updates to the Neighbor cache, the node sends a Neighbor
+   //Advertisement response as described in RFC 4861 7.2.4
+   ndpSendNeighborAdv(interface, &message->targetAddr, &pseudoHeader->srcAddr);
 #endif
 }
 
@@ -1109,9 +925,8 @@ void ndpProcessNeighborSol(NetInterface *interface,
  * @param[in] hopLimit Hop Limit field from IPv6 header
  **/
 
-void ndpProcessNeighborAdv(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, uint8_t hopLimit)
+void ndpProcessNeighborAdv(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, uint8_t hopLimit)
 {
 #if (ETH_SUPPORT == ENABLED)
    error_t error;
@@ -1142,8 +957,8 @@ void ndpProcessNeighborAdv(NetInterface *interface,
    //Dump message contents for debugging purpose
    ndpDumpNeighborAdvMessage(message);
 
-   //The IPv6 Hop Limit field must have a value of 255 to ensure that the
-   //packet has not been forwarded by a router
+   //The IPv6 Hop Limit field must have a value of 255 to ensure
+   //that the packet has not been forwarded by a router
    if(hopLimit != NDP_HOP_LIMIT)
       return;
 
@@ -1188,8 +1003,8 @@ void ndpProcessNeighborAdv(NetInterface *interface,
       //Valid entry?
       if(addrEntry->state != IPV6_ADDR_STATE_INVALID)
       {
-         //Check whether the target address is tentative or matches a unicast
-         //address assigned to the interface
+         //Check whether the target address is tentative or matches
+         //a unicast address assigned to the interface
          if(ipv6CompAddr(&addrEntry->addr, &message->targetAddr))
          {
             //Debug message
@@ -1208,15 +1023,15 @@ void ndpProcessNeighborAdv(NetInterface *interface,
    neighborCacheEntry = ndpFindNeighborCacheEntry(interface, &message->targetAddr);
 
    //If no entry exists, the advertisement should be silently discarded
-   if(neighborCacheEntry != NULL)
+   if(neighborCacheEntry)
    {
       //This flag tells whether the supplied link-layer
       //address differs from that in the cache
       differentLinkLayerAddr = FALSE;
 
       //Search for the Target Link-Layer Address option
-      option = ndpGetOption(message->options, length,
-         NDP_OPT_TARGET_LINK_LAYER_ADDR);
+      option = ndpGetOption(message->options,
+         length, NDP_OPT_TARGET_LINK_LAYER_ADDR);
 
       //Target Link-Layer Address option found?
       if(option != NULL && option->length == 1)
@@ -1227,17 +1042,11 @@ void ndpProcessNeighborAdv(NetInterface *interface,
 
          //Different link-layer address than cached?
          if(!macCompAddr(&neighborCacheEntry->macAddr, &option->linkLayerAddr))
-         {
             differentLinkLayerAddr = TRUE;
-         }
       }
 
-      //Check the state of the Neighbor cache entry
-      if(neighborCacheEntry->state == NDP_STATE_PERMANENT)
-      {
-         //Static Neighbor cache entries are never updated
-      }
-      else if(neighborCacheEntry->state == NDP_STATE_INCOMPLETE)
+      //INCOMPLETE state?
+      if(neighborCacheEntry->state == NDP_STATE_INCOMPLETE)
       {
          //If no Target Link-Layer Address option is included, the receiving
          //node should silently discard the received advertisement
@@ -1245,9 +1054,10 @@ void ndpProcessNeighborAdv(NetInterface *interface,
          {
             //Record the link-layer address
             neighborCacheEntry->macAddr = option->linkLayerAddr;
-
             //Send all the packets that are pending for transmission
             n = ndpSendQueuedPackets(interface, neighborCacheEntry);
+            //Save current time
+            neighborCacheEntry->timestamp = osGetSystemTime();
 
             //Solicited flag is set?
             if(message->s)
@@ -1255,7 +1065,7 @@ void ndpProcessNeighborAdv(NetInterface *interface,
                //Computing the random ReachableTime value
                neighborCacheEntry->timeout = interface->ndpContext.reachableTime;
                //Switch to the REACHABLE state
-               ndpChangeState(neighborCacheEntry, NDP_STATE_REACHABLE);
+               neighborCacheEntry->state = NDP_STATE_REACHABLE;
             }
             else
             {
@@ -1265,27 +1075,30 @@ void ndpProcessNeighborAdv(NetInterface *interface,
                   //Start delay timer
                   neighborCacheEntry->timeout = NDP_DELAY_FIRST_PROBE_TIME;
                   //Switch to the DELAY state
-                  ndpChangeState(neighborCacheEntry, NDP_STATE_DELAY);
+                  neighborCacheEntry->state = NDP_STATE_DELAY;
                }
                else
                {
                   //Enter the STALE state
-                  ndpChangeState(neighborCacheEntry, NDP_STATE_STALE);
+                  neighborCacheEntry->state = NDP_STATE_STALE;
                }
             }
          }
       }
+      //REACHABLE, STALE, DELAY or PROBE state?
       else
       {
-         //Check whether the Override flag is clear and the supplied link-layer
-         //address differs from that in the cache
+         //Check whether the Override flag is clear and the supplied
+         //link-layer address differs from that in the cache
          if(!message->o && differentLinkLayerAddr)
          {
             //REACHABLE state?
             if(neighborCacheEntry->state == NDP_STATE_REACHABLE)
             {
+               //Save current time
+               neighborCacheEntry->timestamp = osGetSystemTime();
                //Enter the STALE state
-               ndpChangeState(neighborCacheEntry, NDP_STATE_STALE);
+               neighborCacheEntry->state = NDP_STATE_STALE;
             }
          }
          else
@@ -1300,10 +1113,12 @@ void ndpProcessNeighborAdv(NetInterface *interface,
                   neighborCacheEntry->macAddr = option->linkLayerAddr;
                }
 
+               //Save current time
+               neighborCacheEntry->timestamp = osGetSystemTime();
                //Computing the random ReachableTime value
                neighborCacheEntry->timeout = interface->ndpContext.reachableTime;
                //Switch to the REACHABLE state
-               ndpChangeState(neighborCacheEntry, NDP_STATE_REACHABLE);
+               neighborCacheEntry->state = NDP_STATE_REACHABLE;
             }
             else
             {
@@ -1312,16 +1127,17 @@ void ndpProcessNeighborAdv(NetInterface *interface,
                {
                   //The link-layer address must be inserted in the cache
                   neighborCacheEntry->macAddr = option->linkLayerAddr;
-
+                  //Save current time
+                  neighborCacheEntry->timestamp = osGetSystemTime();
                   //The state must be set to STALE
-                  ndpChangeState(neighborCacheEntry, NDP_STATE_STALE);
+                  neighborCacheEntry->state = NDP_STATE_STALE;
                }
             }
          }
       }
 
-      //The IsRouter flag in the cache entry must be set based on the Router
-      //flag in the received advertisement
+      //The IsRouter flag in the cache entry must be set based
+      //on the Router flag in the received advertisement
       if(message->r)
       {
          //The neighbor is a router
@@ -1329,8 +1145,8 @@ void ndpProcessNeighborAdv(NetInterface *interface,
       }
       else
       {
-         //Check whether the IsRouter flag changes from TRUE to FALSE as a
-         //result of this update
+         //Check whether the IsRouter flag changes from TRUE to FALSE
+         //as a result of this update
          if(neighborCacheEntry->isRouter)
          {
             //The node must remove that router from the Default Router list
@@ -1356,9 +1172,8 @@ void ndpProcessNeighborAdv(NetInterface *interface,
  * @param[in] hopLimit Hop Limit field from IPv6 header
  **/
 
-void ndpProcessRedirect(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, uint8_t hopLimit)
+void ndpProcessRedirect(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, uint8_t hopLimit)
 {
 #if (ETH_SUPPORT == ENABLED)
    error_t error;
@@ -1387,8 +1202,8 @@ void ndpProcessRedirect(NetInterface *interface,
    //Dump message contents for debugging purpose
    ndpDumpRedirectMessage(message);
 
-   //The IPv6 Hop Limit field must have a value of 255 to ensure that the
-   //packet has not been forwarded by a router
+   //The IPv6 Hop Limit field must have a value of 255 to ensure
+   //that the packet has not been forwarded by a router
    if(hopLimit != NDP_HOP_LIMIT)
       return;
 
@@ -1434,7 +1249,7 @@ void ndpProcessRedirect(NetInterface *interface,
    destCacheEntry = ndpFindDestCacheEntry(interface, &message->destAddr);
 
    //Check whether a corresponding Destination cache entry exists
-   if(destCacheEntry != NULL)
+   if(destCacheEntry)
    {
       //The entry is updated with information learned from Redirect messages
       destCacheEntry->nextHop = message->targetAddr;
@@ -1448,7 +1263,7 @@ void ndpProcessRedirect(NetInterface *interface,
       destCacheEntry = ndpCreateDestCacheEntry(interface);
 
       //Destination cache entry successfully created?
-      if(destCacheEntry != NULL)
+      if(destCacheEntry)
       {
          //Destination address
          destCacheEntry->destAddr = message->destAddr;
@@ -1465,8 +1280,8 @@ void ndpProcessRedirect(NetInterface *interface,
    }
 
    //Search for the Target Link-Layer Address option
-   option = ndpGetOption(message->options, length,
-      NDP_OPT_TARGET_LINK_LAYER_ADDR);
+   option = ndpGetOption(message->options,
+      length, NDP_OPT_TARGET_LINK_LAYER_ADDR);
 
    //If the Redirect contains a Target Link-Layer Address option, the host
    //either creates or updates the Neighbor Cache entry for the target
@@ -1477,33 +1292,27 @@ void ndpProcessRedirect(NetInterface *interface,
          macAddrToString(&option->linkLayerAddr, NULL));
 
       //Search the Neighbor cache for the specified target address
-      neighborCacheEntry = ndpFindNeighborCacheEntry(interface,
-         &message->targetAddr);
+      neighborCacheEntry = ndpFindNeighborCacheEntry(interface, &message->targetAddr);
 
       //No matching entry has been found?
-      if(neighborCacheEntry == NULL)
+      if(!neighborCacheEntry)
       {
-         //Check whether Neighbor Discovery protocol is enabled
-         if(interface->ndpContext.enable)
+         //Create an entry for the target
+         neighborCacheEntry = ndpCreateNeighborCacheEntry(interface);
+
+         //Neighbor cache entry successfully created?
+         if(neighborCacheEntry)
          {
-            //Create an entry for the target
-            neighborCacheEntry = ndpCreateNeighborCacheEntry(interface);
-
-            //Neighbor cache entry successfully created?
-            if(neighborCacheEntry != NULL)
-            {
-               //Record the Target address
-               neighborCacheEntry->ipAddr = message->targetAddr;
-               //The cached link-layer address is copied from the option
-               neighborCacheEntry->macAddr = option->linkLayerAddr;
-
-               //Newly created Neighbor Cache entries should set the IsRouter
-               //flag to FALSE
-               neighborCacheEntry->isRouter = FALSE;
-
-               //The reachability state must be set to STALE
-               ndpChangeState(neighborCacheEntry, NDP_STATE_STALE);
-            }
+            //Record the Target address
+            neighborCacheEntry->ipAddr = message->targetAddr;
+            //The cached link-layer address is copied from the option
+            neighborCacheEntry->macAddr = option->linkLayerAddr;
+            //Newly created Neighbor Cache entries should set the IsRouter flag to FALSE
+            neighborCacheEntry->isRouter = FALSE;
+            //Save current time
+            neighborCacheEntry->timestamp = osGetSystemTime();
+            //The reachability state must be set to STALE
+            neighborCacheEntry->state = NDP_STATE_STALE;
          }
       }
       else
@@ -1511,22 +1320,17 @@ void ndpProcessRedirect(NetInterface *interface,
          //If the Target Address is not the same as the Destination Address,
          //the host must set IsRouter to TRUE for the target
          if(!ipv6CompAddr(&message->targetAddr, &message->destAddr))
-         {
             neighborCacheEntry->isRouter = TRUE;
-         }
 
-         //Check the state of the Neighbor cache entry
-         if(neighborCacheEntry->state == NDP_STATE_PERMANENT)
-         {
-            //Static Neighbor cache entries are never updated
-         }
-         else if(neighborCacheEntry->state == NDP_STATE_INCOMPLETE)
+         //INCOMPLETE state?
+         if(neighborCacheEntry->state == NDP_STATE_INCOMPLETE)
          {
             //Record link-layer address
             neighborCacheEntry->macAddr = option->linkLayerAddr;
-
             //Send all the packets that are pending for transmission
             n = ndpSendQueuedPackets(interface, neighborCacheEntry);
+            //Save current time
+            neighborCacheEntry->timestamp = osGetSystemTime();
 
             //Check whether any packets have been sent
             if(n > 0)
@@ -1534,14 +1338,15 @@ void ndpProcessRedirect(NetInterface *interface,
                //Start delay timer
                neighborCacheEntry->timeout = NDP_DELAY_FIRST_PROBE_TIME;
                //Switch to the DELAY state
-               ndpChangeState(neighborCacheEntry, NDP_STATE_DELAY);
+               neighborCacheEntry->state = NDP_STATE_DELAY;
             }
             else
             {
                //Enter the STALE state
-               ndpChangeState(neighborCacheEntry, NDP_STATE_STALE);
+               neighborCacheEntry->state = NDP_STATE_STALE;
             }
          }
+         //REACHABLE, STALE, DELAY or PROBE state?
          else
          {
             //Different link-layer address than cached?
@@ -1549,9 +1354,10 @@ void ndpProcessRedirect(NetInterface *interface,
             {
                //Update link-layer address
                neighborCacheEntry->macAddr = option->linkLayerAddr;
-
+               //Save current time
+               neighborCacheEntry->timestamp = osGetSystemTime();
                //The reachability state must be set to STALE
-               ndpChangeState(neighborCacheEntry, NDP_STATE_STALE);
+               neighborCacheEntry->state = NDP_STATE_STALE;
             }
          }
       }
@@ -1672,7 +1478,6 @@ error_t ndpSendRouterSol(NetInterface *interface)
 
    //Free previously allocated memory
    netBufferFree(buffer);
-
    //Return status code
    return error;
 }
@@ -1805,7 +1610,6 @@ error_t ndpSendNeighborSol(NetInterface *interface,
 
    //Free previously allocated memory
    netBufferFree(buffer);
-
    //Return status code
    return error;
 }
@@ -1891,35 +1695,23 @@ error_t ndpSendNeighborAdv(NetInterface *interface,
 
    //The Router flag indicates that the sender is a router
    if(interface->ipv6Context.isRouter)
-   {
       message->r = TRUE;
-   }
    else
-   {
       message->r = FALSE;
-   }
 
    //If the destination is the unspecified address, the node must set
    //the Solicited flag to zero
    if(ipv6CompAddr(destIpAddr, &IPV6_UNSPECIFIED_ADDR))
-   {
       message->s = FALSE;
-   }
    else
-   {
       message->s = TRUE;
-   }
 
    //The Override flag should not be set in solicited advertisements
    //for anycast addresses
    if(ipv6IsAnycastAddr(interface, targetIpAddr))
-   {
       message->o = FALSE;
-   }
    else
-   {
       message->o = TRUE;
-   }
 
    //Length of the message, excluding any option
    length = sizeof(NdpNeighborAdvMessage);
@@ -1971,7 +1763,6 @@ error_t ndpSendNeighborAdv(NetInterface *interface,
 
    //Free previously allocated memory
    netBufferFree(buffer);
-
    //Return status code
    return error;
 }

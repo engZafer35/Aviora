@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,9 +33,9 @@
 
 //Dependencies
 #include <stdlib.h>
-#include "icecast/icecast_client.h"
-#include "str.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/icecast/icecast_client.h"
+#include "../../../CycloneTcp/common/str.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (ICECAST_CLIENT_SUPPORT == ENABLED)
@@ -48,11 +48,6 @@
 
 void icecastClientGetDefaultSettings(IcecastClientSettings *settings)
 {
-   //Default task parameters
-   settings->task = OS_TASK_DEFAULT_PARAMS;
-   settings->task.stackSize = ICECAST_CLIENT_STACK_SIZE;
-   settings->task.priority = ICECAST_CLIENT_PRIORITY;
-
    //Use default interface
    settings->interface = netGetDefaultInterface();
 
@@ -89,10 +84,6 @@ error_t icecastClientInit(IcecastClientContext *context,
 
    //Clear the Icecast client context
    osMemset(context, 0, sizeof(IcecastClientContext));
-
-   //Initialize task parameters
-   context->taskParams = settings->task;
-   context->taskId = OS_INVALID_TASK_ID;
 
    //Save user settings
    context->settings = *settings;
@@ -168,15 +159,17 @@ error_t icecastClientInit(IcecastClientContext *context,
 
 error_t icecastClientStart(IcecastClientContext *context)
 {
+   OsTask *task;
+
    //Debug message
    TRACE_INFO("Starting Icecast client...\r\n");
 
-   //Create a task
-   context->taskId = osCreateTask("Icecast client",
-      (OsTaskCode) icecastClientTask, context, &context->taskParams);
+   //Create the Icecast client task
+   task = osCreateTask("Icecast client", icecastClientTask,
+      context, ICECAST_CLIENT_STACK_SIZE, ICECAST_CLIENT_PRIORITY);
 
-   //Failed to create task?
-   if(context->taskId == OS_INVALID_TASK_ID)
+   //Unable to create the task?
+   if(task == OS_INVALID_HANDLE)
       return ERROR_OUT_OF_RESOURCES;
 
    //Successful processing
@@ -466,7 +459,7 @@ error_t icecastClientConnect(IcecastClientContext *context)
          context->settings.serverPort);
 
       //The specified proxy server can be either an IP or a host name
-      error = gethostbyname_cylone(interface, interface->proxyName, &serverIpAddr, 0);
+      error = getHostByName(interface, interface->proxyName, &serverIpAddr, 0);
       //Unable to resolve server name?
       if(error)
          return error;
@@ -490,7 +483,7 @@ error_t icecastClientConnect(IcecastClientContext *context)
          context->settings.resource, context->settings.serverName);
 
       //The specified Icecast server can be either an IP or a host name
-      error = gethostbyname_cylone(interface, context->settings.serverName, &serverIpAddr, 0);
+      error = getHostByName(interface, context->settings.serverName, &serverIpAddr, 0);
       //Unable to resolve server name?
       if(error)
          return error;

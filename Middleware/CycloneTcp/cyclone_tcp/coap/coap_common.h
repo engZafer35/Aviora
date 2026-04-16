@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,22 +25,20 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _COAP_COMMON_H
 #define _COAP_COMMON_H
 
 //Dependencies
-#include "core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //CoAP port number
 #define COAP_PORT 5683
 //DTLS-secured CoAP port number
 #define COAPS_PORT 5684
 
-//CoAP message header size
-#define COAP_HEADER_SIZE 4
 //Maximum acceptable length for tokens
 #define COAP_MAX_TOKEN_LEN 8
 
@@ -153,10 +151,8 @@ typedef enum
 } CoapCode;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -165,7 +161,7 @@ typedef enum
  * @brief CoAP message format
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
 #if defined(_CPU_BIG_ENDIAN) && !defined(__ICCRX__)
    uint8_t version : 2;  //0
@@ -179,14 +175,14 @@ typedef __packed_struct
    uint8_t code;         //1
    uint16_t mid;         //2-3
    uint8_t token[];      //4
-} CoapMessageHeader;
+} __end_packed CoapMessageHeader;
 
 
 /**
  * @brief CoAP option format
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
 #if defined(_CPU_BIG_ENDIAN) && !defined(__ICCRX__)
    uint8_t delta : 4;  //0
@@ -195,15 +191,14 @@ typedef __packed_struct
    uint8_t length : 4; //0
    uint8_t delta : 4;
 #endif
-} CoapOptionHeader;
+} __end_packed CoapOptionHeader;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
+
 
 //C++ guard
 #ifdef __cplusplus

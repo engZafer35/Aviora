@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _IGMP_SNOOPING_MISC_H
 #define _IGMP_SNOOPING_MISC_H
 
 //Dependencies
-#include "core/net.h"
-#include "igmp/igmp_snooping.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_snooping.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -42,28 +42,28 @@ extern "C" {
 
 //IGMP snooping related functions
 void igmpSnoopingProcessMessage(IgmpSnoopingContext *context,
-   const Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
-   size_t length, const NetRxAncillary *ancillary);
+   Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
+   size_t length, NetRxAncillary *ancillary);
 
 void igmpSnoopingProcessMembershipQuery(IgmpSnoopingContext *context,
-   const Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
-   size_t length, const NetRxAncillary *ancillary);
+   Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
+   size_t length, NetRxAncillary *ancillary);
 
 void igmpSnoopingProcessMembershipReport(IgmpSnoopingContext *context,
-   const Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
-   size_t length, const NetRxAncillary *ancillary);
+   Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
+   size_t length, NetRxAncillary *ancillary);
 
 void igmpSnoopingProcessLeaveGroup(IgmpSnoopingContext *context,
-   const Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
-   size_t length, const NetRxAncillary *ancillary);
+   Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
+   size_t length, NetRxAncillary *ancillary);
 
 void igmpSnoopingProcessUnknownMessage(IgmpSnoopingContext *context,
-   const Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
-   size_t length, const NetRxAncillary *ancillary);
+   Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
+   size_t length, NetRxAncillary *ancillary);
 
 error_t igmpSnoopingForwardMessage(IgmpSnoopingContext *context,
    uint32_t forwardPorts, const MacAddr *destMacAddr,
-   const Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
+   Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
    size_t length);
 
 IgmpSnoopingGroup *igmpSnoopingCreateGroup(IgmpSnoopingContext *context,

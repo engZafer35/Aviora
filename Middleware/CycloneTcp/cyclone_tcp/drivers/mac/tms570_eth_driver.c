@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,45 +25,27 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
-//Platform-specific dependencies
-#if defined(_TMS570LC43x_)
-  #include "hl_hw_reg_access.h"
-  #include "hl_hw_emac.h"
-  #include "hl_hw_emac_ctrl.h"
-  #include "hl_hw_mdio.h"
-  #include "hl_gio.h"
-  #include "hl_sys_vim.h"
-#else
-  #include "hw_reg_access.h"
-  #include "hw_emac.h"
-  #include "hw_emac_ctrl.h"
-  #include "hw_mdio.h"
-  #include "gio.h"
-  #include "sys_vim.h"
-#endif
-
 //Dependencies
-#include "core/net.h"
-#include "drivers/mac/tms570_eth_driver.h"
-#include "debug.h"
+#include "hl_hw_reg_access.h"
+#include "hl_hw_emac.h"
+#include "hl_hw_emac_ctrl.h"
+#include "hl_hw_mdio.h"
+#include "hl_gio.h"
+#include "hl_sys_vim.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/tms570_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //MDIO input clock frequency
 #define MDIO_INPUT_CLK 75000000
 //MDIO output clock frequency
 #define MDIO_OUTPUT_CLK 1000000
-
-//Byte-swapped read/write accesses to CPPI memory?
-#if defined(_TMS570LC43x_)
-   #define CPPI_SWAP(x) swapInt32((uint32_t) (x))
-#else
-   #define CPPI_SWAP(x) ((uint32_t) (x))
-#endif
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -282,11 +264,11 @@ error_t tms570EthInit(NetInterface *interface)
       (EMAC_CH0 << EMAC_RXMBPENABLE_RXMULTCH_SHIFT);
 
    //Register TX interrupt handler
-   vimChannelMap(TMS570_ETH_TX_IRQ_CHANNEL, TMS570_ETH_TX_IRQ_CHANNEL,
+   vimChannelMap(77, TMS570_ETH_TX_IRQ_CHANNEL,
       (t_isrFuncPTR) tms570EthTxIrqHandler);
 
    //Register RX interrupt handler
-   vimChannelMap(TMS570_ETH_RX_IRQ_CHANNEL, TMS570_ETH_RX_IRQ_CHANNEL,
+   vimChannelMap(79, TMS570_ETH_RX_IRQ_CHANNEL,
       (t_isrFuncPTR) tms570EthRxIrqHandler);
 
    //Clear all unused channel interrupt bits
@@ -322,15 +304,16 @@ error_t tms570EthInit(NetInterface *interface)
 }
 
 
+//LAUNCHXL2-570LC43 evaluation board?
+#if defined(USE_LAUNCHXL2_570LC43)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void tms570EthInitGpio(NetInterface *interface)
+void tms570EthInitGpio(NetInterface *interface)
 {
-//LAUNCHXL2-570LC43 evaluation board?
-#if defined(USE_LAUNCHXL2_570LC43)
    //Configure PHY_INT (PA_3) as an input
    gioPORTA->DIR &= ~(1 << 3);
    gioPORTA->PSL |= (1 << 3);
@@ -345,8 +328,9 @@ __weak_func void tms570EthInitGpio(NetInterface *interface)
    sleep(10);
    gioPORTA->DSET = (1 << 4);
    sleep(10);
-#endif
 }
+
+#endif
 
 
 /**
@@ -369,13 +353,13 @@ void tms570EthInitBufferDesc(NetInterface *interface)
       prevIndex = (i + TMS570_ETH_TX_BUFFER_COUNT - 1) % TMS570_ETH_TX_BUFFER_COUNT;
 
       //Next descriptor pointer
-      txBufferDesc[i].word0 = CPPI_SWAP(NULL);
+      txBufferDesc[i].word0 = HTOLE32((uint32_t) NULL);
       //Buffer pointer
-      txBufferDesc[i].word1 = CPPI_SWAP(txBuffer[i]);
+      txBufferDesc[i].word1 = htole32((uint32_t) txBuffer[i]);
       //Buffer offset and buffer length
-      txBufferDesc[i].word2 = CPPI_SWAP(0);
+      txBufferDesc[i].word2 = HTOLE32(0);
       //Status flags and packet length
-      txBufferDesc[i].word3 = CPPI_SWAP(0);
+      txBufferDesc[i].word3 = HTOLE32(0);
 
       //Form a doubly linked list
       txBufferDesc[i].next = &txBufferDesc[nextIndex];
@@ -386,7 +370,7 @@ void tms570EthInitBufferDesc(NetInterface *interface)
    txCurBufferDesc = &txBufferDesc[0];
 
    //Mark the end of the queue
-   txCurBufferDesc->prev->word3 = CPPI_SWAP(EMAC_TX_WORD3_SOP |
+   txCurBufferDesc->prev->word3 = HTOLE32(EMAC_TX_WORD3_SOP |
       EMAC_TX_WORD3_EOP | EMAC_TX_WORD3_EOQ);
 
    //Initialize RX buffer descriptor list
@@ -398,13 +382,13 @@ void tms570EthInitBufferDesc(NetInterface *interface)
       prevIndex = (i + TMS570_ETH_RX_BUFFER_COUNT - 1) % TMS570_ETH_RX_BUFFER_COUNT;
 
       //Next descriptor pointer
-      rxBufferDesc[i].word0 = CPPI_SWAP(&rxBufferDesc[nextIndex]);
+      rxBufferDesc[i].word0 = htole32((uint32_t) &rxBufferDesc[nextIndex]);
       //Buffer pointer
-      rxBufferDesc[i].word1 = CPPI_SWAP(rxBuffer[i]);
+      rxBufferDesc[i].word1 = htole32((uint32_t) rxBuffer[i]);
       //Buffer offset and buffer length
-      rxBufferDesc[i].word2 = CPPI_SWAP(TMS570_ETH_RX_BUFFER_SIZE);
+      rxBufferDesc[i].word2 = HTOLE32(TMS570_ETH_RX_BUFFER_SIZE);
       //Status flags and packet length
-      rxBufferDesc[i].word3 = CPPI_SWAP(EMAC_RX_WORD3_OWNER);
+      rxBufferDesc[i].word3 = HTOLE32(EMAC_RX_WORD3_OWNER);
 
       //Form a doubly linked list
       rxBufferDesc[i].next = &rxBufferDesc[nextIndex];
@@ -415,7 +399,7 @@ void tms570EthInitBufferDesc(NetInterface *interface)
    rxCurBufferDesc = &rxBufferDesc[0];
 
    //Mark the end of the queue
-   rxCurBufferDesc->prev->word0 = CPPI_SWAP(NULL);
+   rxCurBufferDesc->prev->word0 = HTOLE32((uint32_t) NULL);
 }
 
 
@@ -447,7 +431,7 @@ void tms570EthTick(NetInterface *interface)
    }
 
    //Misqueued buffer condition?
-   if(CPPI_SWAP(rxCurBufferDesc->word3) & EMAC_RX_WORD3_OWNER)
+   if(letoh32(rxCurBufferDesc->word3) & EMAC_RX_WORD3_OWNER)
    {
       if(EMAC_RXHDP_R(EMAC_CH0) == 0)
       {
@@ -470,6 +454,7 @@ void tms570EthEnableIrq(NetInterface *interface)
    //Enable Ethernet MAC interrupts
    vimEnableInterrupt(TMS570_ETH_TX_IRQ_CHANNEL, SYS_IRQ);
    vimEnableInterrupt(TMS570_ETH_RX_IRQ_CHANNEL, SYS_IRQ);
+
 
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
@@ -500,6 +485,7 @@ void tms570EthDisableIrq(NetInterface *interface)
    vimDisableInterrupt(TMS570_ETH_TX_IRQ_CHANNEL);
    vimDisableInterrupt(TMS570_ETH_RX_IRQ_CHANNEL);
 
+
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
    {
@@ -522,14 +508,7 @@ void tms570EthDisableIrq(NetInterface *interface)
  * @brief Ethernet MAC transmit interrupt
  **/
 
-#if defined(__ICCARM__)
-   __irq __arm
-#else
-   #pragma CODE_STATE(tms570EthTxIrqHandler, 32)
-   #pragma INTERRUPT(tms570EthTxIrqHandler, IRQ)
-#endif
-
-void tms570EthTxIrqHandler(void)
+__irq __arm void tms570EthTxIrqHandler(void)
 {
    bool_t flag;
    uint32_t status;
@@ -552,19 +531,19 @@ void tms570EthTxIrqHandler(void)
       p = (Tms570TxBufferDesc *) EMAC_TXCP_R(EMAC_CH0);
 
       //Read the status flags
-      temp = CPPI_SWAP(p->word3) & (EMAC_TX_WORD3_SOP | EMAC_TX_WORD3_EOP |
+      temp = letoh32(p->word3) & (EMAC_TX_WORD3_SOP | EMAC_TX_WORD3_EOP |
          EMAC_TX_WORD3_OWNER | EMAC_TX_WORD3_EOQ);
 
       //Misqueued buffer condition?
       if(temp == (EMAC_TX_WORD3_SOP | EMAC_TX_WORD3_EOP | EMAC_TX_WORD3_EOQ))
       {
          //Check whether the next descriptor pointer is non-zero
-         if(CPPI_SWAP(p->word0) != 0)
+         if(letoh32(p->word0) != 0)
          {
             //The host corrects the misqueued buffer condition by writing the
-            //misqueued packet’s buffer descriptor address to the appropriate
+            //misqueued packetï¿½s buffer descriptor address to the appropriate
             //TX DMA head descriptor pointer
-            EMAC_TXHDP_R(EMAC_CH0) = CPPI_SWAP(p->word0);
+            EMAC_TXHDP_R(EMAC_CH0) = letoh32((uint32_t) p->word0);
          }
       }
 
@@ -572,7 +551,7 @@ void tms570EthTxIrqHandler(void)
       EMAC_TXCP_R(EMAC_CH0) = (uint32_t) p;
 
       //Check whether the TX buffer is available for writing
-      if((CPPI_SWAP(txCurBufferDesc->word3) & EMAC_TX_WORD3_OWNER) == 0)
+      if((letoh32(txCurBufferDesc->word3) & EMAC_TX_WORD3_OWNER) == 0)
       {
          //Notify the TCP/IP stack that the transmitter is ready to send
          flag |= osSetEventFromIsr(&nicDriverInterface->nicTxEvent);
@@ -591,14 +570,7 @@ void tms570EthTxIrqHandler(void)
  * @brief Ethernet MAC receive interrupt
  **/
 
-#if defined(__ICCARM__)
-   __irq __arm
-#else
-   #pragma CODE_STATE(tms570EthRxIrqHandler, 32)
-   #pragma INTERRUPT(tms570EthRxIrqHandler, IRQ)
-#endif
-
-void tms570EthRxIrqHandler(void)
+__irq __arm void tms570EthRxIrqHandler(void)
 {
    bool_t flag;
    uint32_t status;
@@ -684,40 +656,39 @@ error_t tms570EthSendPacket(NetInterface *interface,
    }
 
    //Make sure the current buffer is available for writing
-   if(CPPI_SWAP(txCurBufferDesc->word3) & EMAC_TX_WORD3_OWNER)
+   if(letoh32(txCurBufferDesc->word3) & EMAC_TX_WORD3_OWNER)
    {
       return ERROR_FAILURE;
    }
 
    //Mark the end of the queue with a NULL pointer
-   txCurBufferDesc->word0 = CPPI_SWAP(NULL);
+   txCurBufferDesc->word0 = HTOLE32((uint32_t) NULL);
 
    //Copy user data to the transmit buffer
-   netBufferRead((uint8_t *) CPPI_SWAP(txCurBufferDesc->word1), buffer,
-      offset, length);
+   netBufferRead((uint8_t *) letoh32(txCurBufferDesc->word1), buffer, offset, length);
 
    //Set the length of the buffer
-   txCurBufferDesc->word2 = CPPI_SWAP(length & EMAC_TX_WORD2_BUFFER_LENGTH);
+   txCurBufferDesc->word2 = htole32(length & EMAC_TX_WORD2_BUFFER_LENGTH);
 
    //Give the ownership of the descriptor to the DMA
-   txCurBufferDesc->word3 = CPPI_SWAP(EMAC_TX_WORD3_SOP | EMAC_TX_WORD3_EOP |
+   txCurBufferDesc->word3 = htole32(EMAC_TX_WORD3_SOP | EMAC_TX_WORD3_EOP |
       EMAC_TX_WORD3_OWNER | (length & EMAC_TX_WORD3_PACKET_LENGTH));
 
    //Link the current descriptor to the previous descriptor
-   txCurBufferDesc->prev->word0 = CPPI_SWAP(txCurBufferDesc);
+   txCurBufferDesc->prev->word0 = htole32((uint32_t) txCurBufferDesc);
 
    //Read the status flags of the previous descriptor
-   temp = CPPI_SWAP(txCurBufferDesc->prev->word3) & (EMAC_TX_WORD3_SOP |
+   temp = letoh32(txCurBufferDesc->prev->word3) & (EMAC_TX_WORD3_SOP |
       EMAC_TX_WORD3_EOP | EMAC_TX_WORD3_OWNER | EMAC_TX_WORD3_EOQ);
 
    //Misqueued buffer condition?
    if(temp == (EMAC_TX_WORD3_SOP | EMAC_TX_WORD3_EOP | EMAC_TX_WORD3_EOQ))
    {
       //Clear the misqueued buffer condition
-      txCurBufferDesc->prev->word3 = CPPI_SWAP(0);
+      txCurBufferDesc->prev->word3 = HTOLE32(0);
 
       //The host corrects the misqueued buffer condition by writing the
-      //misqueued packet’s buffer descriptor address to the appropriate
+      //misqueued packetï¿½s buffer descriptor address to the appropriate
       //TX DMA head descriptor pointer
       EMAC_TXHDP_R(EMAC_CH0) = (uint32_t) txCurBufferDesc;
    }
@@ -726,7 +697,7 @@ error_t tms570EthSendPacket(NetInterface *interface,
    txCurBufferDesc = txCurBufferDesc->next;
 
    //Check whether the next buffer is available for writing
-   if((CPPI_SWAP(txCurBufferDesc->word3) & EMAC_TX_WORD3_OWNER) == 0)
+   if((letoh32(txCurBufferDesc->word3) & EMAC_TX_WORD3_OWNER) == 0)
    {
       //The transmitter can accept another packet
       osSetEvent(&interface->nicTxEvent);
@@ -745,28 +716,28 @@ error_t tms570EthSendPacket(NetInterface *interface,
 
 error_t tms570EthReceivePacket(NetInterface *interface)
 {
-   static uint32_t buffer[TMS570_ETH_RX_BUFFER_SIZE / 4];
+   static uint8_t buffer[TMS570_ETH_RX_BUFFER_SIZE];
    error_t error;
    size_t n;
    uint32_t temp;
 
    //Current buffer available for reading?
-   if((CPPI_SWAP(rxCurBufferDesc->word3) & EMAC_RX_WORD3_OWNER) == 0)
+   if((letoh32(rxCurBufferDesc->word3) & EMAC_RX_WORD3_OWNER) == 0)
    {
       //SOP and EOP flags should be set
-      if((CPPI_SWAP(rxCurBufferDesc->word3) & EMAC_RX_WORD3_SOP) != 0 &&
-         (CPPI_SWAP(rxCurBufferDesc->word3) & EMAC_RX_WORD3_EOP) != 0)
+      if((letoh32(rxCurBufferDesc->word3) & EMAC_RX_WORD3_SOP) != 0 &&
+         (letoh32(rxCurBufferDesc->word3) & EMAC_RX_WORD3_EOP) != 0)
       {
          //Make sure no error occurred
-         if((CPPI_SWAP(rxCurBufferDesc->word3) & EMAC_RX_WORD3_ERROR_MASK) == 0)
+         if((letoh32(rxCurBufferDesc->word3) & EMAC_RX_WORD3_ERROR_MASK) == 0)
          {
             //Retrieve the length of the frame
-            n = CPPI_SWAP(rxCurBufferDesc->word3) & EMAC_RX_WORD3_PACKET_LENGTH;
+            n = letoh32(rxCurBufferDesc->word3) & EMAC_RX_WORD3_PACKET_LENGTH;
             //Limit the number of data to read
             n = MIN(n, TMS570_ETH_RX_BUFFER_SIZE);
 
             //Copy data from the receive buffer
-            osMemcpy(buffer, (uint8_t *) CPPI_SWAP(rxCurBufferDesc->word1), n);
+            osMemcpy(buffer, (uint8_t *) letoh32(rxCurBufferDesc->word1), n);
 
             //Valid packet received
             error = NO_ERROR;
@@ -784,17 +755,17 @@ error_t tms570EthReceivePacket(NetInterface *interface)
       }
 
       //Mark the end of the queue with a NULL pointer
-      rxCurBufferDesc->word0 = CPPI_SWAP(NULL);
+      rxCurBufferDesc->word0 = HTOLE32((uint32_t) NULL);
       //Restore the length of the buffer
-      rxCurBufferDesc->word2 = CPPI_SWAP(TMS570_ETH_RX_BUFFER_SIZE);
+      rxCurBufferDesc->word2 = HTOLE32(TMS570_ETH_RX_BUFFER_SIZE);
       //Give the ownership of the descriptor back to the DMA
-      rxCurBufferDesc->word3 = CPPI_SWAP(EMAC_RX_WORD3_OWNER);
+      rxCurBufferDesc->word3 = HTOLE32(EMAC_RX_WORD3_OWNER);
 
       //Link the current descriptor to the previous descriptor
-      rxCurBufferDesc->prev->word0 = CPPI_SWAP(rxCurBufferDesc);
+      rxCurBufferDesc->prev->word0 = htole32((uint32_t) rxCurBufferDesc);
 
       //Read the status flags of the previous descriptor
-      temp = CPPI_SWAP(rxCurBufferDesc->prev->word3) & (EMAC_RX_WORD3_SOP |
+      temp = letoh32(rxCurBufferDesc->prev->word3) & (EMAC_RX_WORD3_SOP |
          EMAC_RX_WORD3_EOP | EMAC_RX_WORD3_OWNER | EMAC_RX_WORD3_EOQ);
 
       //Misqueued buffer condition?
@@ -827,7 +798,7 @@ error_t tms570EthReceivePacket(NetInterface *interface)
       ancillary = NET_DEFAULT_RX_ANCILLARY;
 
       //Pass the packet to the upper layer
-      nicProcessPacket(interface, (uint8_t *) buffer, n, &ancillary);
+      nicProcessPacket(interface, buffer, n, &ancillary);
    }
 
    //Return status code

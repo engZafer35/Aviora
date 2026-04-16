@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,9 +34,9 @@
 //Dependencies
 #include "stm32mp1xx.h"
 #include "stm32mp1xx_hal.h"
-#include "core/net.h"
-#include "drivers/mac/stm32mp1xx_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/stm32mp1xx_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -115,7 +115,6 @@ const NicDriver stm32mp1xxEthDriver =
 error_t stm32mp1xxEthInit(NetInterface *interface)
 {
    error_t error;
-   uint32_t temp;
 
    //Debug message
    TRACE_INFO("Initializing STM32MP1 Ethernet MAC...\r\n");
@@ -169,11 +168,7 @@ error_t stm32mp1xxEthInit(NetInterface *interface)
    }
 
    //Use default MAC configuration
-   ETH->MACCR = ETH_MACCR_GPSLCE | ETH_MACCR_DO;
-
-   //Set the maximum packet size that can be accepted
-   temp = ETH->MACECR & ~ETH_MACECR_GPSL;
-   ETH->MACECR = temp | STM32MP1XX_ETH_RX_BUFFER_SIZE;
+   ETH->MACCR = ETH_MACCR_DO;
 
    //Configure MAC address filtering
    stm32mp1xxEthUpdateMacAddrFilter(interface);
@@ -183,7 +178,7 @@ error_t stm32mp1xxEthInit(NetInterface *interface)
    ETH->MACRXFCR = 0;
 
    //Enable the first RX queue
-   ETH->MACRXQC0R = ETH_MACRXQC0R_RXQ0EN_Val(2);
+   ETH->MACRXQC0R = ETH_MACRXQC0R_RXQ0EN_Val(1);
 
    //Configure DMA operating mode
    ETH->DMAMR = ETH_DMAMR_INTM_Val(0) | ETH_DMAMR_PR_Val(0);
@@ -193,10 +188,10 @@ error_t stm32mp1xxEthInit(NetInterface *interface)
    //The DMA takes the descriptor table as contiguous
    ETH->DMAC0CR = ETH_DMAC0CR_DSL_Val(0);
    //Configure TX features
-   ETH->DMAC0TXCR = ETH_DMAC0TXCR_TXPBL_Val(32);
+   ETH->DMAC0TXCR = ETH_DMAC0TXCR_TXPBL_Val(1);
 
    //Configure RX features
-   ETH->DMAC0RXCR = ETH_DMAC0RXCR_RXPBL_Val(32) |
+   ETH->DMAC0RXCR = ETH_DMAC0RXCR_RXPBL_Val(1) |
       ETH_DMAC0RXCR_RBSZ_Val(STM32MP1XX_ETH_RX_BUFFER_SIZE);
 
    //Enable store and forward mode for transmission
@@ -246,17 +241,20 @@ error_t stm32mp1xxEthInit(NetInterface *interface)
 }
 
 
+//STM32MP157A-EV1 or STM32MP157C-DK2 evaluation board?
+#if defined(USE_STM32MP15XX_EVAL) || defined(USE_STM32MP15XX_DISCO)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void stm32mp1xxEthInitGpio(NetInterface *interface)
+void stm32mp1xxEthInitGpio(NetInterface *interface)
 {
-//STM32MP157A-EV1 evaluation board?
-#if defined(USE_STM32MP15XX_EVAL)
    GPIO_InitTypeDef GPIO_InitStructure;
 
+//STM32MP157A-EV1 evaluation board?
+#if defined(USE_STM32MP15XX_EVAL)
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -313,11 +311,8 @@ __weak_func void stm32mp1xxEthInitGpio(NetInterface *interface)
    //sleep(10);
    //HAL_GPIO_WritePin(GPIOD, GPIO_PIN_10, GPIO_PIN_SET);
    //sleep(10);
-
 //STM32MP157C-DK2 evaluation board?
 #elif defined(USE_STM32MP15XX_DISCO)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -375,6 +370,8 @@ __weak_func void stm32mp1xxEthInitGpio(NetInterface *interface)
    sleep(10);
 #endif
 }
+
+#endif
 
 
 /**
@@ -544,8 +541,8 @@ void ETH1_IRQHandler(void)
    //Packet received?
    if((status & ETH_DMAC0SR_RI) != 0)
    {
-      //Clear RI interrupt flag
-      ETH->DMAC0SR = ETH_DMAC0SR_RI;
+      //Disable RIE interrupt
+      ETH->DMAC0IER &= ~ETH_DMAC0IER_RIE;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -570,14 +567,24 @@ void stm32mp1xxEthEventHandler(NetInterface *interface)
 {
    error_t error;
 
-   //Process all pending packets
-   do
+   //Packet received?
+   if((ETH->DMAC0SR & ETH_DMAC0SR_RI) != 0)
    {
-      //Read incoming packet
-      error = stm32mp1xxEthReceivePacket(interface);
+      //Clear interrupt flag
+      ETH->DMAC0SR = ETH_DMAC0SR_RI;
 
-      //No more data in the receive buffer?
-   } while(error != ERROR_BUFFER_EMPTY);
+      //Process all pending packets
+      do
+      {
+         //Read incoming packet
+         error = stm32mp1xxEthReceivePacket(interface);
+
+         //No more data in the receive buffer?
+      } while(error != ERROR_BUFFER_EMPTY);
+   }
+
+   //Re-enable DMA interrupts
+   ETH->DMAC0IER = ETH_DMAC0IER_NIE | ETH_DMAC0IER_RIE | ETH_DMAC0IER_TIE;
 }
 
 

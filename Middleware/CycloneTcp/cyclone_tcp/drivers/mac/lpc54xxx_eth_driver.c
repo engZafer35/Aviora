@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -38,9 +38,9 @@
 #include "fsl_clock.h"
 #include "fsl_iocon.h"
 #include "fsl_gpio.h"
-#include "core/net.h"
-#include "drivers/mac/lpc54xxx_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/lpc54xxx_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -119,7 +119,6 @@ const NicDriver lpc54xxxEthDriver =
 error_t lpc54xxxEthInit(NetInterface *interface)
 {
    error_t error;
-   uint32_t temp;
 
    //Debug message
    TRACE_INFO("Initializing LPC54xxx Ethernet MAC...\r\n");
@@ -169,12 +168,7 @@ error_t lpc54xxxEthInit(NetInterface *interface)
    }
 
    //Use default MAC configuration
-   ENET->MAC_CONFIG = ENET_MAC_CONFIG_GPSLCE_MASK | ENET_MAC_CONFIG_PS_MASK |
-      ENET_MAC_CONFIG_DO_MASK;
-
-   //Set the maximum packet size that can be accepted
-   temp = ENET->MAC_EXT_CONFIG & ~ENET_MAC_EXT_CONFIG_GPSL_MASK;
-   ENET->MAC_EXT_CONFIG = temp | LPC54XXX_ETH_RX_BUFFER_SIZE;
+   ENET->MAC_CONFIG = ENET_MAC_CONFIG_PS_MASK | ENET_MAC_CONFIG_DO_MASK;
 
    //Set the MAC address of the station
    ENET->MAC_ADDR_LOW = interface->macAddr.w[0] | (interface->macAddr.w[1] << 16);
@@ -188,7 +182,7 @@ error_t lpc54xxxEthInit(NetInterface *interface)
    ENET->MAC_RX_FLOW_CTRL = 0;
 
    //Enable the first RX queue
-   ENET->MAC_RXQ_CTRL[0] = ENET_MAC_RXQ_CTRL_RXQ0EN(2);
+   ENET->MAC_RXQ_CTRL[0] = ENET_MAC_RXQ_CTRL_RXQ0EN(1);
 
    //Configure DMA operating mode
    ENET->DMA_MODE = ENET_DMA_MODE_PR(0);
@@ -198,10 +192,10 @@ error_t lpc54xxxEthInit(NetInterface *interface)
    //The DMA takes the descriptor table as contiguous
    ENET->DMA_CH[0].DMA_CHX_CTRL = ENET_DMA_CH_DMA_CHX_CTRL_DSL(0);
    //Configure TX features
-   ENET->DMA_CH[0].DMA_CHX_TX_CTRL = ENET_DMA_CH_DMA_CHX_TX_CTRL_TxPBL(32);
+   ENET->DMA_CH[0].DMA_CHX_TX_CTRL = ENET_DMA_CH_DMA_CHX_TX_CTRL_TxPBL(1);
 
    //Configure RX features
-   ENET->DMA_CH[0].DMA_CHX_RX_CTRL = ENET_DMA_CH_DMA_CHX_RX_CTRL_RxPBL(32) |
+   ENET->DMA_CH[0].DMA_CHX_RX_CTRL = ENET_DMA_CH_DMA_CHX_RX_CTRL_RxPBL(1) |
       ENET_DMA_CH_DMA_CHX_RX_CTRL_RBSZ(LPC54XXX_ETH_RX_BUFFER_SIZE / 4);
 
    //Enable store and forward mode for transmission
@@ -245,19 +239,25 @@ error_t lpc54xxxEthInit(NetInterface *interface)
 }
 
 
+//LPCXpresso54S018, LPCXpresso54S018M, LPCXpresso54608, LPCXpresso54628 or
+//LPC54018-IoT-Module evaluation board?
+#if defined(USE_LPCXPRESSO_54S018) || defined(USE_LPCXPRESSO_54S018M) || \
+   defined(USE_LPCXPRESSO_54608) || defined(USE_LPCXPRESSO_54628) || \
+   defined(USE_LPC54018_IOT_MODULE)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void lpc54xxxEthInitGpio(NetInterface *interface)
+void lpc54xxxEthInitGpio(NetInterface *interface)
 {
+   gpio_pin_config_t pinConfig;
+
 //LPCXpresso54S018, LPCXpresso54608, LPCXpresso54628 or LPC54018-IoT-Module
 //evaluation board?
 #if defined(USE_LPCXPRESSO_54S018) || defined(USE_LPCXPRESSO_54608) || \
    defined(USE_LPCXPRESSO_54628) || defined(USE_LPC54018_IOT_MODULE)
-   gpio_pin_config_t pinConfig;
-
    //Select RMII interface mode
    SYSCON->ETHPHYSEL |= SYSCON_ETHPHYSEL_PHY_SEL_MASK;
 
@@ -318,8 +318,6 @@ __weak_func void lpc54xxxEthInitGpio(NetInterface *interface)
 
 //LPCXpresso54S018M evaluation board?
 #elif defined(USE_LPCXPRESSO_54S018M)
-   gpio_pin_config_t pinConfig;
-
    //Select RMII interface mode
    SYSCON->ETHPHYSEL |= SYSCON_ETHPHYSEL_PHY_SEL_MASK;
 
@@ -380,6 +378,8 @@ __weak_func void lpc54xxxEthInitGpio(NetInterface *interface)
    sleep(10);
 #endif
 }
+
+#endif
 
 
 /**
@@ -549,8 +549,8 @@ void ETHERNET_IRQHandler(void)
    //Packet received?
    if((status & ENET_DMA_CH_DMA_CHX_STAT_RI_MASK) != 0)
    {
-      //Clear RI interrupt flag
-      ENET->DMA_CH[0].DMA_CHX_STAT = ENET_DMA_CH_DMA_CHX_STAT_RI_MASK;
+      //Disable RIE interrupt
+      ENET->DMA_CH[0].DMA_CHX_INT_EN &= ~ENET_DMA_CH_DMA_CHX_INT_EN_RIE_MASK;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -575,14 +575,25 @@ void lpc54xxxEthEventHandler(NetInterface *interface)
 {
    error_t error;
 
-   //Process all pending packets
-   do
+   //Packet received?
+   if((ENET->DMA_CH[0].DMA_CHX_STAT & ENET_DMA_CH_DMA_CHX_STAT_RI_MASK) != 0)
    {
-      //Read incoming packet
-      error = lpc54xxxEthReceivePacket(interface);
+      //Clear interrupt flag
+      ENET->DMA_CH[0].DMA_CHX_STAT = ENET_DMA_CH_DMA_CHX_STAT_RI_MASK;
 
-      //No more data in the receive buffer?
-   } while(error != ERROR_BUFFER_EMPTY);
+      //Process all pending packets
+      do
+      {
+         //Read incoming packet
+         error = lpc54xxxEthReceivePacket(interface);
+
+         //No more data in the receive buffer?
+      } while(error != ERROR_BUFFER_EMPTY);
+   }
+
+   //Re-enable DMA interrupts
+   ENET->DMA_CH[0].DMA_CHX_INT_EN = ENET_DMA_CH_DMA_CHX_INT_EN_NIE_MASK |
+      ENET_DMA_CH_DMA_CHX_INT_EN_RIE_MASK | ENET_DMA_CH_DMA_CHX_INT_EN_TIE_MASK;
 }
 
 

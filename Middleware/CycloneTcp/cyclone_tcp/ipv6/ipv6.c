@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -30,33 +30,35 @@
  * as the successor to IP version 4 (IPv4). Refer to RFC 2460
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL IPV6_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/ip.h"
-#include "core/udp.h"
-#include "core/tcp_fsm.h"
-#include "core/raw_socket.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_frag.h"
-#include "ipv6/ipv6_misc.h"
-#include "ipv6/ipv6_pmtu.h"
-#include "ipv6/ipv6_routing.h"
-#include "ipv6/icmpv6.h"
-#include "ipv6/mld.h"
-#include "ipv6/ndp.h"
-#include "ipv6/ndp_cache.h"
-#include "ipv6/ndp_misc.h"
-#include "ipv6/ndp_router_adv_misc.h"
-#include "ipv6/slaac_misc.h"
-#include "dhcpv6/dhcpv6_client_misc.h"
-#include "mibs/ip_mib_module.h"
-#include "debug.h"
+#include <string.h>
+#include <ctype.h>
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ip.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/udp.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/tcp_fsm.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/raw_socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_frag.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_pmtu.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_routing.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/icmpv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/mld.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_cache.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_router_adv_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/slaac_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcpv6/dhcpv6_client_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/ip_mib_module.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV6_SUPPORT == ENABLED)
@@ -109,11 +111,9 @@ error_t ipv6Init(NetInterface *interface)
    //Initialize interface specific variables
    context->linkMtu = physicalInterface->nicDriver->mtu;
    context->isRouter = FALSE;
-   context->defaultHopLimit = IPV6_DEFAULT_HOP_LIMIT;
    context->curHopLimit = IPV6_DEFAULT_HOP_LIMIT;
 
-   //ICMPv6 Echo Request messages are allowed by default
-   context->enableEchoReq = TRUE;
+   //Multicast ICMPv6 Echo Request messages are allowed by default
    context->enableMulticastEchoReq = TRUE;
 
    //Initialize the list of IPv6 addresses assigned to the interface
@@ -210,34 +210,6 @@ error_t ipv6GetMtu(NetInterface *interface, size_t *mtu)
 
 
 /**
- * @brief Set default Hop Limit value for outgoing IPv6 packets
- * @param[in] interface Underlying network interface
- * @param[in] hopLimit Default Hop Limit value
- * @return Error code
- **/
-
-error_t ipv6SetDefaultHopLimit(NetInterface *interface, uint8_t hopLimit)
-{
-   //Check parameters
-   if(interface == NULL || hopLimit == 0)
-      return ERROR_INVALID_PARAMETER;
-
-   //Get exclusive access
-   osAcquireMutex(&netMutex);
-
-   //Set default Hop Limit value
-   interface->ipv6Context.defaultHopLimit = hopLimit;
-   interface->ipv6Context.curHopLimit = hopLimit;
-
-   //Release exclusive access
-   osReleaseMutex(&netMutex);
-
-   //Successful processing
-   return NO_ERROR;
-}
-
-
-/**
  * @brief Assign link-local address
  * @param[in] interface Pointer to the desired network interface
  * @param[in] addr Link-local address
@@ -314,31 +286,6 @@ error_t ipv6GetLinkLocalAddr(NetInterface *interface, Ipv6Addr *addr)
 
    //Successful processing
    return NO_ERROR;
-}
-
-
-/**
- * @brief Get the state of the link-local address
- * @param[in] interface Pointer to the desired network interface
- * @return Address state
- **/
-
-Ipv6AddrState ipv6GetLinkLocalAddrState(NetInterface *interface)
-{
-   Ipv6AddrState state;
-
-   //Valid interface?
-   if(interface != NULL)
-   {
-      state = interface->ipv6Context.addrList[0].state;
-   }
-   else
-   {
-      state = IPV6_ADDR_STATE_INVALID;
-   }
-
-   //Return the state of the link-local address
-   return state;
 }
 
 
@@ -430,32 +377,6 @@ error_t ipv6GetGlobalAddr(NetInterface *interface, uint_t index, Ipv6Addr *addr)
 
    //Successful processing
    return NO_ERROR;
-}
-
-
-/**
- * @brief Get the state of the specified global address
- * @param[in] interface Pointer to the desired network interface
- * @param[in] index Zero-based index
- * @return Address state
- **/
-
-Ipv6AddrState ipv6GetGlobalAddrState(NetInterface *interface, uint_t index)
-{
-   Ipv6AddrState state;
-
-   //Valid interface and index?
-   if(interface != NULL && (index + 1) < IPV6_ADDR_LIST_SIZE)
-   {
-      state = interface->ipv6Context.addrList[index + 1].state;
-   }
-   else
-   {
-      state = IPV6_ADDR_STATE_INVALID;
-   }
-
-   //Return the state of the link-local address
-   return state;
 }
 
 
@@ -888,7 +809,7 @@ void ipv6LinkChangeEvent(NetInterface *interface)
 
    //Restore default parameters
    context->linkMtu = physicalInterface->nicDriver->mtu;
-   context->curHopLimit = context->defaultHopLimit;
+   context->curHopLimit = IPV6_DEFAULT_HOP_LIMIT;
 
    //Clear the list of IPv6 addresses
    ipv6FlushAddrList(interface);
@@ -1088,8 +1009,6 @@ void ipv6ProcessPacket(NetInterface *interface, NetBuffer *ipPacket,
 
    //Save Hop Limit value
    ancillary->ttl = ipHeader->hopLimit;
-   //Save Traffic Class value
-   ancillary->tos = (ipHeader->trafficClassH << 4) | ipHeader->trafficClassL;
 
    //Keep track of Next Header field
    nextHeaderOffset = ipPacketOffset + &ipHeader->nextHeader -
@@ -1149,15 +1068,15 @@ void ipv6ProcessPacket(NetInterface *interface, NetBuffer *ipPacket,
          //Exit immediately
          return;
 
-      //AH header?
+      //Authentication header?
       case IPV6_AH_HEADER:
          //Parse current extension header
-         error = ipv6ParseAhHeader(interface, ipPacket, ipPacketOffset,
+         error = ipv6ParseAuthHeader(interface, ipPacket, ipPacketOffset,
             &i, &nextHeaderOffset);
          //Continue processing
          break;
 
-      //ESP header?
+      //Encapsulating Security Payload header?
       case IPV6_ESP_HEADER:
          //Parse current extension header
          error = ipv6ParseEspHeader(interface, ipPacket, ipPacketOffset,
@@ -1489,7 +1408,7 @@ error_t ipv6ParseRoutingHeader(NetInterface *interface, const NetBuffer *ipPacke
 
 
 /**
- * @brief Parse AH header
+ * @brief Parse Authentication header
  * @param[in] interface Underlying network interface
  * @param[in] ipPacket Multi-part buffer containing the IPv6 packet
  * @param[in] ipPacketOffset Offset to the first byte of the IPv6 packet
@@ -1498,18 +1417,18 @@ error_t ipv6ParseRoutingHeader(NetInterface *interface, const NetBuffer *ipPacke
  * @brief Error code
  **/
 
-error_t ipv6ParseAhHeader(NetInterface *interface, const NetBuffer *ipPacket,
+error_t ipv6ParseAuthHeader(NetInterface *interface, const NetBuffer *ipPacket,
    size_t ipPacketOffset, size_t *headerOffset, size_t *nextHeaderOffset)
 {
    //Debug message
-   TRACE_DEBUG("  AH header\r\n");
-   //IPsec is not supported
+   TRACE_DEBUG("  Authentication header\r\n");
+   //Authentication not supported
    return ERROR_FAILURE;
 }
 
 
 /**
- * @brief Parse ESP header
+ * @brief Parse Encapsulating Security Payload header
  * @param[in] interface Underlying network interface
  * @param[in] ipPacket Multi-part buffer containing the IPv6 packet
  * @param[in] ipPacketOffset Offset to the first byte of the IPv6 packet
@@ -1522,8 +1441,8 @@ error_t ipv6ParseEspHeader(NetInterface *interface, const NetBuffer *ipPacket,
    size_t ipPacketOffset, size_t *headerOffset, size_t *nextHeaderOffset)
 {
    //Debug message
-   TRACE_DEBUG("  ESP header\r\n");
-   //IPsec is not supported
+   TRACE_DEBUG("  Encapsulating Security Payload header\r\n");
+   //Authentication not supported
    return ERROR_FAILURE;
 }
 
@@ -1664,9 +1583,8 @@ error_t ipv6ParseOptions(NetInterface *interface, const NetBuffer *ipPacket,
  * @return Error code
  **/
 
-error_t ipv6SendDatagram(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, NetBuffer *buffer, size_t offset,
-   NetTxAncillary *ancillary)
+error_t ipv6SendDatagram(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   NetBuffer *buffer, size_t offset, NetTxAncillary *ancillary)
 {
    error_t error;
    size_t length;
@@ -1688,40 +1606,32 @@ error_t ipv6SendDatagram(NetInterface *interface,
 
    //The PMTU should not exceed the MTU of the first-hop link
    if(pathMtu > interface->ipv6Context.linkMtu)
-   {
       pathMtu = interface->ipv6Context.linkMtu;
-   }
 #else
    //The PMTU value for the path is assumed to be the MTU of the first-hop link
    pathMtu = interface->ipv6Context.linkMtu;
 #endif
 
-   //Check the length of the payload
+   //If the payload length is smaller than the PMTU then no fragmentation is
+   //needed
    if((length + sizeof(Ipv6Header)) <= pathMtu)
    {
-      //If the payload length is smaller than the PMTU then no fragmentation
-      //is needed
+      //Send data as is
       error = ipv6SendPacket(interface, pseudoHeader, 0, 0, buffer, offset,
          ancillary);
    }
+   //If the payload length exceeds the PMTU then the device must fragment the
+   //data
    else
    {
 #if (IPV6_FRAG_SUPPORT == ENABLED)
-      //This flag defines a mechanism to turn off fragmentation
-      if(!ancillary->dontFrag)
-      {
-         //If the payload length exceeds the PMTU then the device must fragment
-         //the data
-         error = ipv6FragmentDatagram(interface, pseudoHeader, buffer, offset,
-            pathMtu, ancillary);
-      }
-      else
+      //Fragment IP datagram into smaller packets
+      error = ipv6FragmentDatagram(interface, pseudoHeader, buffer, offset,
+         pathMtu, ancillary);
+#else
+      //Fragmentation is not supported
+      error = ERROR_MESSAGE_TOO_LONG;
 #endif
-      {
-         //When the data size is larger than the MTU of the outgoing interface,
-         //the packet will be discarded
-         error = ERROR_MESSAGE_TOO_LONG;
-      }
    }
 
    //Return status code
@@ -1742,9 +1652,9 @@ error_t ipv6SendDatagram(NetInterface *interface,
  * @return Error code
  **/
 
-error_t ipv6SendPacket(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, uint32_t fragId, size_t fragOffset,
-   NetBuffer *buffer, size_t offset, NetTxAncillary *ancillary)
+error_t ipv6SendPacket(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   uint32_t fragId, size_t fragOffset, NetBuffer *buffer, size_t offset,
+   NetTxAncillary *ancillary)
 {
    error_t error;
    size_t length;
@@ -1788,7 +1698,7 @@ error_t ipv6SendPacket(NetInterface *interface,
    }
    else
    {
-      //Sanity check
+      //Is there enough space for the IPv6 header?
       if(offset < sizeof(Ipv6Header))
          return ERROR_INVALID_PARAMETER;
 
@@ -1804,8 +1714,8 @@ error_t ipv6SendPacket(NetInterface *interface,
 
    //Format IPv6 header
    packet->version = IPV6_VERSION;
-   packet->trafficClassH = (ancillary->tos >> 4) & 0x0F;
-   packet->trafficClassL = ancillary->tos & 0x0F;
+   packet->trafficClassH = 0;
+   packet->trafficClassL = 0;
    packet->flowLabelH = 0;
    packet->flowLabelL = 0;
    packet->payloadLen = htons(length - sizeof(Ipv6Header));
@@ -1819,6 +1729,12 @@ error_t ipv6SendPacket(NetInterface *interface,
       //Use default Hop Limit value
       packet->hopLimit = interface->ipv6Context.curHopLimit;
    }
+
+#if (IP_DIFF_SERV_SUPPORT == ENABLED)
+   //Set DSCP field
+   packet->trafficClassH = (ancillary->dscp >> 2) & 0x0F;
+   packet->trafficClassL = (ancillary->dscp << 2) & 0x0C;
+#endif
 
    //Ensure the source address is valid
    error = ipv6CheckSourceAddr(interface, &pseudoHeader->srcAddr);
@@ -2012,8 +1928,8 @@ error_t ipv6SendPacket(NetInterface *interface,
          //Send the packet over the specified link
          error = nicSendPacket(interface, buffer, offset, ancillary);
       }
-      //Unknown interface type?
       else
+      //Unknown interface type?
       {
          //Report an error
          error = ERROR_INVALID_INTERFACE;
@@ -2234,9 +2150,7 @@ error_t ipv6StringToAddr(const char_t *str, Ipv6Addr *ipAddr)
       {
          //First digit to be decoded?
          if(value < 0)
-         {
             value = 0;
-         }
 
          //Update the value of the current 16-bit word
          if(osIsdigit(*str))
@@ -2325,21 +2239,14 @@ error_t ipv6StringToAddr(const char_t *str, Ipv6Addr *ipAddr)
       {
          //Save the last 16-bit word of the IPv6 address
          if(value >= 0)
-         {
             ipAddr->w[i++] = htons(value);
-         }
 
          //Move the part of the address that follows the "::" symbol
          for(k = 0; k < (i - j); k++)
-         {
             ipAddr->w[7 - k] = ipAddr->w[i - 1 - k];
-         }
-
          //A sequence of zeroes can now be written in place of "::"
          for(k = 0; k < (8 - i); k++)
-         {
             ipAddr->w[j + k] = 0;
-         }
 
          //The conversion succeeded
          error = NO_ERROR;
@@ -2392,9 +2299,7 @@ char_t *ipv6AddrToString(const Ipv6Addr *ipAddr, char_t *str)
    for(i = 0; i < 8; i++)
    {
       //Compute the length of the current sequence of zeroes
-      for(j = i; j < 8 && !ipAddr->w[j]; j++)
-      {
-      }
+      for(j = i; j < 8 && !ipAddr->w[j]; j++);
 
       //Keep track of the longest one
       if((j - i) > 1 && (j - i) > (zeroRunEnd - zeroRunStart))

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,46 +25,23 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL MQTT_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/tcp_misc.h"
-#include "mqtt/mqtt_client.h"
-#include "mqtt/mqtt_client_packet.h"
-#include "mqtt/mqtt_client_transport.h"
-#include "mqtt/mqtt_client_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/tcp_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt/mqtt_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt/mqtt_client_packet.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt/mqtt_client_transport.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (MQTT_CLIENT_SUPPORT == ENABLED)
-
-#if (MQTT_CLIENT_WS_SUPPORT == ENABLED && MQTT_CLIENT_TLS_SUPPORT == ENABLED)
-
-/**
- * @brief TLS initialization callback
- * @param[in] webSocket Handle to a WebSocket
- * @param[in] tlsContext Pointer to the TLS context
- * @return Error code
- **/
-
-error_t mqttClientWebSocketTlsInitCallback(WebSocket *webSocket,
-   TlsContext *tlsContext)
-{
-   MqttClientContext *context;
-
-   //Point to the MQTT client context
-   context = webSocket->tlsInitParam;
-
-   //Invoke user-defined callback
-   return context->callbacks.tlsInitCallback(context, tlsContext);
-}
-
-#endif
 
 
 /**
@@ -201,12 +178,9 @@ error_t mqttClientOpenConnection(MqttClientContext *context)
          //Check status code
          if(!error)
          {
-            //Attach MQTT client context
-            context->webSocket->tlsInitParam = context;
-
             //Register TLS initialization callback
             error = webSocketRegisterTlsInitCallback(context->webSocket,
-               mqttClientWebSocketTlsInitCallback);
+               (WebSocketTlsInitCallback) context->callbacks.tlsInitCallback);
          }
       }
       else
@@ -707,13 +681,9 @@ error_t mqttClientWaitForData(MqttClientContext *context, systime_t timeout)
 
    //Check whether some data is available for reading
    if(event == SOCKET_EVENT_RX_READY)
-   {
       return NO_ERROR;
-   }
    else
-   {
       return ERROR_TIMEOUT;
-   }
 }
 
 #endif

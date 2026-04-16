@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,24 +25,24 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL MODBUS_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "modbus/modbus_client.h"
-#include "modbus/modbus_server.h"
-#include "modbus/modbus_debug.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (MODBUS_CLIENT_SUPPORT == ENABLED || MODBUS_SERVER_SUPPORT == ENABLED)
 
 //Modbus functions codes
-const char_t *const modbusFunctionCodeLabel[] =
+const char_t *modbusFunctionCodeLabel[] =
 {
    "",                              //0
    "Read Coils",                    //1
@@ -72,7 +72,7 @@ const char_t *const modbusFunctionCodeLabel[] =
 };
 
 //Modbus exception codes
-const char_t *const modbusExceptionCodeLabel[] =
+const char_t *modbusExceptionCodeLabel[] =
 {
    "",                                       //0
    "Illegal Function",                       //1
@@ -112,13 +112,9 @@ error_t modbusDumpRequestPdu(const void *pdu, size_t length)
 
    //Retrieve the name associated with the function code
    if(functionCode < arraysize(modbusFunctionCodeLabel))
-   {
       label = modbusFunctionCodeLabel[functionCode];
-   }
    else
-   {
       label = "";
-   }
 
    //Dump function code
    TRACE_DEBUG("  Function Code = %" PRIu8 " (%s)\r\n", functionCode, label);
@@ -131,61 +127,51 @@ error_t modbusDumpRequestPdu(const void *pdu, size_t length)
       //Dump Modbus PDU
       error = modbusDumpReadCoilsReq(pdu, length);
       break;
-
    //Format Read Discrete Inputs request?
    case MODBUS_FUNCTION_READ_DISCRETE_INPUTS:
       //Dump Modbus PDU
       error = modbusDumpReadDiscreteInputsReq(pdu, length);
       break;
-
    //Read Holding Registers request?
    case MODBUS_FUNCTION_READ_HOLDING_REGS:
       //Dump Modbus PDU
       error = modbusDumpReadHoldingRegsReq(pdu, length);
       break;
-
    //Read Input Registers request?
    case MODBUS_FUNCTION_READ_INPUT_REGS:
       //Dump Modbus PDU
       error = modbusDumpReadInputRegsReq(pdu, length);
       break;
-
    //Write Single Coil request?
    case MODBUS_FUNCTION_WRITE_SINGLE_COIL:
       //Dump Modbus PDU
       error = modbusDumpWriteSingleCoilReq(pdu, length);
       break;
-
    //Write Single Register request?
    case MODBUS_FUNCTION_WRITE_SINGLE_REG:
       //Dump Modbus PDU
       error = modbusDumpWriteSingleRegReq(pdu, length);
       break;
-
    //Write Multiple Coils request?
    case MODBUS_FUNCTION_WRITE_MULTIPLE_COILS:
       //Dump Modbus PDU
       error = modbusDumpWriteMultipleCoilsReq(pdu, length);
       break;
-
    //Write Multiple Registers request?
    case MODBUS_FUNCTION_WRITE_MULTIPLE_REGS:
       //Dump Modbus PDU
       error = modbusDumpWriteMultipleRegsReq(pdu, length);
       break;
-
    //Mask Write Register request?
    case MODBUS_FUNCTION_MASK_WRITE_REG:
       //Dump Modbus PDU
       error = modbusDumpMaskWriteRegReq(pdu, length);
       break;
-
    //Read/Write Multiple Registers request?
    case MODBUS_FUNCTION_READ_WRITE_MULTIPLE_REGS:
       //Dump Modbus PDU
       error = modbusDumpReadWriteMultipleRegsReq(pdu, length);
       break;
-
    //Illegal function code?
    default:
       //Report an error
@@ -233,13 +219,9 @@ error_t modbusDumpResponsePdu(const void *pdu, size_t length)
    {
       //Retrieve the name associated with the function code
       if(functionCode < arraysize(modbusFunctionCodeLabel))
-      {
          label = modbusFunctionCodeLabel[functionCode];
-      }
       else
-      {
          label = "";
-      }
 
       //Dump function code
       TRACE_DEBUG("  Function Code = %" PRIu8 " (%s)\r\n", functionCode, label);
@@ -252,61 +234,51 @@ error_t modbusDumpResponsePdu(const void *pdu, size_t length)
          //Dump Modbus PDU
          error = modbusDumpReadCoilsResp(pdu, length);
          break;
-
       //Format Read Discrete Inputs response?
       case MODBUS_FUNCTION_READ_DISCRETE_INPUTS:
          //Dump Modbus PDU
          error = modbusDumpReadDiscreteInputsResp(pdu, length);
          break;
-
       //Read Holding Registers response?
       case MODBUS_FUNCTION_READ_HOLDING_REGS:
          //Dump Modbus PDU
          error = modbusDumpReadHoldingRegsResp(pdu, length);
          break;
-
       //Read Input Registers response?
       case MODBUS_FUNCTION_READ_INPUT_REGS:
          //Dump Modbus PDU
          error = modbusDumpReadInputRegsResp(pdu, length);
          break;
-
       //Write Single Coil response?
       case MODBUS_FUNCTION_WRITE_SINGLE_COIL:
          //Dump Modbus PDU
          error = modbusDumpWriteSingleCoilResp(pdu, length);
          break;
-
       //Write Single Register response?
       case MODBUS_FUNCTION_WRITE_SINGLE_REG:
          //Dump Modbus PDU
          error = modbusDumpWriteSingleRegResp(pdu, length);
          break;
-
       //Write Multiple Coils response?
       case MODBUS_FUNCTION_WRITE_MULTIPLE_COILS:
          //Dump Modbus PDU
          error = modbusDumpWriteMultipleCoilsResp(pdu, length);
          break;
-
       //Write Multiple Registers response?
       case MODBUS_FUNCTION_WRITE_MULTIPLE_REGS:
          //Dump Modbus PDU
          error = modbusDumpWriteMultipleRegsResp(pdu, length);
          break;
-
       //Mask Write Register response?
       case MODBUS_FUNCTION_MASK_WRITE_REG:
          //Dump Modbus PDU
          error = modbusDumpMaskWriteRegResp(pdu, length);
          break;
-
       //Read/Write Multiple Registers response?
       case MODBUS_FUNCTION_READ_WRITE_MULTIPLE_REGS:
          //Dump Modbus PDU
          error = modbusDumpReadWriteMultipleRegsResp(pdu, length);
          break;
-
       //Illegal function code?
       default:
          //Report an error
@@ -837,13 +809,9 @@ error_t modbusDumpExceptionResp(const ModbusExceptionResp *response,
 
    //Get the description of the exception code
    if(response->exceptionCode < arraysize(modbusExceptionCodeLabel))
-   {
       label = modbusExceptionCodeLabel[response->exceptionCode];
-   }
    else
-   {
       label = "";
-   }
 
    //Dump response PDU
    TRACE_DEBUG("  Function Code = %" PRIu8 " (Exception)\r\n", response->functionCode);

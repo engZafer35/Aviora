@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,9 +33,9 @@
 
 //Dependencies
 #include "mcu.h"
-#include "core/net.h"
-#include "drivers/mac/fm4_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/fm4_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -202,10 +202,10 @@ error_t fm4EthInit(NetInterface *interface)
    FM4_ETHERNET_MAC0->BMR_f.AAL = 0;
    FM4_ETHERNET_MAC0->BMR_f._8XPBL = 0;
    FM4_ETHERNET_MAC0->BMR_f.USP = 1;
-   FM4_ETHERNET_MAC0->BMR_f.RPBL = 32;
+   FM4_ETHERNET_MAC0->BMR_f.RPBL = 1;
    FM4_ETHERNET_MAC0->BMR_f.FB = 0;
    FM4_ETHERNET_MAC0->BMR_f.PR = 0;
-   FM4_ETHERNET_MAC0->BMR_f.PBL = 32;
+   FM4_ETHERNET_MAC0->BMR_f.PBL = 1;
    FM4_ETHERNET_MAC0->BMR_f.ATDS = 1;
    FM4_ETHERNET_MAC0->BMR_f.DSL = 0;
    FM4_ETHERNET_MAC0->BMR_f.DA = 0;
@@ -253,15 +253,16 @@ error_t fm4EthInit(NetInterface *interface)
 }
 
 
+//SK-FM4-176L-S6E2CC-ETH or SK-FM4-176L-S6E2GM evaluation board?
+#if defined(USE_SK_FM4_176L_S6E2CC_ETH) || defined(USE_SK_FM4_176L_S6E2GM)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void fm4EthInitGpio(NetInterface *interface)
+void fm4EthInitGpio(NetInterface *interface)
 {
-//SK-FM4-176L-S6E2CC-ETH or SK-FM4-176L-S6E2GM evaluation board?
-#if defined(USE_SK_FM4_176L_S6E2CC_ETH) || defined(USE_SK_FM4_176L_S6E2GM)
    //Select MII interface mode
    FM4_ETHERNET_CONTROL->ETH_MODE_f.IFMODE = 0;
 
@@ -322,8 +323,9 @@ __weak_func void fm4EthInitGpio(NetInterface *interface)
    sleep(10);
    FM4_GPIO->PDOR6_f.P5 = 1;
    sleep(10);
-#endif
 }
+
+#endif
 
 
 /**

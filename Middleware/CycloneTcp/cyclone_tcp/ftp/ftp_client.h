@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _FTP_CLIENT_H
 #define _FTP_CLIENT_H
 
 //Dependencies
-#include "core/net.h"
-#include "date_time.h"
+#include "../../../CycloneTcp/common/date_time.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //FTP client support
 #ifndef FTP_CLIENT_SUPPORT
@@ -103,11 +103,6 @@
    #define FTP_CLIENT_MAX_FILENAME_LEN 64
 #elif (FTP_CLIENT_MAX_FILENAME_LEN < 16)
    #error FTP_CLIENT_MAX_FILENAME_LEN parameter is not valid
-#endif
-
-//Application specific context
-#ifndef FTP_CLIENT_PRIVATE_CONTEXT
-   #define FTP_CLIENT_PRIVATE_CONTEXT
 #endif
 
 //TLS supported?
@@ -263,7 +258,6 @@ struct _FtpClientContext
    size_t commandLen;                        ///<Length of the FTP command, in bytes
    size_t replyLen;                          ///<Length of the FTP reply, in bytes
    uint_t replyCode;                         ///<FTP reply code
-   FTP_CLIENT_PRIVATE_CONTEXT                ///<Application specific context
 };
 
 

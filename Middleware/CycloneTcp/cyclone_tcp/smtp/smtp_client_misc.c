@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,12 +34,12 @@
 //Dependencies
 #include <stdlib.h>
 #include <ctype.h>
-#include "core/net.h"
-#include "smtp/smtp_client.h"
-#include "smtp/smtp_client_transport.h"
-#include "smtp/smtp_client_misc.h"
-#include "str.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/smtp/smtp_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/smtp/smtp_client_transport.h"
+#include "../../../CycloneTcp/cyclone_tcp/smtp/smtp_client_misc.h"
+#include "../../../CycloneTcp/common/str.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (SMTP_CLIENT_SUPPORT == ENABLED)
@@ -105,17 +105,11 @@ error_t smtpClientSendCommand(SmtpClientContext *context,
       {
          //Determine whether more data should be collected
          if(context->replyLen != 0 && reply[context->replyLen - 1] == '\n')
-         {
             more = FALSE;
-         }
          else if(context->replyLen == (SMTP_CLIENT_BUFFER_SIZE - 1))
-         {
             more = FALSE;
-         }
          else
-         {
             more = TRUE;
-         }
 
          //Receive SMTP response
          if(more)

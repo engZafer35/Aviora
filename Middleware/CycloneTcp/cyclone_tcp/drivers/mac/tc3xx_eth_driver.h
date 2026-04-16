@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _TC3XX_ETH_DRIVER_H
 #define _TC3XX_ETH_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //Number of TX buffers
 #ifndef TC3XX_ETH_TX_BUFFER_COUNT
@@ -100,13 +100,6 @@
 #define ETH_DMA_CH_INTERRUPT_ENABLE_TBUE 0x00000004
 #define ETH_DMA_CH_INTERRUPT_ENABLE_TXSE 0x00000002
 #define ETH_DMA_CH_INTERRUPT_ENABLE_TIE  0x00000001
-
-//MAC_ADDRESSi_HIGH register
-#define ETH_MAC_ADDRESS_HIGH_AE          0x80000000
-#define ETH_MAC_ADDRESS_HIGH_SA          0x40000000
-#define ETH_MAC_ADDRESS_HIGH_MBC         0x3F000000
-#define ETH_MAC_ADDRESS_HIGH_DCS         0x00030000
-#define ETH_MAC_ADDRESS_HIGH_ADDRHI      0x0000FFFF
 
 //Transmit normal descriptor (read format)
 #define ETH_TDES0_BUF1AP                 0xFFFFFFFF

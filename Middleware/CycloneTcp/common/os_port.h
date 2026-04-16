@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _OS_PORT_H
@@ -31,24 +31,24 @@
 
 //Dependencies
 #include "os_port_config.h"
-#include "compiler_port.h"
+
+#include "../../CycloneTcp/common/compiler_port.h"
 
 //Compilation flags used to enable/disable features
 #define ENABLED  1
 #define DISABLED 0
 
+#define PTR_OFFSET(addr, offset) ((void *) ((uint8_t *) (addr) + (offset)))
+
 #define timeCompare(t1, t2) ((int32_t) ((t1) - (t2)))
 
 //Miscellaneous macros
-#if !defined(__AT32F403A_407_LIBRARY_VERSION) && \
-   !defined(__AT32F435_437_LIBRARY_VERSION)
-  #ifndef FALSE
-     #define FALSE 0
-  #endif
+#ifndef FALSE
+   #define FALSE 0
+#endif
 
-  #ifndef TRUE
-     #define TRUE 1
-  #endif
+#ifndef TRUE
+   #define TRUE 1
 #endif
 
 #ifndef LSB
@@ -76,57 +76,51 @@
 //Maximum delay
 #define MAX_DELAY (INFINITE_DELAY / 2)
 
+//Invalid handle value
+#define OS_INVALID_HANDLE NULL
+
 //No RTOS?
 #if defined(USE_NO_RTOS)
-   #include "os_port_none.h"
+   #include "../../CycloneTcp/common/os_port_none.h"
 //ChibiOS/RT port?
 #elif defined(USE_CHIBIOS)
-   #include "os_port_chibios.h"
-//CMX-RTX port?
-#elif defined(USE_CMX_RTX)
-   #include "os_port_cmx_rtx.h"
+   #include "../../CycloneTcp/common/os_port_chibios.h"
 //CMSIS-RTOS port?
 #elif defined(USE_CMSIS_RTOS)
-   #include "os_port_cmsis_rtos.h"
+   #include "../../CycloneTcp/common/os_port_cmsis_rtos.h"
 //CMSIS-RTOS2 port?
 #elif defined(USE_CMSIS_RTOS2)
-   #include "os_port_cmsis_rtos2.h"
+   #include "../../CycloneTcp/common/os_port_cmsis_rtos2.h"
 //FreeRTOS port?
 #elif defined(USE_FREERTOS)
-   #include "os_port_freertos.h"
+   #include "../../CycloneTcp/common/os_port_freertos.h"
 //SafeRTOS port?
 #elif defined(USE_SAFERTOS)
    #include "os_port_safertos.h"
-//Azure RTOS ThreadX port?
-#elif defined(USE_THREADX)
-   #include "os_port_threadx.h"
 //Keil RTX port?
 #elif defined(USE_RTX)
-   #include "os_port_rtx.h"
+   #include "../../CycloneTcp/common/os_port_rtx.h"
 //Micrium uC/OS-II port?
 #elif defined(USE_UCOS2)
-   #include "os_port_ucos2.h"
+   #include "../../CycloneTcp/common/os_port_ucos2.h"
 //Micrium uC/OS-III port?
 #elif defined(USE_UCOS3)
-   #include "os_port_ucos3.h"
-//PX5 port?
-#elif defined(USE_PX5)
-   #include "os_port_px5.h"
+   #include "../../CycloneTcp/common/os_port_ucos3.h"
+//Nut/OS port?
+#elif defined(USE_NUTOS)
+   #include "os_port_nutos.h"
 //Segger embOS port?
 #elif defined(USE_EMBOS)
-   #include "os_port_embos.h"
+   #include "../../CycloneTcp/common/os_port_embos.h"
 //TI SYS/BIOS port?
 #elif defined(USE_SYS_BIOS)
-   #include "os_port_sys_bios.h"
-//Zephyr port?
-#elif defined(USE_ZEPHYR)
-   #include "os_port_zephyr.h"
+   #include "../../CycloneTcp/common/os_port_sys_bios.h"
 //Windows port?
 #elif defined(_WIN32)
-   #include "os_port_windows.h"
+   #include "../../CycloneTcp/common/os_port_windows.h"
 //POSIX Threads port?
 #elif defined(__linux__) || defined(__FreeBSD__)
-   #include "os_port_posix.h"
+   #include "../../CycloneTcp/common/os_port_posix.h"
 #endif
 
 //Fill block of memory
@@ -151,12 +145,6 @@
 #ifndef osMemcmp
    #include <string.h>
    #define osMemcmp(p1, p2, length) memcmp(p1, p2, length)
-#endif
-
-//Search for the first occurrence of a given character
-#ifndef osMemchr
-   #include <string.h>
-   #define osMemchr(p, c, length) memchr(p, c, length)
 #endif
 
 //Get string length
@@ -232,12 +220,6 @@
 #endif
 
 //Format string
-#ifndef osSnprintf
-   #include <stdio.h>
-   #define osSnprintf(dest, size, ...) snprintf(dest, size, __VA_ARGS__)
-#endif
-
-//Format string
 #ifndef osVsnprintf
    #include <stdio.h>
    #define osVsnprintf(dest, size, format, ap) vsnprintf(dest, size, format, ap)
@@ -292,31 +274,14 @@
 
 #if !defined(__linux__) && !defined(__FreeBSD__)
 
-#ifdef USE_FREERTOS
-    #include "FreeRTOS.h"
-    #include "task.h"
-#ifndef sleep
-    #define sleep(ms) vTaskDelay(pdMS_TO_TICKS(ms))
-#endif
-#else
-    #include "stm32fxxx_hal.h"
-    #define sleep(ms) HAL_Delay(ms)
-#endif
-
 //Delay routines
-//#ifndef usleep
-//   #define usleep(delay) {volatile uint32_t n = delay * 4; while(n > 0) n--;}
-//#endif
-//
-//#ifndef sleep
-//   #define sleep(delay) {volatile uint32_t n = delay * 4000; while(n > 0) n--;}
-//#endif
-
+#ifndef usleep
+   #define usleep(delay) {volatile uint32_t n = delay * 4; while(n > 0) n--;}
 #endif
 
-//Task object (deprecated)
-#define OsTask void
-//Invalid handle value (deprecated)
-#define OS_INVALID_HANDLE OS_INVALID_TASK_ID
+#ifndef sleep
+   #define sleep(delay) {volatile uint32_t n = delay * 4000; while(n > 0) n--;}
+#endif
 
+#endif
 #endif

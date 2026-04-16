@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,26 +25,29 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL ETH_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/nic.h"
-#include "core/ethernet.h"
-#include "core/ethernet_misc.h"
-#include "core/socket.h"
-#include "core/raw_socket.h"
-#include "core/tcp_timer.h"
-#include "ipv4/arp.h"
-#include "ipv4/ipv4.h"
-#include "ipv6/ipv6.h"
-#include "mibs/mib2_module.h"
-#include "mibs/if_mib_module.h"
-#include "debug.h"
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/nic.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ethernet.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ethernet_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/raw_socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/tcp_timer.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/arp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib2_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/if_mib_module.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (ETH_SUPPORT == ENABLED)
@@ -146,7 +149,7 @@ void ethProcessFrame(NetInterface *interface, uint8_t *frame, size_t length,
       header = (EthHeader *) frame;
 
       //Total number of octets received on the interface
-      MIB2_IF_INC_COUNTER32(ifTable[interface->index].ifInOctets, length);
+      MIB2_INC_COUNTER32(ifGroup.ifTable[interface->index].ifInOctets, length);
       IF_MIB_INC_COUNTER32(ifTable[interface->index].ifInOctets, length);
       IF_MIB_INC_COUNTER64(ifXTable[interface->index].ifHCInOctets, length);
 
@@ -306,9 +309,6 @@ void ethProcessFrame(NetInterface *interface, uint8_t *frame, size_t length,
          ancillary->srcMacAddr = header->srcAddr;
          ancillary->destMacAddr = header->destAddr;
 
-         //Save the value of the EtherType field
-         ancillary->ethType = type;
-
          //Update Ethernet statistics
          ethUpdateInStats(virtualInterface, &header->destAddr);
 
@@ -329,7 +329,8 @@ void ethProcessFrame(NetInterface *interface, uint8_t *frame, size_t length,
 
 #if (RAW_SOCKET_SUPPORT == ENABLED)
          //Allow raw sockets to process Ethernet packets
-         rawSocketProcessEthPacket(virtualInterface, data, length, ancillary);
+         rawSocketProcessEthPacket(virtualInterface, header, data, length,
+            ancillary);
 #endif
          //Check Ethernet type field
          switch(type)
@@ -916,19 +917,15 @@ error_t macStringToAddr(const char_t *str, MacAddr *macAddr)
 
 char_t *macAddrToString(const MacAddr *macAddr, char_t *str)
 {
-   static char_t buffer[24];
+   static char_t buffer[18];
 
    //The str parameter is optional
    if(str == NULL)
-   {
       str = buffer;
-   }
 
    //Format MAC address
-   osSprintf(str, "%02" PRIX8 "-%02" PRIX8 "-%02" PRIX8
-      "-%02" PRIX8 "-%02" PRIX8 "-%02" PRIX8,
-      macAddr->b[0], macAddr->b[1], macAddr->b[2],
-      macAddr->b[3], macAddr->b[4], macAddr->b[5]);
+   osSprintf(str, "%02" PRIX8 "-%02" PRIX8 "-%02" PRIX8 "-%02" PRIX8 "-%02" PRIX8 "-%02" PRIX8,
+      macAddr->b[0], macAddr->b[1], macAddr->b[2], macAddr->b[3], macAddr->b[4], macAddr->b[5]);
 
    //Return a pointer to the formatted string
    return str;
@@ -1004,9 +1001,7 @@ error_t eui64StringToAddr(const char_t *str, Eui64 *eui64)
       {
          //First digit to be decoded?
          if(value < 0)
-         {
             value = 0;
-         }
 
          //Update the value of the current byte
          if(osIsdigit(*str))
@@ -1092,13 +1087,11 @@ error_t eui64StringToAddr(const char_t *str, Eui64 *eui64)
 
 char_t *eui64AddrToString(const Eui64 *eui64, char_t *str)
 {
-   static char_t buffer[32];
+   static char_t buffer[24];
 
    //The str parameter is optional
    if(str == NULL)
-   {
       str = buffer;
-   }
 
    //Format EUI-64 identifier
    osSprintf(str, "%02" PRIX8 "-%02" PRIX8 "-%02" PRIX8 "-%02" PRIX8

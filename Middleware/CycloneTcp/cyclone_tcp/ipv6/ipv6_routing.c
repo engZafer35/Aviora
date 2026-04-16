@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,14 +33,14 @@
 
 //Dependencies
 #include <limits.h>
-#include "core/net.h"
-#include "core/ip.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_misc.h"
-#include "ipv6/ipv6_routing.h"
-#include "ipv6/icmpv6.h"
-#include "ipv6/ndp.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ip.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_routing.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/icmpv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV6_SUPPORT == ENABLED && IPV6_ROUTING_SUPPORT == ENABLED)
@@ -160,13 +160,9 @@ error_t ipv6AddRoute(const Ipv6Addr *prefix, uint_t prefixLen,
 
       //Address of the next hop
       if(nextHop != NULL)
-      {
          entry->nextHop = *nextHop;
-      }
       else
-      {
          entry->nextHop = IPV6_UNSPECIFIED_ADDR;
-      }
 
       //Metric value
       entry->metric = metric;
@@ -399,13 +395,9 @@ error_t ipv6ForwardPacket(NetInterface *srcInterface, NetBuffer *ipPacket,
 
                //Next hop
                if(!ipv6CompAddr(&entry->nextHop, &IPV6_UNSPECIFIED_ADDR))
-               {
                   destIpAddr = entry->nextHop;
-               }
                else
-               {
                   destIpAddr = ipHeader->destAddr;
-               }
             }
          }
       }
@@ -587,7 +579,7 @@ error_t ipv6ForwardPacket(NetInterface *srcInterface, NetBuffer *ipPacket,
                error = ethSendFrame(destInterface, NULL, &destMacAddr, ETH_TYPE_IPV6,
                   destBuffer, destOffset, &ancillary);
             }
-            //Address resolution in progress?
+            //Address resolution is in progress?
             else if(error == ERROR_IN_PROGRESS)
             {
                //Debug message

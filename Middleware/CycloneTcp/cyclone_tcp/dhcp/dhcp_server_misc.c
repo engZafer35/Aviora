@@ -1,12 +1,12 @@
 /**
- * @file dhcp_server_misc.c
+ * @file dhcp_server.c
  * @brief Helper functions for DHCP server
  *
  * @section License
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,20 +25,20 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL DHCP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "dhcp/dhcp_server.h"
-#include "dhcp/dhcp_server_misc.h"
-#include "dhcp/dhcp_common.h"
-#include "dhcp/dhcp_debug.h"
-#include "date_time.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_server_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_debug.h"
+#include "../../../CycloneTcp/common/date_time.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV4_SUPPORT == ENABLED && DHCP_SERVER_SUPPORT == ENABLED)
@@ -72,13 +72,9 @@ void dhcpServerTick(DhcpServerContext *context)
 
    //Convert the lease time to milliseconds
    if(context->settings.leaseTime < (MAX_DELAY / 1000))
-   {
       leaseTime = context->settings.leaseTime * 1000;
-   }
    else
-   {
       leaseTime = MAX_DELAY;
-   }
 
    //Loop through the list of bindings
    for(i = 0; i < DHCP_SERVER_MAX_CLIENTS; i++)
@@ -121,12 +117,10 @@ void dhcpServerProcessMessage(NetInterface *interface,
    const NetBuffer *buffer, size_t offset, const NetRxAncillary *ancillary,
    void *param)
 {
-   error_t error;
    size_t length;
    DhcpServerContext *context;
    DhcpMessage *message;
    DhcpOption *option;
-   DhcpMessageType type;
 
    //Point to the DHCP server context
    context = (DhcpServerContext *) param;
@@ -173,22 +167,8 @@ void dhcpServerProcessMessage(NetInterface *interface,
    if(option == NULL || option->length != 1)
       return;
 
-   //Retrieve message type
-   type = (DhcpMessageType) option->value[0];
-
-   //Any registered callback?
-   if(context->settings.parseOptionsCallback != NULL)
-   {
-      //Invoke user callback function
-      error = context->settings.parseOptionsCallback(context, message, length,
-         type);
-      //Check status code
-      if(error)
-         return;
-   }
-
    //Check message type
-   switch(type)
+   switch(option->value[0])
    {
    case DHCP_MSG_TYPE_DISCOVER:
       //Parse DHCPDISCOVER message
@@ -261,13 +241,9 @@ void dhcpServerParseDiscover(DhcpServerContext *context,
    //The client may include the 'requested IP address' option to suggest
    //that a particular IP address be assigned
    if(option != NULL && option->length == 4)
-   {
       ipv4CopyAddr(&requestedIpAddr, option->value);
-   }
    else
-   {
       requestedIpAddr = IPV4_UNSPECIFIED_ADDR;
-   }
 
    //Search the list for a matching binding
    binding = dhcpServerFindBindingByMacAddr(context, &message->chaddr);
@@ -350,8 +326,8 @@ void dhcpServerParseDiscover(DhcpServerContext *context,
       //The server responds with a DHCPOFFER message that includes an
       //available network address in the 'yiaddr' field (and other
       //configuration parameters in DHCP options)
-      dhcpServerSendReply(context, DHCP_MSG_TYPE_OFFER, binding->ipAddr,
-         message, length);
+      dhcpServerSendReply(context, DHCP_MSG_TYPE_OFFER,
+         binding->ipAddr, message, length);
    }
 }
 
@@ -401,13 +377,9 @@ void dhcpServerParseRequest(DhcpServerContext *context,
 
       //Option found?
       if(option != NULL && option->length == 4)
-      {
          ipv4CopyAddr(&clientIpAddr, option->value);
-      }
       else
-      {
          clientIpAddr = IPV4_UNSPECIFIED_ADDR;
-      }
    }
 
    //Valid client IP address?
@@ -475,8 +447,8 @@ void dhcpServerParseRequest(DhcpServerContext *context,
 
    //If the server is unable to satisfy the DHCPREQUEST message, the
    //server should respond with a DHCPNAK message
-   dhcpServerSendReply(context, DHCP_MSG_TYPE_NAK, IPV4_UNSPECIFIED_ADDR,
-      message, length);
+   dhcpServerSendReply(context, DHCP_MSG_TYPE_NAK,
+      IPV4_UNSPECIFIED_ADDR, message, length);
 }
 
 
@@ -563,8 +535,8 @@ void dhcpServerParseInform(DhcpServerContext *context,
    {
       //Servers receiving a DHCPINFORM message construct a DHCPACK message
       //with any local configuration parameters appropriate for the client
-      dhcpServerSendReply(context, DHCP_MSG_TYPE_ACK, IPV4_UNSPECIFIED_ADDR,
-         message, length);
+      dhcpServerSendReply(context, DHCP_MSG_TYPE_ACK,
+         IPV4_UNSPECIFIED_ADDR, message, length);
    }
 }
 
@@ -686,23 +658,12 @@ error_t dhcpServerSendReply(DhcpServerContext *context, uint8_t type,
       }
    }
 
-   //Any registered callback?
-   if(context->settings.addOptionsCallback != NULL)
-   {
-      //Invoke user callback function
-      context->settings.addOptionsCallback(context, reply, &replyLen,
-         (DhcpMessageType) type);
-   }
-
    //The minimum length of BOOTP frames is 300 octets (refer to RFC 951,
    //section 3)
    replyLen = MAX(replyLen, DHCP_MIN_MSG_SIZE);
 
    //Adjust the length of the multi-part buffer
    netBufferSetLength(buffer, offset + replyLen);
-
-   //Additional options can be passed to the stack along with the packet
-   ancillary = NET_DEFAULT_TX_ANCILLARY;
 
    //A server with multiple network address (e.g. a multi-homed host) may
    //use any of its network addresses in outgoing DHCP messages (refer to
@@ -731,7 +692,7 @@ error_t dhcpServerSendReply(DhcpServerContext *context, uint8_t type,
       //DHCPOFFER or DHCPACK message?
       if(type == DHCP_MSG_TYPE_OFFER || type == DHCP_MSG_TYPE_ACK)
       {
-         //Check whether the 'ciaddr' field is non-zero
+         //Check whether the 'giaddr' field is non-zero
          if(request->ciaddr != IPV4_UNSPECIFIED_ADDR)
          {
             //If the 'giaddr' field is zero and the 'ciaddr' field is nonzero,
@@ -755,9 +716,8 @@ error_t dhcpServerSendReply(DhcpServerContext *context, uint8_t type,
                //If 'giaddr' is zero and 'ciaddr' is zero, and the broadcast bit is
                //not set, then the server unicasts DHCPOFFER and DHCPACK messages
                //to the client's hardware address and 'yiaddr' address
-               ancillary.destMacAddr = request->chaddr;
                destIpAddr.length = sizeof(Ipv4Addr);
-               destIpAddr.ipv4Addr = yourIpAddr;
+               destIpAddr.ipv4Addr = IPV4_BROADCAST_ADDR;
             }
          }
       }
@@ -777,6 +737,9 @@ error_t dhcpServerSendReply(DhcpServerContext *context, uint8_t type,
 
    //Dump the contents of the message for debugging purpose
    dhcpDumpMessage(reply, replyLen);
+
+   //Additional options can be passed to the stack along with the packet
+   ancillary = NET_DEFAULT_TX_ANCILLARY;
 
    //Send DHCP reply
    error = udpSendBuffer(interface, &srcIpAddr, DHCP_SERVER_PORT, &destIpAddr,

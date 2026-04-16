@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,17 +25,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/ethernet_misc.h"
-#include "drivers/switch/ksz8565_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/ethernet_misc.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/switch/ksz8565_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -215,22 +215,16 @@ error_t ksz8565Init(NetInterface *interface)
       ksz8565WriteMmdReg(interface, port, 0x1C, 0x1E, 0xEFFF);
       ksz8565WriteMmdReg(interface, port, 0x1C, 0x20, 0xEEEE);
 
-      //Select single-LED mode
+      //Select tri-color dual-LED mode (silicon errata workaround 15)
       ksz8565WriteMmdReg(interface, port, KSZ8565_MMD_LED_MODE,
-         KSZ8565_MMD_LED_MODE_LED_MODE_SINGLE |
+         KSZ8565_MMD_LED_MODE_LED_MODE_TRI_COLOR_DUAL |
          KSZ8565_MMD_LED_MODE_RESERVED_DEFAULT);
-
-      //Implement workaround for single-LED mode
-      ksz8565WritePhyReg(interface, port, 0x1E, 0xFA00);
 
       //Debug message
       TRACE_DEBUG("Port %u:\r\n", port);
       //Dump PHY registers for debugging purpose
       ksz8565DumpPhyReg(interface, port);
    }
-
-   //Perform custom configuration
-   ksz8565InitHook(interface);
 
    //Force the TCP/IP stack to poll the link state at startup
    interface->phyEvent = TRUE;
@@ -239,16 +233,6 @@ error_t ksz8565Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief KSZ8565 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void ksz8565InitHook(NetInterface *interface)
-{
 }
 
 
@@ -1078,16 +1062,16 @@ error_t ksz8565AddStaticFdbEntry(NetInterface *interface,
       ksz8565WriteSwitchReg32(interface, KSZ8565_STATIC_TABLE_ENTRY4, value);
 
       //Write the TABLE_INDEX field with the 4-bit index value
-      value = (j << 16) & KSZ8565_STATIC_MCAST_TABLE_CTRL_TABLE_INDEX;
+      value = (j << 16) & KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_TABLE_INDEX;
       //Set the TABLE_SELECT bit to 0 to select the static address table
-      value &= ~KSZ8565_STATIC_MCAST_TABLE_CTRL_TABLE_SELECT;
+      value &= ~KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_TABLE_SELECT;
       //Set the ACTION bit to 0 to indicate a write operation
-      value &= ~KSZ8565_STATIC_MCAST_TABLE_CTRL_ACTION;
+      value &= ~KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_ACTION;
       //Set the START_FINISH bit to 1 to initiate the operation
-      value |= KSZ8565_STATIC_MCAST_TABLE_CTRL_START_FINISH;
+      value |= KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_START_FINISH;
 
       //Start the write operation
-      ksz8565WriteSwitchReg32(interface, KSZ8565_STATIC_MCAST_TABLE_CTRL,
+      ksz8565WriteSwitchReg32(interface, KSZ8565_STATIC_RES_MCAST_TABLE_CTRL,
          value);
 
       //When the operation is complete, the START_FINISH bit will be cleared
@@ -1096,10 +1080,10 @@ error_t ksz8565AddStaticFdbEntry(NetInterface *interface,
       {
          //Read the Static Address and Reserved Multicast Table Control register
          value = ksz8565ReadSwitchReg32(interface,
-            KSZ8565_STATIC_MCAST_TABLE_CTRL);
+            KSZ8565_STATIC_RES_MCAST_TABLE_CTRL);
 
          //Poll the START_FINISH bit
-      } while((value & KSZ8565_STATIC_MCAST_TABLE_CTRL_START_FINISH) != 0);
+      } while((value & KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_START_FINISH) != 0);
 
       //Successful processing
       error = NO_ERROR;
@@ -1157,16 +1141,16 @@ error_t ksz8565DeleteStaticFdbEntry(NetInterface *interface,
       ksz8565WriteSwitchReg32(interface, KSZ8565_STATIC_TABLE_ENTRY4, 0);
 
       //Write the TABLE_INDEX field with the 4-bit index value
-      value = (j << 16) & KSZ8565_STATIC_MCAST_TABLE_CTRL_TABLE_INDEX;
+      value = (j << 16) & KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_TABLE_INDEX;
       //Set the TABLE_SELECT bit to 0 to select the static address table
-      value &= ~KSZ8565_STATIC_MCAST_TABLE_CTRL_TABLE_SELECT;
+      value &= ~KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_TABLE_SELECT;
       //Set the ACTION bit to 0 to indicate a write operation
-      value &= ~KSZ8565_STATIC_MCAST_TABLE_CTRL_ACTION;
+      value &= ~KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_ACTION;
       //Set the START_FINISH bit to 1 to initiate the operation
-      value |= KSZ8565_STATIC_MCAST_TABLE_CTRL_START_FINISH;
+      value |= KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_START_FINISH;
 
       //Start the write operation
-      ksz8565WriteSwitchReg32(interface, KSZ8565_STATIC_MCAST_TABLE_CTRL,
+      ksz8565WriteSwitchReg32(interface, KSZ8565_STATIC_RES_MCAST_TABLE_CTRL,
          value);
 
       //When the operation is complete, the START_FINISH bit will be cleared
@@ -1175,10 +1159,10 @@ error_t ksz8565DeleteStaticFdbEntry(NetInterface *interface,
       {
          //Read the Static Address and Reserved Multicast Table Control register
          value = ksz8565ReadSwitchReg32(interface,
-            KSZ8565_STATIC_MCAST_TABLE_CTRL);
+            KSZ8565_STATIC_RES_MCAST_TABLE_CTRL);
 
          //Poll the START_FINISH bit
-      } while((value & KSZ8565_STATIC_MCAST_TABLE_CTRL_START_FINISH) != 0);
+      } while((value & KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_START_FINISH) != 0);
 
       //Successful processing
       error = NO_ERROR;
@@ -1212,16 +1196,16 @@ error_t ksz8565GetStaticFdbEntry(NetInterface *interface, uint_t index,
    if(index < KSZ8565_STATIC_MAC_TABLE_SIZE)
    {
       //Write the TABLE_INDEX field with the 4-bit index value
-      value = (index << 16) & KSZ8565_STATIC_MCAST_TABLE_CTRL_TABLE_INDEX;
+      value = (index << 16) & KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_TABLE_INDEX;
       //Set the TABLE_SELECT bit to 0 to select the static address table
-      value &= ~KSZ8565_STATIC_MCAST_TABLE_CTRL_TABLE_SELECT;
+      value &= ~KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_TABLE_SELECT;
       //Set the ACTION bit to 1 to indicate a read operation
-      value |= KSZ8565_STATIC_MCAST_TABLE_CTRL_ACTION;
+      value |= KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_ACTION;
       //Set the START_FINISH bit to 1 to initiate the operation
-      value |= KSZ8565_STATIC_MCAST_TABLE_CTRL_START_FINISH;
+      value |= KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_START_FINISH;
 
       //Start the read operation
-      ksz8565WriteSwitchReg32(interface, KSZ8565_STATIC_MCAST_TABLE_CTRL,
+      ksz8565WriteSwitchReg32(interface, KSZ8565_STATIC_RES_MCAST_TABLE_CTRL,
          value);
 
       //When the operation is complete, the START_FINISH bit will be cleared
@@ -1230,10 +1214,10 @@ error_t ksz8565GetStaticFdbEntry(NetInterface *interface, uint_t index,
       {
          //Read the Static Address and Reserved Multicast Table Control register
          value = ksz8565ReadSwitchReg32(interface,
-            KSZ8565_STATIC_MCAST_TABLE_CTRL);
+            KSZ8565_STATIC_RES_MCAST_TABLE_CTRL);
 
          //Poll the START_FINISH bit
-      } while((value & KSZ8565_STATIC_MCAST_TABLE_CTRL_START_FINISH) != 0);
+      } while((value & KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_START_FINISH) != 0);
 
       //Read the Static Address Table Entry 1 register
       value = ksz8565ReadSwitchReg32(interface, KSZ8565_STATIC_TABLE_ENTRY1);
@@ -1314,16 +1298,16 @@ void ksz8565FlushStaticFdbTable(NetInterface *interface)
       ksz8565WriteSwitchReg32(interface, KSZ8565_STATIC_TABLE_ENTRY4, 0);
 
       //Write the TABLE_INDEX field with the 4-bit index value
-      value = (i << 16) & KSZ8565_STATIC_MCAST_TABLE_CTRL_TABLE_INDEX;
+      value = (i << 16) & KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_TABLE_INDEX;
       //Set the TABLE_SELECT bit to 0 to select the static address table
-      value &= ~KSZ8565_STATIC_MCAST_TABLE_CTRL_TABLE_SELECT;
+      value &= ~KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_TABLE_SELECT;
       //Set the ACTION bit to 0 to indicate a write operation
-      value &= ~KSZ8565_STATIC_MCAST_TABLE_CTRL_ACTION;
+      value &= ~KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_ACTION;
       //Set the START_FINISH bit to 1 to initiate the operation
-      value |= KSZ8565_STATIC_MCAST_TABLE_CTRL_START_FINISH;
+      value |= KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_START_FINISH;
 
       //Start the write operation
-      ksz8565WriteSwitchReg32(interface, KSZ8565_STATIC_MCAST_TABLE_CTRL,
+      ksz8565WriteSwitchReg32(interface, KSZ8565_STATIC_RES_MCAST_TABLE_CTRL,
          value);
 
       //When the operation is complete, the START_FINISH bit will be cleared
@@ -1332,10 +1316,10 @@ void ksz8565FlushStaticFdbTable(NetInterface *interface)
       {
          //Read the Static Address and Reserved Multicast Table Control register
          value = ksz8565ReadSwitchReg32(interface,
-            KSZ8565_STATIC_MCAST_TABLE_CTRL);
+            KSZ8565_STATIC_RES_MCAST_TABLE_CTRL);
 
          //Poll the START_FINISH bit
-      } while((value & KSZ8565_STATIC_MCAST_TABLE_CTRL_START_FINISH) != 0);
+      } while((value & KSZ8565_STATIC_RES_MCAST_TABLE_CTRL_START_FINISH) != 0);
    }
 }
 

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,14 +34,14 @@
 //Dependencies
 #include <stdlib.h>
 #include <limits.h>
-#include "core/net.h"
-#include "http/http_server.h"
-#include "http/http_server_auth.h"
-#include "http/http_server_misc.h"
-#include "http/mime.h"
-#include "str.h"
-#include "path.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_server_auth.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_server_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/mime.h"
+#include "../../../CycloneTcp/common/str.h"
+#include "../../../CycloneTcp/common/path.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (HTTP_SERVER_SUPPORT == ENABLED)
@@ -1038,9 +1038,7 @@ error_t httpReceive(HttpConnection *connection,
          c = LSB(flags);
 
          //Search for the specified break character
-         for(i = 0; i < n && connection->buffer[connection->bufferPos + i] != c; i++)
-         {
-         }
+         for(i = 0; i < n && connection->buffer[connection->bufferPos + i] != c; i++);
 
          //Adjust the number of data to read
          n = MIN(n, i + 1);
@@ -1114,13 +1112,9 @@ bool_t httpCompExtension(const char_t *filename, const char_t *extension)
 
    //Compare extensions
    if(!osStrncasecmp(filename + n - m, extension, m))
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 

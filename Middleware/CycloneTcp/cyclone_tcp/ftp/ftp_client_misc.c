@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,11 +34,12 @@
 //Dependencies
 #include <stdlib.h>
 #include <ctype.h>
-#include "ftp/ftp_client.h"
-#include "ftp/ftp_client_transport.h"
-#include "ftp/ftp_client_misc.h"
-#include "str.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_client_transport.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_client_misc.h"
+#include "../../../CycloneTcp/common/str.h"
+#include "../../../CycloneTcp/common/error.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (FTP_CLIENT_SUPPORT == ENABLED)
@@ -101,17 +102,11 @@ error_t ftpClientSendCommand(FtpClientContext *context)
       {
          //Determine whether more data should be collected
          if(context->replyLen != 0 && reply[context->replyLen - 1] == '\n')
-         {
             more = FALSE;
-         }
          else if(context->replyLen == (FTP_CLIENT_BUFFER_SIZE - 1))
-         {
             more = FALSE;
-         }
          else
-         {
             more = TRUE;
-         }
 
          //Receive FTP response
          if(more)
@@ -210,6 +205,7 @@ error_t ftpClientFormatCommand(FtpClientContext *context,
    //Successful processing
    return NO_ERROR;
 }
+
 
 
 /**
@@ -467,7 +463,7 @@ error_t ftpClientParsePwdReply(FtpClientContext *context, char_t *path,
    length = MIN(length, maxLen);
 
    //Copy the string
-   osMemcpy(path, p + 1, length);
+   osStrncpy(path, p + 1, length);
    //Properly terminate the string with a NULL character
    path[length] = '\0';
 
@@ -593,7 +589,7 @@ error_t ftpClientParseDirEntry(char_t *line, FtpDirEntry *dirEntry)
       n = MIN(n, FTP_CLIENT_MAX_FILENAME_LEN);
 
       //Copy the filename
-      osMemcpy(dirEntry->name, token, n);
+      osStrncpy(dirEntry->name, token, n);
       //Properly terminate the string with a NULL character
       dirEntry->name[n] = '\0';
    }
@@ -703,7 +699,7 @@ error_t ftpClientParseDirEntry(char_t *line, FtpDirEntry *dirEntry)
       n = MIN(n, FTP_CLIENT_MAX_FILENAME_LEN);
 
       //Copy the filename
-      osMemcpy(dirEntry->name, token, n);
+      osStrncpy(dirEntry->name, token, n);
       //Properly terminate the string with a NULL character
       dirEntry->name[n] = '\0';
    }

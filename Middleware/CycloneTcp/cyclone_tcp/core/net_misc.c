@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,75 +25,75 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/net_misc.h"
-#include "core/socket.h"
-#include "core/raw_socket.h"
-#include "core/tcp_timer.h"
-#include "core/tcp_misc.h"
-#include "core/ethernet.h"
-#include "ipv4/arp.h"
-#include "ipv4/ipv4.h"
-#include "ipv4/ipv4_routing.h"
-#include "ipv4/auto_ip_misc.h"
-#include "igmp/igmp_host.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_routing.h"
-#include "ipv6/mld.h"
-#include "ipv6/ndp.h"
-#include "ipv6/ndp_router_adv_misc.h"
-#include "dhcp/dhcp_client_misc.h"
-#include "dhcp/dhcp_server_misc.h"
-#include "dhcpv6/dhcpv6_client_misc.h"
-#include "dns/dns_cache.h"
-#include "dns/dns_client.h"
-#include "mdns/mdns_client.h"
-#include "mdns/mdns_responder.h"
-#include "mdns/mdns_common.h"
-#include "dns_sd/dns_sd.h"
-#include "netbios/nbns_client.h"
-#include "netbios/nbns_responder.h"
-#include "netbios/nbns_common.h"
-#include "llmnr/llmnr_client.h"
-#include "llmnr/llmnr_responder.h"
-#include "mibs/mib2_module.h"
-#include "mibs/if_mib_module.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/raw_socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/tcp_timer.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/tcp_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ethernet.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/arp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_routing.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/auto_ip_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_host.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_routing.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/mld.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_router_adv_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_client_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_server_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcpv6/dhcpv6_client_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_cache.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_responder.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns_sd/dns_sd.h"
+#include "../../../CycloneTcp/cyclone_tcp/netbios/nbns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/netbios/nbns_responder.h"
+#include "../../../CycloneTcp/cyclone_tcp/netbios/nbns_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/llmnr/llmnr_responder.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib2_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/if_mib_module.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Default options passed to the stack (TX path)
 const NetTxAncillary NET_DEFAULT_TX_ANCILLARY =
 {
-   0,             //Time-to-live value
-   0,             //Type-of-service value
-   IP_DEFAULT_DF, //Do not fragment the IP packet
-   FALSE,         //Do not send the packet via a router
-   FALSE,         //Do not add an IP Router Alert option
+   0,       //Time-to-live value
+   FALSE,   //Do not send the packet via a router
+   FALSE,   //Do not add an IP Router Alert option
+#if (IP_DIFF_SERV_SUPPORT == ENABLED)
+   0,       //Differentiated services codepoint
+#endif
 #if (ETH_SUPPORT == ENABLED)
-   {{{0}}},       //Source MAC address
-   {{{0}}},       //Destination MAC address
+   {{{0}}}, //Source MAC address
+   {{{0}}}, //Destination MAC address
 #endif
 #if (ETH_VLAN_SUPPORT == ENABLED)
-   -1,            //VLAN priority (802.1Q)
-   -1,            //Drop eligible indicator
+   -1,      //VLAN priority (802.1Q)
+   -1,      //Drop eligible indicator
 #endif
 #if (ETH_VMAN_SUPPORT == ENABLED)
-   -1,            //VMAN priority (802.1ad)
-   -1,            //Drop eligible indicator
+   -1,      //VMAN priority (802.1ad)
+   -1,      //Drop eligible indicator
 #endif
 #if (ETH_PORT_TAGGING_SUPPORT == ENABLED)
-   0,             //Egress port identifier
-   0,             //Egress port map
-   FALSE,         //Override port state
+   0,       //Egress port identifier
+   0,       //Egress port map
+   FALSE,   //Override port state
 #endif
 #if (ETH_TIMESTAMP_SUPPORT == ENABLED)
-   -1,            //Unique identifier for hardware time stamping
+   -1,      //Unique identifier for hardware time stamping
 #endif
 };
 
@@ -101,11 +101,9 @@ const NetTxAncillary NET_DEFAULT_TX_ANCILLARY =
 const NetRxAncillary NET_DEFAULT_RX_ANCILLARY =
 {
    0,       //Time-to-live value
-   0,       //Type-of-service value
 #if (ETH_SUPPORT == ENABLED)
    {{{0}}}, //Source MAC address
    {{{0}}}, //Destination MAC address
-   0,       //Ethernet type field
 #endif
 #if (ETH_PORT_TAGGING_SUPPORT == ENABLED)
    0,       //Ingress port identifier
@@ -248,10 +246,10 @@ void netProcessLinkChange(NetInterface *interface)
    }
 
    //The time at which the interface entered its current operational state
-   MIB2_IF_SET_TIME_TICKS(ifTable[interface->index].ifLastChange,
-      osGetSystemTime64() / 10);
+   MIB2_SET_TIME_TICKS(ifGroup.ifTable[interface->index].ifLastChange,
+      osGetSystemTime() / 10);
    IF_MIB_SET_TIME_TICKS(ifTable[interface->index].ifLastChange,
-      osGetSystemTime64() / 10);
+      osGetSystemTime() / 10);
 
 #if (IPV4_SUPPORT == ENABLED)
    //Notify IPv4 of link state changes
@@ -523,9 +521,7 @@ void netTick(void)
    {
       //Loop through network interfaces
       for(i = 0; i < NET_INTERFACE_COUNT; i++)
-      {
          autoIpTick(netInterface[i].autoIpContext);
-      }
 
       //Reset tick counter
       autoIpTickCounter = 0;
@@ -541,9 +537,7 @@ void netTick(void)
    {
       //Loop through network interfaces
       for(i = 0; i < NET_INTERFACE_COUNT; i++)
-      {
          dhcpClientTick(netInterface[i].dhcpClientContext);
-      }
 
       //Reset tick counter
       dhcpClientTickCounter = 0;
@@ -559,9 +553,7 @@ void netTick(void)
    {
       //Loop through network interfaces
       for(i = 0; i < NET_INTERFACE_COUNT; i++)
-      {
          dhcpServerTick(netInterface[i].dhcpServerContext);
-      }
 
       //Reset tick counter
       dhcpServerTickCounter = 0;
@@ -637,9 +629,7 @@ void netTick(void)
    {
       //Loop through network interfaces
       for(i = 0; i < NET_INTERFACE_COUNT; i++)
-      {
          ndpRouterAdvTick(netInterface[i].ndpRouterAdvContext);
-      }
 
       //Reset tick counter
       ndpRouterAdvTickCounter = 0;
@@ -655,9 +645,7 @@ void netTick(void)
    {
       //Loop through network interfaces
       for(i = 0; i < NET_INTERFACE_COUNT; i++)
-      {
          dhcpv6ClientTick(netInterface[i].dhcpv6ClientContext);
-      }
 
       //Reset tick counter
       dhcpv6ClientTickCounter = 0;
@@ -679,7 +667,7 @@ void netTick(void)
 #endif
 
 #if (DNS_CLIENT_SUPPORT == ENABLED || MDNS_CLIENT_SUPPORT == ENABLED || \
-   NBNS_CLIENT_SUPPORT == ENABLED || LLMNR_CLIENT_SUPPORT == ENABLED)
+   NBNS_CLIENT_SUPPORT == ENABLED)
    //Increment tick counter
    dnsTickCounter += NET_TICK_INTERVAL;
 
@@ -702,9 +690,7 @@ void netTick(void)
    {
       //Loop through network interfaces
       for(i = 0; i < NET_INTERFACE_COUNT; i++)
-      {
          mdnsResponderTick(netInterface[i].mdnsResponderContext);
-      }
 
       //Reset tick counter
       mdnsResponderTickCounter = 0;
@@ -720,9 +706,7 @@ void netTick(void)
    {
       //Loop through network interfaces
       for(i = 0; i < NET_INTERFACE_COUNT; i++)
-      {
          dnsSdTick(netInterface[i].dnsSdContext);
-      }
 
       //Reset tick counter
       dnsSdTickCounter = 0;
@@ -826,7 +810,7 @@ bool_t netTimerExpired(NetTimer *timer)
 
 
 /**
- * @brief Initialize random number generator
+ * @brief PRNG initialization
  **/
 
 void netInitRand(void)
@@ -875,7 +859,7 @@ void netInitRand(void)
    //The state is rotated over 4 full cycles, without generating key stream bit
    for(i = 0; i < (4 * 288); i++)
    {
-      netGenerateRandBit(state);
+      netGetRandBit(state);
    }
 }
 
@@ -885,7 +869,7 @@ void netInitRand(void)
  * @return Random value
  **/
 
-uint32_t netGenerateRand(void)
+uint32_t netGetRand(void)
 {
    uint_t i;
    uint32_t value;
@@ -896,30 +880,30 @@ uint32_t netGenerateRand(void)
    //Generate a random 32-bit value
    for(i = 0; i < 32; i++)
    {
-      value |= netGenerateRandBit(&netContext.randState) << i;
+      value |= netGetRandBit(&netContext.randState) << i;
    }
 
-   //Return the random value
+   //Return the value
    return value + netContext.entropy;
 }
 
 
 /**
- * @brief Generate a random value in the specified range
+ * @brief Get a random value in the specified range
  * @param[in] min Lower bound
  * @param[in] max Upper bound
  * @return Random value in the specified range
  **/
 
-uint32_t netGenerateRandRange(uint32_t min, uint32_t max)
+int32_t netGetRandRange(int32_t min, int32_t max)
 {
-   uint32_t value;
+   int32_t value;
 
    //Valid parameters?
    if(max > min)
    {
       //Pick up a random value in the given range
-      value = min + (netGenerateRand() % (max - min + 1));
+      value = min + (netGetRand() % (max - min + 1));
    }
    else
    {
@@ -933,40 +917,12 @@ uint32_t netGenerateRandRange(uint32_t min, uint32_t max)
 
 
 /**
- * @brief Get a string of random data
- * @param[out] data Buffer where to store random data
- * @param[in] length Number of random bytes to generate
- **/
-
-void netGenerateRandData(uint8_t *data, size_t length)
-{
-   size_t i;
-   size_t j;
-
-   //Generate a string of random data
-   for(i = 0; i < length; i++)
-   {
-      //Initialize value
-      data[i] = 0;
-
-      //Generate a random 8-bit value
-      for(j = 0; j < 8; j++)
-      {
-         data[i] |= netGenerateRandBit(&netContext.randState) << j;
-      }
-
-      data[i] += netContext.entropy;
-   }
-}
-
-
-/**
  * @brief Generate one random bit
  * @param[in] state Pointer to the PRNG state
  * @return Key stream bit
  **/
 
-uint32_t netGenerateRandBit(NetRandState *state)
+uint32_t netGetRandBit(NetRandState *state)
 {
    uint_t i;
    uint8_t t1;

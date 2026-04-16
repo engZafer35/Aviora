@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _RTL8211F_DRIVER_H
 #define _RTL8211F_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //PHY address
 #ifndef RTL8211F_PHY_ADDR
@@ -284,7 +284,6 @@ extern const PhyDriver rtl8211fPhyDriver;
 
 //RTL8211F related functions
 error_t rtl8211fInit(NetInterface *interface);
-void rtl8211fInitHook(NetInterface *interface);
 
 void rtl8211fTick(NetInterface *interface);
 
@@ -299,12 +298,6 @@ void rtl8211fWritePhyReg(NetInterface *interface, uint8_t address,
 uint16_t rtl8211fReadPhyReg(NetInterface *interface, uint8_t address);
 
 void rtl8211fDumpPhyReg(NetInterface *interface);
-
-void rtl8211fWriteMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr, uint16_t data);
-
-uint16_t rtl8211fReadMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr);
 
 //C++ guard
 #ifdef __cplusplus

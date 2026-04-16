@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _TFTP_CLIENT_H
 #define _TFTP_CLIENT_H
 
 //Dependencies
-#include "core/net.h"
-#include "tftp/tftp_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/tftp/tftp_common.h"
 
 //TFTP client support
 #ifndef TFTP_CLIENT_SUPPORT
@@ -75,11 +75,6 @@
    #define TFTP_CLIENT_BLOCK_SIZE 512
 #elif (TFTP_CLIENT_BLOCK_SIZE < 512)
    #error TFTP_CLIENT_BLOCK_SIZE parameter is not valid
-#endif
-
-//Application specific context
-#ifndef TFTP_CLIENT_PRIVATE_CONTEXT
-   #define TFTP_CLIENT_PRIVATE_CONTEXT
 #endif
 
 //Maximum size of TFTP packets
@@ -143,7 +138,6 @@ typedef struct
    uint8_t outPacket[TFTP_CLIENT_MAX_PACKET_SIZE]; ///<Outgoing TFTP packet
    size_t outPacketLen;                            ///<Length of the outgoing packet
    size_t outDataLen;
-   TFTP_CLIENT_PRIVATE_CONTEXT                     ///<Application specific context
 } TftpClientContext;
 
 

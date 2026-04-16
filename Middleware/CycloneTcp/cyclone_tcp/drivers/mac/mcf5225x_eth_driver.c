@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,9 +33,9 @@
 
 //Dependencies
 #include "mcf52259.h"
-#include "core/net.h"
-#include "drivers/mac/mcf5225x_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/mcf5225x_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -189,15 +189,16 @@ error_t mcf5225xEthInit(NetInterface *interface)
 }
 
 
+//TWR-MCF5225X evaluation board?
+#if defined(USE_TWR_MCF5225X)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void mcf5225xEthInitGpio(NetInterface *interface)
+void mcf5225xEthInitGpio(NetInterface *interface)
 {
-//TWR-MCF5225X evaluation board?
-#if defined(USE_TWR_MCF5225X)
    uint8_t temp;
 
    //Configure FEC_COL (PTI0), FEC_CRS (PTI1), FEC_RXCLK (PTI2), FEC_RXD0 (PTI3),
@@ -227,8 +228,9 @@ __weak_func void mcf5225xEthInitGpio(NetInterface *interface)
    sleep(10);
    MCF_RCM_RCR &= ~MCF_RCM_RCR_FRCRSTOUT;
    sleep(10);
-#endif
 }
+
+#endif
 
 
 /**
@@ -327,6 +329,7 @@ void mcf5225xEthEnableIrq(NetInterface *interface)
    MCF_INTC0_IMRH &= ~(MCF_INTC_IMRH_INT_MASK33 |
       MCF_INTC_IMRH_INT_MASK34 | MCF_INTC_IMRH_INT_MASK35);
 
+
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
    {
@@ -361,6 +364,7 @@ void mcf5225xEthDisableIrq(NetInterface *interface)
 
    MCF_INTC0_IMRH |= MCF_INTC_IMRH_INT_MASK33 |
       MCF_INTC_IMRH_INT_MASK34 | MCF_INTC_IMRH_INT_MASK35;
+
 
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
@@ -901,7 +905,6 @@ uint32_t mcf5225xEthCalcCrc(const void *data, size_t length)
    {
       //Update CRC value
       crc ^= p[i];
-
       //The message is processed bit by bit
       for(j = 0; j < 8; j++)
       {

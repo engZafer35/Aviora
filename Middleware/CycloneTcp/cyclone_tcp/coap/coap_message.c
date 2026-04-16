@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,18 +25,18 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL COAP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "coap/coap_client.h"
-#include "coap/coap_server.h"
-#include "coap/coap_message.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_client.h"
+//#include "coap/coap_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_message.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (COAP_CLIENT_SUPPORT == ENABLED || COAP_SERVER_SUPPORT == ENABLED)
@@ -520,7 +520,7 @@ error_t coapReadPayload(CoapMessage *message, void *data, size_t size,
 
       //Advance current position
       message->pos += n;
-      //Total number of data that have been read
+       //Total number of data that have been read
       *length = n;
 
       //Successful processing

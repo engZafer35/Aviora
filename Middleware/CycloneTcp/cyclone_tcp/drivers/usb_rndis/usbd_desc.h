@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _USBD_DESC_H
 #define _USBD_DESC_H
 
 //Dependencies
-#include "os_port.h"
+#include "../../../../CycloneTcp/common/os_port.h"
 
 //Endpoint identifiers
 #define USB_EP0 0
@@ -103,7 +103,7 @@
  * @brief Device descriptor
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t bLength;
    uint8_t bDescriptorType;
@@ -119,14 +119,14 @@ typedef __packed_struct
    uint8_t iProduct;
    uint8_t iSerialNumber;
    uint8_t bNumConfigurations;
-} UsbDeviceDescriptor;
+} __end_packed UsbDeviceDescriptor;
 
 
 /**
  * @brief Configuration descriptor
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t bLength;
    uint8_t bDescriptorType;
@@ -136,14 +136,14 @@ typedef __packed_struct
    uint8_t iConfiguration;
    uint8_t bmAttributes;
    uint8_t bMaxPower;
-} UsbConfigDescriptor;
+} __end_packed UsbConfigDescriptor;
 
 
 /**
  * @brief Interface descriptor
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t bLength;
    uint8_t bDescriptorType;
@@ -154,14 +154,14 @@ typedef __packed_struct
    uint8_t bInterfaceSubClass;
    uint8_t bInterfaceProtocol;
    uint8_t iInterface;
-} UsbInterfaceDescriptor;
+} __end_packed UsbInterfaceDescriptor;
 
 
 /**
  * @brief Endpoint descriptor
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t bLength;
    uint8_t bDescriptorType;
@@ -169,80 +169,80 @@ typedef __packed_struct
    uint8_t bmAttributes;
    uint16_t wMaxPacketSize;
    uint8_t bInterval;
-} UsbEndpointDescriptor;
+} __end_packed UsbEndpointDescriptor;
 
 
 /**
  * @brief String descriptor
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t bLength;
    uint8_t bDescriptorType;
    uint16_t bString[];
-} UsbStringDescriptor;
+} __end_packed UsbStringDescriptor;
 
 
 /**
  * @brief CDC header functional descriptor
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t bFunctionLength;
    uint8_t bDescriptorType;
    uint8_t bDescriptorSubtype;
    uint16_t bcdCdc;
-} CdcHeaderDescriptor;
+} __end_packed CdcHeaderDescriptor;
 
 
 /**
  * @brief CDC call management functional descriptor
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t bFunctionLength;
    uint8_t bDescriptorType;
    uint8_t bDescriptorSubtype;
    uint8_t bmCapabilities;
    uint8_t bDataInterface;
-} CdcCallManagementDescriptor;
+} __end_packed CdcCallManagementDescriptor;
 
 
 /**
  * @brief CDC abstract control management functional descriptor
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t bFunctionLength;
    uint8_t bDescriptorType;
    uint8_t bDescriptorSubtype;
    uint8_t bmCapabilities;
-} CdcAcmDescriptor;
+} __end_packed CdcAcmDescriptor;
 
 
 /**
  * @brief CDC union functional descriptor
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t bFunctionLength;
    uint8_t bDescriptorType;
    uint8_t bDescriptorSubtype;
    uint8_t bMasterInterface;
    uint8_t bSlaveInterface0;
-} CdcUnionDescriptor;
+} __end_packed CdcUnionDescriptor;
 
 
 /**
  * @brief Configuration descriptors
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    //Standard configuration descriptor
    UsbConfigDescriptor configDescriptor;
@@ -264,7 +264,7 @@ typedef __packed_struct
    UsbEndpointDescriptor dataOutEndpointDescriptor;
    //Data IN endpoint descriptor
    UsbEndpointDescriptor dataInEndpointDescriptor;
-} UsbConfigDescriptors;
+} __end_packed UsbConfigDescriptors;
 
 
 //Global variables

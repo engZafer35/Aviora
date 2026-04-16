@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,19 +25,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _COAP_SERVER_MISC_H
 #define _COAP_SERVER_MISC_H
 
 //Dependencies
-#include "core/net.h"
-#include "coap/coap_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //C++ guard
 #ifdef __cplusplus
-extern "C" {
+   extern "C" {
 #endif
 
 //CoAP server related functions
@@ -57,7 +57,7 @@ error_t coapServerFormatReset(CoapServerContext *context, uint16_t mid);
 
 //C++ guard
 #ifdef __cplusplus
-}
+   }
 #endif
 
 #endif

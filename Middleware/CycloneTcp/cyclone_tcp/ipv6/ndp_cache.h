@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _NDP_CACHE_H
 #define _NDP_CACHE_H
 
 //Dependencies
-#include "core/net.h"
-#include "ipv6/ndp.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -41,12 +41,8 @@ extern "C" {
 #endif
 
 //NDP related functions
-void ndpChangeState(NdpNeighborCacheEntry *entry, NdpState newState);
-
 NdpNeighborCacheEntry *ndpCreateNeighborCacheEntry(NetInterface *interface);
-
-NdpNeighborCacheEntry *ndpFindNeighborCacheEntry(NetInterface *interface,
-   const Ipv6Addr *ipAddr);
+NdpNeighborCacheEntry *ndpFindNeighborCacheEntry(NetInterface *interface, const Ipv6Addr *ipAddr);
 
 void ndpUpdateNeighborCache(NetInterface *interface);
 void ndpFlushNeighborCache(NetInterface *interface);
@@ -55,10 +51,7 @@ uint_t ndpSendQueuedPackets(NetInterface *interface, NdpNeighborCacheEntry *entr
 void ndpFlushQueuedPackets(NetInterface *interface, NdpNeighborCacheEntry *entry);
 
 NdpDestCacheEntry *ndpCreateDestCacheEntry(NetInterface *interface);
-
-NdpDestCacheEntry *ndpFindDestCacheEntry(NetInterface *interface,
-   const Ipv6Addr *destAddr);
-
+NdpDestCacheEntry *ndpFindDestCacheEntry(NetInterface *interface, const Ipv6Addr *destAddr);
 void ndpFlushDestCache(NetInterface *interface);
 
 //C++ guard

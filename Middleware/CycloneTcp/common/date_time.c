@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,13 +23,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Dependencies
+#include "../../CycloneTcp/common/date_time.h"
+
 #include <stdio.h>
 #include <string.h>
-#include "date_time.h"
 
 #if defined(_WIN32)
    #include <time.h>
@@ -177,7 +178,7 @@ void getCurrentDate(DateTime *date)
  * @return Unix timestamp
  **/
 
-__weak_func time_t getCurrentUnixTime(void)
+__weak time_t getCurrentUnixTime(void)
 {
 #if defined(_WIN32)
    //Retrieve current time
@@ -206,9 +207,7 @@ void convertUnixTimeToDate(time_t t, DateTime *date)
 
    //Negative Unix time values are not supported
    if(t < 1)
-   {
       t = 0;
-   }
 
    //Clear milliseconds
    date->milliseconds = 0;
@@ -262,7 +261,7 @@ time_t convertDateToUnixTime(const DateTime *date)
    uint_t y;
    uint_t m;
    uint_t d;
-   time_t t;
+   uint32_t t;
 
    //Year
    y = date->year;

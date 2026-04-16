@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -45,9 +45,9 @@
 #include "hw_cpsw_wr.h"
 #include "hw_mdio.h"
 #include "interrupt.h"
-#include "core/net.h"
-#include "drivers/mac/am335x_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/am335x_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //MDIO input clock frequency
 #define MDIO_INPUT_CLK 125000000
@@ -189,15 +189,30 @@ error_t am335xEthInitPort1(NetInterface *interface)
    //Save underlying network interface
    nicDriverInterface1 = interface;
 
-   //PHY transceiver initialization
-   error = interface->phyDriver->init(interface);
+   //Valid Ethernet PHY or switch driver?
+   if(interface->phyDriver != NULL)
+   {
+      //Ethernet PHY initialization
+      error = interface->phyDriver->init(interface);
+   }
+   else if(interface->switchDriver != NULL)
+   {
+      //Ethernet switch initialization
+      error = interface->switchDriver->init(interface);
+   }
+   else
+   {
+      //The interface is not properly configured
+      error = ERROR_FAILURE;
+   }
+
    //Any error to report?
    if(error)
    {
       return error;
    }
 
-   //Unspecified MAC address?
+   //Unspecifield MAC address?
    if(macCompAddr(&interface->macAddr, &MAC_UNSPECIFIED_ADDR))
    {
       //Use the factory preprogrammed MAC address
@@ -212,7 +227,7 @@ error_t am335xEthInitPort1(NetInterface *interface)
       macAddrToEui64(&interface->macAddr, &interface->eui64);
    }
 
-   //Set port state (forwarding)
+   //Set port state to forward
    temp = CPSW_ALE_PORTCTL_R(1) & ~CPSW_ALE_PORTCTL_PORT_STATE_MASK;
    CPSW_ALE_PORTCTL_R(1) = temp | CPSW_ALE_PORTCTL_PORT_STATE_FORWARD;
 
@@ -266,13 +281,13 @@ error_t am335xEthInitPort2(NetInterface *interface)
 
    //PHY transceiver initialization
    error = interface->phyDriver->init(interface);
-   //Any error to report?
+   //Failed to initialize PHY transceiver?
    if(error)
    {
       return error;
    }
 
-   //Unspecified MAC address?
+   //Unspecifield MAC address?
    if(macCompAddr(&interface->macAddr, &MAC_UNSPECIFIED_ADDR))
    {
       //Use the factory preprogrammed MAC address
@@ -287,7 +302,7 @@ error_t am335xEthInitPort2(NetInterface *interface)
       macAddrToEui64(&interface->macAddr, &interface->eui64);
    }
 
-   //Set port state (forwarding)
+   //Set port state to forward
    temp = CPSW_ALE_PORTCTL_R(2) & ~CPSW_ALE_PORTCTL_PORT_STATE_MASK;
    CPSW_ALE_PORTCTL_R(2) = temp | CPSW_ALE_PORTCTL_PORT_STATE_FORWARD;
 
@@ -422,7 +437,7 @@ void am335xEthInitInstance(NetInterface *interface)
       temp = CPSW_PORT0_TX_IN_CTL_R & ~CPSW_PORT_P_TX_IN_CTL_SEL_MASK;
       CPSW_PORT0_TX_IN_CTL_R = temp | CPSW_PORT_P_TX_IN_CTL_SEL_DUAL_MAC;
 
-      //Set host port state (forwarding)
+      //Set port 0 state to forward
       temp = CPSW_ALE_PORTCTL_R(0) & ~CPSW_ALE_PORTCTL_PORT_STATE_MASK;
       CPSW_ALE_PORTCTL_R(0) = temp | CPSW_ALE_PORTCTL_PORT_STATE_FORWARD;
 
@@ -492,12 +507,16 @@ void am335xEthInitInstance(NetInterface *interface)
 }
 
 
+//BeagleBone Black, TMDSSK3358, OSD3358-SM-RED or SBC DIVA board?
+#if defined(USE_BEAGLEBONE_BLACK) || defined(USE_TMDSSK3358) || \
+   defined(USE_OSD3358_SM_RED) || defined(USE_SBC_DIVA)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void am335xEthInitGpio(NetInterface *interface)
+void am335xEthInitGpio(NetInterface *interface)
 {
 //BeagleBone Black board?
 #if defined(USE_BEAGLEBONE_BLACK)
@@ -705,6 +724,8 @@ __weak_func void am335xEthInitGpio(NetInterface *interface)
    CONTROL_CONF_MDIO_CLK_R = CONTROL_CONF_PULLUPSEL | CONTROL_CONF_MUXMODE(0);
 #endif
 }
+
+#endif
 
 
 /**
@@ -959,7 +980,7 @@ void am335xEthTxIrqHandler(void)
          if(p->word0 != 0)
          {
             //The host corrects the misqueued buffer condition by writing the
-            //misqueued packet’s buffer descriptor address to the appropriate
+            //misqueued packetï¿½s buffer descriptor address to the appropriate
             //TX DMA head descriptor pointer
             CPSW_CPDMA_STATERAM_TX_HDP_R(CPSW_CH1) = (uint32_t) p->word0;
          }
@@ -993,7 +1014,7 @@ void am335xEthTxIrqHandler(void)
          if(p->word0 != 0)
          {
             //The host corrects the misqueued buffer condition by writing the
-            //misqueued packet’s buffer descriptor address to the appropriate
+            //misqueued packetï¿½s buffer descriptor address to the appropriate
             //TX DMA head descriptor pointer
             CPSW_CPDMA_STATERAM_TX_HDP_R(CPSW_CH2) = (uint32_t) p->word0;
          }
@@ -1071,7 +1092,7 @@ void am335xEthRxIrqHandler(void)
 
 void am335xEthEventHandler(NetInterface *interface)
 {
-   static uint32_t buffer[AM335X_ETH_RX_BUFFER_SIZE / 4];
+   static uint8_t buffer[AM335X_ETH_RX_BUFFER_SIZE];
    error_t error;
    size_t n;
    uint32_t temp;
@@ -1182,7 +1203,7 @@ void am335xEthEventHandler(NetInterface *interface)
          ancillary = NET_DEFAULT_RX_ANCILLARY;
 
          //Pass the packet to the upper layer
-         nicProcessPacket(interface, (uint8_t *) buffer, n, &ancillary);
+         nicProcessPacket(interface, buffer, n, &ancillary);
       }
 
       //No more data in the receive buffer?
@@ -1206,7 +1227,7 @@ void am335xEthEventHandler(NetInterface *interface)
 error_t am335xEthSendPacketPort1(NetInterface *interface,
    const NetBuffer *buffer, size_t offset, NetTxAncillary *ancillary)
 {
-   static uint32_t temp[AM335X_ETH_TX_BUFFER_SIZE / 4];
+   static uint8_t temp[AM335X_ETH_TX_BUFFER_SIZE];
    size_t length;
    uint32_t value;
 
@@ -1262,7 +1283,7 @@ error_t am335xEthSendPacketPort1(NetInterface *interface,
       txCurBufferDesc1->prev->word3 = 0;
 
       //The host corrects the misqueued buffer condition by writing the
-      //misqueued packet’s buffer descriptor address to the appropriate
+      //misqueued packetï¿½s buffer descriptor address to the appropriate
       //TX DMA head descriptor pointer
       CPSW_CPDMA_STATERAM_TX_HDP_R(CPSW_CH1) = (uint32_t) txCurBufferDesc1;
    }
@@ -1295,7 +1316,7 @@ error_t am335xEthSendPacketPort1(NetInterface *interface,
 error_t am335xEthSendPacketPort2(NetInterface *interface,
    const NetBuffer *buffer, size_t offset, NetTxAncillary *ancillary)
 {
-   static uint32_t temp[AM335X_ETH_TX_BUFFER_SIZE / 4];
+   static uint8_t temp[AM335X_ETH_TX_BUFFER_SIZE];
    size_t length;
    uint32_t value;
 
@@ -1351,7 +1372,7 @@ error_t am335xEthSendPacketPort2(NetInterface *interface,
       txCurBufferDesc2->prev->word3 = 0;
 
       //The host corrects the misqueued buffer condition by writing the
-      //misqueued packet’s buffer descriptor address to the appropriate
+      //misqueued packetï¿½s buffer descriptor address to the appropriate
       //TX DMA head descriptor pointer
       CPSW_CPDMA_STATERAM_TX_HDP_R(CPSW_CH2) = (uint32_t) txCurBufferDesc2;
    }
@@ -1400,15 +1421,15 @@ error_t am335xEthUpdateMacAddrFilter(NetInterface *interface)
       port = CPSW_PORT0;
    }
 
-   //The MAC address filter contains the list of MAC addresses to accept when
-   //receiving an Ethernet frame
+   //The MAC address filter contains the list of MAC addresses to accept
+   //when receiving an Ethernet frame
    for(i = 0; i < MAC_ADDR_FILTER_SIZE; i++)
    {
       //Point to the current entry
       entry = &interface->macAddrFilter[i];
 
-      //Check whether the ALE table should be updated for the current multicast
-      //address
+      //Check whether the ALE table should be updated for the
+      //current multicast address
       if(!macCompAddr(&entry->addr, &MAC_UNSPECIFIED_ADDR))
       {
          if(entry->addFlag)
@@ -1834,8 +1855,8 @@ error_t am335xEthAddVlanAddrEntry(uint_t port, uint_t vlanId, MacAddr *macAddr)
       {
          //Set port mask
          entry.word2 |= CPSW_ALE_WORD2_SUPER |
-            CPSW_ALE_WORD2_PORT_MASK(1 << port) |
-            CPSW_ALE_WORD2_PORT_MASK(1 << CPSW_CH0);
+            CPSW_ALE_WORD2_PORT_LIST(1 << port) |
+            CPSW_ALE_WORD2_PORT_LIST(1 << CPSW_CH0);
 
          //Set multicast forward state
          entry.word1 |= CPSW_ALE_WORD1_MCAST_FWD_STATE(0);

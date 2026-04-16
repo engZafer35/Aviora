@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,25 +25,25 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL DHCPV6_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_misc.h"
-#include "ipv6/ndp.h"
-#include "dhcpv6/dhcpv6_client.h"
-#include "dhcpv6/dhcpv6_client_fsm.h"
-#include "dhcpv6/dhcpv6_client_misc.h"
-#include "dhcpv6/dhcpv6_common.h"
-#include "dhcpv6/dhcpv6_debug.h"
-#include "dns/dns_common.h"
-#include "date_time.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcpv6/dhcpv6_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcpv6/dhcpv6_client_fsm.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcpv6/dhcpv6_client_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcpv6/dhcpv6_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcpv6/dhcpv6_debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_common.h"
+#include "../../../CycloneTcp/common/date_time.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV6_SUPPORT == ENABLED && DHCPV6_CLIENT_SUPPORT == ENABLED)
@@ -590,7 +590,7 @@ void dhcpv6ClientParseAdvertise(Dhcpv6ClientContext *context,
    //Search for the Preference option
    option = dhcpv6GetOption(message->options, length, DHCPV6_OPT_PREFERENCE);
 
-   //Option found?
+   //Check whether the option has been found
    if(option != NULL && ntohs(option->length) == sizeof(Dhcpv6PreferenceOption))
    {
       //Server server preference value
@@ -749,6 +749,14 @@ void dhcpv6ClientParseReply(Dhcpv6ClientContext *context,
    //Get the status code returned by the server
    status = dhcpv6GetStatusCode(message->options, length);
 
+   //Any registered callback?
+   if(context->settings.parseOptionsCallback != NULL)
+   {
+      //Invoke user callback function
+      context->settings.parseOptionsCallback(context, message,
+         sizeof(Dhcpv6Message) + length);
+   }
+
    //Check current state
    if(context->state == DHCPV6_STATE_SOLICIT)
    {
@@ -851,41 +859,6 @@ void dhcpv6ClientParseReply(Dhcpv6ClientContext *context,
       //UnspecFail, the server is indicating that it was unable to process
       //the message due to an unspecified failure condition
       return;
-   }
-
-   //Any registered callback?
-   if(context->settings.parseOptionsCallback != NULL)
-   {
-      //Invoke user callback function
-      context->settings.parseOptionsCallback(context, message,
-         sizeof(Dhcpv6Message) + length);
-   }
-
-   //Automatic DNS server configuration?
-   if(!context->settings.manualDnsConfig)
-   {
-      Dhcpv6DnsServersOption *dnsServersOption;
-
-      //Search for the DNS Recursive Name Server option
-      option = dhcpv6GetOption(message->options, length,
-         DHCPV6_OPT_DNS_SERVERS);
-
-      //Option found?
-      if(option != NULL && ntohs(option->length) >= sizeof(Dhcpv6DnsServersOption))
-      {
-         //Point to the DNS Recursive Name Server option
-         dnsServersOption = (Dhcpv6DnsServersOption *) option->value;
-
-         //Retrieve the number of addresses
-         n = ntohs(option->length) / sizeof(Ipv6Addr);
-
-         //Loop through the list of DNS servers
-         for(i = 0; i < n && i < IPV6_DNS_SERVER_LIST_SIZE; i++)
-         {
-            //Record DNS server address
-            interface->ipv6Context.dnsServerList[i] = dnsServersOption->address[i];
-         }
-      }
    }
 
    //This flag will be set if a valid IA_NA option is found
@@ -1033,13 +1006,9 @@ void dhcpv6ClientParseReply(Dhcpv6ClientContext *context,
          //If T2 is set to 0 by the server, the client may send a Rebind
          //message at the client's discretion
          if(context->ia.t1 == DHCPV6_INFINITE_TIME)
-         {
             context->ia.t2 = DHCPV6_INFINITE_TIME;
-         }
          else
-         {
             context->ia.t2 = context->ia.t1 + context->ia.t1 / 2;
-         }
       }
 
       //Any addresses added in the IA?
@@ -1280,7 +1249,7 @@ void dhcpv6ClientAddAddr(Dhcpv6ClientContext *context, const Ipv6Addr *addr,
    }
 
    //No matching entry found?
-   if(i >= DHCPV6_CLIENT_ADDR_LIST_SIZE)
+   if(i >= IPV6_PREFIX_LIST_SIZE)
    {
       entry = firstFreeEntry;
    }
@@ -1584,7 +1553,7 @@ void dhcpv6ClientChangeState(Dhcpv6ClientContext *context,
    if(newState <= DHCPV6_STATE_DECLINE)
    {
       //DHCPv6 FSM states
-      static const char_t *const stateLabel[] =
+      static const char_t *stateLabel[] =
       {
          "INIT",
          "SOLICIT",

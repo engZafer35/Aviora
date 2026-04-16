@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -36,9 +36,9 @@
 #include "xemacps_hw.h"
 #include "xscugic.h"
 #include "xil_misc_psreset_api.h"
-#include "core/net.h"
-#include "drivers/mac/zynq7000_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/zynq7000_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -217,13 +217,11 @@ error_t zynq7000EthInit(NetInterface *interface)
 
    //Only the desired ones are enabled
    XEMACPS_IER = XEMACPS_IXR_HRESPNOK_MASK | XEMACPS_IXR_RXOVR_MASK |
-      XEMACPS_IXR_TXCOMPL_MASK | XEMACPS_IXR_TXEXH_MASK |
-      XEMACPS_IXR_RETRY_MASK | XEMACPS_IXR_URUN_MASK |
-      XEMACPS_IXR_RXUSED_MASK | XEMACPS_IXR_FRAMERX_MASK;
+      XEMACPS_IXR_TXCOMPL_MASK | XEMACPS_IXR_TXEXH_MASK | XEMACPS_IXR_RETRY_MASK |
+      XEMACPS_IXR_URUN_MASK | XEMACPS_IXR_RXUSED_MASK | XEMACPS_IXR_FRAMERX_MASK;
 
    //Read interrupt status register to clear any pending interrupt
    temp = XEMACPS_ISR;
-   (void) temp;
 
    //Register interrupt handler
    XScuGic_Connect(&ZYNQ7000_ETH_GIC_INSTANCE, XPS_GEM0_INT_ID,
@@ -396,12 +394,11 @@ void zynq7000EthIrqHandler(NetInterface *interface)
    //This flag will be set if a higher priority task must be woken
    flag = FALSE;
 
-   //Each time the software reads XEMACPS_ISR, it has to check the contents
-   //of XEMACPS_TXSR, XEMACPS_RXSR
+   //Each time the software reads XEMACPS_ISR, it has to check the
+   //contents of XEMACPS_TXSR, XEMACPS_RXSR
    isr = XEMACPS_ISR;
    tsr = XEMACPS_TXSR;
    rsr = XEMACPS_RXSR;
-   (void) isr;
 
    //Clear interrupt flags
    XEMACPS_ISR = isr;
@@ -485,7 +482,7 @@ void zynq7000EthEventHandler(NetInterface *interface)
 error_t zynq7000EthSendPacket(NetInterface *interface,
    const NetBuffer *buffer, size_t offset, NetTxAncillary *ancillary)
 {
-   static uint32_t temp[ZYNQ7000_ETH_TX_BUFFER_SIZE / 4];
+   static uint8_t temp[ZYNQ7000_ETH_TX_BUFFER_SIZE];
    size_t length;
 
    //Retrieve the length of the packet
@@ -553,7 +550,7 @@ error_t zynq7000EthSendPacket(NetInterface *interface,
 
 error_t zynq7000EthReceivePacket(NetInterface *interface)
 {
-   static uint32_t temp[ETH_MAX_FRAME_SIZE / 4];
+   static uint8_t temp[ETH_MAX_FRAME_SIZE];
    error_t error;
    uint_t i;
    uint_t j;
@@ -563,8 +560,7 @@ error_t zynq7000EthReceivePacket(NetInterface *interface)
    size_t size;
    size_t length;
 
-   //Initialize variables
-   size = 0;
+   //Initialize SOF and EOF indices
    sofIndex = UINT_MAX;
    eofIndex = UINT_MAX;
 
@@ -634,7 +630,7 @@ error_t zynq7000EthReceivePacket(NetInterface *interface)
          //Calculate the number of bytes to read at a time
          n = MIN(size, ZYNQ7000_ETH_RX_BUFFER_SIZE);
          //Copy data from receive buffer
-         osMemcpy((uint8_t *) temp + length, rxBuffer[rxBufferIndex], n);
+         osMemcpy(temp + length, rxBuffer[rxBufferIndex], n);
          //Update byte counters
          length += n;
          size -= n;
@@ -662,7 +658,7 @@ error_t zynq7000EthReceivePacket(NetInterface *interface)
       ancillary = NET_DEFAULT_RX_ANCILLARY;
 
       //Pass the packet to the upper layer
-      nicProcessPacket(interface, (uint8_t *) temp, length, &ancillary);
+      nicProcessPacket(interface, temp, length, &ancillary);
       //Valid packet received
       error = NO_ERROR;
    }

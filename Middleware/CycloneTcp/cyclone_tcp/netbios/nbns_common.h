@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _NBNS_COMMON_H
 #define _NBNS_COMMON_H
 
 //Dependencies
-#include "core/net.h"
-#include "dns/dns_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_common.h"
 
 //Default resource record TTL (cache lifetime)
 #ifndef NBNS_DEFAULT_RESOURCE_RECORD_TTL
@@ -69,10 +69,8 @@ typedef enum
 } DnsFlags;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -81,7 +79,7 @@ typedef enum
  * @brief NBNS message header
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t id;         //0-1
 #if defined(_CPU_BIG_ENDIAN) && !defined(__ICCRX__)
@@ -110,26 +108,25 @@ typedef __packed_struct
    uint16_t nscount;    //8-9
    uint16_t arcount;    //10-11
    uint8_t questions[]; //12
-} NbnsHeader;
+} __end_packed NbnsHeader;
 
 
 /**
  * @brief NBNS address entry
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t flags;
    Ipv4Addr addr;
-} NbnsAddrEntry;
+} __end_packed NbnsAddrEntry;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
+
 
 //NBNS related functions
 error_t nbnsInit(NetInterface *interface);

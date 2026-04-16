@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,9 +33,9 @@
 
 //Dependencies
 #include "lpc17xx.h"
-#include "core/net.h"
-#include "drivers/mac/lpc175x_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/lpc175x_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -217,15 +217,16 @@ error_t lpc175xEthInit(NetInterface *interface)
 }
 
 
+//MCB1758 evaluation board?
+#if defined(USE_MCB1758)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void lpc175xEthInitGpio(NetInterface *interface)
+void lpc175xEthInitGpio(NetInterface *interface)
 {
-//MCB1758 evaluation board?
-#if defined(USE_MCB1758)
    //Configure P1.0 (ENET_TXD0), P1.1 (ENET_TXD1), P1.4 (ENET_TX_EN), P1.8 (ENET_CRS),
    //P1.9 (ENET_RXD0), P1.10 (ENET_RXD1), P1.14 (RX_ER) and P1.15 (ENET_REF_CLK)
    LPC_PINCON->PINSEL2 &= ~(PINSEL2_P1_0_MASK | PINSEL2_P1_1_MASK |
@@ -244,8 +245,9 @@ __weak_func void lpc175xEthInitGpio(NetInterface *interface)
    LPC175X_ETH_MDC_GPIO->FIOCLR = LPC175X_ETH_MDC_MASK;
    LPC175X_ETH_MDC_GPIO->FIODIR |= LPC175X_ETH_MDC_MASK;
    LPC175X_ETH_MDIO_GPIO->FIODIR &= ~LPC175X_ETH_MDIO_MASK;
-#endif
 }
+
+#endif
 
 
 /**

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _SOCKET_H
@@ -36,23 +36,16 @@ struct _Socket;
 #define Socket struct _Socket
 
 //Dependencies
-#include "core/net.h"
-#include "core/ethernet.h"
-#include "core/ip.h"
-#include "core/tcp.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ethernet.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ip.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/tcp.h"
 
 //Number of sockets that can be opened simultaneously
 #ifndef SOCKET_MAX_COUNT
    #define SOCKET_MAX_COUNT 16
 #elif (SOCKET_MAX_COUNT < 1)
    #error SOCKET_MAX_COUNT parameter is not valid
-#endif
-
-//Maximum number of multicast groups joined
-#ifndef SOCKET_MAX_MULTICAST_GROUPS
-   #define SOCKET_MAX_MULTICAST_GROUPS 1
-#elif (SOCKET_MAX_MULTICAST_GROUPS < 1)
-   #error SOCKET_MAX_MULTICAST_GROUPS parameter is not valid
 #endif
 
 //Dynamic port range (lower limit)
@@ -174,29 +167,6 @@ typedef enum
 
 
 /**
- * @brief Socket options
- **/
-
-typedef enum
-{
-   SOCKET_OPTION_REUSE_ADDR              = 0x0001,
-   SOCKET_OPTION_BROADCAST               = 0x0002,
-   SOCKET_OPTION_IPV4_MULTICAST_LOOP     = 0x0004,
-   SOCKET_OPTION_IPV4_DONT_FRAG          = 0x0008,
-   SOCKET_OPTION_IPV4_PKT_INFO           = 0x0010,
-   SOCKET_OPTION_IPV4_RECV_TOS           = 0x0020,
-   SOCKET_OPTION_IPV4_RECV_TTL           = 0x0040,
-   SOCKET_OPTION_IPV6_MULTICAST_LOOP     = 0x0080,
-   SOCKET_OPTION_IPV6_ONLY               = 0x0100,
-   SOCKET_OPTION_IPV6_DONT_FRAG          = 0x0200,
-   SOCKET_OPTION_IPV6_PKT_INFO           = 0x0400,
-   SOCKET_OPTION_IPV6_RECV_TRAFFIC_CLASS = 0x0800,
-   SOCKET_OPTION_IPV6_RECV_HOP_LIMIT     = 0x1000,
-   SOCKET_OPTION_TCP_NO_DELAY            = 0x2000
-} SocketOptions;
-
-
-/**
  * @brief Host types
  **/
 
@@ -232,8 +202,6 @@ typedef struct
    size_t size;             ///<Size of the payload, in bytes
    size_t length;           ///<Actual length of the payload, in bytes
    uint8_t ttl;             ///<Time-to-live value
-   uint8_t tos;             ///<Type-of-service value
-   bool_t dontFrag;         ///<Do not fragment the IP packet
    NetInterface *interface; ///<Underlying network interface
    IpAddr srcIpAddr;        ///<Source IP address
    uint16_t srcPort;        ///<Source port
@@ -242,7 +210,6 @@ typedef struct
 #if (ETH_SUPPORT == ENABLED)
    MacAddr srcMacAddr;      ///<Source MAC address
    MacAddr destMacAddr;     ///<Destination MAC address
-   uint16_t ethType;        ///<Ethernet type field
 #endif
 #if (ETH_PORT_TAGGING_SUPPORT == ENABLED)
    uint8_t switchPort;      ///<Switch port identifier
@@ -285,12 +252,12 @@ struct _Socket
    uint16_t localPort;
    IpAddr remoteIpAddr;
    uint16_t remotePort;
-   uint32_t options;              ///<Socket options
    systime_t timeout;
-   uint8_t tos;                   ///<Type-of-service value
    uint8_t ttl;                   ///<Time-to-live value for unicast datagrams
    uint8_t multicastTtl;          ///<Time-to-live value for multicast datagrams
-   IpAddr multicastGroups[SOCKET_MAX_MULTICAST_GROUPS]; ///<Multicast groups
+#if (IP_DIFF_SERV_SUPPORT == ENABLED)
+   uint8_t dscp;                  ///<Differentiated services codepoint
+#endif
 #if (ETH_VLAN_SUPPORT == ENABLED)
    int8_t vlanPcp;                ///<VLAN priority (802.1Q)
    int8_t vlanDei;                ///<Drop eligible indicator
@@ -312,7 +279,6 @@ struct _Socket
    bool_t closedFlag;             ///<The connection has been closed properly
    bool_t resetFlag;              ///<The connection has been reset
 
-   uint16_t mss;                  ///<Maximum segment size
    uint16_t smss;                 ///<Sender maximum segment size
    uint16_t rmss;                 ///<Receiver maximum segment size
    uint32_t iss;                  ///<Initial send sequence number
@@ -346,22 +312,6 @@ struct _Socket
    uint32_t recover;              ///<NewReno modification to TCP's fast recovery algorithm
 #endif
 
-#if (TCP_KEEP_ALIVE_SUPPORT == ENABLED)
-   bool_t keepAliveEnabled;       ///<Specifies whether TCP keep-alive mechanism is enabled
-   systime_t keepAliveIdle;       ///<Keep-alive idle time
-   systime_t keepAliveInterval;   ///<Time interval between subsequent keep-alive probes
-   uint_t keepAliveMaxProbes;     ///<Number of keep-alive probes
-   uint_t keepAliveProbeCount;    ///<Keep-alive probe counter
-   systime_t keepAliveTimestamp;  ///<Keep-alive timestamp
-#endif
-
-#if (TCP_SACK_SUPPORT == ENABLED)
-   bool_t sackPermitted;          ///<SACK Permitted option received
-#endif
-
-   TcpSackBlock sackBlock[TCP_MAX_SACK_BLOCKS]; ///<List of non-contiguous blocks that have been received
-   uint_t sackBlockCount;                       ///<Number of non-contiguous blocks that have been received
-
    TcpTxBuffer txBuffer;          ///<Send buffer
    size_t txBufferSize;           ///<Size of the send buffer
    TcpRxBuffer rxBuffer;          ///<Receive buffer
@@ -381,6 +331,19 @@ struct _Socket
    NetTimer overrideTimer;        ///<Override timer
    NetTimer finWait2Timer;        ///<FIN-WAIT-2 timer
    NetTimer timeWaitTimer;        ///<2MSL timer
+
+#if (TCP_KEEP_ALIVE_SUPPORT == ENABLED)
+   bool_t keepAliveEnabled;       ///<Specifies whether TCP keep-alive mechanism is enabled
+   systime_t keepAliveIdle;       ///<Keep-alive idle time
+   systime_t keepAliveInterval;   ///<Time interval between subsequent keep-alive probes
+   uint_t keepAliveMaxProbes;     ///<Number of keep-alive probes
+   uint_t keepAliveProbeCount;    ///<Keep-alive probe counter
+   systime_t keepAliveTimestamp;  ///<Keep-alive timestamp
+#endif
+
+   bool_t sackPermitted;                        ///<SACK Permitted option received
+   TcpSackBlock sackBlock[TCP_MAX_SACK_BLOCKS]; ///<List of non-contiguous blocks that have been received
+   uint_t sackBlockCount;                       ///<Number of non-contiguous blocks that have been received
 #endif
 
 //UDP specific variables
@@ -425,16 +388,10 @@ error_t socketSetVlanDei(Socket *socket, bool_t dei);
 error_t socketSetVmanPcp(Socket *socket, uint8_t pcp);
 error_t socketSetVmanDei(Socket *socket, bool_t dei);
 
-error_t socketEnableBroadcast(Socket *socket, bool_t enabled);
-error_t socketJoinMulticastGroup(Socket *socket, const IpAddr *groupAddr);
-error_t socketLeaveMulticastGroup(Socket *socket, const IpAddr *groupAddr);
-
 error_t socketEnableKeepAlive(Socket *socket, bool_t enabled);
 
 error_t socketSetKeepAliveParams(Socket *socket, systime_t idle,
    systime_t interval, uint_t maxProbes);
-
-error_t socketSetMaxSegmentSize(Socket *socket, size_t mss);
 
 error_t socketSetTxBufferSize(Socket *socket, size_t size);
 error_t socketSetRxBufferSize(Socket *socket, size_t size);
@@ -442,16 +399,10 @@ error_t socketSetRxBufferSize(Socket *socket, size_t size);
 error_t socketSetInterface(Socket *socket, NetInterface *interface);
 NetInterface *socketGetInterface(Socket *socket);
 
-error_t socketBind(Socket *socket, const IpAddr *localIpAddr,
-   uint16_t localPort);
-
-error_t socketConnect(Socket *socket, const IpAddr *remoteIpAddr,
-   uint16_t remotePort);
-
+error_t socketBind(Socket *socket, const IpAddr *localIpAddr, uint16_t localPort);
+error_t socketConnect(Socket *socket, const IpAddr *remoteIpAddr, uint16_t remotePort);
 error_t socketListen(Socket *socket, uint_t backlog);
-
-Socket *socketAccept(Socket *socket, IpAddr *clientIpAddr,
-   uint16_t *clientPort);
+Socket *socketAccept(Socket *socket, IpAddr *clientIpAddr, uint16_t *clientPort);
 
 error_t socketSend(Socket *socket, const void *data, size_t length,
    size_t *written, uint_t flags);
@@ -472,11 +423,8 @@ error_t socketReceiveEx(Socket *socket, IpAddr *srcIpAddr, uint16_t *srcPort,
 
 error_t socketReceiveMsg(Socket *socket, SocketMsg *message, uint_t flags);
 
-error_t socketGetLocalAddr(Socket *socket, IpAddr *localIpAddr,
-   uint16_t *localPort);
-
-error_t socketGetRemoteAddr(Socket *socket, IpAddr *remoteIpAddr,
-   uint16_t *remotePort);
+error_t socketGetLocalAddr(Socket *socket, IpAddr *localIpAddr, uint16_t *localPort);
+error_t socketGetRemoteAddr(Socket *socket, IpAddr *remoteIpAddr, uint16_t *remotePort);
 
 error_t socketShutdown(Socket *socket, uint_t how);
 void socketClose(Socket *socket);
@@ -484,8 +432,8 @@ void socketClose(Socket *socket);
 error_t socketPoll(SocketEventDesc *eventDesc, uint_t size, OsEvent *extEvent,
    systime_t timeout);
 
-error_t gethostbyname_cylone(NetInterface *interface, const char_t *name,
-   IpAddr *ipAddr, uint_t flags);
+error_t getHostByName(NetInterface *interface,
+   const char_t *name, IpAddr *ipAddr, uint_t flags);
 
 //C++ guard
 #ifdef __cplusplus

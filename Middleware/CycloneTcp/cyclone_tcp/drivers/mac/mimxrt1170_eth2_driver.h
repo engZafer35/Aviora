@@ -1,12 +1,12 @@
 /**
  * @file mimxrt1170_eth2_driver.h
- * @brief NXP i.MX RT1170 Gigabit Ethernet MAC driver (ENET_1G instance)
+ * @brief NXP i.MX RT1170 Ethernet MAC driver (ENET_1G instance)
  *
  * @section License
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _MIMXRT1170_ETH2_DRIVER_H

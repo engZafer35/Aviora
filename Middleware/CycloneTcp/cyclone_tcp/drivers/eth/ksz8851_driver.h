@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _KSZ8851_DRIVER_H
 #define _KSZ8851_DRIVER_H
-
-//Dependencies
-#include "core/nic.h"
 
 //SPI interface support
 #ifndef KSZ8851_SPI_SUPPORT
@@ -489,22 +486,22 @@ extern "C" {
  * @brief TX packet header
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t controlWord;
    uint16_t byteCount;
-} Ksz8851TxHeader;
+} __end_packed Ksz8851TxHeader;
 
 
 /**
  * @brief RX packet header
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t statusWord;
    uint16_t byteCount;
-} Ksz8851RxHeader;
+} __end_packed Ksz8851RxHeader;
 
 
 /**
@@ -522,7 +519,6 @@ extern const NicDriver ksz8851Driver;
 
 //KSZ8851 related functions
 error_t ksz8851Init(NetInterface *interface);
-void ksz8851InitHook(NetInterface *interface);
 
 void ksz8851Tick(NetInterface *interface);
 

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,17 +25,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _MDNS_COMMON_H
 #define _MDNS_COMMON_H
 
 //Dependencies
-#include "core/net.h"
-#include "dns/dns_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_common.h"
 
-//Maximum size of mDNS messages
+//Maximum size of DNS messages
 #ifndef MDNS_MESSAGE_MAX_SIZE
    #define MDNS_MESSAGE_MAX_SIZE 1024
 #elif (MDNS_MESSAGE_MAX_SIZE < 1)
@@ -116,13 +116,12 @@ size_t mdnsEncodeName(const char_t *instance, const char_t *service,
 int_t mdnsCompareName(const DnsHeader *message, size_t length, size_t pos,
    const char_t *instance, const char_t *service, const char_t *domain, uint_t level);
 
-int_t mdnsCompareRecord(const MdnsMessage *message1,
+int_t mdnsCompareRecord(const MdnsMessage *message1, size_t offset1,
    const DnsResourceRecord *record1, const MdnsMessage *message2,
-   const DnsResourceRecord *record2);
+   size_t offset2, const DnsResourceRecord *record2);
 
-bool_t mdnsCheckDuplicateRecord(const MdnsMessage *message,
-   const char_t *instance, const char_t *service, const char_t *domain,
-   uint16_t rtype, const uint8_t *rdata, size_t rdlength);
+bool_t mdnsCheckDuplicateRecord(const MdnsMessage *message, const char_t *instance,
+   const char_t *service, const char_t *domain, uint16_t rtype);
 
 //C++ guard
 #ifdef __cplusplus

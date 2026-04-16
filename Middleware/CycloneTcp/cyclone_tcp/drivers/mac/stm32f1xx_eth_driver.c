@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -39,9 +39,9 @@
    #include "stm32f1xx_hal.h"
 #endif
 
-#include "core/net.h"
-#include "drivers/mac/stm32f1xx_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/stm32f1xx_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -194,8 +194,8 @@ error_t stm32f1xxEthInit(NetInterface *interface)
    ETH->DMAOMR = ETH_DMAOMR_RSF | ETH_DMAOMR_TSF;
 
    //Configure DMA bus mode
-   ETH->DMABMR = ETH_DMABMR_AAB | ETH_DMABMR_USP | ETH_DMABMR_RDP_32Beat |
-      ETH_DMABMR_RTPR_1_1 | ETH_DMABMR_PBL_32Beat;
+   ETH->DMABMR = ETH_DMABMR_AAB | ETH_DMABMR_USP | ETH_DMABMR_RDP_1Beat |
+      ETH_DMABMR_RTPR_1_1 | ETH_DMABMR_PBL_1Beat;
 
    //Initialize DMA descriptor lists
    stm32f1xxEthInitDmaDesc(interface);
@@ -233,17 +233,20 @@ error_t stm32f1xxEthInit(NetInterface *interface)
 }
 
 
+//STM3210C-EVAL or STM32-P107 evaluation board?
+#if defined(USE_STM3210C_EVAL) || defined(USE_STM32_P107)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void stm32f1xxEthInitGpio(NetInterface *interface)
+void stm32f1xxEthInitGpio(NetInterface *interface)
 {
-//STM3210C-EVAL evaluation board?
-#if defined(USE_STM3210C_EVAL)
    GPIO_InitTypeDef GPIO_InitStructure;
 
+//STM3210C-EVAL evaluation board?
+#if defined(USE_STM3210C_EVAL)
    //Enable AFIO clock
    __HAL_RCC_AFIO_CLK_ENABLE();
 
@@ -323,7 +326,7 @@ __weak_func void stm32f1xxEthInitGpio(NetInterface *interface)
 //STM32-P107 evaluation board?
 #elif defined(USE_STM32_P107)
    uint32_t temp;
-   GPIO_InitTypeDef GPIO_InitStructure;
+   //RCC_PeriphCLKInitTypeDef RCC_PeriphClkInitStruct;
 
    //Enable AFIO clock
    __HAL_RCC_AFIO_CLK_ENABLE();
@@ -398,6 +401,8 @@ __weak_func void stm32f1xxEthInitGpio(NetInterface *interface)
    __HAL_AFIO_REMAP_ETH_DISABLE();
 #endif
 }
+
+#endif
 
 
 /**
@@ -572,8 +577,8 @@ void ETH_IRQHandler(void)
    //Packet received?
    if((status & ETH_DMASR_RS) != 0)
    {
-      //Clear RS interrupt flag
-      ETH->DMASR = ETH_DMASR_RS;
+      //Disable RIE interrupt
+      ETH->DMAIER &= ~ETH_DMAIER_RIE;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -598,14 +603,24 @@ void stm32f1xxEthEventHandler(NetInterface *interface)
 {
    error_t error;
 
-   //Process all pending packets
-   do
+   //Packet received?
+   if((ETH->DMASR & ETH_DMASR_RS) != 0)
    {
-      //Read incoming packet
-      error = stm32f1xxEthReceivePacket(interface);
+      //Clear interrupt flag
+      ETH->DMASR = ETH_DMASR_RS;
 
-      //No more data in the receive buffer?
-   } while(error != ERROR_BUFFER_EMPTY);
+      //Process all pending packets
+      do
+      {
+         //Read incoming packet
+         error = stm32f1xxEthReceivePacket(interface);
+
+         //No more data in the receive buffer?
+      } while(error != ERROR_BUFFER_EMPTY);
+   }
+
+   //Re-enable DMA interrupts
+   ETH->DMAIER = ETH_DMAIER_NISE | ETH_DMAIER_RIE | ETH_DMAIER_TIE;
 }
 
 

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,17 +25,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/ethernet_misc.h"
-#include "drivers/switch/mv88e6060_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/ethernet_misc.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/switch/mv88e6060_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -188,9 +188,6 @@ error_t mv88e6060Init(NetInterface *interface)
       mv88e6060DumpPhyReg(interface, port);
    }
 
-   //Perform custom configuration
-   mv88e6060InitHook(interface);
-
    //Force the TCP/IP stack to poll the link state at startup
    interface->phyEvent = TRUE;
    //Notify the TCP/IP stack of the event
@@ -198,16 +195,6 @@ error_t mv88e6060Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief 88E6060 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void mv88e6060InitHook(NetInterface *interface)
-{
 }
 
 
@@ -651,22 +638,15 @@ void mv88e6060SetPortState(NetInterface *interface, uint8_t port,
       //Update port state
       switch(state)
       {
-      //Blocking state?
       case SWITCH_PORT_STATE_BLOCKING:
          temp |= MV88E6060_PORT_CTRL_PORT_STATE_BLOCKING;
          break;
-
-      //Learning state?
       case SWITCH_PORT_STATE_LEARNING:
          temp |= MV88E6060_PORT_CTRL_PORT_STATE_LEARNING;
          break;
-
-      //Forwarding state?
       case SWITCH_PORT_STATE_FORWARDING:
          temp |= MV88E6060_PORT_CTRL_PORT_STATE_FORWARDING;
          break;
-
-      //Disabled state?
       default:
          temp |= MV88E6060_PORT_CTRL_PORT_STATE_DISABLED;
          break;
@@ -699,22 +679,15 @@ SwitchPortState mv88e6060GetPortState(NetInterface *interface, uint8_t port)
       //Check port state
       switch(temp & MV88E6060_PORT_CTRL_PORT_STATE)
       {
-      //Blocking state?
       case MV88E6060_PORT_CTRL_PORT_STATE_BLOCKING:
          state = SWITCH_PORT_STATE_BLOCKING;
          break;
-
-      //Learning state?
       case MV88E6060_PORT_CTRL_PORT_STATE_LEARNING:
          state = SWITCH_PORT_STATE_LEARNING;
          break;
-
-      //Forwarding state?
       case MV88E6060_PORT_CTRL_PORT_STATE_FORWARDING:
          state = SWITCH_PORT_STATE_FORWARDING;
          break;
-
-      //Disabled state?
       default:
          state = SWITCH_PORT_STATE_DISABLED;
          break;
@@ -1249,27 +1222,21 @@ error_t mv88e6060GetDynamicFdbEntry(NetInterface *interface, uint_t index,
    case MV88E6060_ATU_DATA_DPV_PORT0:
       entry->srcPort = MV88E6060_PORT0;
       break;
-
    case MV88E6060_ATU_DATA_DPV_PORT1:
       entry->srcPort = MV88E6060_PORT1;
       break;
-
    case MV88E6060_ATU_DATA_DPV_PORT2:
       entry->srcPort = MV88E6060_PORT2;
       break;
-
    case MV88E6060_ATU_DATA_DPV_PORT3:
       entry->srcPort = MV88E6060_PORT3;
       break;
-
    case MV88E6060_ATU_DATA_DPV_PORT4:
       entry->srcPort = MV88E6060_PORT4;
       break;
-
    case MV88E6060_ATU_DATA_DPV_PORT5:
       entry->srcPort = MV88E6060_PORT5;
       break;
-
    default:
       entry->srcPort = 0;
       break;
@@ -1390,63 +1357,6 @@ void mv88e6060SetUnknownMcastFwdPorts(NetInterface *interface,
 
 
 /**
- * @brief Write SMI register
- * @param[in] interface Underlying network interface
- * @param[in] deviceAddr SMI device address
- * @param[in] regAddr Register address
- * @param[in] data Register value
- **/
-
-void mv88e6060WriteSmiReg(NetInterface *interface, uint8_t deviceAddr,
-   uint8_t regAddr, uint16_t data)
-{
-   //The device uses 16 of the 32 possible SMI port addresses. The ones that
-   //are used are selectable using the EE_CLK/ADDR4 configuration pin
-   if(interface->smiDriver != NULL)
-   {
-      interface->smiDriver->writePhyReg(SMI_OPCODE_WRITE,
-         interface->phyAddr + deviceAddr, regAddr, data);
-   }
-   else
-   {
-      interface->nicDriver->writePhyReg(SMI_OPCODE_WRITE,
-         interface->phyAddr + deviceAddr, regAddr, data);
-   }
-}
-
-
-/**
- * @brief Read SMI register
- * @param[in] interface Underlying network interface
- * @param[in] deviceAddr SMI device address
- * @param[in] regAddr Register address
- * @return Register value
- **/
-
-uint16_t mv88e6060ReadSmiReg(NetInterface *interface, uint8_t deviceAddr,
-   uint8_t regAddr)
-{
-   uint16_t data;
-
-   //The device uses 16 of the 32 possible SMI port addresses. The ones that
-   //are used are selectable using the EE_CLK/ADDR4 configuration pin
-   if(interface->smiDriver != NULL)
-   {
-      data = interface->smiDriver->readPhyReg(SMI_OPCODE_READ,
-         interface->phyAddr + deviceAddr, regAddr);
-   }
-   else
-   {
-      data = interface->nicDriver->readPhyReg(SMI_OPCODE_READ,
-         interface->phyAddr + deviceAddr, regAddr);
-   }
-
-   //Return the value of the SMI register
-   return data;
-}
-
-
-/**
  * @brief Write PHY register
  * @param[in] interface Underlying network interface
  * @param[in] port Port number
@@ -1457,16 +1367,17 @@ uint16_t mv88e6060ReadSmiReg(NetInterface *interface, uint8_t deviceAddr,
 void mv88e6060WritePhyReg(NetInterface *interface, uint8_t port,
    uint8_t address, uint16_t data)
 {
-   //Valid port number?
-   if(port >= MV88E6060_PORT0 && port <= MV88E6060_PORT4)
+   //PHY registers are accessible using SMI device addresses 0x00 to 0x04 or
+   //0x10 to 0x14 depending upon the value of the EE_CLK/ADDR4 pin at reset
+   if(interface->smiDriver != NULL)
    {
-      //PHY registers are accessible using SMI device addresses 0x00 to 0x04 (or
-      //0x10 to 0x14) depending upon the value of the EE_CLK/ADDR4 pin at reset
-      mv88e6060WriteSmiReg(interface, port - 1, address, data);
+      interface->smiDriver->writePhyReg(SMI_OPCODE_WRITE,
+         interface->phyAddr + port - 1, address, data);
    }
    else
    {
-      //The specified port number is not valid
+      interface->nicDriver->writePhyReg(SMI_OPCODE_WRITE,
+         interface->phyAddr + port - 1, address, data);
    }
 }
 
@@ -1484,20 +1395,20 @@ uint16_t mv88e6060ReadPhyReg(NetInterface *interface, uint8_t port,
 {
    uint16_t data;
 
-   //Valid port number?
-   if(port >= MV88E6060_PORT0 && port <= MV88E6060_PORT4)
+   //PHY registers are accessible using SMI device addresses 0x00 to 0x04 or
+   //0x10 to 0x14 depending upon the value of the EE_CLK/ADDR4 pin at reset
+   if(interface->smiDriver != NULL)
    {
-      //PHY registers are accessible using SMI device addresses 0x00 to 0x04 (or
-      //0x10 to 0x14) depending upon the value of the EE_CLK/ADDR4 pin at reset
-      data = mv88e6060ReadSmiReg(interface, port - 1, address);
+      data = interface->smiDriver->readPhyReg(SMI_OPCODE_READ,
+         interface->phyAddr + port - 1, address);
    }
    else
    {
-      //The specified port number is not valid
-      data = 0;
+      data = interface->nicDriver->readPhyReg(SMI_OPCODE_READ,
+         interface->phyAddr + port - 1, address);
    }
 
-   //Return the value of the switch port register
+   //Return the value of the PHY register
    return data;
 }
 
@@ -1536,17 +1447,17 @@ void mv88e6060DumpPhyReg(NetInterface *interface, uint8_t port)
 void mv88e6060WriteSwitchPortReg(NetInterface *interface, uint8_t port,
    uint8_t address, uint16_t data)
 {
-   //Valid port number?
-   if(port >= MV88E6060_PORT0 && port <= MV88E6060_PORT5)
+   //Switch port registers are accessible using SMI device addresses 0x08
+   //to 0x0D, or 0x18 to 0x1D
+   if(interface->smiDriver != NULL)
    {
-      //Switch port registers are accessible using SMI device addresses 0x08
-      //to 0x0D (or 0x18 to 0x1D) depending upon the value of the EE_CLK/ADDR4
-      //pin at reset
-      mv88e6060WriteSmiReg(interface, port + 7, address, data);
+      interface->smiDriver->writePhyReg(SMI_OPCODE_WRITE,
+         interface->phyAddr + port + 7, address, data);
    }
    else
    {
-      //The specified port number is not valid
+      interface->nicDriver->writePhyReg(SMI_OPCODE_WRITE,
+         interface->phyAddr + port + 7, address, data);
    }
 }
 
@@ -1564,18 +1475,17 @@ uint16_t mv88e6060ReadSwitchPortReg(NetInterface *interface, uint8_t port,
 {
    uint16_t data;
 
-   //Valid port number?
-   if(port >= MV88E6060_PORT0 && port <= MV88E6060_PORT5)
+   //Switch port registers are accessible using SMI device addresses 0x08
+   //to 0x0D, or 0x18 to 0x1D
+   if(interface->smiDriver != NULL)
    {
-      //Switch port registers are accessible using SMI device addresses 0x08
-      //to 0x0D (or 0x18 to 0x1D) depending upon the value of the EE_CLK/ADDR4
-      //pin at reset
-      data =  mv88e6060ReadSmiReg(interface, port + 7, address);
+      data = interface->smiDriver->readPhyReg(SMI_OPCODE_READ,
+         interface->phyAddr + port + 7, address);
    }
    else
    {
-      //The specified port number is not valid
-      data = 0;
+      data = interface->nicDriver->readPhyReg(SMI_OPCODE_READ,
+         interface->phyAddr + port + 7, address);
    }
 
    //Return the value of the switch port register
@@ -1593,9 +1503,18 @@ uint16_t mv88e6060ReadSwitchPortReg(NetInterface *interface, uint8_t port,
 void mv88e6060WriteSwitchGlobalReg(NetInterface *interface, uint8_t address,
    uint16_t data)
 {
-   //Switch global registers are accessible using SMI device address 0x0F (or
-   //0x1F) depending upon the value of the EE_CLK/ADDR4 pin at reset
-   mv88e6060WriteSmiReg(interface, 15, address, data);
+   //Switch global registers are accessible using SMI device address 0x0F
+   //or 0x1F
+   if(interface->smiDriver != NULL)
+   {
+      interface->smiDriver->writePhyReg(SMI_OPCODE_WRITE,
+         interface->phyAddr + 15, address, data);
+   }
+   else
+   {
+      interface->nicDriver->writePhyReg(SMI_OPCODE_WRITE,
+         interface->phyAddr + 15, address, data);
+   }
 }
 
 
@@ -1608,7 +1527,21 @@ void mv88e6060WriteSwitchGlobalReg(NetInterface *interface, uint8_t address,
 
 uint16_t mv88e6060ReadSwitchGlobalReg(NetInterface *interface, uint8_t address)
 {
-   //Switch global registers are accessible using SMI device address 0x0F (or
-   //0x1F) depending upon the value of the EE_CLK/ADDR4 pin at reset
-   return mv88e6060ReadSmiReg(interface, 15, address);
+   uint16_t data;
+
+   //Switch global registers are accessible using SMI device address 0x0F
+   //or 0x1F
+   if(interface->smiDriver != NULL)
+   {
+      data = interface->smiDriver->readPhyReg(SMI_OPCODE_READ,
+         interface->phyAddr + 15, address);
+   }
+   else
+   {
+      data = interface->nicDriver->readPhyReg(SMI_OPCODE_READ,
+         interface->phyAddr + 15, address);
+   }
+
+   //Return the value of the switch global register
+   return data;
 }

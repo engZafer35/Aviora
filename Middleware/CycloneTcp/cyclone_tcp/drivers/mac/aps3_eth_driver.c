@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -37,9 +37,9 @@
 #include <machine/ethernet.h>
 #include <machine/ic.h>
 #undef _ETHERNET_H
-#include "core/net.h"
-#include "drivers/mac/aps3_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/aps3_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Transmit buffer
 #define txBuffer ((uint8_t *) SFRADR_ETH_TX_MEM_BOTTOM_AD)
@@ -281,6 +281,7 @@ void aps3EthEnableIrq(NetInterface *interface)
    irq[IRQ_ETH_TX].ien = 1;
    irq[IRQ_ETH_RX].ien = 1;
 
+
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
    {
@@ -309,6 +310,7 @@ void aps3EthDisableIrq(NetInterface *interface)
    //Disable Ethernet MAC interrupts
    irq[IRQ_ETH_TX].ien = 0;
    irq[IRQ_ETH_RX].ien = 0;
+
 
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)

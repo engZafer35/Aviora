@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,12 +33,12 @@
 
 //Dependencies
 #include <stdlib.h>
-#include "core/net.h"
-#include "http/http_server.h"
-#include "http/http_server_auth.h"
-#include "http/http_server_misc.h"
-#include "str.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_server_auth.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_server_misc.h"
+#include "../../../CycloneTcp/common/str.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (HTTP_SERVER_SUPPORT == ENABLED)
@@ -441,13 +441,9 @@ size_t httpAddAuthenticateField(HttpConnection *connection, char_t *output)
 
       //Generate a random value
       if(connection->settings->randCallback != NULL)
-      {
          error = connection->settings->randCallback(opaque, 16);
-      }
       else
-      {
          error = ERROR_FAILURE;
-      }
 
       //Random number generation failed?
       if(error)
@@ -535,13 +531,9 @@ error_t httpGenerateNonce(HttpServerContext *context,
 
    //Generate a new nonce
    if(context->settings.randCallback != NULL)
-   {
       error = context->settings.randCallback(nonce, HTTP_SERVER_NONCE_SIZE);
-   }
    else
-   {
       error = ERROR_FAILURE;
-   }
 
    //Check status code
    if(!error)
@@ -632,13 +624,9 @@ error_t httpVerifyNonce(HttpServerContext *context,
 
    //Check whether the nonce is valid
    if(i < HTTP_SERVER_NONCE_CACHE_SIZE)
-   {
       error = NO_ERROR;
-   }
    else
-   {
       error = ERROR_NOT_FOUND;
-   }
 
    //Release exclusive access to the nonce cache
    osReleaseMutex(&context->nonceCacheMutex);

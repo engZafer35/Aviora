@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,27 +25,21 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL IP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/ethernet.h"
-#include "core/ip.h"
-#include "ipv4/ipv4.h"
-#include "ipv4/ipv4_misc.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_misc.h"
-#include "debug.h"
-
-//IPsec supported?
-#if (IPV4_IPSEC_SUPPORT == ENABLED)
-   #include "ipsec/ipsec.h"
-   #include "ah/ah.h"
-#endif
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ethernet.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ip.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Special IP addresses
 const IpAddr IP_ADDR_ANY = {0};
@@ -63,9 +57,8 @@ const IpAddr IP_ADDR_UNSPECIFIED = {0};
  * @return Error code
  **/
 
-error_t ipSendDatagram(NetInterface *interface,
-   const IpPseudoHeader *pseudoHeader, NetBuffer *buffer, size_t offset,
-   NetTxAncillary *ancillary)
+error_t ipSendDatagram(NetInterface *interface, IpPseudoHeader *pseudoHeader,
+   NetBuffer *buffer, size_t offset, NetTxAncillary *ancillary)
 {
    error_t error;
 
@@ -114,8 +107,8 @@ error_t ipSendDatagram(NetInterface *interface,
  * @return Error code
  **/
 
-error_t ipSelectSourceAddr(NetInterface **interface, const IpAddr *destAddr,
-   IpAddr *srcAddr)
+error_t ipSelectSourceAddr(NetInterface **interface,
+   const IpAddr *destAddr, IpAddr *srcAddr)
 {
    error_t error;
 
@@ -153,155 +146,6 @@ error_t ipSelectSourceAddr(NetInterface **interface, const IpAddr *destAddr,
 
    //Return status code
    return error;
-}
-
-
-/**
- * @brief Compare an IP address against the unspecified address
- * @param[in] ipAddr IP address
- * @return TRUE if the IP address is unspecified, else FALSE
- **/
-
-bool_t ipIsUnspecifiedAddr(const IpAddr *ipAddr)
-{
-   bool_t result;
-
-#if (IPV4_SUPPORT == ENABLED)
-   //IPv4 address?
-   if(ipAddr->length == sizeof(Ipv4Addr))
-   {
-      //Compare IPv4 address
-      if(ipAddr->ipv4Addr == IPV4_UNSPECIFIED_ADDR)
-      {
-         result = TRUE;
-      }
-      else
-      {
-         result = FALSE;
-      }
-   }
-   else
-#endif
-#if (IPV6_SUPPORT == ENABLED)
-   //IPv6 address?
-   if(ipAddr->length == sizeof(Ipv6Addr))
-   {
-      //Compare IPv6 address
-      result = ipv6CompAddr(&ipAddr->ipv6Addr, &IPV6_UNSPECIFIED_ADDR);
-   }
-   else
-#endif
-   //Invalid IP address?
-   {
-      result = TRUE;
-   }
-
-   //Return TRUE if the IP address is unspecified, else FALSE
-   return result;
-}
-
-
-/**
- * @brief Determine whether an IP address is a link-local address
- * @param[in] ipAddr IP address
- * @return TRUE if the IP address is a link-local address, else FALSE
- **/
-
-bool_t ipIsLinkLocalAddr(const IpAddr *ipAddr)
-{
-   bool_t result;
-
-#if (IPV4_SUPPORT == ENABLED)
-   //IPv4 address?
-   if(ipAddr->length == sizeof(Ipv4Addr))
-   {
-      //Check whether the IPv4 address is a link-local address
-      result = ipv4IsLinkLocalAddr(ipAddr->ipv4Addr);
-   }
-   else
-#endif
-#if (IPV6_SUPPORT == ENABLED)
-   //IPv6 address?
-   if(ipAddr->length == sizeof(Ipv6Addr))
-   {
-      //Check whether the IPv6 address is a link-local address
-      result = ipv6IsLinkLocalUnicastAddr(&ipAddr->ipv6Addr);
-   }
-   else
-#endif
-   //Invalid IP address?
-   {
-      result = FALSE;
-   }
-
-   //Return TRUE if the IP address is a link-local address, else FALSE
-   return result;
-}
-
-
-/**
- * @brief Determine whether an IP address is a multicast address
- * @param[in] ipAddr IP address
- * @return TRUE if the IP address is a multicast address, else FALSE
- **/
-
-bool_t ipIsMulticastAddr(const IpAddr *ipAddr)
-{
-   bool_t result;
-
-#if (IPV4_SUPPORT == ENABLED)
-   //IPv4 address?
-   if(ipAddr->length == sizeof(Ipv4Addr))
-   {
-      //Check whether the IPv4 address is a multicast address
-      result = ipv4IsMulticastAddr(ipAddr->ipv4Addr);
-   }
-   else
-#endif
-#if (IPV6_SUPPORT == ENABLED)
-   //IPv6 address?
-   if(ipAddr->length == sizeof(Ipv6Addr))
-   {
-      //Check whether the IPv6 address is a multicast address
-      result = ipv6IsMulticastAddr(&ipAddr->ipv6Addr);
-   }
-   else
-#endif
-   //Invalid IP address?
-   {
-      result = FALSE;
-   }
-
-   //Return TRUE if the IP address is a multicast address, else FALSE
-   return result;
-}
-
-
-/**
- * @brief Determine whether an IP address is a broadcast address
- * @param[in] ipAddr IP address
- * @return TRUE if the IP address is a broadcast address, else FALSE
- **/
-
-bool_t ipIsBroadcastAddr(const IpAddr *ipAddr)
-{
-   bool_t result;
-
-#if (IPV4_SUPPORT == ENABLED)
-   //Broadcast address?
-   if(ipAddr->length == sizeof(Ipv4Addr) &&
-      ipAddr->ipv4Addr == IPV4_BROADCAST_ADDR)
-   {
-      result = TRUE;
-   }
-   else
-#endif
-   {
-      result = FALSE;
-   }
-
-   //Return TRUE if the IP address is a broadcast address, else FALSE
-   return result;
 }
 
 
@@ -346,7 +190,7 @@ bool_t ipCompAddr(const IpAddr *ipAddr1, const IpAddr *ipAddr2)
    {
       result = TRUE;
    }
-   //Inconsistent IP addresses?
+   //Invalid IP addresses?
    else
    {
       result = FALSE;
@@ -358,42 +202,84 @@ bool_t ipCompAddr(const IpAddr *ipAddr1, const IpAddr *ipAddr2)
 
 
 /**
- * @brief Compare IP address prefixes
- * @param[in] ipAddr1 First IP address
- * @param[in] ipAddr2 Second IP address
- * @param[in] length Prefix length
- * @return TRUE if the prefixes match each other, else FALSE
+ * @brief Compare an IP address against the unspecified address
+ * @param[in] ipAddr IP address
+ * @return TRUE if the IP address is unspecified, else FALSE
  **/
 
-bool_t ipCompPrefix(const IpAddr *ipAddr1, const IpAddr *ipAddr2,
-   size_t length)
+bool_t ipIsUnspecifiedAddr(const IpAddr *ipAddr)
 {
    bool_t result;
 
 #if (IPV4_SUPPORT == ENABLED)
-   //IPv4 addresses?
-   if(ipAddr1->length == sizeof(Ipv4Addr) && ipAddr2->length == sizeof(Ipv4Addr))
+   //IPv4 address?
+   if(ipAddr->length == sizeof(Ipv4Addr))
    {
-      //Compare IPv4 address prefixes
-      result = ipv4CompPrefix(ipAddr1->ipv4Addr, ipAddr2->ipv4Addr, length);
+      //Compare IPv4 address
+      if(ipAddr->ipv4Addr == IPV4_UNSPECIFIED_ADDR)
+      {
+         result = TRUE;
+      }
+      else
+      {
+         result = FALSE;
+      }
    }
    else
 #endif
 #if (IPV6_SUPPORT == ENABLED)
-   //IPv6 addresses?
-   if(ipAddr1->length == sizeof(Ipv6Addr) && ipAddr2->length == sizeof(Ipv6Addr))
+   //IPv6 address?
+   if(ipAddr->length == sizeof(Ipv6Addr))
    {
-      //Compare IPv6 address prefixes
-      result = ipv6CompPrefix(&ipAddr1->ipv6Addr, &ipAddr2->ipv6Addr, length);
+      //Compare IPv6 address
+      result = ipv6CompAddr(&ipAddr->ipv6Addr, &IPV6_UNSPECIFIED_ADDR);
    }
    else
 #endif
-   //Inconsistent IP addresses?
+   //Invalid IP address?
    {
       result = FALSE;
    }
 
-   //Return TRUE if the prefixes match each other, else FALSE
+   //Return TRUE if the IP address is unspecified, else FALSE
+   return result;
+}
+
+
+/**
+ * @brief Determine whether an IP address is a multicast address
+ * @param[in] ipAddr IP address
+ * @return TRUE if the IP address is a multicast address, else FALSE
+ **/
+
+bool_t ipIsMulticastAddr(const IpAddr *ipAddr)
+{
+   bool_t result;
+
+#if (IPV4_SUPPORT == ENABLED)
+   //IPv4 address?
+   if(ipAddr->length == sizeof(Ipv4Addr))
+   {
+      //Check whether the IPv4 address is a multicast address
+      result = ipv4IsMulticastAddr(ipAddr->ipv4Addr);
+   }
+   else
+#endif
+#if (IPV6_SUPPORT == ENABLED)
+   //IPv6 address?
+   if(ipAddr->length == sizeof(Ipv6Addr))
+   {
+      //Check whether the IPv6 address is a multicast address
+      result = ipv6IsMulticastAddr(&ipAddr->ipv6Addr);
+   }
+   else
+#endif
+   //Invalid IP address?
+   {
+      result = FALSE;
+   }
+
+   //Return TRUE if the IP address is a multicast address, else FALSE
    return result;
 }
 
@@ -411,9 +297,10 @@ error_t ipJoinMulticastGroup(NetInterface *interface, const IpAddr *groupAddr)
 
    //Use default network interface?
    if(interface == NULL)
-   {
       interface = netGetDefaultInterface();
-   }
+
+   //Get exclusive access
+   osAcquireMutex(&netMutex);
 
 #if (IPV4_SUPPORT == ENABLED)
    //IPv4 multicast address?
@@ -439,6 +326,9 @@ error_t ipJoinMulticastGroup(NetInterface *interface, const IpAddr *groupAddr)
       error = ERROR_INVALID_ADDRESS;
    }
 
+   //Release exclusive access
+   osReleaseMutex(&netMutex);
+
    //Return status code
    return error;
 }
@@ -457,9 +347,10 @@ error_t ipLeaveMulticastGroup(NetInterface *interface, const IpAddr *groupAddr)
 
    //Use default network interface?
    if(interface == NULL)
-   {
       interface = netGetDefaultInterface();
-   }
+
+   //Get exclusive access
+   osAcquireMutex(&netMutex);
 
 #if (IPV4_SUPPORT == ENABLED)
    //IPv4 multicast address?
@@ -483,6 +374,9 @@ error_t ipLeaveMulticastGroup(NetInterface *interface, const IpAddr *groupAddr)
    {
       error = ERROR_INVALID_ADDRESS;
    }
+
+   //Release exclusive access
+   osReleaseMutex(&netMutex);
 
    //Return status code
    return error;
@@ -752,11 +646,6 @@ NetBuffer *ipAllocBuffer(size_t length, size_t *offset)
 #else
    //Maximum overhead when using IPv4
    headerLen = sizeof(Ipv4Header) + sizeof(uint32_t);
-#endif
-
-#if (IPV4_IPSEC_SUPPORT == ENABLED && AH_SUPPORT == ENABLED)
-   //Maximum overhead caused by AH security protocol
-   headerLen += AH_MAX_OVERHEAD;
 #endif
 
 #if (ETH_SUPPORT == ENABLED)

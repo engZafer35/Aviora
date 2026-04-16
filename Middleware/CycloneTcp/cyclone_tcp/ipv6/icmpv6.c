@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -32,68 +32,40 @@
  * by every IPv6 node. Refer to the RFC 2463 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL ICMPV6_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/ip.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_misc.h"
-#include "ipv6/ipv6_pmtu.h"
-#include "ipv6/icmpv6.h"
-#include "ipv6/mld.h"
-#include "ipv6/ndp.h"
-#include "ipv6/ndp_router_adv_misc.h"
-#include "mibs/ip_mib_module.h"
-#include "debug.h"
+#include <string.h>
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ip.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_pmtu.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/icmpv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/mld.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_router_adv_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/ip_mib_module.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV6_SUPPORT == ENABLED)
 
 
 /**
- * @brief Enable support for ICMPv6 Echo Request messages
+ * @brief Enable support for multicast Echo Request messages
  * @param[in] interface Underlying network interface
- * @param[in] enable This flag specifies whether the host will respond to
- *   ICMPv6 Echo Requests. When the flag is set to FALSE, incoming ICMPv6 Echo
- *   Request messages will be dropped
+ * @param[in] enable When the flag is set to TRUE, the host will respond to
+ *   multicast Echo Requests. When the flag is set to FALSE, incoming Echo
+ *   Request messages destined to a multicast address will be dropped
  * @return Error code
  **/
 
-error_t icmpv6EnableEchoRequests(NetInterface *interface, bool_t enable)
-{
-   //Check parameters
-   if(interface == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Get exclusive access
-   osAcquireMutex(&netMutex);
-   //Enable or disable support for Echo Request messages
-   interface->ipv6Context.enableEchoReq = enable;
-   //Release exclusive access
-   osReleaseMutex(&netMutex);
-
-   //Successful processing
-   return NO_ERROR;
-}
-
-
-/**
- * @brief Enable support for multicast ICMPv6 Echo Request messages
- * @param[in] interface Underlying network interface
- * @param[in] enable This flag specifies whether the host will respond to
- *   multicast ICMPv6 Echo Requests. When the flag is set to FALSE, incoming
- *   ICMPv6 Echo Request messages destined to a multicast address will be
- *   dropped
- * @return Error code
- **/
-
-error_t icmpv6EnableMulticastEchoRequests(NetInterface *interface,
-   bool_t enable)
+error_t icmpv6EnableMulticastEchoRequest(NetInterface *interface, bool_t enable)
 {
    //Check parameters
    if(interface == NULL)
@@ -120,9 +92,8 @@ error_t icmpv6EnableMulticastEchoRequests(NetInterface *interface,
  * @param[in] hopLimit Hop Limit field from IPv6 header
  **/
 
-void icmpv6ProcessMessage(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, uint8_t hopLimit)
+void icmpv6ProcessMessage(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, uint8_t hopLimit)
 {
    size_t length;
    Icmpv6Header *header;
@@ -266,8 +237,7 @@ void icmpv6ProcessMessage(NetInterface *interface,
  **/
 
 void icmpv6ProcessDestUnreachable(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset)
+   Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer, size_t offset)
 {
    size_t length;
    Icmpv6DestUnreachableMessage *icmpHeader;
@@ -302,8 +272,7 @@ void icmpv6ProcessDestUnreachable(NetInterface *interface,
  **/
 
 void icmpv6ProcessPacketTooBig(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset)
+   Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer, size_t offset)
 {
    size_t length;
    Icmpv6PacketTooBigMessage *icmpHeader;
@@ -366,9 +335,8 @@ void icmpv6ProcessPacketTooBig(NetInterface *interface,
  * @param[in] requestOffset Offset to the first byte of the ICMPv6 message
  **/
 
-void icmpv6ProcessEchoRequest(NetInterface *interface,
-   const Ipv6PseudoHeader *requestPseudoHeader, const NetBuffer *request,
-   size_t requestOffset)
+void icmpv6ProcessEchoRequest(NetInterface *interface, Ipv6PseudoHeader *requestPseudoHeader,
+   const NetBuffer *request, size_t requestOffset)
 {
    error_t error;
    size_t requestLength;
@@ -397,11 +365,6 @@ void icmpv6ProcessEchoRequest(NetInterface *interface,
    TRACE_INFO("ICMPv6 Echo Request message received (%" PRIuSIZE " bytes)...\r\n", requestLength);
    //Dump message contents for debugging purpose
    icmpv6DumpEchoMessage(requestHeader);
-
-   //If support for Echo Request messages has been explicitly disabled, then
-   //the host shall not respond to the incoming request
-   if(!interface->ipv6Context.enableEchoReq)
-      return;
 
    //Check whether the destination address of the Echo Request message is
    //a multicast address
@@ -504,9 +467,8 @@ void icmpv6ProcessEchoRequest(NetInterface *interface,
  * @return Error code
  **/
 
-error_t icmpv6SendErrorMessage(NetInterface *interface, uint8_t type,
-   uint8_t code, uint32_t parameter, const NetBuffer *ipPacket,
-   size_t ipPacketOffset)
+error_t icmpv6SendErrorMessage(NetInterface *interface, uint8_t type, uint8_t code,
+   uint32_t parameter, const NetBuffer *ipPacket, size_t ipPacketOffset)
 {
    error_t error;
    size_t offset;
@@ -587,10 +549,10 @@ error_t icmpv6SendErrorMessage(NetInterface *interface, uint8_t type,
    if(ipv6IsAnycastAddr(interface, &ipHeader->srcAddr))
       return ERROR_INVALID_ADDRESS;
 
-   //Return as much of invoking IPv6 packet as possible without the ICMPv6
-   //packet exceeding the minimum IPv6 MTU
-   length = MIN(length, IPV6_DEFAULT_MTU - sizeof(Ipv6Header) -
-      sizeof(Icmpv6ErrorMessage));
+   //Return as much of invoking IPv6 packet as possible without
+   //the ICMPv6 packet exceeding the minimum IPv6 MTU
+   length = MIN(length, IPV6_DEFAULT_MTU -
+      sizeof(Ipv6Header) - sizeof(Icmpv6ErrorMessage));
 
    //Allocate a memory buffer to hold the ICMPv6 message
    icmpMessage = ipAllocBuffer(sizeof(Icmpv6ErrorMessage), &offset);

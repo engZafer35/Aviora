@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,21 +25,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL SOCKET_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/socket.h"
-#include "core/socket_misc.h"
-#include "core/raw_socket.h"
-#include "core/udp.h"
-#include "core/tcp.h"
-#include "core/tcp_misc.h"
-#include "debug.h"
+#include <string.h>
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/raw_socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/udp.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/tcp.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/tcp_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -55,6 +56,7 @@ Socket *socketAllocate(uint_t type, uint_t protocol)
    uint_t i;
    uint16_t port;
    Socket *socket;
+   OsEvent event;
 
    //Initialize socket handle
    socket = NULL;
@@ -133,11 +135,12 @@ Socket *socketAllocate(uint_t type, uint_t protocol)
          //Save socket descriptor
          i = socket->descriptor;
 
-         //Clear the structure keeping the event field untouched
-         osMemset(socket, 0, offsetof(Socket, event));
-
-         osMemset((uint8_t *) socket + offsetof(Socket, event) + sizeof(OsEvent),
-            0, sizeof(Socket) - offsetof(Socket, event) - sizeof(OsEvent));
+         //Save event object instance
+         osMemcpy(&event, &socket->event, sizeof(OsEvent));
+         //Clear associated structure
+         osMemset(socket, 0, sizeof(Socket));
+         //Reuse event objects and avoid recreating them whenever possible
+         osMemcpy(&socket->event, &event, sizeof(OsEvent));
 
          //Save socket characteristics
          socket->descriptor = i;
@@ -170,9 +173,6 @@ Socket *socketAllocate(uint_t type, uint_t protocol)
 #endif
 
 #if (TCP_SUPPORT == ENABLED)
-         //Default MSS value
-         socket->mss = TCP_MAX_MSS;
-
          //Default TX and RX buffer size
          socket->txBufferSize = MIN(TCP_DEFAULT_TX_BUFFER_SIZE, TCP_MAX_TX_BUFFER_SIZE);
          socket->rxBufferSize = MIN(TCP_DEFAULT_RX_BUFFER_SIZE, TCP_MAX_RX_BUFFER_SIZE);

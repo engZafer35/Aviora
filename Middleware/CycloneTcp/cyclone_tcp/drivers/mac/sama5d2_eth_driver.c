@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -36,9 +36,9 @@
 #include "chip.h"
 #include "peripherals/aic.h"
 #include "peripherals/pio.h"
-#include "core/net.h"
-#include "drivers/mac/sama5d2_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/sama5d2_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -225,10 +225,8 @@ error_t sama5d2EthInit(NetInterface *interface)
    //Clear transmit status register
    GMAC0->GMAC_TSR = GMAC_TSR_HRESP | GMAC_TSR_TXCOMP | GMAC_TSR_TFC |
       GMAC_TSR_TXGO | GMAC_TSR_RLE | GMAC_TSR_COL | GMAC_TSR_UBR;
-
    //Clear receive status register
-   GMAC0->GMAC_RSR = GMAC_RSR_HNO | GMAC_RSR_RXOVR | GMAC_RSR_REC |
-      GMAC_RSR_BNA;
+   GMAC0->GMAC_RSR = GMAC_RSR_HNO | GMAC_RSR_RXOVR | GMAC_RSR_REC | GMAC_RSR_BNA;
 
    //First disable all GMAC interrupts
    GMAC0->GMAC_IDR = 0xFFFFFFFF;
@@ -236,15 +234,11 @@ error_t sama5d2EthInit(NetInterface *interface)
    GMAC0->GMAC_IDRPQ[1] = 0xFFFFFFFF;
 
    //Only the desired ones are enabled
-   GMAC0->GMAC_IER = GMAC_IER_HRESP | GMAC_IER_ROVR | GMAC_IER_TCOMP |
-      GMAC_IER_TFC | GMAC_IER_RLEX | GMAC_IER_TUR | GMAC_IER_RXUBR |
-      GMAC_IER_RCOMP;
+   GMAC0->GMAC_IER = GMAC_IER_HRESP | GMAC_IER_ROVR | GMAC_IER_TCOMP | GMAC_IER_TFC |
+      GMAC_IER_RLEX | GMAC_IER_TUR | GMAC_IER_RXUBR | GMAC_IER_RCOMP;
 
-   //Read GMAC_ISR register to clear any pending interrupt
+   //Read GMAC ISR register to clear any pending interrupt
    status = GMAC0->GMAC_ISR;
-   status = GMAC0->GMAC_ISRPQ[0];
-   status = GMAC0->GMAC_ISRPQ[1];
-   (void) status;
 
    //Register interrupt handler
    aic_set_source_vector(ID_GMAC0, sama5d2EthIrqHandler);
@@ -264,15 +258,16 @@ error_t sama5d2EthInit(NetInterface *interface)
 }
 
 
+//SAMA5D2-Xplained-Ultra evaluation board?
+#if defined(CONFIG_BOARD_SAMA5D2_XPLAINED)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void sama5d2EthInitGpio(NetInterface *interface)
+void sama5d2EthInitGpio(NetInterface *interface)
 {
-//SAMA5D2-Xplained-Ultra evaluation board?
-#if defined(CONFIG_BOARD_SAMA5D2_XPLAINED)
    struct _pin rmiiPins[] = PINS_GMAC_RMII_IOS3;
 
    //Configure RMII pins
@@ -280,8 +275,9 @@ __weak_func void sama5d2EthInitGpio(NetInterface *interface)
 
    //Select RMII operation mode
    GMAC0->GMAC_UR = GMAC_UR_RMII;
-#endif
 }
+
+#endif
 
 
 /**
@@ -468,14 +464,13 @@ void sama5d2EthIrqHandler(void)
    //This flag will be set if a higher priority task must be woken
    flag = FALSE;
 
-   //Each time the software reads GMAC_ISR, it has to check the contents
-   //of GMAC_TSR, GMAC_RSR and GMAC_NSR
+   //Each time the software reads GMAC_ISR, it has to check the
+   //contents of GMAC_TSR, GMAC_RSR and GMAC_NSR
    isr = GMAC0->GMAC_ISRPQ[0];
    isr = GMAC0->GMAC_ISRPQ[1];
    isr = GMAC0->GMAC_ISR;
    tsr = GMAC0->GMAC_TSR;
    rsr = GMAC0->GMAC_RSR;
-   (void) isr;
 
    //Packet transmitted?
    if((tsr & (GMAC_TSR_HRESP | GMAC_TSR_TXCOMP | GMAC_TSR_TFC |
@@ -622,7 +617,7 @@ error_t sama5d2EthSendPacket(NetInterface *interface,
 
 error_t sama5d2EthReceivePacket(NetInterface *interface)
 {
-   static uint32_t temp[ETH_MAX_FRAME_SIZE / 4];
+   static uint8_t temp[ETH_MAX_FRAME_SIZE];
    error_t error;
    uint_t i;
    uint_t j;
@@ -632,8 +627,7 @@ error_t sama5d2EthReceivePacket(NetInterface *interface)
    size_t size;
    size_t length;
 
-   //Initialize variables
-   size = 0;
+   //Initialize SOF and EOF indices
    sofIndex = UINT_MAX;
    eofIndex = UINT_MAX;
 
@@ -703,7 +697,7 @@ error_t sama5d2EthReceivePacket(NetInterface *interface)
          //Calculate the number of bytes to read at a time
          n = MIN(size, SAMA5D2_ETH_RX_BUFFER_SIZE);
          //Copy data from receive buffer
-         osMemcpy((uint8_t *) temp + length, rxBuffer[rxBufferIndex], n);
+         osMemcpy(temp + length, rxBuffer[rxBufferIndex], n);
          //Update byte counters
          length += n;
          size -= n;
@@ -731,7 +725,7 @@ error_t sama5d2EthReceivePacket(NetInterface *interface)
       ancillary = NET_DEFAULT_RX_ANCILLARY;
 
       //Pass the packet to the upper layer
-      nicProcessPacket(interface, (uint8_t *) temp, length, &ancillary);
+      nicProcessPacket(interface, temp, length, &ancillary);
       //Valid packet received
       error = NO_ERROR;
    }

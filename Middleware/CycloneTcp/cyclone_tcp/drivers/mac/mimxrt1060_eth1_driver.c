@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -35,9 +35,9 @@
 #include "fsl_device_registers.h"
 #include "fsl_gpio.h"
 #include "fsl_iomuxc.h"
-#include "core/net.h"
-#include "drivers/mac/mimxrt1060_eth1_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/mimxrt1060_eth1_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -232,15 +232,16 @@ error_t mimxrt1060Eth1Init(NetInterface *interface)
 }
 
 
+//MIMXRT1060-EVK or MIMXRT1064-EVK evaluation board?
+#if defined(USE_MIMXRT1060_EVK) || defined(USE_MIMXRT1064_EVK)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void mimxrt1060Eth1InitGpio(NetInterface *interface)
+void mimxrt1060Eth1InitGpio(NetInterface *interface)
 {
-//MIMXRT1060-EVK or MIMXRT1064-EVK evaluation board?
-#if defined(USE_MIMXRT1060_EVK) || defined(USE_MIMXRT1064_EVK)
    gpio_pin_config_t pinConfig;
    clock_enet_pll_config_t pllConfig;
 
@@ -444,8 +445,9 @@ __weak_func void mimxrt1060Eth1InitGpio(NetInterface *interface)
    sleep(10);
    GPIO_PinWrite(GPIO1, 9, 1);
    sleep(10);
-#endif
 }
+
+#endif
 
 
 /**
@@ -716,7 +718,7 @@ void mimxrt1060Eth1EventHandler(NetInterface *interface)
 error_t mimxrt1060Eth1SendPacket(NetInterface *interface,
    const NetBuffer *buffer, size_t offset, NetTxAncillary *ancillary)
 {
-   static uint32_t temp[MIMXRT1060_ETH1_TX_BUFFER_SIZE / 4];
+   static uint8_t temp[MIMXRT1060_ETH1_TX_BUFFER_SIZE];
    size_t length;
 
    //Retrieve the length of the packet
@@ -790,7 +792,7 @@ error_t mimxrt1060Eth1SendPacket(NetInterface *interface,
 
 error_t mimxrt1060Eth1ReceivePacket(NetInterface *interface)
 {
-   static uint32_t temp[MIMXRT1060_ETH1_RX_BUFFER_SIZE / 4];
+   static uint8_t temp[MIMXRT1060_ETH1_RX_BUFFER_SIZE];
    error_t error;
    size_t n;
    NetRxAncillary ancillary;
@@ -817,7 +819,7 @@ error_t mimxrt1060Eth1ReceivePacket(NetInterface *interface)
             ancillary = NET_DEFAULT_RX_ANCILLARY;
 
             //Pass the packet to the upper layer
-            nicProcessPacket(interface, (uint8_t *) temp, n, &ancillary);
+            nicProcessPacket(interface, temp, n, &ancillary);
 
             //Valid packet received
             error = NO_ERROR;
@@ -1122,7 +1124,6 @@ uint32_t mimxrt1060Eth1CalcCrc(const void *data, size_t length)
    {
       //Update CRC value
       crc ^= p[i];
-
       //The message is processed bit by bit
       for(j = 0; j < 8; j++)
       {

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _ST802RT1A_DRIVER_H
 #define _ST802RT1A_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //PHY address
 #define ST802RT1A_PHY_ADDR 1
@@ -252,7 +252,6 @@ extern const PhyDriver st802rt1aPhyDriver;
 
 //ST802RT1A related functions
 error_t st802rt1aInit(NetInterface *interface);
-void st802rt1aInitHook(NetInterface *interface);
 
 void st802rt1aTick(NetInterface *interface);
 

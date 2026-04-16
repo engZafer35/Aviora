@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _NIC_H
 #define _NIC_H
 
 //Dependencies
-#include "core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //Tick interval to handle NIC periodic operations
 #ifndef NIC_TICK_INTERVAL
@@ -82,10 +82,8 @@ typedef enum
    NIC_TYPE_UNKNOWN  = 0, ///<Unknown interface type
    NIC_TYPE_ETHERNET = 1, ///<Ethernet interface
    NIC_TYPE_PPP      = 2, ///<PPP interface
-   NIC_TYPE_IPV4     = 3, ///<IPv4 interface
-   NIC_TYPE_IPV6     = 4, ///<IPv6 interface
-   NIC_TYPE_6LOWPAN  = 4, ///<6LoWPAN interface
-   NIC_TYPE_LOOPBACK = 5  ///<Loopback interface
+   NIC_TYPE_6LOWPAN  = 3, ///<6LoWPAN interface
+   NIC_TYPE_LOOPBACK = 4  ///<Loopback interface
 } NicType;
 
 

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _SNMP_AGENT_H
@@ -36,14 +36,14 @@ struct _SnmpAgentContext;
 #define SnmpAgentContext struct _SnmpAgentContext
 
 //Dependencies
-#include "core/net.h"
-#include "snmp/snmp_common.h"
-#include "snmp/snmp_agent_message.h"
-#include "snmp/snmp_agent_trap.h"
-#include "snmp/snmp_agent_inform.h"
-#include "snmp/snmp_agent_usm.h"
-#include "snmp/snmp_agent_vacm.h"
-#include "mibs/mib_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_message.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_trap.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_inform.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_usm.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_vacm.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib_common.h"
 
 //SNMP agent support
 #ifndef SNMP_AGENT_SUPPORT
@@ -106,11 +106,6 @@ struct _SnmpAgentContext;
    #error SNMP_AGENT_VIEW_TABLE_SIZE parameter is not valid
 #endif
 
-//Application specific context
-#ifndef SNMP_AGENT_PRIVATE_CONTEXT
-   #define SNMP_AGENT_PRIVATE_CONTEXT
-#endif
-
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
@@ -130,13 +125,12 @@ typedef error_t (*SnmpAgentRandCallback)(uint8_t *data, size_t length);
 
 typedef struct
 {
-   OsTaskParameters task;              ///<Task parameters
-   NetInterface *interface;            ///<Network interface to configure
-   SnmpVersion versionMin;             ///<Minimum version accepted by the SNMP agent
-   SnmpVersion versionMax;             ///<Maximum version accepted by the SNMP agent
-   uint16_t port;                      ///<SNMP port number
-   uint16_t trapPort;                  ///<SNMP trap port number
-   SnmpAgentRandCallback randCallback; ///<Random data generation callback function
+   NetInterface *interface;                        ///<Network interface to configure
+   SnmpVersion versionMin;                         ///<Minimum version accepted by the SNMP agent
+   SnmpVersion versionMax;                         ///<Maximum version accepted by the SNMP agent
+   uint16_t port;                                  ///<SNMP port number
+   uint16_t trapPort;                              ///<SNMP trap port number
+   SnmpAgentRandCallback randCallback;             ///<Random data generation callback function
 } SnmpAgentSettings;
 
 
@@ -151,8 +145,6 @@ struct _SnmpAgentContext
    bool_t stop;                                               ///<Stop request
    OsMutex mutex;                                             ///<Mutex preventing simultaneous access to SNMP agent context
    OsEvent event;                                             ///<Event object used to poll the underlying socket
-   OsTaskParameters taskParams;                               ///<Task parameters
-   OsTaskId taskId;                                           ///<Task identifier
    uint8_t enterpriseOid[SNMP_MAX_OID_SIZE];                  ///<Enterprise OID
    size_t enterpriseOidLen;                                   ///<Length of the enterprise OID
    const MibModule *mibTable[SNMP_AGENT_MAX_MIBS];            ///<MIB modules
@@ -201,7 +193,6 @@ struct _SnmpAgentContext
    int32_t informMsgId;                                       ///<Message identifier
 #endif
 #endif
-   SNMP_AGENT_PRIVATE_CONTEXT                                 ///<Application specific context
 };
 
 
