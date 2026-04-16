@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,25 +25,25 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL MQTT_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "mqtt/mqtt_client.h"
-#include "mqtt/mqtt_client_packet.h"
-#include "mqtt/mqtt_client_transport.h"
-#include "mqtt/mqtt_client_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt/mqtt_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt/mqtt_client_packet.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt/mqtt_client_transport.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt/mqtt_client_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (MQTT_CLIENT_SUPPORT == ENABLED)
 
 //MQTT control packets
-const char_t *const mqttPacketLabel[16] =
+static const char_t *packetLabel[16] =
 {
    "Reserved",    //0
    "CONNECT",     //1
@@ -188,7 +188,7 @@ error_t mqttClientProcessPacket(MqttClientContext *context)
 
    //Debug message
    TRACE_INFO("MQTT: %s packet received (%" PRIuSIZE " bytes)...\r\n",
-      mqttPacketLabel[type], context->packetLen);
+      packetLabel[type], context->packetLen);
 
    //Dump the contents of the packet
    TRACE_DEBUG_ARRAY("  ", context->packet, context->packetLen);
@@ -825,13 +825,9 @@ error_t mqttClientFormatConnect(MqttClientContext *context,
 
       //Check the Will QoS level
       if(willMessage->qos == MQTT_QOS_LEVEL_1)
-      {
          connectFlags |= MQTT_CONNECT_FLAG_WILL_QOS_1;
-      }
       else if(willMessage->qos == MQTT_QOS_LEVEL_2)
-      {
          connectFlags |= MQTT_CONNECT_FLAG_WILL_QOS_2;
-      }
 
       //The Will Retain flag specifies if the Will Message is to be
       //retained when it is published

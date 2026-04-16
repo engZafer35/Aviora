@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _IPCP_H
 #define _IPCP_H
 
 //Dependencies
-#include "core/net.h"
-#include "ppp/ppp.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ppp.h"
 
 //Subnet mask
 #define IPCP_DEFAULT_SUBNET_MASK IPV4_ADDR(255, 255, 255, 255)
@@ -60,10 +60,8 @@ typedef enum
 } IpcpOptionType;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -72,94 +70,93 @@ typedef enum
  * @brief IP-Addresses option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;        //0
    uint8_t length;      //1
    Ipv4Addr srcIpAddr;  //2-5
    Ipv4Addr destIpAddr; //6-9
-} IpcpIpAddressesOption;
+} __end_packed IpcpIpAddressesOption;
 
 
 /**
  * @brief IP-Compression-Protocol option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;      //0
    uint8_t length;    //1
    uint16_t protocol; //2-3
    uint8_t data[];    //4
-} IpcpIpCompProtocolOption;
+} __end_packed IpcpIpCompProtocolOption;
 
 
 /**
  * @brief IP-Address option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;    //0
    uint8_t length;  //1
    Ipv4Addr ipAddr; //2-5
-} IpcpIpAddressOption;
+} __end_packed IpcpIpAddressOption;
 
 
 /**
  * @brief Primary-DNS-Server-Address option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;    //0
    uint8_t length;  //1
    Ipv4Addr ipAddr; //2-5
-} IpcpPrimaryDnsOption;
+} __end_packed IpcpPrimaryDnsOption;
 
 
 /**
  * @brief Primary-NBNS-Server-Address option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;    //0
    uint8_t length;  //1
    Ipv4Addr ipAddr; //2-5
-} IpcpPrimaryNbnsOption;
+} __end_packed IpcpPrimaryNbnsOption;
 
 
 /**
  * @brief Secondary-DNS-Server-Address option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;    //0
    uint8_t length;  //1
    Ipv4Addr ipAddr; //2-5
-} IpcpSecondaryDnsOption;
+} __end_packed IpcpSecondaryDnsOption;
 
 
 /**
  * @brief Secondary-NBNS-Server-Address option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;    //0
    uint8_t length;  //1
    Ipv4Addr ipAddr; //2-5
-} IpcpSecondaryNbnsOption;
+} __end_packed IpcpSecondaryNbnsOption;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
+
 
 //IPCP FSM events
 error_t ipcpOpen(PppContext *context);

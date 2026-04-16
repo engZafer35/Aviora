@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -31,18 +31,18 @@
  * alongside a routing function in a common node. Refer to RFC 3315
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL DHCPV6_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "dhcpv6_relay.h"
-#include "dhcpv6/dhcpv6_common.h"
-#include "dhcpv6/dhcpv6_debug.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcpv6/dhcpv6_relay.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcpv6/dhcpv6_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcpv6/dhcpv6_debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV6_SUPPORT == ENABLED && DHCPV6_RELAY_SUPPORT == ENABLED)
@@ -59,6 +59,7 @@ error_t dhcpv6RelayStart(Dhcpv6RelayContext *context, const Dhcpv6RelaySettings 
 {
    error_t error;
    uint_t i;
+   OsTask *task;
 
    //Debug message
    TRACE_INFO("Starting DHCPv6 relay agent...\r\n");
@@ -90,10 +91,6 @@ error_t dhcpv6RelayStart(Dhcpv6RelayContext *context, const Dhcpv6RelaySettings 
    //Clear the DHCPv6 relay agent context
    osMemset(context, 0, sizeof(Dhcpv6RelayContext));
 
-   //Initialize task parameters
-   context->taskParams = settings->task;
-   context->taskId = OS_INVALID_TASK_ID;
-
    //Save the network-facing interface
    context->serverInterface = settings->serverInterface;
    //Save the number of client-facing interfaces
@@ -101,9 +98,7 @@ error_t dhcpv6RelayStart(Dhcpv6RelayContext *context, const Dhcpv6RelaySettings 
 
    //Save all the client-facing interfaces
    for(i = 0; i < context->clientInterfaceCount; i++)
-   {
       context->clientInterface[i] = settings->clientInterface[i];
-   }
 
    //Save the address to be used when relaying client messages to the server
    context->serverAddress = settings->serverAddress;
@@ -208,12 +203,12 @@ error_t dhcpv6RelayStart(Dhcpv6RelayContext *context, const Dhcpv6RelaySettings 
       //The DHCPv6 relay agent is now running
       context->running = TRUE;
 
-      //Create a task
-      context->taskId = osCreateTask("DHCPv6 Relay",
-         (OsTaskCode) dhcpv6RelayTask, context, &context->taskParams);
+      //Start the DHCPv6 relay agent service
+      task = osCreateTask("DHCPv6 Relay", dhcpv6RelayTask,
+         context, DHCPV6_RELAY_STACK_SIZE, DHCPV6_RELAY_PRIORITY);
 
-      //Failed to create task?
-      if(context->taskId == OS_INVALID_TASK_ID)
+      //Unable to create the task?
+      if(task == OS_INVALID_HANDLE)
          error = ERROR_OUT_OF_RESOURCES;
 
       //End of exception handling block
@@ -227,9 +222,7 @@ error_t dhcpv6RelayStart(Dhcpv6RelayContext *context, const Dhcpv6RelaySettings 
 
       //Close the socket associated with each client-facing interface
       for(i = 0; i < context->clientInterfaceCount; i++)
-      {
          socketClose(context->clientSocket[i]);
-      }
 
       //Leave the All_DHCP_Relay_Agents_and_Servers multicast group
       //for each client-facing interface
@@ -285,9 +278,7 @@ error_t dhcpv6RelayStop(Dhcpv6RelayContext *context)
 
    //Properly dispose the sockets that carry traffic towards the DHCPv6 clients
    for(i = 0; i < context->clientInterfaceCount; i++)
-   {
       socketClose(context->clientSocket[i]);
-   }
 
    //Delete event objects
    osDeleteEvent(&context->event);
@@ -408,14 +399,12 @@ void dhcpv6RelayTask(void *param)
          context->running = FALSE;
          //Acknowledge the reception of the user request
          osSetEvent(&context->ackEvent);
-         //Task epilogue
-         osExitTask();
          //Kill ourselves
-         osDeleteTask(OS_SELF_TASK_ID);
+         osDeleteTask(NULL);
       }
 
       //Verify status code
-      if(error == NO_ERROR || error == ERROR_WAIT_CANCELED)
+      if(!error)
       {
          //Check the state of each client-facing socket
          for(i = 0; i < context->clientInterfaceCount; i++)
@@ -505,8 +494,8 @@ error_t dhcpv6ForwardClientMessage(Dhcpv6RelayContext *context, uint_t index)
    //Message received from another relay agent?
    case DHCPV6_MSG_TYPE_RELAY_FORW:
       //If the message received by the relay agent is a Relay-Forward message
-      //and the hop-count in the message is greater than or equal to
-      //HOP_COUNT_LIMIT, the relay agent discards the received message
+      //and the hop-count in the message is greater than or equal to 32, the
+      //relay agent discards the received message
       if(inputMessage->hopCount >= DHCPV6_HOP_COUNT_LIMIT)
          return ERROR_INVALID_MESSAGE;
       //Set the hop-count field to the value of the hop-count field in
@@ -655,13 +644,9 @@ error_t dhcpv6ForwardRelayReplyMessage(Dhcpv6RelayContext *context)
 
          //Select the relevant port number to use
          if(outputMessage->msgType == DHCPV6_MSG_TYPE_RELAY_REPL)
-         {
             port = DHCPV6_SERVER_PORT;
-         }
          else
-         {
             port = DHCPV6_CLIENT_PORT;
-         }
 
          //Relay the DHCPv6 message to the client on the link
          //identified by the Interface ID option

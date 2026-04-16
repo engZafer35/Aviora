@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -35,7 +35,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "inc/hw_emac.h"
-#include "inc/hw_flash.h"
 #include "inc/hw_ints.h"
 #include "inc/hw_memmap.h"
 #include "inc/hw_types.h"
@@ -43,9 +42,9 @@
 #include "driverlib/interrupt.h"
 #include "driverlib/pin_map.h"
 #include "driverlib/sysctl.h"
-#include "core/net.h"
-#include "drivers/mac/tm4c129_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/tm4c129_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -124,7 +123,6 @@ const NicDriver tm4c129EthDriver =
 error_t tm4c129EthInit(NetInterface *interface)
 {
    error_t error;
-   uint32_t temp;
 #ifdef ti_sysbios_BIOS___VERS
    Hwi_Params hwiParams;
 #endif
@@ -135,27 +133,22 @@ error_t tm4c129EthInit(NetInterface *interface)
    //Save underlying network interface
    nicDriverInterface = interface;
 
-   //Before Ethernet initialization the Flash Prefetch must be turned
-   //off (silicon errata ETH#2)
-   temp = FLASH_CONF_R;
-   temp &= ~FLASH_CONF_FPFON;
-   temp |= FLASH_CONF_FPFOFF;
-   FLASH_CONF_R = temp;
-
-   //Enable and reset EMAC peripheral
+   //Enable Ethernet controller clock
    SysCtlPeripheralEnable(SYSCTL_PERIPH_EMAC0);
-   SysCtlPeripheralReset(SYSCTL_PERIPH_EMAC0);
 
-   //Wait for the EMAC peripheral to be ready
+   //Reset Ethernet controller
+   SysCtlPeripheralReset(SYSCTL_PERIPH_EMAC0);
+   //Wait for the reset to complete
    while(!SysCtlPeripheralReady(SYSCTL_PERIPH_EMAC0))
    {
    }
 
-   //Enable and reset PHY peripheral
+   //Enable internal PHY clock
    SysCtlPeripheralEnable(SYSCTL_PERIPH_EPHY0);
-   SysCtlPeripheralReset(SYSCTL_PERIPH_EPHY0);
 
-   //Wait for the PHY peripheral to be ready
+   //Reset internal PHY
+   SysCtlPeripheralReset(SYSCTL_PERIPH_EPHY0);
+   //Wait for the reset to complete
    while(!SysCtlPeripheralReady(SYSCTL_PERIPH_EPHY0))
    {
    }
@@ -248,7 +241,7 @@ error_t tm4c129EthInit(NetInterface *interface)
 
    //Configure DMA bus mode
    EMAC0_DMABUSMOD_R = EMAC_DMABUSMOD_AAL | EMAC_DMABUSMOD_USP |
-      EMAC_DMABUSMOD_RPBL_32 | EMAC_DMABUSMOD_PR_1_1 | EMAC_DMABUSMOD_PBL_32 |
+      EMAC_DMABUSMOD_RPBL_1 | EMAC_DMABUSMOD_PR_1_1 | EMAC_DMABUSMOD_PBL_1 |
       EMAC_DMABUSMOD_ATDS;
 
    //Initialize DMA descriptor lists
@@ -291,13 +284,6 @@ error_t tm4c129EthInit(NetInterface *interface)
    //Enable DMA transmission and reception
    EMAC0_DMAOPMODE_R |= EMAC_DMAOPMODE_ST | EMAC_DMAOPMODE_SR;
 
-   //After completing Ethernet initialization, the user code must turn on the
-   //Flash Prefetch to restore system performance (silicon errata ETH#2)
-   temp = FLASH_CONF_R;
-   temp &= ~FLASH_CONF_FPFOFF;
-   temp |= FLASH_CONF_FPFON;
-   FLASH_CONF_R = temp;
-
    //Accept any packets from the upper layer
    osSetEvent(&interface->nicTxEvent);
 
@@ -306,12 +292,15 @@ error_t tm4c129EthInit(NetInterface *interface)
 }
 
 
+//DK-TM4C129X or EK-TM4C1294XL evaluation board?
+#if defined(USE_DK_TM4C129X) || defined(USE_EK_TM4C1294XL)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void tm4c129EthInitGpio(NetInterface *interface)
+void tm4c129EthInitGpio(NetInterface *interface)
 {
 //DK-TM4C129X evaluation board?
 #if defined(USE_DK_TM4C129X)
@@ -341,6 +330,8 @@ __weak_func void tm4c129EthInitGpio(NetInterface *interface)
    GPIOPinTypeEthernetLED(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_4);
 #endif
 }
+
+#endif
 
 
 /**

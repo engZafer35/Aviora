@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,17 +25,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _DHCP_CLIENT_H
 #define _DHCP_CLIENT_H
 
 //Dependencies
-#include "core/net.h"
-#include "core/socket.h"
-#include "core/udp.h"
-#include "dhcp/dhcp_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/udp.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_common.h"
 
 //DHCP client support
 #ifndef DHCP_CLIENT_SUPPORT
@@ -114,30 +114,11 @@
    #error DHCP_CLIENT_PROBE_DELAY parameter is not valid
 #endif
 
-//Number of announcement packets
-#ifndef DHCP_CLIENT_ANNOUNCE_NUM
-   #define DHCP_CLIENT_ANNOUNCE_NUM 1
-#elif (DHCP_CLIENT_ANNOUNCE_NUM < 0)
-   #error DHCP_CLIENT_ANNOUNCE_NUM parameter is not valid
-#endif
-
-//Time between announcement packets
-#ifndef DHCP_CLIENT_ANNOUNCE_INTERVAL
-   #define DHCP_CLIENT_ANNOUNCE_INTERVAL 1000
-#elif (DHCP_CLIENT_ANNOUNCE_INTERVAL < 100)
-   #error DHCP_CLIENT_ANNOUNCE_INTERVAL parameter is not valid
-#endif
-
 //Random factor used to determine the delay between retransmissions
 #ifndef DHCP_CLIENT_RAND_FACTOR
    #define DHCP_CLIENT_RAND_FACTOR 1000
 #elif (DHCP_CLIENT_RAND_FACTOR < 100)
    #error DHCP_CLIENT_RAND_FACTOR parameter is not valid
-#endif
-
-//Application specific context
-#ifndef DHCP_CLIENT_PRIVATE_CONTEXT
-   #define DHCP_CLIENT_PRIVATE_CONTEXT
 #endif
 
 //Forward declaration of DhcpClientContext structure
@@ -162,10 +143,9 @@ typedef enum
    DHCP_STATE_INIT_REBOOT = 3,
    DHCP_STATE_REBOOTING   = 4,
    DHCP_STATE_PROBING     = 5,
-   DHCP_STATE_ANNOUNCING  = 6,
-   DHCP_STATE_BOUND       = 7,
-   DHCP_STATE_RENEWING    = 8,
-   DHCP_STATE_REBINDING   = 9
+   DHCP_STATE_BOUND       = 6,
+   DHCP_STATE_RENEWING    = 7,
+   DHCP_STATE_REBINDING   = 8
 } DhcpState;
 
 
@@ -173,7 +153,7 @@ typedef enum
  * @brief DHCP configuration timeout callback
  **/
 
-typedef void (*DhcpClientTimeoutCallback)(DhcpClientContext *context,
+typedef void (*DhcpTimeoutCallback)(DhcpClientContext *context,
    NetInterface *interface);
 
 
@@ -181,7 +161,7 @@ typedef void (*DhcpClientTimeoutCallback)(DhcpClientContext *context,
  * @brief Link state change callback
  **/
 
-typedef void (*DhcpClientLinkChangeCallback)(DhcpClientContext *context,
+typedef void (*DhcpLinkChangeCallback)(DhcpClientContext *context,
    NetInterface *interface, bool_t linkState);
 
 
@@ -189,7 +169,7 @@ typedef void (*DhcpClientLinkChangeCallback)(DhcpClientContext *context,
  * @brief FSM state change callback
  **/
 
-typedef void (*DhcpClientStateChangeCallback)(DhcpClientContext *context,
+typedef void (*DhcpStateChangeCallback)(DhcpClientContext *context,
    NetInterface *interface, DhcpState state);
 
 
@@ -197,7 +177,7 @@ typedef void (*DhcpClientStateChangeCallback)(DhcpClientContext *context,
  * @brief Add DHCP options callback
  **/
 
-typedef void (*DhcpClientAddOptionsCallback)(DhcpClientContext *context,
+typedef void (*DhcpAddOptionsCallback)(DhcpClientContext *context,
    DhcpMessage *message, size_t *length, DhcpMessageType type);
 
 
@@ -205,7 +185,7 @@ typedef void (*DhcpClientAddOptionsCallback)(DhcpClientContext *context,
  * @brief Parse DHCP options callback
  **/
 
-typedef error_t (*DhcpClientParseOptionsCallback)(DhcpClientContext *context,
+typedef void (*DhcpParseOptionsCallback)(DhcpClientContext *context,
    const DhcpMessage *message, size_t length, DhcpMessageType type);
 
 
@@ -215,16 +195,16 @@ typedef error_t (*DhcpClientParseOptionsCallback)(DhcpClientContext *context,
 
 typedef struct
 {
-   NetInterface *interface;                             ///<Network interface to configure
-   uint_t ipAddrIndex;                                  ///<Index of the IP address to be configured
-   bool_t rapidCommit;                                  ///<Quick configuration using rapid commit
-   bool_t manualDnsConfig;                              ///<Force manual DNS configuration
-   systime_t timeout;                                   ///<DHCP configuration timeout
-   DhcpClientTimeoutCallback timeoutEvent;              ///<DHCP configuration timeout event
-   DhcpClientLinkChangeCallback linkChangeEvent;        ///<Link state change event
-   DhcpClientStateChangeCallback stateChangeEvent;      ///<FSM state change event
-   DhcpClientAddOptionsCallback addOptionsCallback;     ///<Add DHCP options callback
-   DhcpClientParseOptionsCallback parseOptionsCallback; ///<Parse DHCP options callback
+   NetInterface *interface;                       ///<Network interface to configure
+   uint_t ipAddrIndex;                            ///<Index of the IP address to be configured
+   bool_t rapidCommit;                            ///<Quick configuration using rapid commit
+   bool_t manualDnsConfig;                        ///<Force manual DNS configuration
+   systime_t timeout;                             ///<DHCP configuration timeout
+   DhcpTimeoutCallback timeoutEvent;              ///<DHCP configuration timeout event
+   DhcpLinkChangeCallback linkChangeEvent;        ///<Link state change event
+   DhcpStateChangeCallback stateChangeEvent;      ///<FSM state change event
+   DhcpAddOptionsCallback addOptionsCallback;     ///<Add DHCP options callback
+   DhcpParseOptionsCallback parseOptionsCallback; ///<Parse DHCP options callback
 } DhcpClientSettings;
 
 
@@ -250,7 +230,6 @@ struct _DhcpClientContext
    uint32_t leaseTime;          ///<Lease time
    uint32_t t1;                 ///<Time at which the client enters the RENEWING state
    uint32_t t2;                 ///<Time at which the client enters the REBINDING state
-   DHCP_CLIENT_PRIVATE_CONTEXT  ///<Application specific context
 };
 
 
@@ -263,7 +242,6 @@ error_t dhcpClientInit(DhcpClientContext *context,
 error_t dhcpClientStart(DhcpClientContext *context);
 error_t dhcpClientStop(DhcpClientContext *context);
 
-error_t dhcpClientRelease(DhcpClientContext *context);
 DhcpState dhcpClientGetState(DhcpClientContext *context);
 
 //C++ guard

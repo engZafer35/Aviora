@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _AR8035_DRIVER_H
 #define _AR8035_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //PHY address
 #ifndef AR8035_PHY_ADDR
@@ -49,7 +49,7 @@
 #define AR8035_ANAR                             0x04
 #define AR8035_ANLPAR                           0x05
 #define AR8035_ANER                             0x06
-#define AR8035_ANNPTR                           0x07
+#define AR8035_ANNPR                            0x07
 #define AR8035_ANLPNPR                          0x08
 #define AR8035_GBCR                             0x09
 #define AR8035_GBSR                             0x0A
@@ -66,23 +66,6 @@
 #define AR8035_CDT_STATUS                       0x1C
 #define AR8035_DBG_PORT_ADDR_OFFSET             0x1D
 #define AR8035_DBG_PORT_DATA                    0x1E
-
-//AR8035 MMD registers
-#define AR8035_PCS_CTRL                         0x03, 0x0000
-#define AR8035_PCS_STAT                         0x03, 0x0001
-#define AR8035_EEE_CAPABILITY                   0x03, 0x0014
-#define AR8035_EEE_WAKE_ERROR_COUNTER           0x03, 0x0016
-#define AR8035_AN_CTRL                          0x07, 0x0000
-#define AR8035_AN_STAT                          0x07, 0x0001
-#define AR8035_AN_XNP_TRANSMIT                  0x07, 0x0016
-#define AR8035_AN_XNP_TRANSMIT1                 0x07, 0x0017
-#define AR8035_AN_XNP_TRANSMIT2                 0x07, 0x0018
-#define AR8035_AN_XNP_ABILITY                   0x07, 0x0019
-#define AR8035_AN_XNP_ABILITY1                  0x07, 0x001A
-#define AR8035_AN_XNP_ABILITY2                  0x07, 0x001B
-#define AR8035_EEE_ADV                          0x07, 0x003C
-#define AR8035_EEE_LP_ADV                       0x07, 0x003D
-#define AR8035_EEE_ABILITY_AN_RES               0x07, 0x8000
 
 //Control register
 #define AR8035_BMCR_RESET                       0x8000
@@ -161,11 +144,11 @@
 #define AR8035_ANER_LP_AN_ABLE                  0x0001
 
 //Auto-Negotiation Next Page Transmit register
-#define AR8035_ANNPTR_NEXT_PAGE                 0x8000
-#define AR8035_ANNPTR_MSG_PAGE                  0x2000
-#define AR8035_ANNPTR_ACK2                      0x1000
-#define AR8035_ANNPTR_TOGGLE                    0x0800
-#define AR8035_ANNPTR_MESSAGE                   0x07FF
+#define AR8035_ANNPR_NEXT_PAGE                  0x8000
+#define AR8035_ANNPR_MSG_PAGE                   0x2000
+#define AR8035_ANNPR_ACK2                       0x1000
+#define AR8035_ANNPR_TOGGLE                     0x0800
+#define AR8035_ANNPR_MESSAGE                    0x07FF
 
 //Link Partner Next Page register
 #define AR8035_ANLPNPR_NEXT_PAGE                0x8000
@@ -281,7 +264,6 @@ extern const PhyDriver ar8035PhyDriver;
 
 //AR8035 related functions
 error_t ar8035Init(NetInterface *interface);
-void ar8035InitHook(NetInterface *interface);
 
 void ar8035Tick(NetInterface *interface);
 
@@ -296,12 +278,6 @@ void ar8035WritePhyReg(NetInterface *interface, uint8_t address,
 uint16_t ar8035ReadPhyReg(NetInterface *interface, uint8_t address);
 
 void ar8035DumpPhyReg(NetInterface *interface);
-
-void ar8035WriteMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr, uint16_t data);
-
-uint16_t ar8035ReadMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr);
 
 //C++ guard
 #ifdef __cplusplus

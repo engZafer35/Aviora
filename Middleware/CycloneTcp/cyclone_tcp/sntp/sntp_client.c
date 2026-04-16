@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -30,17 +30,17 @@
  * in the Internet. Refer to RFC 4330 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL SNTP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "sntp/sntp_client.h"
-#include "sntp/sntp_client_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/sntp/sntp_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/sntp/sntp_client_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (SNTP_CLIENT_SUPPORT == ENABLED)

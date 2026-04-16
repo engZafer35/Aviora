@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _MODBUS_SERVER_H
 #define _MODBUS_SERVER_H
 
 //Dependencies
-#include "core/net.h"
-#include "modbus/modbus_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_common.h"
 
 //Modbus/TCP server support
 #ifndef MODBUS_SERVER_SUPPORT
@@ -47,13 +47,6 @@
    #define MODBUS_SERVER_TLS_SUPPORT DISABLED
 #elif (MODBUS_SERVER_TLS_SUPPORT != ENABLED && MODBUS_SERVER_TLS_SUPPORT != DISABLED)
    #error MODBUS_SERVER_TLS_SUPPORT parameter is not valid
-#endif
-
-//Modbus diagnostics
-#ifndef MODBUS_SERVER_DIAG_SUPPORT
-   #define MODBUS_SERVER_DIAG_SUPPORT DISABLED
-#elif (MODBUS_SERVER_DIAG_SUPPORT != ENABLED && MODBUS_SERVER_DIAG_SUPPORT != DISABLED)
-   #error MODBUS_SERVER_DIAG_SUPPORT parameter is not valid
 #endif
 
 //Stack size required to run the Modbus/TCP server
@@ -75,7 +68,7 @@
    #error MODBUS_SERVER_MAX_CONNECTIONS parameter is not valid
 #endif
 
-//Idle connection timeout
+//Maximum time the server will wait before closing the connection
 #ifndef MODBUS_SERVER_TIMEOUT
    #define MODBUS_SERVER_TIMEOUT 60000
 #elif (MODBUS_SERVER_TIMEOUT < 1000)
@@ -108,11 +101,6 @@
    #define MODBUS_SERVER_MAX_ROLE_LEN 32
 #elif (MODBUS_SERVER_MAX_ROLE_LEN < 0)
    #error MODBUS_SERVER_MAX_ROLE_LEN parameter is not valid
-#endif
-
-//Application specific context
-#ifndef MODBUS_SERVER_PRIVATE_CONTEXT
-   #define MODBUS_SERVER_PRIVATE_CONTEXT
 #endif
 
 //TLS supported?
@@ -152,21 +140,6 @@ typedef enum
 } ModbusConnectionState;
 
 
-/**
- * @brief TCP connection open callback function
- **/
-
-typedef error_t (*ModbusServerOpenCallback)(ModbusClientConnection *connection,
-   IpAddr clientIpAddr, uint16_t clientPort);
-
-
-/**
- * @brief TCP connection close callback function
- **/
-
-typedef void (*ModbusServerCloseCallback)(ModbusClientConnection *connection);
-
-
 //TLS supported?
 #if (MODBUS_SERVER_TLS_SUPPORT == ENABLED)
 
@@ -174,8 +147,8 @@ typedef void (*ModbusServerCloseCallback)(ModbusClientConnection *connection);
  * @brief TLS initialization callback function
  **/
 
-typedef error_t (*ModbusServerTlsInitCallback)
-   (ModbusClientConnection *connection, TlsContext *tlsContext);
+typedef error_t (*ModbusServerTlsInitCallback)(ModbusClientConnection *connection,
+   TlsContext *tlsContext);
 
 #endif
 
@@ -235,25 +208,14 @@ typedef error_t (*ModbusServerProcessPduCallback)(const uint8_t *request,
 
 
 /**
- * @brief Tick callback function
- **/
-
-typedef void (*ModbusServerTickCallback)(ModbusServerContext *context);
-
-
-/**
  * @brief Modbus/TCP server settings
  **/
 
 typedef struct
 {
-   OsTaskParameters task;                                  ///<Task parameters
    NetInterface *interface;                                ///<Underlying network interface
    uint16_t port;                                          ///<Modbus/TCP port number
    uint8_t unitId;                                         ///<Unit identifier
-   systime_t timeout;                                      ///<Idle connection timeout
-   ModbusServerOpenCallback openCallback;                  ///<TCP connection open callback function
-   ModbusServerCloseCallback closeCallback;                ///<TCP connection close callback function
 #if (MODBUS_SERVER_TLS_SUPPORT == ENABLED)
    ModbusServerTlsInitCallback tlsInitCallback;            ///<TLS initialization callback function
 #endif
@@ -266,8 +228,7 @@ typedef struct
    ModbusServerReadRegCallback readHoldingRegCallback;     ///<Get holding register value callback function
    ModbusServerReadRegCallback readInputRegCallback;       ///<Get input register value callback function
    ModbusServerWriteRegCallback writeRegCallback;          ///<Set register value callback function
-   ModbusServerProcessPduCallback processPduCallback;      ///<PDU processing callback function
-   ModbusServerTickCallback tickCallback;                  ///<Tick callback function
+   ModbusServerProcessPduCallback processPduCallback;      ///<PDU processing callback
 } ModbusServerSettings;
 
 
@@ -301,24 +262,15 @@ struct _ModbusClientConnection
 
 struct _ModbusServerContext
 {
-   ModbusServerSettings settings;     ///<User settings
-   bool_t running;                    ///<Operational state of the Modbus/TCP server
-   bool_t stop;                       ///<Stop request
-   OsEvent event;                     ///<Event object used to poll the sockets
-   OsTaskParameters taskParams;       ///<Task parameters
-   OsTaskId taskId;                   ///<Task identifier
-   Socket *socket;                    ///<Listening socket
+   ModbusServerSettings settings;                                    ///<User settings
+   bool_t running;                                                   ///<Operational state of the Modbus/TCP server
+   bool_t stop;                                                      ///<Stop request
+   OsEvent event;                                                    ///<Event object used to poll the sockets
+   Socket *socket;                                                   ///<Listening socket
    ModbusClientConnection connection[MODBUS_SERVER_MAX_CONNECTIONS]; ///<Client connections
 #if (MODBUS_SERVER_TLS_SUPPORT == ENABLED && TLS_TICKET_SUPPORT == ENABLED)
-   TlsTicketContext tlsTicketContext; ///<TLS ticket encryption context
+   TlsTicketContext tlsTicketContext;                                ///<TLS ticket encryption context
 #endif
-#if (MODBUS_SERVER_DIAG_SUPPORT == ENABLED)
-   uint32_t rxMessageCount;           ///<Total number of messages received
-   uint32_t txMessageCount;           ///<Total number of messages sent
-   uint32_t commErrorCount;           ///<Total number of communication errors
-   uint32_t exceptionErrorCount;      ///<Total number of exception errors
-#endif
-   MODBUS_SERVER_PRIVATE_CONTEXT      ///<Application specific context
 };
 
 

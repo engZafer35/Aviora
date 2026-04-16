@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,19 +25,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL SNMP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "snmp/snmp_agent.h"
-#include "snmp/snmp_agent_misc.h"
-#include "snmp/snmp_agent_inform.h"
-#include "mibs/mib2_module.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_inform.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib2_module.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (SNMP_AGENT_SUPPORT == ENABLED && SNMP_AGENT_INFORM_SUPPORT == ENABLED)
@@ -265,17 +265,11 @@ error_t snmpFormatInformRequestPdu(SnmpAgentContext *context,
 
       //Length of the privacy parameters
       if(context->user.privProtocol == SNMP_PRIV_PROTOCOL_DES)
-      {
          message->msgPrivParametersLen = 8;
-      }
       else if(context->user.privProtocol == SNMP_PRIV_PROTOCOL_AES)
-      {
          message->msgPrivParametersLen = 8;
-      }
       else
-      {
          message->msgPrivParametersLen = 0;
-      }
 
       //Context engine identifier
       message->contextEngineId = context->contextEngine;
@@ -450,7 +444,7 @@ error_t snmpProcessGetResponsePdu(SnmpAgentContext *context)
 
    //Total number of SNMP Get-Response PDUs which have been accepted and
    //processed by the SNMP protocol entity
-   MIB2_SNMP_INC_COUNTER32(snmpInGetResponses, 1);
+   MIB2_INC_COUNTER32(snmpGroup.snmpInGetResponses, 1);
 
    //Check the error-status field
    if(message->errorStatus == SNMP_ERROR_NONE)

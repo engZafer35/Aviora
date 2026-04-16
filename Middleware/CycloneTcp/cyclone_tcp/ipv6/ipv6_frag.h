@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _IPV6_FRAG_H
 #define _IPV6_FRAG_H
 
 //Dependencies
-#include "core/net.h"
-#include "ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
 
 //IPv6 fragmentation support
 #ifndef IPV6_FRAG_SUPPORT
@@ -44,7 +44,7 @@
 
 //Support for overlapping fragments
 #ifndef IPV6_OVERLAPPING_FRAG_SUPPORT
-   #define IPV6_OVERLAPPING_FRAG_SUPPORT DISABLED
+   #define IPV6_OVERLAPPING_FRAG_SUPPORT ENABLED
 #elif (IPV6_OVERLAPPING_FRAG_SUPPORT != ENABLED && IPV6_OVERLAPPING_FRAG_SUPPORT != DISABLED)
    #error IPV6_OVERLAPPING_FRAG_SUPPORT parameter is not valid
 #endif
@@ -87,10 +87,8 @@ extern "C" {
 #endif
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -99,18 +97,16 @@ extern "C" {
  * @brief Hole descriptor
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t first;
    uint16_t last;
    uint16_t next;
-} Ipv6HoleDesc;
+} __end_packed Ipv6HoleDesc;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
 
@@ -147,7 +143,7 @@ extern systime_t ipv6FragTickCounter;
 
 //IPv6 datagram fragmentation and reassembly
 error_t ipv6FragmentDatagram(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *payload,
+   Ipv6PseudoHeader *pseudoHeader, const NetBuffer *payload,
    size_t payloadOffset, size_t pathMtu, NetTxAncillary *ancillary);
 
 void ipv6ParseFragmentHeader(NetInterface *interface, const NetBuffer *ipPacket,
@@ -157,7 +153,7 @@ void ipv6ParseFragmentHeader(NetInterface *interface, const NetBuffer *ipPacket,
 void ipv6FragTick(NetInterface *interface);
 
 Ipv6FragDesc *ipv6SearchFragQueue(NetInterface *interface,
-   const Ipv6Header *packet, const Ipv6FragmentHeader *header);
+   Ipv6Header *packet, Ipv6FragmentHeader *header);
 
 void ipv6FlushFragQueue(NetInterface *interface);
 

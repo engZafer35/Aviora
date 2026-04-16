@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,24 +25,24 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NDP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_misc.h"
-#include "ipv6/icmpv6.h"
-#include "ipv6/ndp.h"
-#include "ipv6/ndp_cache.h"
-#include "ipv6/ndp_misc.h"
-#include "ipv6/ndp_router_adv.h"
-#include "ipv6/ndp_router_adv_misc.h"
-#include "mibs/ip_mib_module.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/icmpv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_cache.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_router_adv.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_router_adv_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/ip_mib_module.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV6_SUPPORT == ENABLED && NDP_ROUTER_ADV_SUPPORT == ENABLED)
@@ -93,7 +93,7 @@ void ndpRouterAdvTick(NdpRouterAdvContext *context)
             //Whenever a multicast advertisement is sent from an interface, the
             //timer is reset to a uniformly distributed random value between
             //MinRtrAdvInterval and MaxRtrAdvInterval
-            context->timeout = netGenerateRandRange(settings->minRtrAdvInterval,
+            context->timeout = netGetRandRange(settings->minRtrAdvInterval,
                settings->maxRtrAdvInterval);
 
             //First Router Advertisements to be sent from this interface?
@@ -102,8 +102,7 @@ void ndpRouterAdvTick(NdpRouterAdvContext *context)
                //For the first few advertisements sent from an interface when it
                //becomes an advertising interface, the randomly chosen interval
                //should not be greater than MAX_INITIAL_RTR_ADVERT_INTERVAL
-               context->timeout = MIN(context->timeout,
-                  NDP_MAX_INITIAL_RTR_ADVERT_INTERVAL);
+               context->timeout = MIN(context->timeout, NDP_MAX_INITIAL_RTR_ADVERT_INTERVAL);
             }
 
             //Increment counter
@@ -137,21 +136,15 @@ void ndpRouterAdvLinkChangeEvent(NdpRouterAdvContext *context)
 
    //Default Hop Limit value
    if(context->settings.curHopLimit != 0)
-   {
       interface->ipv6Context.curHopLimit = context->settings.curHopLimit;
-   }
 
    //The time a node assumes a neighbor is reachable
    if(context->settings.reachableTime != 0)
-   {
       interface->ndpContext.reachableTime = context->settings.reachableTime;
-   }
 
    //The time between retransmissions of NS messages
    if(context->settings.retransTimer != 0)
-   {
       interface->ndpContext.retransTimer = context->settings.retransTimer;
-   }
 }
 
 
@@ -164,9 +157,8 @@ void ndpRouterAdvLinkChangeEvent(NdpRouterAdvContext *context)
  * @param[in] hopLimit Hop Limit field from IPv6 header
  **/
 
-void ndpProcessRouterSol(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, uint8_t hopLimit)
+void ndpProcessRouterSol(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, uint8_t hopLimit)
 {
    error_t error;
    uint_t n;
@@ -246,27 +238,23 @@ void ndpProcessRouterSol(NetInterface *interface,
       entry = ndpFindNeighborCacheEntry(interface, &pseudoHeader->srcAddr);
 
       //No matching entry has been found?
-      if(entry == NULL)
+      if(!entry)
       {
-         //Check whether Neighbor Discovery protocol is enabled
-         if(interface->ndpContext.enable)
+         //Create an entry
+         entry = ndpCreateNeighborCacheEntry(interface);
+
+         //Neighbor Cache entry successfully created?
+         if(entry)
          {
-            //Create an entry
-            entry = ndpCreateNeighborCacheEntry(interface);
-
-            //Neighbor Cache entry successfully created?
-            if(entry != NULL)
-            {
-               //Record the IPv6 and the corresponding MAC address
-               entry->ipAddr = pseudoHeader->srcAddr;
-               entry->macAddr = option->linkLayerAddr;
-
-               //The IsRouter flag must be set to FALSE
-               entry->isRouter = FALSE;
-
-               //Enter the STALE state
-               ndpChangeState(entry, NDP_STATE_STALE);
-            }
+            //Record the IPv6 and the corresponding MAC address
+            entry->ipAddr = pseudoHeader->srcAddr;
+            entry->macAddr = option->linkLayerAddr;
+            //The IsRouter flag must be set to FALSE
+            entry->isRouter = FALSE;
+            //Save current time
+            entry->timestamp = time;
+            //Enter the STALE state
+            entry->state = NDP_STATE_STALE;
          }
       }
       else
@@ -280,9 +268,10 @@ void ndpProcessRouterSol(NetInterface *interface,
          {
             //Record link-layer address
             entry->macAddr = option->linkLayerAddr;
-
             //Send all the packets that are pending for transmission
             n = ndpSendQueuedPackets(interface, entry);
+            //Save current time
+            entry->timestamp = time;
 
             //Check whether any packets have been sent
             if(n > 0)
@@ -290,12 +279,12 @@ void ndpProcessRouterSol(NetInterface *interface,
                //Start delay timer
                entry->timeout = NDP_DELAY_FIRST_PROBE_TIME;
                //Switch to the DELAY state
-               ndpChangeState(entry, NDP_STATE_DELAY);
+               entry->state = NDP_STATE_DELAY;
             }
             else
             {
                //Enter the STALE state
-               ndpChangeState(entry, NDP_STATE_STALE);
+               entry->state = NDP_STATE_STALE;
             }
          }
          //REACHABLE, STALE, DELAY or PROBE state?
@@ -306,9 +295,10 @@ void ndpProcessRouterSol(NetInterface *interface,
             {
                //Update link-layer address
                entry->macAddr = option->linkLayerAddr;
-
+               //Save current time
+               entry->timestamp = time;
                //Enter the STALE state
-               ndpChangeState(entry, NDP_STATE_STALE);
+               entry->state = NDP_STATE_STALE;
             }
          }
       }
@@ -316,7 +306,7 @@ void ndpProcessRouterSol(NetInterface *interface,
 
    //Upon receipt of a Router Solicitation, compute a random delay within the
    //range 0 through MAX_RA_DELAY_TIME
-   delay = netGenerateRandRange(0, NDP_MAX_RA_DELAY_TIME);
+   delay = netGetRandRange(0, NDP_MAX_RA_DELAY_TIME);
 
    //If the computed value corresponds to a time later than the time the next
    //multicast Router Advertisement is scheduled to be sent, ignore the random
@@ -385,7 +375,15 @@ error_t ndpSendRouterAdv(NdpRouterAdvContext *context, uint16_t routerLifetime)
       return error;
 
    //Compute the maximum size of the Router Advertisement message
-   length = IPV6_DEFAULT_MTU - sizeof(Ipv6Header);
+   length = sizeof(NdpRouterAdvMessage) +
+      sizeof(NdpLinkLayerAddrOption) + sizeof(NdpMtuOption) +
+      settings->prefixListLength * sizeof(NdpPrefixInfoOption) +
+      settings->routeListLength * sizeof(NdpRouteInfoOption) +
+      settings->contextListLength * sizeof(NdpContextOption);
+
+   //Sanity check
+   if((length + sizeof(Ipv6Header)) > IPV6_DEFAULT_MTU)
+      return ERROR_FAILURE;
 
    //Allocate a memory buffer to hold the Router Advertisement message
    buffer = ipAllocBuffer(length, &offset);
@@ -511,13 +509,6 @@ error_t ndpSendRouterAdv(NdpRouterAdvContext *context, uint16_t routerLifetime)
       //Add 6LoWPAN Context option (6CO)
       ndpAddOption(message, &length, NDP_OPT_6LOWPAN_CONTEXT,
          (uint8_t *) &contextOption + sizeof(NdpOption), n - sizeof(NdpOption));
-   }
-
-   //Any registered callback?
-   if(context->settings.addOptionsCallback != NULL)
-   {
-      //Invoke user callback function
-      context->settings.addOptionsCallback(context, message, &length);
    }
 
    //Adjust the length of the multi-part buffer

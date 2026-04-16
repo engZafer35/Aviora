@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,25 +25,26 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL SOCKET_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/socket.h"
-#include "core/socket_misc.h"
-#include "core/raw_socket.h"
-#include "core/udp.h"
-#include "core/tcp.h"
-#include "core/tcp_misc.h"
-#include "dns/dns_client.h"
-#include "mdns/mdns_client.h"
-#include "netbios/nbns_client.h"
-#include "llmnr/llmnr_client.h"
-#include "debug.h"
+#include <string.h>
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/raw_socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/udp.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/tcp.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/tcp_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/netbios/nbns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/llmnr/llmnr_client.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Socket table
 Socket socketTable[SOCKET_MAX_COUNT];
@@ -51,28 +52,25 @@ Socket socketTable[SOCKET_MAX_COUNT];
 //Default socket message
 const SocketMsg SOCKET_DEFAULT_MSG =
 {
-   NULL,          //Pointer to the payload
-   0,             //Size of the payload, in bytes
-   0,             //Actual length of the payload, in bytes
-   0,             //Time-to-live value
-   0,             //Type-of-service value
-   IP_DEFAULT_DF, //Do not fragment the IP packet
-   NULL,          //Underlying network interface
-   {0},           //Source IP address
-   0,             //Source port
-   {0},           //Destination IP address
-   0,             //Destination port
+   NULL,    //Pointer to the payload
+   0,       //Size of the payload, in bytes
+   0,       //Actual length of the payload, in bytes
+   0,       //Time-to-live value
+   NULL,    //Underlying network interface
+   {0},     //Source IP address
+   0,       //Source port
+   {0},     //Destination IP address
+   0,       //Destination port
 #if (ETH_SUPPORT == ENABLED)
-   {{{0}}},       //Source MAC address
-   {{{0}}},       //Destination MAC address
-   0,             //Ethernet type field
+   {{{0}}}, //Source MAC address
+   {{{0}}}, //Destination MAC address
 #endif
 #if (ETH_PORT_TAGGING_SUPPORT == ENABLED)
-   0,             //Switch port identifier
+   0,       //Switch port identifier
 #endif
 #if (ETH_TIMESTAMP_SUPPORT == ENABLED)
-   -1,            //Unique identifier for hardware time stamping
-   {0},           //Captured time stamp
+   -1,      //Unique identifier for hardware time stamping
+   {0},     //Captured time stamp
 #endif
 };
 
@@ -101,9 +99,7 @@ error_t socketInit(void)
       {
          //Clean up side effects
          for(j = 0; j < i; j++)
-         {
             osDeleteEvent(&socketTable[j].event);
-         }
 
          //Report an error
          return ERROR_OUT_OF_RESOURCES;
@@ -222,6 +218,7 @@ error_t socketSetMulticastTtl(Socket *socket, uint8_t ttl)
 
 error_t socketSetDscp(Socket *socket, uint8_t dscp)
 {
+#if (IP_DIFF_SERV_SUPPORT == ENABLED)
    //Make sure the socket handle is valid
    if(socket == NULL)
       return ERROR_INVALID_PARAMETER;
@@ -233,12 +230,16 @@ error_t socketSetDscp(Socket *socket, uint8_t dscp)
    //Get exclusive access
    osAcquireMutex(&netMutex);
    //Set differentiated services codepoint
-   socket->tos = (dscp << 2) & 0xFF;
+   socket->dscp = dscp;
    //Release exclusive access
    osReleaseMutex(&netMutex);
 
    //No error to report
    return NO_ERROR;
+#else
+   //Not implemented
+   return ERROR_NOT_IMPLEMENTED;
+#endif
 }
 
 
@@ -383,149 +384,6 @@ error_t socketSetVmanDei(Socket *socket, bool_t dei)
 
 
 /**
- * @brief Enable reception of broadcast messages
- * @param[in] socket Handle to a socket
- * @param[in] enabled Specifies whether broadcast messages should be accepted
- * @return Error code
- **/
-
-error_t socketEnableBroadcast(Socket *socket, bool_t enabled)
-{
-   //Make sure the socket handle is valid
-   if(socket == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Get exclusive access
-   osAcquireMutex(&netMutex);
-
-   //Check whether broadcast messages should be accepted
-   if(enabled)
-   {
-      socket->options |= SOCKET_OPTION_BROADCAST;
-   }
-   else
-   {
-      socket->options &= ~SOCKET_OPTION_BROADCAST;
-   }
-
-   //Release exclusive access
-   osReleaseMutex(&netMutex);
-
-   //Successful processing
-   return NO_ERROR;
-}
-
-
-/**
- * @brief Join the specified host group
- * @param[in] socket Handle to a socket
- * @param[in] groupAddr IP address identifying the host group to join
- * @return Error code
- **/
-
-error_t socketJoinMulticastGroup(Socket *socket, const IpAddr *groupAddr)
-{
-   error_t error;
-   uint_t i;
-
-   //Make sure the socket handle is valid
-   if(socket == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Get exclusive access
-   osAcquireMutex(&netMutex);
-
-   //Loop through multicast groups
-   for(i = 0; i < SOCKET_MAX_MULTICAST_GROUPS; i++)
-   {
-      //Check whether the multicast address is a duplicate
-      if(ipCompAddr(&socket->multicastGroups[i], groupAddr))
-      {
-         break;
-      }
-   }
-
-   //Multicast group already registered?
-   if(i < SOCKET_MAX_MULTICAST_GROUPS)
-   {
-      //Successful processing
-      error = NO_ERROR;
-   }
-   else
-   {
-      //Initialize status code
-      error = ERROR_OUT_OF_RESOURCES;
-
-      //Loop through multicast groups
-      for(i = 0; i < SOCKET_MAX_MULTICAST_GROUPS; i++)
-      {
-         //Check whether the current entry is available for use
-         if(socket->multicastGroups[i].length == 0)
-         {
-            //Join the specified host group
-            error = ipJoinMulticastGroup(socket->interface, groupAddr);
-
-            //Check status code
-            if(!error)
-            {
-               //Add a new entry
-               socket->multicastGroups[i] = *groupAddr;
-            }
-
-            //Exit immediately
-            break;
-         }
-      }
-   }
-
-   //Release exclusive access
-   osReleaseMutex(&netMutex);
-
-   //Return status code
-   return error;
-}
-
-
-/**
- * @brief Leave the specified host group
- * @param[in] socket Handle to a socket
- * @param[in] groupAddr IP address identifying the host group to leave
- * @return Error code
- **/
-
-error_t socketLeaveMulticastGroup(Socket *socket, const IpAddr *groupAddr)
-{
-   uint_t i;
-
-   //Make sure the socket handle is valid
-   if(socket == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Get exclusive access
-   osAcquireMutex(&netMutex);
-
-   //Loop through multicast groups
-   for(i = 0; i < SOCKET_MAX_MULTICAST_GROUPS; i++)
-   {
-      //Matching multicast address?
-      if(ipCompAddr(&socket->multicastGroups[i], groupAddr))
-      {
-         //Drop membership
-         ipLeaveMulticastGroup(socket->interface, groupAddr);
-         //Delete entry
-         socket->multicastGroups[i] = IP_ADDR_UNSPECIFIED;
-      }
-   }
-
-   //Release exclusive access
-   osReleaseMutex(&netMutex);
-
-   //Successful processing
-   return NO_ERROR;
-}
-
-
-/**
  * @brief Enable TCP keep-alive
  * @param[in] socket Handle to a socket
  * @param[in] enabled Specifies whether TCP keep-alive is enabled
@@ -617,46 +475,9 @@ error_t socketSetKeepAliveParams(Socket *socket, systime_t idle,
 
 
 /**
- * @brief Specify the maximum segment size for outgoing TCP packets
+ * @brief Specify the size of the send buffer
  * @param[in] socket Handle to a socket
- * @param[in] mss Maximum segment size, in bytes
- * @return Error code
- **/
-
-error_t socketSetMaxSegmentSize(Socket *socket, size_t mss)
-{
-#if (TCP_SUPPORT == ENABLED)
-   //Make sure the socket handle is valid
-   if(socket == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-   //Get exclusive access
-   osAcquireMutex(&netMutex);
-
-   //TCP imposes its minimum and maximum bounds over the value provided
-   mss = MIN(mss, TCP_MAX_MSS);
-   mss = MAX(mss, TCP_MIN_MSS);
-
-   //Set the maximum segment size for outgoing TCP packets. If this option
-   //is set before connection establishment, it also change the MSS value
-   //announced to the other end in the initial SYN packet
-   socket->mss = mss;
-
-   //Release exclusive access
-   osReleaseMutex(&netMutex);
-
-   //No error to report
-   return NO_ERROR;
-#else
-   return ERROR_NOT_IMPLEMENTED;
-#endif
-}
-
-
-/**
- * @brief Specify the size of the TCP send buffer
- * @param[in] socket Handle to a socket
- * @param[in] size Desired buffer size, in bytes
+ * @param[in] size Desired buffer size in bytes
  * @return Error code
  **/
 
@@ -666,7 +487,6 @@ error_t socketSetTxBufferSize(Socket *socket, size_t size)
    //Make sure the socket handle is valid
    if(socket == NULL)
       return ERROR_INVALID_PARAMETER;
-
    //Check parameter value
    if(size < 1 || size > TCP_MAX_TX_BUFFER_SIZE)
       return ERROR_INVALID_PARAMETER;
@@ -674,7 +494,6 @@ error_t socketSetTxBufferSize(Socket *socket, size_t size)
    //This function shall be used with connection-oriented socket types
    if(socket->type != SOCKET_TYPE_STREAM)
       return ERROR_INVALID_SOCKET;
-
    //The buffer size cannot be changed when the connection is established
    if(tcpGetState(socket) != TCP_STATE_CLOSED)
       return ERROR_INVALID_SOCKET;
@@ -690,9 +509,9 @@ error_t socketSetTxBufferSize(Socket *socket, size_t size)
 
 
 /**
- * @brief Specify the size of the TCP receive buffer
+ * @brief Specify the size of the receive buffer
  * @param[in] socket Handle to a socket
- * @param[in] size Desired buffer size, in bytes
+ * @param[in] size Desired buffer size in bytes
  * @return Error code
  **/
 
@@ -702,7 +521,6 @@ error_t socketSetRxBufferSize(Socket *socket, size_t size)
    //Make sure the socket handle is valid
    if(socket == NULL)
       return ERROR_INVALID_PARAMETER;
-
    //Check parameter value
    if(size < 1 || size > TCP_MAX_RX_BUFFER_SIZE)
       return ERROR_INVALID_PARAMETER;
@@ -710,7 +528,6 @@ error_t socketSetRxBufferSize(Socket *socket, size_t size)
    //This function shall be used with connection-oriented socket types
    if(socket->type != SOCKET_TYPE_STREAM)
       return ERROR_INVALID_SOCKET;
-
    //The buffer size cannot be changed when the connection is established
    if(tcpGetState(socket) != TCP_STATE_CLOSED)
       return ERROR_INVALID_SOCKET;
@@ -775,20 +592,15 @@ NetInterface *socketGetInterface(Socket *socket)
  * @return Error code
  **/
 
-error_t socketBind(Socket *socket, const IpAddr *localIpAddr,
-   uint16_t localPort)
+error_t socketBind(Socket *socket, const IpAddr *localIpAddr, uint16_t localPort)
 {
    //Check input parameters
    if(socket == NULL || localIpAddr == NULL)
       return ERROR_INVALID_PARAMETER;
 
    //Make sure the socket type is correct
-   if(socket->type != SOCKET_TYPE_STREAM &&
-      socket->type != SOCKET_TYPE_DGRAM &&
-      socket->type != SOCKET_TYPE_RAW_IP)
-   {
+   if(socket->type != SOCKET_TYPE_STREAM && socket->type != SOCKET_TYPE_DGRAM)
       return ERROR_INVALID_SOCKET;
-   }
 
    //Associate the specified IP address and port number
    socket->localIpAddr = *localIpAddr;
@@ -803,13 +615,11 @@ error_t socketBind(Socket *socket, const IpAddr *localIpAddr,
  * @brief Establish a connection to a specified socket
  * @param[in] socket Handle to an unconnected socket
  * @param[in] remoteIpAddr IP address of the remote host
- * @param[in] remotePort Remote port number that will be used to establish
- *   the connection
+ * @param[in] remotePort Remote port number that will be used to establish the connection
  * @return Error code
  **/
 
-error_t socketConnect(Socket *socket, const IpAddr *remoteIpAddr,
-   uint16_t remotePort)
+error_t socketConnect(Socket *socket, const IpAddr *remoteIpAddr, uint16_t remotePort)
 {
    error_t error;
 
@@ -909,8 +719,7 @@ error_t socketListen(Socket *socket, uint_t backlog)
  * @return Handle to the socket in which the actual connection is made
  **/
 
-Socket *socketAccept(Socket *socket, IpAddr *clientIpAddr,
-   uint16_t *clientPort)
+Socket *socketAccept(Socket *socket, IpAddr *clientIpAddr, uint16_t *clientPort)
 {
 #if (TCP_SUPPORT == ENABLED)
    Socket *newSocket;
@@ -995,11 +804,13 @@ error_t socketSendTo(Socket *socket, const IpAddr *destIpAddr, uint16_t destPort
       //Initialize structure
       message = SOCKET_DEFAULT_MSG;
 
+      //Copy data payload
+      message.data = (void *) data;
+      message.length = length;
+
       //Set destination IP address
       if(destIpAddr != NULL)
-      {
          message.destIpAddr = *destIpAddr;
-      }
 
       //Set destination port
       message.destPort = destPort;
@@ -1008,10 +819,6 @@ error_t socketSendTo(Socket *socket, const IpAddr *destIpAddr, uint16_t destPort
       //Connectionless socket?
       if(socket->type == SOCKET_TYPE_DGRAM)
       {
-         //Set data payload
-         message.data = (uint8_t *) data;
-         message.length = length;
-
          //Send UDP datagram
          error = udpSendDatagram(socket, &message, flags);
       }
@@ -1021,42 +828,13 @@ error_t socketSendTo(Socket *socket, const IpAddr *destIpAddr, uint16_t destPort
       //Raw socket?
       if(socket->type == SOCKET_TYPE_RAW_IP)
       {
-         //Set data payload
-         message.data = (uint8_t *) data;
-         message.length = length;
-
          //Send a raw IP packet
          error = rawSocketSendIpPacket(socket, &message, flags);
       }
       else if(socket->type == SOCKET_TYPE_RAW_ETH)
       {
-         //Sanity check
-         if(length >= sizeof(EthHeader))
-         {
-            EthHeader *header;
-
-            //Point to the Ethernet header
-            header = (EthHeader *) data;
-
-            //Set source and destination MAC addresses
-            message.srcMacAddr = header->srcAddr;
-            message.destMacAddr = header->destAddr;
-
-            //Set the value of the EtherType field
-            message.ethType = ntohs(header->type);
-
-            //Set data payload
-            message.data = (uint8_t *) data + sizeof(EthHeader);
-            message.length = length - sizeof(EthHeader);
-
-            //Send a raw Ethernet packet
-            error = rawSocketSendEthPacket(socket, &message, flags);
-         }
-         else
-         {
-            //Report an error
-            error = ERROR_INVALID_LENGTH;
-         }
+         //Send a raw Ethernet packet
+         error = rawSocketSendEthPacket(socket, &message, flags);
       }
       else
 #endif
@@ -1218,21 +996,15 @@ error_t socketReceiveEx(Socket *socket, IpAddr *srcIpAddr, uint16_t *srcPort,
 
       //Save the source IP address
       if(srcIpAddr != NULL)
-      {
          *srcIpAddr = socket->remoteIpAddr;
-      }
 
       //Save the source port number
       if(srcPort != NULL)
-      {
          *srcPort = socket->remotePort;
-      }
 
       //Save the destination IP address
       if(destIpAddr != NULL)
-      {
          *destIpAddr = socket->localIpAddr;
-      }
    }
    else
 #endif
@@ -1242,14 +1014,14 @@ error_t socketReceiveEx(Socket *socket, IpAddr *srcIpAddr, uint16_t *srcPort,
       //Initialize structure
       message = SOCKET_DEFAULT_MSG;
 
+      //Set data buffer
+      message.data = (void *) data;
+      message.size = size;
+
 #if (UDP_SUPPORT == ENABLED)
       //Connectionless socket?
       if(socket->type == SOCKET_TYPE_DGRAM)
       {
-         //Set data buffer
-         message.data = data;
-         message.size = size;
-
          //Receive UDP datagram
          error = udpReceiveDatagram(socket, &message, flags);
       }
@@ -1259,47 +1031,13 @@ error_t socketReceiveEx(Socket *socket, IpAddr *srcIpAddr, uint16_t *srcPort,
       //Raw socket?
       if(socket->type == SOCKET_TYPE_RAW_IP)
       {
-         //Set data buffer
-         message.data = data;
-         message.size = size;
-
          //Receive a raw IP packet
          error = rawSocketReceiveIpPacket(socket, &message, flags);
       }
       else if(socket->type == SOCKET_TYPE_RAW_ETH)
       {
-         //Sanity check
-         if(size >= sizeof(EthHeader))
-         {
-            //Set data buffer
-            message.data = (uint8_t *) data + sizeof(EthHeader);
-            message.size = size - sizeof(EthHeader);
-
-            //Receive a raw Ethernet packet
-            error = rawSocketReceiveEthPacket(socket, &message, flags);
-
-            //Check status code
-            if(!error)
-            {
-               EthHeader *header;
-
-               //Point to the Ethernet header
-               header = (EthHeader *) data;
-
-               //Reconstruct Ethernet header
-               header->destAddr = message.destMacAddr;
-               header->srcAddr = message.srcMacAddr;
-               header->type = htons(message.ethType);
-
-               //Ajuste the length of the frame
-               message.length += sizeof(EthHeader);
-            }
-         }
-         else
-         {
-            //Report an error
-            error = ERROR_BUFFER_OVERFLOW;
-         }
+         //Receive a raw Ethernet packet
+         error = rawSocketReceiveEthPacket(socket, &message, flags);
       }
       else
 #endif
@@ -1314,21 +1052,15 @@ error_t socketReceiveEx(Socket *socket, IpAddr *srcIpAddr, uint16_t *srcPort,
       {
          //Save the source IP address
          if(srcIpAddr != NULL)
-         {
             *srcIpAddr = message.srcIpAddr;
-         }
 
          //Save the source port number
          if(srcPort != NULL)
-         {
             *srcPort = message.srcPort;
-         }
 
          //Save the destination IP address
          if(destIpAddr != NULL)
-         {
             *destIpAddr = message.destIpAddr;
-         }
 
          //Total number of data that have been received
          *received = message.length;
@@ -1410,8 +1142,7 @@ error_t socketReceiveMsg(Socket *socket, SocketMsg *message, uint_t flags)
  * @return Error code
  **/
 
-error_t socketGetLocalAddr(Socket *socket, IpAddr *localIpAddr,
-   uint16_t *localPort)
+error_t socketGetLocalAddr(Socket *socket, IpAddr *localIpAddr, uint16_t *localPort)
 {
    //Make sure the socket handle is valid
    if(socket == NULL)
@@ -1419,15 +1150,11 @@ error_t socketGetLocalAddr(Socket *socket, IpAddr *localIpAddr,
 
    //Retrieve local IP address
    if(localIpAddr != NULL)
-   {
       *localIpAddr = socket->localIpAddr;
-   }
 
    //Retrieve local port number
    if(localPort != NULL)
-   {
       *localPort = socket->localPort;
-   }
 
    //Successful processing
    return NO_ERROR;
@@ -1442,8 +1169,7 @@ error_t socketGetLocalAddr(Socket *socket, IpAddr *localIpAddr,
  * @return Error code
  **/
 
-error_t socketGetRemoteAddr(Socket *socket, IpAddr *remoteIpAddr,
-   uint16_t *remotePort)
+error_t socketGetRemoteAddr(Socket *socket, IpAddr *remoteIpAddr, uint16_t *remotePort)
 {
    //Make sure the socket handle is valid
    if(socket == NULL)
@@ -1451,15 +1177,11 @@ error_t socketGetRemoteAddr(Socket *socket, IpAddr *remoteIpAddr,
 
    //Retrieve local IP address
    if(remoteIpAddr != NULL)
-   {
       *remoteIpAddr = socket->remoteIpAddr;
-   }
 
    //Retrieve local port number
    if(remotePort != NULL)
-   {
       *remotePort = socket->remotePort;
-   }
 
    //Successful processing
    return NO_ERROR;
@@ -1516,27 +1238,12 @@ error_t socketShutdown(Socket *socket, uint_t how)
 
 void socketClose(Socket *socket)
 {
-   uint_t i;
-
    //Make sure the socket handle is valid
    if(socket == NULL)
       return;
 
    //Get exclusive access
    osAcquireMutex(&netMutex);
-
-   //Loop through multicast groups
-   for(i = 0; i < SOCKET_MAX_MULTICAST_GROUPS; i++)
-   {
-      //Valid multicast address?
-      if(socket->multicastGroups[i].length != 0)
-      {
-         //Drop membership
-         ipLeaveMulticastGroup(socket->interface, &socket->multicastGroups[i]);
-         //Delete entry
-         socket->multicastGroups[i] = IP_ADDR_UNSPECIFIED;
-      }
-   }
 
 #if (TCP_SUPPORT == ENABLED)
    //Connection-oriented socket?
@@ -1592,7 +1299,6 @@ void socketClose(Socket *socket)
 error_t socketPoll(SocketEventDesc *eventDesc, uint_t size, OsEvent *extEvent,
    systime_t timeout)
 {
-   error_t error;
    uint_t i;
    bool_t status;
    OsEvent *event;
@@ -1639,53 +1345,21 @@ error_t socketPoll(SocketEventDesc *eventDesc, uint_t size, OsEvent *extEvent,
    //Block the current task until an event occurs
    status = osWaitForEvent(event, timeout);
 
-   //Any event?
-   if(status)
-   {
-      //Clear flag
-      status = FALSE;
-
-      //Loop through descriptors
-      for(i = 0; i < size; i++)
-      {
-         //Valid socket handle?
-         if(eventDesc[i].socket != NULL)
-         {
-            //Retrieve event flags for the current socket
-            eventDesc[i].eventFlags = socketGetEvents(eventDesc[i].socket);
-            //Clear unnecessary flags
-            eventDesc[i].eventFlags &= eventDesc[i].eventMask;
-
-            //Check whether the socket is ready to perform I/O
-            if(eventDesc[i].eventFlags != 0)
-            {
-               status = TRUE;
-            }
-         }
-      }
-
-      //Any socket event in the signaled state?
-      if(status)
-      {
-         error = NO_ERROR;
-      }
-      else
-      {
-         error = ERROR_WAIT_CANCELED;
-      }
-   }
-   else
-   {
-      //Report a timeout error
-      error = ERROR_TIMEOUT;
-   }
-
    //Loop through descriptors
    for(i = 0; i < size; i++)
    {
       //Valid socket handle?
       if(eventDesc[i].socket != NULL)
       {
+         //Any socket event in the signaled state?
+         if(status)
+         {
+            //Retrieve event flags for the current socket
+            eventDesc[i].eventFlags = socketGetEvents(eventDesc[i].socket);
+            //Clear unnecessary flags
+            eventDesc[i].eventFlags &= eventDesc[i].eventMask;
+         }
+
          //Unsubscribe previously registered events
          socketUnregisterEvents(eventDesc[i].socket);
       }
@@ -1701,7 +1375,7 @@ error_t socketPoll(SocketEventDesc *eventDesc, uint_t size, OsEvent *extEvent,
    }
 
    //Return status code
-   return error;
+   return status ? NO_ERROR : ERROR_TIMEOUT;
 }
 
 
@@ -1714,8 +1388,8 @@ error_t socketPoll(SocketEventDesc *eventDesc, uint_t size, OsEvent *extEvent,
  * @return Error code
  **/
 
-error_t gethostbyname_cylone(NetInterface *interface, const char_t *name,
-   IpAddr *ipAddr, uint_t flags)
+error_t getHostByName(NetInterface *interface,
+   const char_t *name, IpAddr *ipAddr, uint_t flags)
 {
    error_t error;
    HostType type;
@@ -1749,9 +1423,7 @@ error_t gethostbyname_cylone(NetInterface *interface, const char_t *name,
 
    //Use default network interface?
    if(interface == NULL)
-   {
       interface = netGetDefaultInterface();
-   }
 
    //The specified name can be either an IP or a host name
    error = ipStringToAddr(name, ipAddr);
@@ -1761,17 +1433,9 @@ error_t gethostbyname_cylone(NetInterface *interface, const char_t *name,
    {
       //The user may provide a hint to choose between IPv4 and IPv6
       if((flags & HOST_TYPE_IPV4) != 0)
-      {
          type = HOST_TYPE_IPV4;
-      }
       else if((flags & HOST_TYPE_IPV6) != 0)
-      {
          type = HOST_TYPE_IPV6;
-      }
-      else
-      {
-         //Just for sanity
-      }
 
       //The user may provide a hint to to select the desired protocol to be used
       if((flags & HOST_NAME_RESOLVER_DNS) != 0)
@@ -1812,9 +1476,6 @@ error_t gethostbyname_cylone(NetInterface *interface, const char_t *name,
 #if (NBNS_CLIENT_SUPPORT == ENABLED)
             //Use NetBIOS Name Service to resolve the specified host name
             protocol = HOST_NAME_RESOLVER_NBNS;
-#elif (LLMNR_CLIENT_SUPPORT == ENABLED)
-            //Use LLMNR to resolve the specified host name
-            protocol = HOST_NAME_RESOLVER_LLMNR;
 #endif
          }
          else if(!osStrchr(name, '.'))
@@ -1864,8 +1525,6 @@ error_t gethostbyname_cylone(NetInterface *interface, const char_t *name,
 #endif
       //Invalid protocol?
       {
-         //Just for sanity
-         (void) protocol;
          //Report an error
          error = ERROR_INVALID_PARAMETER;
       }

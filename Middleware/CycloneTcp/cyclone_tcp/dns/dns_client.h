@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,17 +25,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _DNS_CLIENT_H
 #define _DNS_CLIENT_H
 
 //Dependencies
-#include "core/net.h"
-#include "core/socket.h"
-#include "core/udp.h"
-#include "dns/dns_cache.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/udp.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_cache.h"
 
 //DNS client support
 #ifndef DNS_CLIENT_SUPPORT
@@ -94,8 +94,6 @@ void dnsProcessResponse(NetInterface *interface,
    const IpPseudoHeader *pseudoHeader, const UdpHeader *udpHeader,
    const NetBuffer *buffer, size_t offset, const NetRxAncillary *ancillary,
    void *param);
-
-void dnsSelectNextServer(DnsCacheEntry *entry);
 
 //C++ guard
 #ifdef __cplusplus

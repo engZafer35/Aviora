@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _ERROR_H
@@ -70,7 +70,6 @@ typedef enum
    ERROR_UNEXPECTED_RESPONSE,
    ERROR_INVALID_RESPONSE,
    ERROR_UNEXPECTED_VALUE,
-   ERROR_WAIT_CANCELED,
 
    ERROR_OPEN_FAILED = 200,
    ERROR_CONNECTION_FAILED,
@@ -128,7 +127,7 @@ typedef enum
    ERROR_UNSUPPORTED_CIPHER_MODE,
    ERROR_UNSUPPORTED_CIPHER_ALGO,
    ERROR_UNSUPPORTED_HASH_ALGO,
-   ERROR_UNSUPPORTED_KEY_EXCH_ALGO,
+   ERROR_UNSUPPORTED_KEY_EXCH_METHOD,
    ERROR_UNSUPPORTED_SIGNATURE_ALGO,
    ERROR_UNSUPPORTED_ELLIPTIC_CURVE,
    ERROR_INVALID_SIGNATURE_ALGO,
@@ -225,7 +224,6 @@ typedef enum
 
    ERROR_INVALID_SIGNATURE,
    ERROR_INVALID_TICKET,
-   ERROR_NO_TICKET,
 
    ERROR_BAD_RECORD_MAC,
    ERROR_RECORD_OVERFLOW,
@@ -271,7 +269,6 @@ typedef enum
    ERROR_REQUEST_REJECTED,
 
    ERROR_INVALID_CHANNEL,
-   ERROR_INVALID_GROUP,
    ERROR_UNKNOWN_SERVICE,
    ERROR_UNKNOWN_REQUEST,
    ERROR_FLOW_CONTROL,
@@ -291,18 +288,6 @@ typedef enum
 
    ERROR_ALREADY_RUNNING,
    ERROR_UNKOWN_KEY,
-   ERROR_UNKNOWN_TYPE,
-   ERROR_UNSUPPORTED_OPTION,
-   ERROR_INVALID_SPI,
-   ERROR_RETRY,
-   ERROR_POLICY_FAILURE,
-   ERROR_INVALID_PROPOSAL,
-   ERROR_INVALID_SELECTOR,
-
-   ERROR_WRONG_NONCE,
-   ERROR_WRONG_ISSUER,
-   ERROR_RESPONSE_EXPIRED,
-   ERROR_CRL_EXPIRED,
 
    ERROR_NO_MATCH,
    ERROR_PARTIAL_MATCH

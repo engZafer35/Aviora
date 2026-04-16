@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _SMTP_CLIENT_H
 #define _SMTP_CLIENT_H
 
 //Dependencies
-#include "core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //SMTP client support
 #ifndef SMTP_CLIENT_SUPPORT
@@ -116,11 +116,6 @@
    #define SMTP_CLIENT_BOUNDARY_MAX_LEN 70
 #elif (SMTP_CLIENT_BOUNDARY_MAX_LEN < 1)
    #error SMTP_CLIENT_BOUNDARY_MAX_LEN parameter is not valid
-#endif
-
-//Application specific context
-#ifndef SMTP_CLIENT_PRIVATE_CONTEXT
-   #define SMTP_CLIENT_PRIVATE_CONTEXT
 #endif
 
 //TLS supported?
@@ -277,7 +272,6 @@ struct _SmtpClientContext
    size_t replyLen;                            ///<Length of the SMTP reply, in bytes
    uint_t replyCode;                           ///<SMTP reply code
    uint_t recipientIndex;                      ///<Index of the current recipient
-   SMTP_CLIENT_PRIVATE_CONTEXT                 ///<Application specific context
 };
 
 

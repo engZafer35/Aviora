@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _PEF7071_DRIVER_H
 #define _PEF7071_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //PHY address
 #ifndef PEF7071_PHY_ADDR
@@ -225,7 +225,7 @@
 
 //MMD Access Control register
 #define PEF7071_MMDCTRL_ACTYPE              0xC000
-#define PEF7071_MMDCTRL_ACTYPE_ADDR         0x0000
+#define PEF7071_MMDCTRL_ACTYPE_ADDRESS      0x0000
 #define PEF7071_MMDCTRL_ACTYPE_DATA         0x4000
 #define PEF7071_MMDCTRL_ACTYPE_DATA_PI      0x8000
 #define PEF7071_MMDCTRL_ACTYPE_DATA_PIWR    0xC000
@@ -826,7 +826,6 @@ extern const PhyDriver pef7071PhyDriver;
 
 //PEF7071 related functions
 error_t pef7071Init(NetInterface *interface);
-void pef7071InitHook(NetInterface *interface);
 
 void pef7071Tick(NetInterface *interface);
 
@@ -841,12 +840,6 @@ void pef7071WritePhyReg(NetInterface *interface, uint8_t address,
 uint16_t pef7071ReadPhyReg(NetInterface *interface, uint8_t address);
 
 void pef7071DumpPhyReg(NetInterface *interface);
-
-void pef7071WriteMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr, uint16_t data);
-
-uint16_t pef7071ReadMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr);
 
 //C++ guard
 #ifdef __cplusplus

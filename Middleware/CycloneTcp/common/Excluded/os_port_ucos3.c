@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,19 +33,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "os_port.h"
-#include "os_port_ucos3.h"
-#include "os_cfg.h"
-#include "debug.h"
+#include "../../CycloneTcp/common/os_port.h"
+#include "../../CycloneTcp/common/os_port_ucos3.h"
+#include "../../CycloneTcp/common/debug.h"
 
-//Default task parameters
-const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
-{
-   NULL,               //Task control block
-   NULL,               //Stack
-   0,                  //Size of the stack
-   OS_CFG_PRIO_MAX - 1 //Task priority
-};
+//Forward declaration of functions
+void osIdleTaskHook(void);
+
+//Variables
+static OS_TCB *tcbTable[OS_PORT_MAX_TASKS];
+static CPU_STK *stkTable[OS_PORT_MAX_TASKS];
 
 
 /**
@@ -56,8 +53,15 @@ void osInitKernel(void)
 {
    OS_ERR err;
 
+   //Initialize tables
+   osMemset(tcbTable, 0, sizeof(tcbTable));
+   osMemset(stkTable, 0, sizeof(stkTable));
+
    //Scheduler initialization
    OSInit(&err);
+
+   //Set idle task hook
+   OS_AppIdleTaskHookPtr = osIdleTaskHook;
 }
 
 
@@ -75,65 +79,151 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a task
- * @param[in] name NULL-terminated string identifying the task
+ * @brief Create a static task
+ * @param[out] task Pointer to the task structure
+ * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] arg Argument passed to the task function
- * @param[in] params Task parameters
- * @return Task identifier referencing the newly created task
+ * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] stack Pointer to the stack
+ * @param[in] stackSize The initial size of the stack, in words
+ * @param[in] priority The priority at which the task should run
+ * @return The function returns TRUE if the task was successfully
+ *   created. Otherwise, FALSE is returned
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
-   const OsTaskParameters *params)
+bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
+   void *param, void *stack, size_t stackSize, int_t priority)
 {
    OS_ERR err;
    CPU_STK stackLimit;
-   OsTaskId taskId;
 
-   //Check parameters
-   if(params->tcb != NULL && params->stack != NULL)
+   //The watermark limit is used to monitor and ensure that the stack does not overflow
+   stackLimit = stackSize / 10;
+
+   //Create a new task
+   OSTaskCreate(task, (CPU_CHAR *) name, taskCode, param,
+      priority, stack, stackLimit, stackSize, 0, 1, NULL,
+      OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR, &err);
+
+   //Check whether the task was successfully created
+   if(err == OS_ERR_NONE)
+      return TRUE;
+   else
+      return FALSE;
+}
+
+
+/**
+ * @brief Create a new task
+ * @param[in] name A name identifying the task
+ * @param[in] taskCode Pointer to the task entry function
+ * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] stackSize The initial size of the stack, in words
+ * @param[in] priority The priority at which the task should run
+ * @return If the function succeeds, the return value is a pointer to the
+ *   new task. If the function fails, the return value is NULL
+ **/
+
+OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
+   void *param, size_t stackSize, int_t priority)
+{
+   OS_ERR err;
+   CPU_INT32U i;
+   CPU_STK stackLimit;
+   OS_TCB *task;
+   CPU_STK *stack;
+
+   //The watermark limit is used to monitor and ensure that the stack does not overflow
+   stackLimit = stackSize / 10;
+
+   //Enter critical section
+   osSuspendAllTasks();
+
+   //Loop through TCB table
+   for(i = 0; i < OS_PORT_MAX_TASKS; i++)
    {
-      //The watermark limit is used to monitor and ensure that the stack
-      //does not overflow
-      stackLimit = params->stackSize / 10;
+      //Check whether the current entry is free
+      if(tcbTable[i] == NULL)
+         break;
+   }
 
-      //Create a new task
-      OSTaskCreate(params->tcb, (CPU_CHAR *) name, taskCode, arg,
-         params->priority, params->stack, stackLimit, params->stackSize, 0, 1,
-         NULL, OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR, &err);
+   //Any entry available in the table?
+   if(i < OS_PORT_MAX_TASKS)
+   {
+      //Allocate a memory block to hold the task's control block
+      task = osAllocMem(sizeof(OS_TCB));
 
-      //Check whether the task was successfully created
-      if(err == OS_ERR_NONE)
+      //Successful memory allocation?
+      if(task != NULL)
       {
-         taskId = (OsTaskId) params->tcb;
+         //Allocate a memory block to hold the task's stack
+         stack = osAllocMem(stackSize * sizeof(CPU_STK));
+
+         //Successful memory allocation?
+         if(stack != NULL)
+         {
+            //Create a new task
+            OSTaskCreate(task, (CPU_CHAR *) name, taskCode, param,
+               priority, stack, stackLimit, stackSize, 0, 1, NULL,
+               OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR, &err);
+
+            //Check the return value
+            if(err == OS_ERR_NONE)
+            {
+               //Save TCB base address
+               tcbTable[i] = task;
+               //Save stack base address
+               stkTable[i] = stack;
+            }
+            else
+            {
+               //Clean up side effects
+               osFreeMem(task);
+               osFreeMem(stack);
+            }
+         }
+         else
+         {
+            //Memory allocation failed
+            err = OS_ERR_MEM_FULL;
+            //Clean up side effects
+            osFreeMem(task);
+         }
       }
       else
       {
-         taskId = OS_INVALID_TASK_ID;
+         //Memory allocation failed
+         err = OS_ERR_MEM_FULL;
       }
    }
    else
    {
-      //Invalid parameters
-      taskId = OS_INVALID_TASK_ID;
+      //No entry available in the table
+      err = OS_ERR_MEM_FULL;
    }
 
-   //Return the handle referencing the newly created task
-   return taskId;
+   //Leave critical section
+   osResumeAllTasks();
+
+   //Check whether the task was successfully created
+   if(err == OS_ERR_NONE)
+      return task;
+   else
+      return NULL;
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] taskId Task identifier referencing the task to be deleted
+ * @param[in] task Pointer to the task to be deleted
  **/
 
-void osDeleteTask(OsTaskId taskId)
+void osDeleteTask(OsTask *task)
 {
    OS_ERR err;
 
    //Delete the specified task
-   OSTaskDel((OS_TCB *) taskId, &err);
+   OSTaskDel(task, &err);
 }
 
 
@@ -212,13 +302,9 @@ bool_t osCreateEvent(OsEvent *event)
 
    //Check whether the event flag group was successfully created
    if(err == OS_ERR_NONE)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -280,8 +366,8 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 {
    OS_ERR err;
 
-   //Wait until the specified event is in the signaled state or the timeout
-   //interval elapses
+   //Wait until the specified event is in the signaled
+   //state or the timeout interval elapses
    if(timeout == 0)
    {
       //Non-blocking call
@@ -303,13 +389,9 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 
    //Check whether the specified event is set
    if(err == OS_ERR_NONE)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -350,13 +432,9 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
    //Check whether the semaphore was successfully created
    if(err == OS_ERR_NONE)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -410,13 +488,9 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 
    //Check whether the specified semaphore is available
    if(err == OS_ERR_NONE)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -450,13 +524,9 @@ bool_t osCreateMutex(OsMutex *mutex)
 
    //Check whether the mutex was successfully created
    if(err == OS_ERR_NONE)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -531,7 +601,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-__weak_func void *osAllocMem(size_t size)
+void *osAllocMem(size_t size)
 {
    void *p;
 
@@ -543,8 +613,7 @@ __weak_func void *osAllocMem(size_t size)
    osResumeAllTasks();
 
    //Debug message
-   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n",
-      size, (uintptr_t) p);
+   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n", size, (uintptr_t) p);
 
    //Return a pointer to the newly allocated memory block
    return p;
@@ -556,7 +625,7 @@ __weak_func void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-__weak_func void osFreeMem(void *p)
+void osFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)
@@ -570,5 +639,35 @@ __weak_func void osFreeMem(void *p)
       free(p);
       //Leave critical section
       osResumeAllTasks();
+   }
+}
+
+
+/**
+ * @brief Idle task hook
+ **/
+
+void osIdleTaskHook(void)
+{
+   uint_t i;
+
+   //Loop through TCB table
+   for(i = 0; i < OS_PORT_MAX_TASKS; i++)
+   {
+      //Check whether current entry is used
+      if(tcbTable[i] != NULL)
+      {
+         //Wait for task termination
+         if(tcbTable[i]->TaskState == OS_TASK_STATE_DEL)
+         {
+            //Free previously allocated resources
+            osFreeMem(stkTable[i]);
+            osFreeMem(tcbTable[i]);
+
+            //Mark the entry as free
+            stkTable[i] = NULL;
+            tcbTable[i] = NULL;
+         }
+      }
    }
 }

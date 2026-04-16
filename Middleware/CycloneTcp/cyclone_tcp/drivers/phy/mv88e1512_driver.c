@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "drivers/phy/mv88e1512_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/phy/mv88e1512_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -88,9 +88,6 @@ error_t mv88e1512Init(NetInterface *interface)
    //Dump PHY registers for debugging purpose
    mv88e1512DumpPhyReg(interface);
 
-   //Perform custom configuration
-   mv88e1512InitHook(interface);
-
    //Force the TCP/IP stack to poll the link state at startup
    interface->phyEvent = TRUE;
    //Notify the TCP/IP stack of the event
@@ -98,16 +95,6 @@ error_t mv88e1512Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief 88E1512 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void mv88e1512InitHook(NetInterface *interface)
-{
 }
 
 

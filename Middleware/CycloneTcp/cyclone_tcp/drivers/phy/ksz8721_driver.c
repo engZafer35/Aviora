@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "drivers/phy/ksz8721_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/phy/ksz8721_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -96,9 +96,6 @@ error_t ksz8721Init(NetInterface *interface)
    ksz8721WritePhyReg(interface, KSZ8721_ICSR, KSZ8721_ICSR_LINK_DOWN_IE |
       KSZ8721_ICSR_LINK_UP_IE);
 
-   //Perform custom configuration
-   ksz8721InitHook(interface);
-
    //Force the TCP/IP stack to poll the link state at startup
    interface->phyEvent = TRUE;
    //Notify the TCP/IP stack of the event
@@ -106,16 +103,6 @@ error_t ksz8721Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief KSZ8721 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void ksz8721InitHook(NetInterface *interface)
-{
 }
 
 
@@ -221,25 +208,21 @@ void ksz8721EventHandler(NetInterface *interface)
             interface->linkSpeed = NIC_LINK_SPEED_10MBPS;
             interface->duplexMode = NIC_HALF_DUPLEX_MODE;
             break;
-
          //10BASE-T full-duplex
          case KSZ8721_PHYCON_OP_MODE_10BT_FD:
             interface->linkSpeed = NIC_LINK_SPEED_10MBPS;
             interface->duplexMode = NIC_FULL_DUPLEX_MODE;
             break;
-
          //100BASE-TX half-duplex
          case KSZ8721_PHYCON_OP_MODE_100BTX_HD:
             interface->linkSpeed = NIC_LINK_SPEED_100MBPS;
             interface->duplexMode = NIC_HALF_DUPLEX_MODE;
             break;
-
          //100BASE-TX full-duplex
          case KSZ8721_PHYCON_OP_MODE_100BTX_FD:
             interface->linkSpeed = NIC_LINK_SPEED_100MBPS;
             interface->duplexMode = NIC_FULL_DUPLEX_MODE;
             break;
-
          //Unknown operation mode
          default:
             //Debug message

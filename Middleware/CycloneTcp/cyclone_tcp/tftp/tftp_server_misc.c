@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL TFTP_TRACE_LEVEL
 
 //Dependencies
-#include "tftp/tftp_server.h"
-#include "tftp/tftp_server_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/tftp/tftp_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/tftp/tftp_server_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (TFTP_SERVER_SUPPORT == ENABLED)
@@ -232,7 +232,7 @@ void tftpServerCloseConnection(TftpClientConnection *connection)
          connection->socket = NULL;
       }
 
-      //Check whether a read or write operation is in progress
+      //Check whether a read or write operation is in progress...
       if(connection->file != NULL)
       {
          //Properly close the file before closing the connection
@@ -436,7 +436,7 @@ void tftpServerProcessRrqPacket(TftpServerContext *context, const IpAddr *client
    //Check if the file was successfully opened
    if(connection->file != NULL)
    {
-      //The read operation is in progress
+      //The read operation is in progress...
       connection->state = TFTP_STATE_READING;
       //Initialize block number
       connection->block = 1;
@@ -527,7 +527,7 @@ void tftpServerProcessWrqPacket(TftpServerContext *context, const IpAddr *client
    //Check if the file was successfully opened
    if(connection->file != NULL)
    {
-      //The write operation is in progress
+      //The write operation is in progress...
       connection->state = TFTP_STATE_WRITING;
       //Initialize block number
       connection->block = 0;

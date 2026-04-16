@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,17 +23,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Dependencies
+#include "../../CycloneTcp/common/fs_port_rl_fs.h"
+
 #include <string.h>
-#include "fs_port.h"
-#include "fs_port_rl_fs.h"
-#include "str.h"
-#include "path.h"
-#include "error.h"
-#include "debug.h"
+
+#include "../../CycloneTcp/common/debug.h"
+#include "../../CycloneTcp/common/error.h"
+#include "../../CycloneTcp/common/fs_port.h"
+#include "../../CycloneTcp/common/path.h"
+#include "../../CycloneTcp/common/str.h"
 
 
 /**
@@ -41,7 +43,7 @@
  * @return Error code
  **/
 
-__weak_func error_t fsInit(void)
+error_t fsInit(void)
 {
    error_t error;
    fsStatus status;
@@ -170,6 +172,10 @@ error_t fsGetFileStat(const char_t *path, FsFileStat *fileStat)
 
    //Any error to report?
    if(status != fsOK)
+      return ERROR_FAILURE;
+
+   //Valid file?
+   if((fileInfo.attrib & FS_FAT_ATTR_DIRECTORY) != 0)
       return ERROR_FAILURE;
 
    //Clear file attributes

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -32,25 +32,20 @@
  * - RFC 1213: MIB for Network Management of TCP/IP-based internets (version 2)
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL SNMP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "mibs/mib2_module.h"
-#include "mibs/mib2_impl.h"
-#include "mibs/mib2_impl_sys.h"
-#include "mibs/mib2_impl_if.h"
-#include "mibs/mib2_impl_ip.h"
-#include "mibs/mib2_impl_tcp.h"
-#include "mibs/mib2_impl_udp.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib2_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib2_impl.h"
 #include "core/crypto.h"
 #include "encoding/asn1.h"
 #include "encoding/oid.h"
-#include "debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (MIB2_SUPPORT == ENABLED)
@@ -570,7 +565,7 @@ const MibObject mib2Objects[] =
       mib2GetNextIfEntry
    },
 #endif
-#if (MIB2_IP_GROUP_SUPPORT == ENABLED)
+#if (MIB2_IP_GROUP_SUPPORT == ENABLED && IPV4_SUPPORT == ENABLED)
    //ipForwarding object (1.3.6.1.2.1.4.1)
    {
       "ipForwarding",
@@ -1007,7 +1002,7 @@ const MibObject mib2Objects[] =
       NULL
    },
 #endif
-#if (MIB2_ICMP_GROUP_SUPPORT == ENABLED)
+#if (MIB2_ICMP_GROUP_SUPPORT == ENABLED && IPV4_SUPPORT == ENABLED)
    //icmpInMsgs object (1.3.6.1.2.1.5.1)
    {
       "icmpInMsgs",
@@ -1399,7 +1394,7 @@ const MibObject mib2Objects[] =
       NULL
    },
 #endif
-#if (MIB2_TCP_GROUP_SUPPORT == ENABLED)
+#if (MIB2_TCP_GROUP_SUPPORT == ENABLED && TCP_SUPPORT == ENABLED && IPV4_SUPPORT == ENABLED)
    //tcpRtoAlgorithm object (1.3.6.1.2.1.6.1)
    {
       "tcpRtoAlgorithm",
@@ -1686,7 +1681,7 @@ const MibObject mib2Objects[] =
       NULL
    },
 #endif
-#if (MIB2_UDP_GROUP_SUPPORT == ENABLED)
+#if (MIB2_UDP_GROUP_SUPPORT == ENABLED && UDP_SUPPORT == ENABLED && IPV4_SUPPORT == ENABLED)
    //udpInDatagrams object (1.3.6.1.2.1.7.1)
    {
       "udpInDatagrams",

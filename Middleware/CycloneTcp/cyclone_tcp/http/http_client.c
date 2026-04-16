@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -36,7 +36,7 @@
  * - RFC 7231: Hypertext Transfer Protocol (HTTP/1.1): Semantics and Content
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -45,13 +45,13 @@
 //Dependencies
 #include <limits.h>
 #include <stdarg.h>
-#include "core/net.h"
-#include "http/http_client.h"
-#include "http/http_client_auth.h"
-#include "http/http_client_transport.h"
-#include "http/http_client_misc.h"
-#include "str.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_client_auth.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_client_transport.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_client_misc.h"
+#include "../../../CycloneTcp/common/str.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (HTTP_CLIENT_SUPPORT == ENABLED)
@@ -218,12 +218,13 @@ error_t httpClientSetAuthInfo(HttpClientContext *context,
    if(osStrlen(username) > HTTP_CLIENT_MAX_USERNAME_LEN)
       return ERROR_INVALID_LENGTH;
 
+   //Save user name
+   osStrcpy(context->authParams.username, username);
+
    //Make sure the length of the password is acceptable
    if(osStrlen(password) > HTTP_CLIENT_MAX_PASSWORD_LEN)
       return ERROR_INVALID_LENGTH;
 
-   //Save user name
-   osStrcpy(context->authParams.username, username);
    //Save password
    osStrcpy(context->authParams.password, password);
 
@@ -439,7 +440,7 @@ error_t httpClientSetMethod(HttpClientContext *context, const char_t *method)
    //Make room for the new method token
    osMemmove(context->buffer + n, p, context->bufferLen + 1 - m);
    //Copy the new method token
-   osMemcpy(context->buffer, method, n);
+   osStrncpy(context->buffer, method, n);
 
    //Adjust the length of the request header
    context->bufferLen = context->bufferLen + n - m;
@@ -512,7 +513,7 @@ error_t httpClientSetUri(HttpClientContext *context, const char_t *uri)
    //Make room for the new resource name
    osMemmove(p + n, q, context->buffer + context->bufferLen + 1 - q);
    //Copy the new resource name
-   osMemcpy(p, uri, n);
+   osStrncpy(p, uri, n);
 
    //Adjust the length of the request header
    context->bufferLen = context->bufferLen + n - m;
@@ -669,7 +670,7 @@ error_t httpClientSetQueryString(HttpClientContext *context,
       //The question mark is used as a separator
       p[0] = '?';
       //Copy the new query string
-      osMemcpy(p + 1, queryString, n - 1);
+      osStrncpy(p + 1, queryString, n - 1);
    }
 
    //Adjust the length of the request header
@@ -761,7 +762,7 @@ error_t httpClientAddQueryParam(HttpClientContext *context,
       //Multiple query parameters are separated by a delimiter
       p[0] = separator;
       //Copy parameter name
-      osMemcpy(p + 1, name, nameLen);
+      osStrncpy(p + 1, name, nameLen);
 
       //Adjust the length of the request header
       context->bufferLen += nameLen + 1;
@@ -782,11 +783,11 @@ error_t httpClientAddQueryParam(HttpClientContext *context,
       //Multiple query parameters are separated by a delimiter
       p[0] = separator;
       //Copy parameter name
-      osMemcpy(p + 1, name, nameLen);
+      osStrncpy(p + 1, name, nameLen);
       //The field name and value are separated by an equals sign
       p[nameLen + 1] = '=';
       //Copy parameter value
-      osMemcpy(p + nameLen + 2, value, valueLen);
+      osStrncpy(p + nameLen + 2, value, valueLen);
 
       //Adjust the length of the request header
       context->bufferLen += nameLen + valueLen + 2;
@@ -941,8 +942,8 @@ error_t httpClientFormatHeaderField(HttpClientContext *context,
 
    //Each header field consists of a case-insensitive field name followed
    //by a colon, optional leading whitespace and the field value
-   osMemcpy(context->buffer + context->bufferLen - 2, name, nameLen);
-   osMemcpy(context->buffer + context->bufferLen + nameLen - 2, ": ", 2);
+   osStrncpy(context->buffer + context->bufferLen - 2, name, nameLen);
+   osStrncpy(context->buffer + context->bufferLen + nameLen - 2, ": ", 2);
 
    //Check header field name
    if(!osStrcasecmp(name, "Connection"))
@@ -1810,7 +1811,7 @@ error_t httpClientReadBody(HttpClientContext *context, void *data,
                context->timestamp = osGetSystemTime();
 
                //Check flags
-               if((flags & HTTP_FLAG_BREAK_CHAR) != 0)
+               if((flags & HTTP_FLAG_BREAK_CRLF) != 0)
                {
                   //The HTTP_FLAG_BREAK_CHAR flag causes the function to stop
                   //reading data as soon as the specified break character is

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,19 +25,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/nic.h"
-#include "core/ethernet.h"
-#include "ipv4/ipv4_misc.h"
-#include "ipv6/ipv6_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/nic.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ethernet.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Tick counter to handle periodic operations
 systime_t nicTickCounter;
@@ -424,16 +424,6 @@ void nicProcessPacket(NetInterface *interface, uint8_t *packet, size_t length,
       {
          //Process incoming PPP frame
          pppProcessFrame(interface, packet, length, ancillary);
-      }
-      else
-#endif
-#if (IPV4_SUPPORT == ENABLED)
-      //IPv4 interface?
-      if(type == NIC_TYPE_IPV4)
-      {
-         //Process incoming IPv4 packet
-         ipv4ProcessPacket(interface, (Ipv4Header *) packet, length,
-            ancillary);
       }
       else
 #endif

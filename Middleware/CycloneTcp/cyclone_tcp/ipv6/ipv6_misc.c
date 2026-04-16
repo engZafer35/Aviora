@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,21 +25,21 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL IPV6_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_misc.h"
-#include "ipv6/ndp.h"
-#include "ipv6/ndp_cache.h"
-#include "mdns/mdns_responder.h"
-#include "mibs/ip_mib_module.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_cache.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_responder.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/ip_mib_module.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV6_SUPPORT == ENABLED)
@@ -63,7 +63,7 @@ Ipv6AddrState ipv6GetAddrState(NetInterface *interface, const Ipv6Addr *addr)
       //Point to the current entry
       entry = &interface->ipv6Context.addrList[i];
 
-      //Valid IPv6 address?
+      //Valid IPv6 address
       if(entry->state != IPV6_ADDR_STATE_INVALID)
       {
          //Check whether the current entry matches the specified address
@@ -200,8 +200,12 @@ error_t ipv6SetAddr(NetInterface *interface, uint_t index,
    }
 
 #if (MDNS_RESPONDER_SUPPORT == ENABLED)
-   //Restart mDNS probing process
-   mdnsResponderStartProbing(interface->mdnsResponderContext);
+   //Link-local address?
+   if(index == 0)
+   {
+      //Restart mDNS probing process
+      mdnsResponderStartProbing(interface->mdnsResponderContext);
+   }
 #endif
 
    //Return status code
@@ -228,13 +232,9 @@ void ipv6AddAddr(NetInterface *interface, const Ipv6Addr *addr,
    {
       //The length of time in seconds that the address is valid
       if(validLifetime < (MAX_DELAY / 1000))
-      {
          validLifetime *= 1000;
-      }
       else
-      {
          validLifetime = MAX_DELAY;
-      }
    }
    else
    {
@@ -247,13 +247,9 @@ void ipv6AddAddr(NetInterface *interface, const Ipv6Addr *addr,
    {
       //The length of time in seconds that the address remains preferred
       if(preferredLifetime < (MAX_DELAY / 1000))
-      {
          preferredLifetime *= 1000;
-      }
       else
-      {
          preferredLifetime = MAX_DELAY;
-      }
    }
    else
    {
@@ -441,13 +437,9 @@ void ipv6AddPrefix(NetInterface *interface, const Ipv6Addr *prefix,
             //The length of time in seconds that the prefix is valid
             //for the purpose of on-link determination
             if(validLifetime < (MAX_DELAY / 1000))
-            {
                entry->validLifetime = validLifetime * 1000;
-            }
             else
-            {
                entry->validLifetime = MAX_DELAY;
-            }
          }
          else
          {
@@ -461,13 +453,9 @@ void ipv6AddPrefix(NetInterface *interface, const Ipv6Addr *prefix,
             //The length of time in seconds that addresses generated from the
             //prefix via stateless address autoconfiguration remain preferred
             if(preferredLifetime < (MAX_DELAY / 1000))
-            {
                entry->preferredLifetime = preferredLifetime * 1000;
-            }
             else
-            {
                entry->preferredLifetime = MAX_DELAY;
-            }
          }
          else
          {

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _KSZ8463_DRIVER_H
 #define _KSZ8463_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //Port identifiers
 #define KSZ8463_PORT1 1
@@ -1402,8 +1402,8 @@
 #define KSZ8463_PTP_SNS_RATE_H_PTP_SNS_RATE_H               0x3FFF
 
 //PTP Message Configuration 1 register
-#define KSZ8463_PTP_MSG_CFG_1_IEEE_802_1AS_MODE             0x0080
-#define KSZ8463_PTP_MSG_CFG_1_IEEE_1588_PTP_MODE            0x0040
+#define KSZ8463_PTP_MSG_CFG_1_IEEE_802_1AS_MODE_EN          0x0080
+#define KSZ8463_PTP_MSG_CFG_1_IEEE_1588_PTP_MODE_EN         0x0040
 #define KSZ8463_PTP_MSG_CFG_1_ETH_PTP_DETECT                0x0020
 #define KSZ8463_PTP_MSG_CFG_1_IPV4_UDP_PTP_DETECT           0x0010
 #define KSZ8463_PTP_MSG_CFG_1_IPV6_UDP_PTP_DETECT           0x0008
@@ -1417,12 +1417,12 @@
 //PTP Message Configuration 2 register
 #define KSZ8463_PTP_MSG_CFG_2_UNICAST_PTP_EN                0x1000
 #define KSZ8463_PTP_MSG_CFG_2_ALT_MASTER_EN                 0x0800
-#define KSZ8463_PTP_MSG_CFG_2_PTP_MSG_PRIO_TX_QUEUE         0x0400
-#define KSZ8463_PTP_MSG_CFG_2_CHECK_SYNC_FOLLOW_UP          0x0200
-#define KSZ8463_PTP_MSG_CFG_2_CHECK_DELAY_REQ_RESP          0x0100
-#define KSZ8463_PTP_MSG_CFG_2_CHECK_PDELAY_REQ_RESP         0x0080
-#define KSZ8463_PTP_MSG_CFG_2_CHECK_DOMAIN                  0x0010
-#define KSZ8463_PTP_MSG_CFG_2_IPV4_UDP_CHECKSUM_EN          0x0004
+#define KSZ8463_PTP_MSG_CFG_2_PTP_PRIO_TX_QUEUE             0x0400
+#define KSZ8463_PTP_MSG_CFG_2_SYNC_FOLLOW_UP_EN             0x0200
+#define KSZ8463_PTP_MSG_CFG_2_DELAY_REQ_RESP_EN             0x0100
+#define KSZ8463_PTP_MSG_CFG_2_PDELAY_REQ_RESP_EN            0x0080
+#define KSZ8463_PTP_MSG_CFG_2_DOMAIN_EN                     0x0010
+#define KSZ8463_PTP_MSG_CFG_2_EG_CHECKSUM_EN                0x0004
 #define KSZ8463_PTP_MSG_CFG_2_ANNOUNCE_PORT1                0x0002
 #define KSZ8463_PTP_MSG_CFG_2_ANNOUNCE_PORT2                0x0001
 
@@ -1515,10 +1515,8 @@
 extern "C" {
 #endif
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -1579,10 +1577,8 @@ typedef struct
 } Ksz8463DynamicMacEntry;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
 
@@ -1591,7 +1587,6 @@ extern const SwitchDriver ksz8463SwitchDriver;
 
 //KSZ8463 related functions
 error_t ksz8463Init(NetInterface *interface);
-void ksz8463InitHook(NetInterface *interface);
 
 void ksz8463Tick(NetInterface *interface);
 

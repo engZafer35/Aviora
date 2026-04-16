@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,14 +33,15 @@
 
 //Dependencies
 #include <stdlib.h>
-#include "core/net.h"
-#include "coap/coap_client.h"
-#include "coap/coap_client_observe.h"
-#include "coap/coap_client_transport.h"
-#include "coap/coap_client_misc.h"
-#include "coap/coap_common.h"
-#include "coap/coap_debug.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_client_observe.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_client_transport.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_client_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_debug.h"
+#include "../../../CycloneTcp/common/debug.h"
+#include "../../../CycloneTcp/common/error.h"
 
 //Check TCP/IP stack configuration
 #if (COAP_CLIENT_SUPPORT == ENABLED)
@@ -75,13 +76,9 @@ error_t coapClientProcessEvents(CoapClientContext *context, systime_t timeout)
 #endif
       //Maximum time to wait for an incoming datagram
       if(timeCompare(startTime + timeout, currentTime) > 0)
-      {
          d = startTime + timeout - currentTime;
-      }
       else
-      {
          d = 0;
-      }
 
       //Limit the delay
       d = MIN(d, COAP_CLIENT_TICK_INTERVAL);
@@ -702,7 +699,7 @@ error_t coapClientRejectResponse(CoapClientContext *context,
 
 error_t coapClientSendAck(CoapClientContext *context, uint16_t mid)
 {
-   CoapMessageHeader message = {0};
+   CoapMessageHeader message;
 
    //Format Acknowledgment message
    message.version = COAP_VERSION_1;
@@ -735,7 +732,7 @@ error_t coapClientSendAck(CoapClientContext *context, uint16_t mid)
 
 error_t coapClientSendReset(CoapClientContext *context, uint16_t mid)
 {
-   CoapMessageHeader message = {0};
+   CoapMessageHeader message;
 
    //Format Reset message
    message.version = COAP_VERSION_1;
@@ -786,8 +783,13 @@ void coapClientGenerateMessageId(CoapClientContext *context,
 void coapClientGenerateToken(CoapClientContext *context,
    CoapMessageHeader *header)
 {
+   uint8_t i;
+
    //Generate a random token
-   netGetRandData(header->token, header->tokenLen);
+   for(i = 0; i < header->tokenLen; i++)
+   {
+      header->token[i] = (uint8_t) netGetRand();
+   }
 }
 
 #endif

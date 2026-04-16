@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,9 +33,9 @@
 
 //Dependencies
 #include "nuc472_442.h"
-#include "core/net.h"
-#include "drivers/mac/nuc472_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/nuc472_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -206,15 +206,16 @@ error_t nuc472EthInit(NetInterface *interface)
 }
 
 
+//NuTiny-SDK-NUC472 or NuMaker-PFM-NUC472 evaluation board?
+#if defined(USE_NUTINY_SDK_NUC472) || defined(USE_NUMAKER_PFM_NUC472)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void nuc472EthInitGpio(NetInterface *interface)
+void nuc472EthInitGpio(NetInterface *interface)
 {
-//NuTiny-SDK-NUC472 or NuMaker-PFM-NUC472 evaluation board?
-#if defined(USE_NUTINY_SDK_NUC472) || defined(USE_NUMAKER_PFM_NUC472)
    uint32_t temp;
 
    //Select RMII interface mode
@@ -247,8 +248,9 @@ __weak_func void nuc472EthInitGpio(NetInterface *interface)
    //Enable high slew rate on RMII output pins
    PC->SLEWCTL |= GPIO_SLEWCTL_HSREN6_Msk | GPIO_SLEWCTL_HSREN7_Msk |
       GPIO_SLEWCTL_HSREN8_Msk;
-#endif
 }
+
+#endif
 
 
 /**
@@ -343,6 +345,7 @@ void nuc472EthEnableIrq(NetInterface *interface)
    NVIC_EnableIRQ(EMAC_TX_IRQn);
    NVIC_EnableIRQ(EMAC_RX_IRQn);
 
+
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
    {
@@ -371,6 +374,7 @@ void nuc472EthDisableIrq(NetInterface *interface)
    //Disable Ethernet MAC interrupts
    NVIC_DisableIRQ(EMAC_TX_IRQn);
    NVIC_DisableIRQ(EMAC_RX_IRQn);
+
 
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
@@ -440,8 +444,8 @@ void EMAC_RX_IRQHandler(void)
    //Packet received?
    if((EMAC->INTSTS & EMAC_INTSTS_RXGDIF_Msk) != 0)
    {
-      //Clear RXGDIF interrupt flag
-      EMAC->INTSTS = EMAC_INTSTS_RXGDIF_Msk;
+      //Disable receive interrupts
+      EMAC->INTEN &= ~EMAC_INTEN_RXIEN_Msk;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -463,14 +467,25 @@ void nuc472EthEventHandler(NetInterface *interface)
 {
    error_t error;
 
-   //Process all pending packets
-   do
+   //Packet received?
+   if((EMAC->INTSTS & EMAC_INTSTS_RXGDIF_Msk) != 0)
    {
-      //Read incoming packet
-      error = nuc472EthReceivePacket(interface);
+      //Clear interrupt flag
+      EMAC->INTSTS = EMAC_INTSTS_RXGDIF_Msk;
 
-      //No more data in the receive buffer?
-   } while(error != ERROR_BUFFER_EMPTY);
+      //Process all pending packets
+      do
+      {
+         //Read incoming packet
+         error = nuc472EthReceivePacket(interface);
+
+         //No more data in the receive buffer?
+      } while(error != ERROR_BUFFER_EMPTY);
+   }
+
+   //Re-enable DMA interrupts
+   EMAC->INTEN = EMAC_INTEN_TXCPIEN_Msk | EMAC_INTEN_TXIEN_Msk |
+      EMAC_INTEN_RXGDIEN_Msk | EMAC_INTEN_RXIEN_Msk;
 }
 
 

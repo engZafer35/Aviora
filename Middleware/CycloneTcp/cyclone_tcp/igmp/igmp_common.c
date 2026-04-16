@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,22 +25,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL IGMP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "igmp/igmp_host.h"
-#include "igmp/igmp_host_misc.h"
-#include "igmp/igmp_router.h"
-#include "igmp/igmp_router_misc.h"
-#include "igmp/igmp_snooping.h"
-#include "igmp/igmp_snooping_misc.h"
-#include "igmp/igmp_common.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_host.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_host_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_router.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_router_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_snooping.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_snooping_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_common.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV4_SUPPORT == ENABLED && (IGMP_HOST_SUPPORT == ENABLED || \
@@ -257,11 +257,11 @@ error_t igmpSendMessage(NetInterface *interface, Ipv4Addr destAddr,
  **/
 
 void igmpProcessMessage(NetInterface *interface,
-   const Ipv4PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, const NetRxAncillary *ancillary)
+   Ipv4PseudoHeader *pseudoHeader, const NetBuffer *buffer,
+   size_t offset, NetRxAncillary *ancillary)
 {
    size_t length;
-   const IgmpMessage *message;
+   IgmpMessage *message;
 
    //Retrieve the length of the IGMP message
    length = netBufferGetLength(buffer) - offset;

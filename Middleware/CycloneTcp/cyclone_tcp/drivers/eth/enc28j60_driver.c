@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "drivers/eth/enc28j60_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/eth/enc28j60_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -76,14 +76,10 @@ error_t enc28j60Init(NetInterface *interface)
    //Debug message
    TRACE_INFO("Initializing ENC28J60 Ethernet controller...\r\n");
 
-   //Initialize SPI interface
+   //Initialize SPI
    interface->spiDriver->init();
-
-   //Initialize external interrupt line driver
-   if(interface->extIntDriver != NULL)
-   {
-      interface->extIntDriver->init();
-   }
+   //Initialize external interrupt line
+   interface->extIntDriver->init();
 
    //Issue a system reset
    enc28j60SoftReset(interface);
@@ -212,9 +208,6 @@ error_t enc28j60Init(NetInterface *interface)
    //Set RXEN to enable reception
    enc28j60SetBit(interface, ENC28J60_ECON1, ENC28J60_ECON1_RXEN);
 
-   //Perform custom configuration
-   enc28j60InitHook(interface);
-
    //Dump registers for debugging purpose
    enc28j60DumpReg(interface);
    enc28j60DumpPhyReg(interface);
@@ -229,16 +222,6 @@ error_t enc28j60Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief ENC28J60 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void enc28j60InitHook(NetInterface *interface)
-{
 }
 
 
@@ -260,10 +243,7 @@ void enc28j60Tick(NetInterface *interface)
 void enc28j60EnableIrq(NetInterface *interface)
 {
    //Enable interrupts
-   if(interface->extIntDriver != NULL)
-   {
-      interface->extIntDriver->enableIrq();
-   }
+   interface->extIntDriver->enableIrq();
 }
 
 
@@ -275,10 +255,7 @@ void enc28j60EnableIrq(NetInterface *interface)
 void enc28j60DisableIrq(NetInterface *interface)
 {
    //Disable interrupts
-   if(interface->extIntDriver != NULL)
-   {
-      interface->extIntDriver->disableIrq();
-   }
+   interface->extIntDriver->disableIrq();
 }
 
 
@@ -373,8 +350,8 @@ void enc28j60EventHandler(NetInterface *interface)
       //Check link state
       if((value & ENC28J60_PHSTAT2_LSTAT) != 0)
       {
-         //The PHY is only able to operate in 10 Mbps mode
-         interface->linkSpeed = NIC_LINK_SPEED_10MBPS;
+         //Link speed
+         interface->linkSpeed = NIC_LINK_SPEED_100MBPS;//NIC_LINK_SPEED_10MBPS;
 
 #if (ENC28J60_FULL_DUPLEX_SUPPORT == ENABLED)
          //Full-duplex mode
@@ -526,9 +503,8 @@ error_t enc28j60ReceivePacket(NetInterface *interface)
       {
          //Limit the number of data to read
          length = MIN(length, ENC28J60_ETH_RX_BUFFER_SIZE);
-         //Read packet data
+         //Read the Ethernet frame
          enc28j60ReadBuffer(interface, temp, length);
-
          //Valid packet received
          error = NO_ERROR;
       }
@@ -890,7 +866,7 @@ void enc28j60WriteBuffer(NetInterface *interface,
 /**
  * @brief Read SRAM buffer
  * @param[in] interface Underlying network interface
- * @param[out] data Buffer where to store the incoming data
+ * @param[in] data Buffer where to store the incoming data
  * @param[in] length Number of data to read
  **/
 

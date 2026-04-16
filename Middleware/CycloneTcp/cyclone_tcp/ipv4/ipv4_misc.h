@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _IPV4_MISC_H
 #define _IPV4_MISC_H
 
 //Dependencies
-#include "core/net.h"
-#include "ipv4/ipv4.h"
+#include <string.h>
+
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -56,8 +58,6 @@ bool_t ipv4IsOnLink(NetInterface *interface, Ipv4Addr ipAddr);
 bool_t ipv4IsBroadcastAddr(NetInterface *interface, Ipv4Addr ipAddr);
 bool_t ipv4IsTentativeAddr(NetInterface *interface, Ipv4Addr ipAddr);
 bool_t ipv4IsLocalHostAddr(Ipv4Addr ipAddr);
-
-bool_t ipv4CompPrefix(Ipv4Addr ipAddr1, Ipv4Addr ipAddr2, size_t length);
 
 uint_t ipv4GetAddrScope(Ipv4Addr ipAddr);
 uint_t ipv4GetPrefixLength(Ipv4Addr mask);

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "drivers/phy/upd60611_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/phy/upd60611_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -86,9 +86,6 @@ error_t upd60611Init(NetInterface *interface)
    //Dump PHY registers for debugging purpose
    upd60611DumpPhyReg(interface);
 
-   //Perform custom configuration
-   upd60611InitHook(interface);
-
    //Force the TCP/IP stack to poll the link state at startup
    interface->phyEvent = TRUE;
    //Notify the TCP/IP stack of the event
@@ -96,16 +93,6 @@ error_t upd60611Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief uPD60611 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void upd60611InitHook(NetInterface *interface)
-{
 }
 
 
@@ -195,25 +182,21 @@ void upd60611EventHandler(NetInterface *interface)
          interface->linkSpeed = NIC_LINK_SPEED_10MBPS;
          interface->duplexMode = NIC_HALF_DUPLEX_MODE;
          break;
-
       //10BASE-T full-duplex
       case UPD60611_PSCSR_HCDSPEED_10BT_FD:
          interface->linkSpeed = NIC_LINK_SPEED_10MBPS;
          interface->duplexMode = NIC_FULL_DUPLEX_MODE;
          break;
-
       //100BASE-TX half-duplex
       case UPD60611_PSCSR_HCDSPEED_100BTX_HD:
          interface->linkSpeed = NIC_LINK_SPEED_100MBPS;
          interface->duplexMode = NIC_HALF_DUPLEX_MODE;
          break;
-
       //100BASE-TX full-duplex
       case UPD60611_PSCSR_HCDSPEED_100BTX_FD:
          interface->linkSpeed = NIC_LINK_SPEED_100MBPS;
          interface->duplexMode = NIC_FULL_DUPLEX_MODE;
          break;
-
       //Unknown operation mode
       default:
          //Debug message

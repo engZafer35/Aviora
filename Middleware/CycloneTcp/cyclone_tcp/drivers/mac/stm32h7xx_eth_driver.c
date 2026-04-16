@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,9 +34,9 @@
 //Dependencies
 #include "stm32h7xx.h"
 #include "stm32h7xx_hal.h"
-#include "core/net.h"
-#include "drivers/mac/stm32h7xx_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/stm32h7xx_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -119,7 +119,6 @@ const NicDriver stm32h7xxEthDriver =
 error_t stm32h7xxEthInit(NetInterface *interface)
 {
    error_t error;
-   uint32_t temp;
 
    //Debug message
    TRACE_INFO("Initializing STM32H7 Ethernet MAC...\r\n");
@@ -173,11 +172,7 @@ error_t stm32h7xxEthInit(NetInterface *interface)
    }
 
    //Use default MAC configuration
-   ETH->MACCR = ETH_MACCR_GPSLCE | ETH_MACCR_RESERVED15 | ETH_MACCR_DO;
-
-   //Set the maximum packet size that can be accepted
-   temp = ETH->MACECR & ~ETH_MACECR_GPSL;
-   ETH->MACECR = temp | STM32H7XX_ETH_RX_BUFFER_SIZE;
+   ETH->MACCR = ETH_MACCR_RESERVED15 | ETH_MACCR_DO;
 
    //Configure MAC address filtering
    stm32h7xxEthUpdateMacAddrFilter(interface);
@@ -194,10 +189,10 @@ error_t stm32h7xxEthInit(NetInterface *interface)
    ETH->DMACCR = ETH_DMACCR_DSL_0BIT;
 
    //Configure TX features
-   ETH->DMACTCR = ETH_DMACTCR_TPBL_32PBL;
+   ETH->DMACTCR = ETH_DMACTCR_TPBL_1PBL;
 
    //Configure RX features
-   ETH->DMACRCR = ETH_DMACRCR_RPBL_32PBL;
+   ETH->DMACRCR = ETH_DMACRCR_RPBL_1PBL;
    ETH->DMACRCR |= (STM32H7XX_ETH_RX_BUFFER_SIZE << 1) & ETH_DMACRCR_RBSZ;
 
    //Enable store and forward mode
@@ -244,18 +239,27 @@ error_t stm32h7xxEthInit(NetInterface *interface)
 }
 
 
+//STM32F743I-EVAL, STM32F747I-EVAL, STM32H735G-DK, STM32H745I-Discovery,
+//STM32H747I-Discovery, STM32H750B-DK, Nucleo-H723ZG, Nucleo-H743ZI,
+//Nucleo-H743ZI2 or Nucleo-H745ZI-Q evaluation board?
+#if defined(USE_STM32H743I_EVAL) || defined(USE_STM32H747I_EVAL) || \
+   defined(USE_STM32H735G_DK) || defined(USE_STM32H745I_DISCO) || \
+   defined(USE_STM32H747I_DISCO) || defined(USE_STM32H750B_DISCO) || \
+   defined(USE_NUCLEO_H723ZG) || defined(USE_NUCLEO_H743ZI) || \
+   defined(USE_NUCLEO_H743ZI2) || defined(USE_NUCLEO_H745ZI_Q)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void stm32h7xxEthInitGpio(NetInterface *interface)
+void stm32h7xxEthInitGpio(NetInterface *interface)
 {
-//STM32H743I-EVAL, STM32H747I-EVAL or STM32H747I-Discovery evaluation board?
-#if defined(USE_STM32H743I_EVAL) || defined(USE_STM32H747I_EVAL) || \
-   defined(USE_STM32H747I_DISCO)
    GPIO_InitTypeDef GPIO_InitStructure;
 
+//STM32F743I-EVAL, STM32F747I-EVAL or STM32H747I-Discovery evaluation board?
+#if defined(USE_STM32H743I_EVAL) || defined(USE_STM32H747I_EVAL) || \
+   defined(USE_STM32H747I_DISCO)
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -287,8 +291,6 @@ __weak_func void stm32h7xxEthInitGpio(NetInterface *interface)
 
 //STM32H735G-DK evaluation board?
 #elif defined(USE_STM32H735G_DK)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -321,8 +323,6 @@ __weak_func void stm32h7xxEthInitGpio(NetInterface *interface)
 
 //STM32H745I-Discovery or STM32H750B-DK evaluation board?
 #elif defined(USE_STM32H745I_DISCO) || defined(USE_STM32H750B_DISCO)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -377,8 +377,6 @@ __weak_func void stm32h7xxEthInitGpio(NetInterface *interface)
 //board?
 #elif defined(USE_NUCLEO_H723ZG) || defined(USE_NUCLEO_H743ZI) || \
    defined(USE_NUCLEO_H743ZI2) || defined(USE_NUCLEO_H745ZI_Q)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -414,6 +412,8 @@ __weak_func void stm32h7xxEthInitGpio(NetInterface *interface)
    HAL_GPIO_Init(GPIOG, &GPIO_InitStructure);
 #endif
 }
+
+#endif
 
 
 /**
@@ -583,8 +583,8 @@ void ETH_IRQHandler(void)
    //Packet received?
    if((status & ETH_DMACSR_RI) != 0)
    {
-      //Clear RI interrupt flag
-      ETH->DMACSR = ETH_DMACSR_RI;
+      //Disable RIE interrupt
+      ETH->DMACIER &= ~ETH_DMACIER_RIE;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -609,14 +609,24 @@ void stm32h7xxEthEventHandler(NetInterface *interface)
 {
    error_t error;
 
-   //Process all pending packets
-   do
+   //Packet received?
+   if((ETH->DMACSR & ETH_DMACSR_RI) != 0)
    {
-      //Read incoming packet
-      error = stm32h7xxEthReceivePacket(interface);
+      //Clear interrupt flag
+      ETH->DMACSR = ETH_DMACSR_RI;
 
-      //No more data in the receive buffer?
-   } while(error != ERROR_BUFFER_EMPTY);
+      //Process all pending packets
+      do
+      {
+         //Read incoming packet
+         error = stm32h7xxEthReceivePacket(interface);
+
+         //No more data in the receive buffer?
+      } while(error != ERROR_BUFFER_EMPTY);
+   }
+
+   //Re-enable DMA interrupts
+   ETH->DMACIER = ETH_DMACIER_NIE | ETH_DMACIER_RIE | ETH_DMACIER_TIE;
 }
 
 
@@ -633,7 +643,7 @@ void stm32h7xxEthEventHandler(NetInterface *interface)
 error_t stm32h7xxEthSendPacket(NetInterface *interface,
    const NetBuffer *buffer, size_t offset, NetTxAncillary *ancillary)
 {
-   static uint32_t temp[STM32H7XX_ETH_TX_BUFFER_SIZE / 4];
+   static uint8_t temp[STM32H7XX_ETH_TX_BUFFER_SIZE];
    size_t length;
 
    //Retrieve the length of the packet
@@ -699,10 +709,9 @@ error_t stm32h7xxEthSendPacket(NetInterface *interface,
 
 error_t stm32h7xxEthReceivePacket(NetInterface *interface)
 {
-   static uint32_t temp[STM32H7XX_ETH_RX_BUFFER_SIZE / 4];
+   static uint8_t temp[STM32H7XX_ETH_RX_BUFFER_SIZE];
    error_t error;
    size_t n;
-   uint32_t status;
    NetRxAncillary ancillary;
 
    //Current buffer available for reading?
@@ -712,18 +721,8 @@ error_t stm32h7xxEthReceivePacket(NetInterface *interface)
       if((rxDmaDesc[rxIndex].rdes3 & ETH_RDES3_FD) != 0 &&
          (rxDmaDesc[rxIndex].rdes3 & ETH_RDES3_LD) != 0)
       {
-         //Check error bits
-         status = rxDmaDesc[rxIndex].rdes3 & (ETH_RDES3_CE | ETH_RDES3_GP |
-            ETH_RDES3_RWT | ETH_RDES3_OE | ETH_RDES3_RE | ETH_RDES3_DE);
-
-         //The dribble bit error is valid only in the MII mode
-         if((SYSCFG->PMCR & SYSCFG_PMCR_EPIS_SEL) != SYSCFG_ETH_MII)
-         {
-            status &= ~ETH_RDES3_DE;
-         }
-
          //Make sure no error occurred
-         if(status == 0)
+         if((rxDmaDesc[rxIndex].rdes3 & ETH_RDES3_ES) == 0)
          {
             //Retrieve the length of the frame
             n = rxDmaDesc[rxIndex].rdes3 & ETH_RDES3_PL;
@@ -737,7 +736,7 @@ error_t stm32h7xxEthReceivePacket(NetInterface *interface)
             ancillary = NET_DEFAULT_RX_ANCILLARY;
 
             //Pass the packet to the upper layer
-            nicProcessPacket(interface, (uint8_t *) temp, n, &ancillary);
+            nicProcessPacket(interface, temp, n, &ancillary);
 
             //Valid packet received
             error = NO_ERROR;

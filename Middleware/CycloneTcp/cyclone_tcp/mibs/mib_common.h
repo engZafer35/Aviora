@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _MIB_COMMON_H
 #define _MIB_COMMON_H
 
 //Dependencies
-#include "core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //Maximum OID size
 #ifndef MIB_MAX_OID_SIZE
@@ -78,7 +78,7 @@ typedef enum
    MIB_ACCESS_WRITE_ONLY  = 2,
    MIB_ACCESS_READ_ONLY   = 3,
    MIB_ACCESS_READ_WRITE  = 4,
-   MIB_ACCESS_READ_CREATE = 5
+   MIB_ACCESS_READ_CREATE = 5,
 } MibAccess;
 
 
@@ -119,7 +119,7 @@ typedef enum
    MIB_STORAGE_TYPE_VOLATILE     = 2,
    MIB_STORAGE_TYPE_NON_VOLATILE = 3,
    MIB_STORAGE_TYPE_PERMANENT    = 4,
-   MIB_STORAGE_TYPE_READ_ONLY    = 5
+   MIB_STORAGE_TYPE_READ_ONLY    = 5,
 } MibStorageType;
 
 
@@ -167,10 +167,8 @@ typedef enum
 } InetVersion;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -179,9 +177,9 @@ typedef enum
  * @brief Variant data type
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
-   __packed_union
+   __start_packed union
    {
       int32_t integer;
       uint8_t octetString[1];
@@ -193,13 +191,11 @@ typedef __packed_struct
       uint32_t timeTicks;
       uint64_t counter64;
    };
-} MibVariant;
+} __end_packed MibVariant;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
 

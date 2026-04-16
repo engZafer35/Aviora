@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,9 +33,9 @@
 
 //Dependencies
 #include "xmc4400.h"
-#include "core/net.h"
-#include "drivers/mac/xmc4400_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/xmc4400_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -202,7 +202,7 @@ error_t xmc4400EthInit(NetInterface *interface)
 
    //Configure DMA bus mode
    ETH0->BUS_MODE = ETH_BUS_MODE_AAL_Msk | ETH_BUS_MODE_USP_Msk |
-      ETH_BUS_MODE_RPBL_32 | ETH_BUS_MODE_PR_1_1 | ETH_BUS_MODE_PBL_32;
+      ETH_BUS_MODE_RPBL_1 | ETH_BUS_MODE_PR_1_1 | ETH_BUS_MODE_PBL_1;
 
    //Initialize DMA descriptor lists
    xmc4400EthInitDmaDesc(interface);
@@ -240,15 +240,16 @@ error_t xmc4400EthInit(NetInterface *interface)
 }
 
 
+//XMC4400 Platform2GO Kit?
+#if defined(USE_KIT_XMC4400_PLT2GO)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void xmc4400EthInitGpio(NetInterface *interface)
+void xmc4400EthInitGpio(NetInterface *interface)
 {
-//XMC4400 Platform2GO Kit?
-#if defined(USE_KIT_XMC4400_PLT2GO)
    uint32_t temp;
 
    //Configure ETH0.TX_EN (P0.4)
@@ -303,8 +304,9 @@ __weak_func void xmc4400EthInitGpio(NetInterface *interface)
    //Select RMII operation mode
    ETH0_CON->CON = ETH_CON_INFSEL_Msk | ETH_CON_MDIO_B | ETH_CON_RXER_A |
       ETH_CON_CRS_DV_C | ETH_CON_CLK_RMII_C | ETH_CON_RXD1_A | ETH_CON_RXD0_A;
-#endif
 }
+
+#endif
 
 
 /**
@@ -479,8 +481,8 @@ void ETH0_0_IRQHandler(void)
    //Packet received?
    if((status & ETH_STATUS_RI_Msk) != 0)
    {
-      //Clear RI interrupt flag
-      ETH0->STATUS = ETH_STATUS_RI_Msk;
+      //Disable RIE interrupt
+      ETH0->INTERRUPT_ENABLE &= ~ETH_INTERRUPT_ENABLE_RIE_Msk;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -505,14 +507,25 @@ void xmc4400EthEventHandler(NetInterface *interface)
 {
    error_t error;
 
-   //Process all pending packets
-   do
+   //Packet received?
+   if((ETH0->STATUS & ETH_STATUS_RI_Msk) != 0)
    {
-      //Read incoming packet
-      error = xmc4400EthReceivePacket(interface);
+      //Clear interrupt flag
+      ETH0->STATUS = ETH_STATUS_RI_Msk;
 
-      //No more data in the receive buffer?
-   } while(error != ERROR_BUFFER_EMPTY);
+      //Process all pending packets
+      do
+      {
+         //Read incoming packet
+         error = xmc4400EthReceivePacket(interface);
+
+         //No more data in the receive buffer?
+      } while(error != ERROR_BUFFER_EMPTY);
+   }
+
+   //Re-enable DMA interrupts
+   ETH0->INTERRUPT_ENABLE = ETH_INTERRUPT_ENABLE_NIE_Msk |
+      ETH_INTERRUPT_ENABLE_RIE_Msk | ETH_INTERRUPT_ENABLE_TIE_Msk;
 }
 
 

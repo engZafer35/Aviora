@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _MODBUS_CLIENT_H
 #define _MODBUS_CLIENT_H
 
 //Dependencies
-#include "core/net.h"
-#include "modbus/modbus_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_common.h"
 
 //Modbus/TCP client support
 #ifndef MODBUS_CLIENT_SUPPORT
@@ -68,11 +68,6 @@
    #define MODBUS_CLIENT_TLS_RX_BUFFER_SIZE 2048
 #elif (MODBUS_CLIENT_TLS_RX_BUFFER_SIZE < 512)
    #error MODBUS_CLIENT_TLS_RX_BUFFER_SIZE parameter is not valid
-#endif
-
-//Application specific context
-#ifndef MODBUS_CLIENT_PRIVATE_CONTEXT
-   #define MODBUS_CLIENT_PRIVATE_CONTEXT
 #endif
 
 //TLS supported?
@@ -145,7 +140,6 @@ struct _ModbusClientContext
    size_t responseAduLen;                       ///<Length of the response ADU, in bytes
    size_t responseAduPos;                       ///<Current position in the response ADU
    ModbusExceptionCode exceptionCode;           ///<Exception code
-   MODBUS_CLIENT_PRIVATE_CONTEXT                ///<Application specific context
 };
 
 
@@ -172,7 +166,7 @@ error_t modbusClientReadCoils(ModbusClientContext *context,
    uint16_t address, uint_t quantity, uint8_t *value);
 
 error_t modbusClientReadDiscreteInputs(ModbusClientContext *context,
-   uint16_t address, uint_t quantity, uint8_t *value);
+   uint8_t address, uint_t quantity, uint8_t *value);
 
 error_t modbusClientReadHoldingRegs(ModbusClientContext *context,
    uint16_t address, uint_t quantity, uint16_t *value);

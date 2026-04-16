@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,25 +25,26 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL UDP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/ip.h"
-#include "core/udp.h"
-#include "core/socket.h"
-#include "ipv4/ipv4.h"
-#include "ipv4/ipv4_misc.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_misc.h"
-#include "mibs/mib2_module.h"
-#include "mibs/if_mib_module.h"
-#include "mibs/udp_mib_module.h"
-#include "debug.h"
+#include <string.h>
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ip.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/udp.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib2_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/if_mib_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/udp_mib_module.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (UDP_SUPPORT == ENABLED)
@@ -88,8 +89,8 @@ uint16_t udpGetDynamicPort(void)
    if(port < SOCKET_EPHEMERAL_PORT_MIN || port > SOCKET_EPHEMERAL_PORT_MAX)
    {
       //Generate a random port number
-      port = netGenerateRandRange(SOCKET_EPHEMERAL_PORT_MIN,
-         SOCKET_EPHEMERAL_PORT_MAX);
+      port = SOCKET_EPHEMERAL_PORT_MIN + netGetRand() %
+         (SOCKET_EPHEMERAL_PORT_MAX - SOCKET_EPHEMERAL_PORT_MIN + 1);
    }
 
    //Next dynamic port to use
@@ -120,9 +121,8 @@ uint16_t udpGetDynamicPort(void)
  * @return Error code
  **/
 
-error_t udpProcessDatagram(NetInterface *interface,
-   const IpPseudoHeader *pseudoHeader, const NetBuffer *buffer, size_t offset,
-   const NetRxAncillary *ancillary)
+error_t udpProcessDatagram(NetInterface *interface, IpPseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, NetRxAncillary *ancillary)
 {
    error_t error;
    uint_t i;
@@ -140,7 +140,7 @@ error_t udpProcessDatagram(NetInterface *interface,
    {
       //Number of received UDP datagrams that could not be delivered for
       //reasons other than the lack of an application at the destination port
-      MIB2_UDP_INC_COUNTER32(udpInErrors, 1);
+      MIB2_INC_COUNTER32(udpGroup.udpInErrors, 1);
       UDP_MIB_INC_COUNTER32(udpInErrors, 1);
 
       //Report an error
@@ -158,25 +158,8 @@ error_t udpProcessDatagram(NetInterface *interface,
    //Dump UDP header contents for debugging purpose
    udpDumpHeader(header);
 
-   //Make sure the length field is correct
-   if(ntohs(header->length) < sizeof(UdpHeader) ||
-      ntohs(header->length) > length)
-   {
-      //Number of received UDP datagrams that could not be delivered for
-      //reasons other than the lack of an application at the destination port
-      MIB2_UDP_INC_COUNTER32(udpInErrors, 1);
-      UDP_MIB_INC_COUNTER32(udpInErrors, 1);
-
-      //Report an error
-      return ERROR_INVALID_HEADER;
-   }
-
-   //Convert the length field from network byte order
-   length = ntohs(header->length);
-
    //When UDP runs over IPv6, the checksum is mandatory
-   if(header->checksum != 0x0000 ||
-      pseudoHeader->length == sizeof(Ipv6PseudoHeader))
+   if(header->checksum != 0x0000 || pseudoHeader->length == sizeof(Ipv6PseudoHeader))
    {
       //Verify UDP checksum
       if(ipCalcUpperLayerChecksumEx(pseudoHeader->data,
@@ -187,7 +170,7 @@ error_t udpProcessDatagram(NetInterface *interface,
 
          //Number of received UDP datagrams that could not be delivered for
          //reasons other than the lack of an application at the destination port
-         MIB2_UDP_INC_COUNTER32(udpInErrors, 1);
+         MIB2_INC_COUNTER32(udpGroup.udpInErrors, 1);
          UDP_MIB_INC_COUNTER32(udpInErrors, 1);
 
          //Report an error
@@ -204,15 +187,12 @@ error_t udpProcessDatagram(NetInterface *interface,
       //UDP socket found?
       if(socket->type != SOCKET_TYPE_DGRAM)
          continue;
-
       //Check whether the socket is bound to a particular interface
       if(socket->interface && socket->interface != interface)
          continue;
-
       //Check destination port number
       if(socket->localPort == 0 || socket->localPort != ntohs(header->destPort))
          continue;
-
       //Source port number filtering
       if(socket->remotePort != 0 && socket->remotePort != ntohs(header->srcPort))
          continue;
@@ -221,57 +201,15 @@ error_t udpProcessDatagram(NetInterface *interface,
       //IPv4 packet received?
       if(pseudoHeader->length == sizeof(Ipv4PseudoHeader))
       {
-         //Check whether the socket is restricted to IPv6 communications only
-         if((socket->options & SOCKET_OPTION_IPV6_ONLY) != 0)
-            continue;
-
-         //Check whether the destination address is a unicast, broadcast or
-         //multicast address
-         if(ipv4IsBroadcastAddr(interface, pseudoHeader->ipv4Data.destAddr))
+         //Destination IP address filtering
+         if(socket->localIpAddr.length != 0)
          {
-            //Check whether broadcast datagrams are accepted or not
-            if((socket->options & SOCKET_OPTION_BROADCAST) == 0)
+            //An IPv4 address is expected
+            if(socket->localIpAddr.length != sizeof(Ipv4Addr))
                continue;
-         }
-         else if(ipv4IsMulticastAddr(pseudoHeader->ipv4Data.destAddr))
-         {
-            uint_t j;
-            IpAddr *group;
-
-            //Loop through multicast groups
-            for(j = 0; j < SOCKET_MAX_MULTICAST_GROUPS; j++)
-            {
-               //Point to the current multicast group
-               group = &socket->multicastGroups[j];
-
-               //Matching multicast address?
-               if(group->length == sizeof(Ipv4Addr) &&
-                  group->ipv4Addr == pseudoHeader->ipv4Data.destAddr)
-               {
-                  break;
-               }
-            }
-
-            //Filter out non-matching multicast addresses
-            if(j >= SOCKET_MAX_MULTICAST_GROUPS)
+            //Filter out non-matching addresses
+            if(socket->localIpAddr.ipv4Addr != pseudoHeader->ipv4Data.destAddr)
                continue;
-         }
-         else
-         {
-            //Destination IP address filtering
-            if(socket->localIpAddr.length != 0)
-            {
-               //An IPv4 address is expected
-               if(socket->localIpAddr.length != sizeof(Ipv4Addr))
-                  continue;
-
-               //Filter out non-matching addresses
-               if(socket->localIpAddr.ipv4Addr != IPV4_UNSPECIFIED_ADDR &&
-                  socket->localIpAddr.ipv4Addr != pseudoHeader->ipv4Data.destAddr)
-               {
-                  continue;
-               }
-            }
          }
 
          //Source IP address filtering
@@ -280,13 +218,9 @@ error_t udpProcessDatagram(NetInterface *interface,
             //An IPv4 address is expected
             if(socket->remoteIpAddr.length != sizeof(Ipv4Addr))
                continue;
-
             //Filter out non-matching addresses
-            if(socket->remoteIpAddr.ipv4Addr != IPV4_UNSPECIFIED_ADDR &&
-               socket->remoteIpAddr.ipv4Addr != pseudoHeader->ipv4Data.srcAddr)
-            {
+            if(socket->remoteIpAddr.ipv4Addr != pseudoHeader->ipv4Data.srcAddr)
                continue;
-            }
          }
       }
       else
@@ -301,13 +235,9 @@ error_t udpProcessDatagram(NetInterface *interface,
             //An IPv6 address is expected
             if(socket->localIpAddr.length != sizeof(Ipv6Addr))
                continue;
-
             //Filter out non-matching addresses
-            if(!ipv6CompAddr(&socket->localIpAddr.ipv6Addr, &IPV6_UNSPECIFIED_ADDR) &&
-               !ipv6CompAddr(&socket->localIpAddr.ipv6Addr, &pseudoHeader->ipv6Data.destAddr))
-            {
+            if(!ipv6CompAddr(&socket->localIpAddr.ipv6Addr, &pseudoHeader->ipv6Data.destAddr))
                continue;
-            }
          }
 
          //Source IP address filtering
@@ -316,13 +246,9 @@ error_t udpProcessDatagram(NetInterface *interface,
             //An IPv6 address is expected
             if(socket->remoteIpAddr.length != sizeof(Ipv6Addr))
                continue;
-
             //Filter out non-matching addresses
-            if(!ipv6CompAddr(&socket->remoteIpAddr.ipv6Addr, &IPV6_UNSPECIFIED_ADDR) &&
-               !ipv6CompAddr(&socket->remoteIpAddr.ipv6Addr, &pseudoHeader->ipv6Data.srcAddr))
-            {
+            if(!ipv6CompAddr(&socket->remoteIpAddr.ipv6Addr, &pseudoHeader->ipv6Data.srcAddr))
                continue;
-            }
          }
       }
       else
@@ -388,7 +314,7 @@ error_t udpProcessDatagram(NetInterface *interface,
       {
          //Number of inbound packets which were chosen to be discarded even
          //though no errors had been detected
-         MIB2_IF_INC_COUNTER32(ifTable[interface->index].ifInDiscards, 1);
+         MIB2_INC_COUNTER32(ifGroup.ifTable[interface->index].ifInDiscards, 1);
          IF_MIB_INC_COUNTER32(ifTable[interface->index].ifInDiscards, 1);
 
          //Report an error
@@ -419,7 +345,7 @@ error_t udpProcessDatagram(NetInterface *interface,
    {
       //Number of inbound packets which were chosen to be discarded even
       //though no errors had been detected
-      MIB2_IF_INC_COUNTER32(ifTable[interface->index].ifInDiscards, 1);
+      MIB2_INC_COUNTER32(ifGroup.ifTable[interface->index].ifInDiscards, 1);
       IF_MIB_INC_COUNTER32(ifTable[interface->index].ifInDiscards, 1);
 
       //Report an error
@@ -472,7 +398,7 @@ error_t udpProcessDatagram(NetInterface *interface,
    udpUpdateEvents(socket);
 
    //Total number of UDP datagrams delivered to UDP users
-   MIB2_UDP_INC_COUNTER32(udpInDatagrams, 1);
+   MIB2_INC_COUNTER32(udpGroup.udpInDatagrams, 1);
    UDP_MIB_INC_COUNTER32(udpInDatagrams, 1);
    UDP_MIB_INC_COUNTER64(udpHCInDatagrams, 1);
 
@@ -536,38 +462,17 @@ error_t udpSendDatagram(Socket *socket, const SocketMsg *message, uint_t flags)
          ancillary.ttl = socket->ttl;
       }
 
-      //Set ToS field
-      if(message->tos != 0)
-      {
-         ancillary.tos = message->tos;
-      }
-      else
-      {
-         ancillary.tos = socket->tos;
-      }
-
-      //This flag can be used to send IP packets without fragmentation
-      if(message->destIpAddr.length == sizeof(Ipv4Addr) &&
-         (socket->options & SOCKET_OPTION_IPV4_DONT_FRAG) != 0)
-      {
-         ancillary.dontFrag = TRUE;
-      }
-      else if(message->destIpAddr.length == sizeof(Ipv6Addr) &&
-         (socket->options & SOCKET_OPTION_IPV6_DONT_FRAG) != 0)
-      {
-         ancillary.dontFrag = TRUE;
-      }
-      else
-      {
-         ancillary.dontFrag = message->dontFrag;
-      }
-
       //This flag tells the stack that the destination is on a locally attached
       //network and not to perform a lookup of the routing table
       if((flags & SOCKET_FLAG_DONT_ROUTE) != 0)
       {
          ancillary.dontRoute = TRUE;
       }
+
+#if (IP_DIFF_SERV_SUPPORT == ENABLED)
+      //Set DSCP field
+      ancillary.dscp = socket->dscp;
+#endif
 
 #if (ETH_SUPPORT == ENABLED)
       //Set source and destination MAC addresses
@@ -638,10 +543,6 @@ error_t udpSendBuffer(NetInterface *interface, const IpAddr *srcIpAddr,
    //Retrieve the length of the datagram
    length = netBufferGetLength(buffer) - offset;
 
-   //Check the length of the payload
-   if(length > UINT16_MAX)
-      return ERROR_INVALID_LENGTH;
-
    //Point to the UDP header
    header = netBufferAt(buffer, offset);
    //Sanity check
@@ -661,12 +562,6 @@ error_t udpSendBuffer(NetInterface *interface, const IpAddr *srcIpAddr,
       //Valid source IP address?
       if(srcIpAddr != NULL && srcIpAddr->length == sizeof(Ipv4Addr))
       {
-         //Use default network interface?
-         if(interface == NULL)
-         {
-            interface = netGetDefaultInterface();
-         }
-
          //Copy the source IP address
          pseudoHeader.ipv4Data.srcAddr = srcIpAddr->ipv4Addr;
       }
@@ -722,12 +617,6 @@ error_t udpSendBuffer(NetInterface *interface, const IpAddr *srcIpAddr,
       //Valid source IP address?
       if(srcIpAddr != NULL && srcIpAddr->length == sizeof(Ipv6Addr))
       {
-         //Use default network interface?
-         if(interface == NULL)
-         {
-            interface = netGetDefaultInterface();
-         }
-
          //Copy the source IP address
          pseudoHeader.ipv6Data.srcAddr = srcIpAddr->ipv6Addr;
       }
@@ -772,7 +661,7 @@ error_t udpSendBuffer(NetInterface *interface, const IpAddr *srcIpAddr,
    }
 
    //Total number of UDP datagrams sent from this entity
-   MIB2_UDP_INC_COUNTER32(udpOutDatagrams, 1);
+   MIB2_INC_COUNTER32(udpGroup.udpOutDatagrams, 1);
    UDP_MIB_INC_COUNTER32(udpOutDatagrams, 1);
    UDP_MIB_INC_COUNTER64(udpHCOutDatagrams, 1);
 
@@ -844,8 +733,6 @@ error_t udpReceiveDatagram(Socket *socket, SocketMsg *message, uint_t flags)
 
       //Save TTL value
       message->ttl = queueItem->ancillary.ttl;
-      //Save ToS field
-      message->tos = queueItem->ancillary.tos;
 
 #if (ETH_SUPPORT == ENABLED)
       //Save source and destination MAC addresses
@@ -939,13 +826,9 @@ void udpUpdateEvents(Socket *socket)
    {
       //Handle link up and link down events
       if(socket->interface->linkState)
-      {
          socket->eventFlags |= SOCKET_EVENT_LINK_UP;
-      }
       else
-      {
          socket->eventFlags |= SOCKET_EVENT_LINK_DOWN;
-      }
    }
 
    //Mask unused events
@@ -1064,7 +947,7 @@ error_t udpDetachRxCallback(NetInterface *interface, uint16_t port)
 
 error_t udpInvokeRxCallback(NetInterface *interface,
    const IpPseudoHeader *pseudoHeader, const UdpHeader *header,
-   const NetBuffer *buffer, size_t offset, const NetRxAncillary *ancillary)
+   const NetBuffer *buffer, size_t offset, NetRxAncillary *ancillary)
 {
    error_t error;
    uint_t i;
@@ -1104,13 +987,13 @@ error_t udpInvokeRxCallback(NetInterface *interface,
    {
       //Total number of received UDP datagrams for which there was
       //no application at the destination port
-      MIB2_UDP_INC_COUNTER32(udpNoPorts, 1);
+      MIB2_INC_COUNTER32(udpGroup.udpNoPorts, 1);
       UDP_MIB_INC_COUNTER32(udpNoPorts, 1);
    }
    else
    {
       //Total number of UDP datagrams delivered to UDP users
-      MIB2_UDP_INC_COUNTER32(udpInDatagrams, 1);
+      MIB2_INC_COUNTER32(udpGroup.udpInDatagrams, 1);
       UDP_MIB_INC_COUNTER32(udpInDatagrams, 1);
       UDP_MIB_INC_COUNTER64(udpHCInDatagrams, 1);
    }

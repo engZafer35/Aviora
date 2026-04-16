@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "drivers/switch/lan9303_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/switch/lan9303_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -118,7 +118,7 @@ error_t lan9303Init(NetInterface *interface)
 
    //Configure egress VLAN tagging rules
    lan9303WriteSwitchReg(interface, LAN9303_BM_EGRSS_PORT_TYPE,
-      LAN9303_BM_EGRSS_PORT_TYPE_PORT0_TYPE_CPU);
+      LAN9303_BM_EGRSS_PORT_TYPE_PORT0_CPU);
 #else
    //Disable special VLAN tagging mode
    lan9303WriteSwitchReg(interface, LAN9303_SWE_INGRSS_PORT_TYP, 0);
@@ -134,9 +134,9 @@ error_t lan9303Init(NetInterface *interface)
       //Enable port mirroring
       lan9303WriteSwitchReg(interface, LAN9303_SWE_PORT_MIRROR,
          LAN9303_SWE_PORT_MIRROR_RX_MIRRORING_FILT_EN |
-         LAN9303_SWE_PORT_MIRROR_SNIFFER_PORT_0 |
-         LAN9303_SWE_PORT_MIRROR_MIRRORED_PORT_2 |
-         LAN9303_SWE_PORT_MIRROR_MIRRORED_PORT_1 |
+         LAN9303_SWE_PORT_MIRROR_SNIFFER_PORT0 |
+         LAN9303_SWE_PORT_MIRROR_MIRRORED_PORT2 |
+         LAN9303_SWE_PORT_MIRROR_MIRRORED_PORT1 |
          LAN9303_SWE_PORT_MIRROR_RX_MIRRORING_EN);
 
       //Configure port state
@@ -176,9 +176,6 @@ error_t lan9303Init(NetInterface *interface)
       lan9303DumpPhyReg(interface, port);
    }
 
-   //Perform custom configuration
-   lan9303InitHook(interface);
-
    //Force the TCP/IP stack to poll the link state at startup
    interface->phyEvent = TRUE;
    //Notify the TCP/IP stack of the event
@@ -186,16 +183,6 @@ error_t lan9303Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief LAN9303 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void lan9303InitHook(NetInterface *interface)
-{
 }
 
 
@@ -869,24 +856,24 @@ void lan9303EnableIgmpSnooping(NetInterface *interface, bool_t enable)
    uint32_t temp;
 
    //Read the Switch Engine Global Ingress Configuration register
-   temp = lan9303ReadSwitchReg(interface, LAN9303_SWE_GLOBAL_INGRSS_CFG);
+   temp = lan9303ReadSwitchReg(interface, LAN9303_SWE_GLB_INGRESS_CFG);
 
    //Enable or disable IGMP monitoring
    if(enable)
    {
-      temp |= LAN9303_SWE_GLOBAL_INGRSS_CFG_IGMP_MONITORING_EN;
+      temp |= LAN9303_SWE_GLB_INGRESS_CFG_IGMP_MONITORING_EN;
    }
    else
    {
-      temp &= ~LAN9303_SWE_GLOBAL_INGRSS_CFG_IGMP_MONITORING_EN;
+      temp &= ~LAN9303_SWE_GLB_INGRESS_CFG_IGMP_MONITORING_EN;
    }
 
    //Set the port bit map where IGMP packets are sent
-   temp = (temp & ~LAN9303_SWE_GLOBAL_INGRSS_CFG_IGMP_MONITOR_PORT) |
-      LAN9303_SWE_GLOBAL_INGRSS_CFG_IGMP_MONITOR_PORT_0;
+   temp = (temp & ~LAN9303_SWE_GLB_INGRESS_CFG_IGMP_MONITOR_PORT) |
+      LAN9303_SWE_GLB_INGRESS_CFG_IGMP_MONITOR_PORT_0;
 
    //Write the value back to Switch Engine Global Ingress Configuration register
-   lan9303WriteSwitchReg(interface, LAN9303_SWE_GLOBAL_INGRSS_CFG, temp);
+   lan9303WriteSwitchReg(interface, LAN9303_SWE_GLB_INGRESS_CFG, temp);
 }
 
 
@@ -1111,12 +1098,8 @@ error_t lan9303GetStaticFdbEntry(NetInterface *interface, uint_t index,
    uint32_t value;
 
    //Loop through the ALR table
-   while(1)
+   while(index < LAN9303_ALR_TABLE_SIZE)
    {
-      //Out of bound index?
-      if(index >= LAN9303_ALR_TABLE_SIZE)
-         return ERROR_END_OF_TABLE;
-
       //First entry?
       if(index == 0)
       {
@@ -1259,12 +1242,8 @@ error_t lan9303GetDynamicFdbEntry(NetInterface *interface, uint_t index,
    uint32_t value;
 
    //Loop through the ALR table
-   while(1)
+   while(index < LAN9303_ALR_TABLE_SIZE)
    {
-      //Out of bound index?
-      if(index >= LAN9303_ALR_TABLE_SIZE)
-         return ERROR_END_OF_TABLE;
-
       //First entry?
       if(index == 0)
       {
@@ -1631,9 +1610,7 @@ void lan9303WriteSwitchReg(NetInterface *interface, uint16_t address,
    lan9303WriteSysReg(interface, LAN9303_SWITCH_CSR_DATA, data);
 
    //Set up a write operation
-   value = LAN9303_SWITCH_CSR_CMD_BUSY | LAN9303_SWITCH_CSR_CMD_WRITE |
-      LAN9303_SWITCH_CSR_CMD_BE;
-
+   value = LAN9303_SWITCH_CSR_CMD_BUSY | LAN9303_SWITCH_CSR_CMD_BE;
    //Set register address
    value |= address & LAN9303_SWITCH_CSR_CMD_ADDR;
 

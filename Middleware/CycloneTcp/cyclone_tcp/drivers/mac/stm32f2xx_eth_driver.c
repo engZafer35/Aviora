@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -38,9 +38,9 @@
    #include "stm32f2xx_hal.h"
 #endif
 
-#include "core/net.h"
-#include "drivers/mac/stm32f2xx_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/stm32f2xx_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -193,8 +193,8 @@ error_t stm32f2xxEthInit(NetInterface *interface)
    ETH->DMAOMR = ETH_DMAOMR_RSF | ETH_DMAOMR_TSF;
 
    //Configure DMA bus mode
-   ETH->DMABMR = ETH_DMABMR_AAB | ETH_DMABMR_USP | ETH_DMABMR_RDP_32Beat |
-      ETH_DMABMR_RTPR_1_1 | ETH_DMABMR_PBL_32Beat | ETH_DMABMR_EDE;
+   ETH->DMABMR = ETH_DMABMR_AAB | ETH_DMABMR_USP | ETH_DMABMR_RDP_1Beat |
+      ETH_DMABMR_RTPR_1_1 | ETH_DMABMR_PBL_1Beat | ETH_DMABMR_EDE;
 
    //Initialize DMA descriptor lists
    stm32f2xxEthInitDmaDesc(interface);
@@ -232,17 +232,21 @@ error_t stm32f2xxEthInit(NetInterface *interface)
 }
 
 
+//STM3220G-EVAL, Nucleo-F207ZG, or MCBSTM32F200 evaluation board?
+#if defined(USE_STM322xG_EVAL) || defined(USE_STM32F2XX_NUCLEO_144) || \
+   defined(USE_MCBSTM32F200)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void stm32f2xxEthInitGpio(NetInterface *interface)
+void stm32f2xxEthInitGpio(NetInterface *interface)
 {
-//STM3220G-EVAL evaluation board?
-#if defined(USE_STM322xG_EVAL)
    GPIO_InitTypeDef GPIO_InitStructure;
 
+//STM3220G-EVAL evaluation board?
+#if defined(USE_STM322xG_EVAL)
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -301,8 +305,6 @@ __weak_func void stm32f2xxEthInitGpio(NetInterface *interface)
 
 //Nucleo-F207ZG evaluation board?
 #elif defined(USE_STM32F2XX_NUCLEO_144)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -339,8 +341,6 @@ __weak_func void stm32f2xxEthInitGpio(NetInterface *interface)
 
 //MCBSTM32F200 evaluation board?
 #elif defined(USE_MCBSTM32F200)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -371,6 +371,8 @@ __weak_func void stm32f2xxEthInitGpio(NetInterface *interface)
    HAL_GPIO_Init(GPIOG, &GPIO_InitStructure);
 #endif
 }
+
+#endif
 
 
 /**
@@ -558,8 +560,8 @@ void ETH_IRQHandler(void)
    //Packet received?
    if((status & ETH_DMASR_RS) != 0)
    {
-      //Clear RS interrupt flag
-      ETH->DMASR = ETH_DMASR_RS;
+      //Disable RIE interrupt
+      ETH->DMAIER &= ~ETH_DMAIER_RIE;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -584,14 +586,24 @@ void stm32f2xxEthEventHandler(NetInterface *interface)
 {
    error_t error;
 
-   //Process all pending packets
-   do
+   //Packet received?
+   if((ETH->DMASR & ETH_DMASR_RS) != 0)
    {
-      //Read incoming packet
-      error = stm32f2xxEthReceivePacket(interface);
+      //Clear interrupt flag
+      ETH->DMASR = ETH_DMASR_RS;
 
-      //No more data in the receive buffer?
-   } while(error != ERROR_BUFFER_EMPTY);
+      //Process all pending packets
+      do
+      {
+         //Read incoming packet
+         error = stm32f2xxEthReceivePacket(interface);
+
+         //No more data in the receive buffer?
+      } while(error != ERROR_BUFFER_EMPTY);
+   }
+
+   //Re-enable DMA interrupts
+   ETH->DMAIER = ETH_DMAIER_NISE | ETH_DMAIER_RIE | ETH_DMAIER_TIE;
 }
 
 

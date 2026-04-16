@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,17 +25,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/ethernet.h"
-#include "drivers/eth/dm9000_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/ethernet.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/eth/dm9000_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -80,11 +80,8 @@ error_t dm9000Init(NetInterface *interface)
    //Debug message
    TRACE_INFO("Initializing DM9000 Ethernet controller...\r\n");
 
-   //Initialize external interrupt line driver
-   if(interface->extIntDriver != NULL)
-   {
-      interface->extIntDriver->init();
-   }
+   //Initialize external interrupt line
+   interface->extIntDriver->init();
 
    //Point to the driver context
    context = (Dm9000Context *) interface->nicContext;
@@ -179,9 +176,6 @@ error_t dm9000Init(NetInterface *interface)
    dm9000WriteReg(DM9000_RCR, DM9000_RCR_DIS_LONG | DM9000_RCR_DIS_CRC |
       DM9000_RCR_RXEN);
 
-   //Perform custom configuration
-   dm9000InitHook(interface);
-
    //Accept any packets from the upper layer
    osSetEvent(&interface->nicTxEvent);
 
@@ -192,16 +186,6 @@ error_t dm9000Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief DM9000 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void dm9000InitHook(NetInterface *interface)
-{
 }
 
 
@@ -223,10 +207,7 @@ void dm9000Tick(NetInterface *interface)
 void dm9000EnableIrq(NetInterface *interface)
 {
    //Enable interrupts
-   if(interface->extIntDriver != NULL)
-   {
-      interface->extIntDriver->enableIrq();
-   }
+   interface->extIntDriver->enableIrq();
 }
 
 
@@ -238,10 +219,7 @@ void dm9000EnableIrq(NetInterface *interface)
 void dm9000DisableIrq(NetInterface *interface)
 {
    //Disable interrupts
-   if(interface->extIntDriver != NULL)
-   {
-      interface->extIntDriver->disableIrq();
-   }
+   interface->extIntDriver->disableIrq();
 }
 
 
@@ -333,7 +311,7 @@ void dm9000EventHandler(NetInterface *interface)
    //Read interrupt status register
    status = dm9000ReadReg(DM9000_ISR);
 
-   //Link status change?
+   //Check whether the link status has changed?
    if((status & DM9000_ISR_LNKCHG) != 0)
    {
       //Clear interrupt flag
@@ -380,7 +358,7 @@ void dm9000EventHandler(NetInterface *interface)
       nicNotifyLinkChange(interface);
    }
 
-   //Packet received?
+   //Check whether a packet has been received?
    if((status & DM9000_ISR_PR) != 0)
    {
       //Clear interrupt flag
@@ -675,7 +653,6 @@ void dm9000WritePhyReg(uint8_t address, uint16_t data)
 {
    //Write PHY register address
    dm9000WriteReg(DM9000_EPAR, 0x40 | address);
-
    //Write register value
    dm9000WriteReg(DM9000_EPDRL, LSB(data));
    dm9000WriteReg(DM9000_EPDRH, MSB(data));
@@ -748,11 +725,9 @@ uint32_t dm9000CalcCrc(const void *data, size_t length)
    {
       //Update CRC value
       crc ^= p[i];
-
       //The message is processed bit by bit
       for(j = 0; j < 8; j++)
       {
-         //Update CRC value
          if((crc & 0x01) != 0)
          {
             crc = (crc >> 1) ^ 0xEDB88320;

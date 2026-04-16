@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _HTTP_CLIENT_H
 #define _HTTP_CLIENT_H
 
 //Dependencies
-#include "core/net.h"
-#include "http/http_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_common.h"
 
 //HTTP client support
 #ifndef HTTP_CLIENT_SUPPORT
@@ -170,11 +170,6 @@
    #define HTTP_CLIENT_AUTH_SUPPORT DISABLED
 #endif
 
-//Application specific context
-#ifndef HTTP_CLIENT_PRIVATE_CONTEXT
-   #define HTTP_CLIENT_PRIVATE_CONTEXT
-#endif
-
 //TLS supported?
 #if (HTTP_CLIENT_TLS_SUPPORT == ENABLED)
    #include "core/crypto.h"
@@ -293,11 +288,10 @@ struct _HttpClientContext
    size_t bodyLen;                                ///<Length of the body, in bytes
    size_t bodyPos;                                ///<Current position in the body
    uint_t statusCode;                             ///<HTTP status code
-   HTTP_CLIENT_PRIVATE_CONTEXT                    ///<Application specific context
 };
 
 
-//HTTP client related functions
+//HTTP related functions
 error_t httpClientInit(HttpClientContext *context);
 
 #if (HTTP_CLIENT_TLS_SUPPORT == ENABLED)

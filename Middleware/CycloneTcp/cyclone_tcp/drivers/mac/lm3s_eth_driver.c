@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
-//Device-specific definitions
+//LM3S6965 device?
 #if defined(LM3S6965)
    #include "lm3s6965.h"
+//LM3S9B92 device?
 #elif defined(LM3S9B92)
    #include "lm3s9b92.h"
 #endif
@@ -45,9 +46,9 @@
 #include "driverlib/gpio.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/sysctl.h"
-#include "core/net.h"
-#include "drivers/mac/lm3s_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/lm3s_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -172,22 +173,24 @@ error_t lm3sEthInit(NetInterface *interface)
 }
 
 
+//EK-LM3S6965 evaluation board?
+#if defined(USE_EK_LM3S6965)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void lm3sEthInitGpio(NetInterface *interface)
+void lm3sEthInitGpio(NetInterface *interface)
 {
-//EK-LM3S6965 evaluation board?
-#if defined(USE_EK_LM3S6965)
    //Enable GPIO clock
    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
 
    //Configure status LEDs
    GPIOPinTypeEthernetLED(GPIO_PORTF_BASE, GPIO_PIN_2 | GPIO_PIN_3);
-#endif
 }
+
+#endif
 
 
 /**

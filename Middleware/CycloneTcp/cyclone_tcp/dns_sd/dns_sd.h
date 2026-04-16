@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _DNS_SD_H
 #define _DNS_SD_H
 
 //Dependencies
-#include "core/net.h"
-#include "dns/dns_common.h"
-#include "mdns/mdns_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_common.h"
 
 //DNS-SD support
 #ifndef DNS_SD_SUPPORT
@@ -172,6 +172,42 @@ error_t dnsSdStartProbing(DnsSdContext *context);
 
 void dnsSdTick(DnsSdContext *interface);
 void dnsSdLinkChangeEvent(DnsSdContext *interface);
+
+void dnsSdChangeState(DnsSdContext *context,
+   MdnsState newState, systime_t delay);
+
+void dnsSdChangeInstanceName(DnsSdContext *context);
+
+error_t dnsSdSendProbe(DnsSdContext *context);
+error_t dnsSdSendAnnouncement(DnsSdContext *context);
+error_t dnsSdSendGoodbye(DnsSdContext *context, const DnsSdService *service);
+
+error_t dnsSdParseQuestion(NetInterface *interface, const MdnsMessage *query,
+   size_t offset, const DnsQuestion *question, MdnsMessage *response);
+
+void dnsSdParseNsRecord(NetInterface *interface, const MdnsMessage *query,
+   size_t offset, const DnsResourceRecord *record);
+
+void dnsSdParseAnRecord(NetInterface *interface, const MdnsMessage *response,
+   size_t offset, const DnsResourceRecord *record);
+
+void dnsSdGenerateAdditionalRecords(NetInterface *interface,
+   MdnsMessage *response, bool_t legacyUnicast);
+
+error_t dnsSdAddServiceEnumPtrRecord(NetInterface *interface,
+   MdnsMessage *message, const DnsSdService *service, uint32_t ttl);
+
+error_t dnsSdAddPtrRecord(NetInterface *interface,
+   MdnsMessage *message, const DnsSdService *service, uint32_t ttl);
+
+error_t dnsSdAddSrvRecord(NetInterface *interface, MdnsMessage *message,
+   const DnsSdService *service, bool_t cacheFlush, uint32_t ttl);
+
+error_t dnsSdAddTxtRecord(NetInterface *interface, MdnsMessage *message,
+   const DnsSdService *service, bool_t cacheFlush, uint32_t ttl);
+
+error_t dnsSdAddNsecRecord(NetInterface *interface, MdnsMessage *message,
+   const DnsSdService *service, bool_t cacheFlush, uint32_t ttl);
 
 //C++ guard
 #ifdef __cplusplus

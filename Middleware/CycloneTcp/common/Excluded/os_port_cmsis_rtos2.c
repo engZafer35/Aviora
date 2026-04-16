@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -32,18 +32,9 @@
 //Dependencies
 #include <stdio.h>
 #include <stdlib.h>
-#include "os_port.h"
-#include "os_port_cmsis_rtos2.h"
-#include "debug.h"
-
-//Default task parameters
-const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
-{
-   NULL,            //Task control block
-   NULL,            //Stack
-   256,             //Size of the stack
-   osPriorityNormal //Task priority
-};
+#include "../../CycloneTcp/common/os_port.h"
+#include "../../CycloneTcp/common/os_port_cmsis_rtos2.h"
+#include "../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -69,74 +60,52 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a task
- * @param[in] name NULL-terminated string identifying the task
+ * @brief Create a new task
+ * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] arg Argument passed to the task function
- * @param[in] params Task parameters
- * @return Task identifier referencing the newly created task
+ * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] stackSize The initial size of the stack, in words
+ * @param[in] priority The priority at which the task should run
+ * @return If the function succeeds, the return value is a pointer to the
+ *   new task. If the function fails, the return value is NULL
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
-   const OsTaskParameters *params)
+OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
+   void *param, size_t stackSize, int_t priority)
 {
    osThreadId_t threadId;
    osThreadAttr_t threadAttr;
 
-   //Initialize thread attributes
-   memset(&threadAttr, 0, sizeof(threadAttr));
-
    //Set thread attributes
    threadAttr.name = name;
    threadAttr.attr_bits = 0;
-   threadAttr.stack_mem = params->stack;
-   threadAttr.stack_size = params->stackSize * sizeof(uint32_t);
-   threadAttr.priority = (osPriority_t) params->priority;
+   threadAttr.cb_mem = NULL;
+   threadAttr.cb_size = 0;
+   threadAttr.stack_mem = NULL;
+   threadAttr.stack_size = stackSize * sizeof(uint_t);
+   threadAttr.priority = (osPriority_t) priority;
    threadAttr.tz_module = 0;
    threadAttr.reserved = 0;
 
-   //Static allocation?
-   if(params->cb != NULL)
-   {
-#if defined(os_CMSIS_RTX)
-      threadAttr.cb_mem = params->cb;
-      threadAttr.cb_size = sizeof(os_thread_t);
-#elif defined(osRtxVersionKernel)
-      threadAttr.cb_mem = params->cb;
-      threadAttr.cb_size = sizeof(osRtxThread_t);
-#elif defined(configSUPPORT_STATIC_ALLOCATION)
-      threadAttr.cb_mem = params->cb;
-      threadAttr.cb_size = sizeof(StaticTask_t);
-#else
-      threadAttr.cb_mem = NULL;
-      threadAttr.cb_size = 0;
-#endif
-   }
-
    //Create a new thread
-   threadId = osThreadNew(taskCode, arg, &threadAttr);
-
-   //Return the handle referencing the newly created thread
-   return (OsTaskId) threadId;
+   threadId = osThreadNew(taskCode, param, &threadAttr);
+   //Return a handle to the newly created thread
+   return (OsTask *) threadId;
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] taskId Task identifier referencing the task to be deleted
+ * @param[in] task Pointer to the task to be deleted
  **/
 
-void osDeleteTask(OsTaskId taskId)
+void osDeleteTask(OsTask *task)
 {
    //Delete the specified thread
-   if(taskId == OS_SELF_TASK_ID)
-   {
+   if(task == NULL)
       osThreadExit();
-   }
    else
-   {
-      osThreadTerminate((osThreadId_t) taskId);
-   }
+      osThreadTerminate((osThreadId_t) task);
 }
 
 
@@ -224,13 +193,9 @@ bool_t osCreateEvent(OsEvent *event)
 
    //Check whether the returned semaphore ID is valid
    if(event->id != NULL)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -302,13 +267,9 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 
    //The function returns the event flags before clearing or an error code
    if(flags == 1)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -362,13 +323,9 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
    //Check whether the returned semaphore ID is valid
    if(semaphore->id != NULL)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -414,13 +371,9 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 
    //Check return value
    if(status == osOK)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -467,13 +420,9 @@ bool_t osCreateMutex(OsMutex *mutex)
 
    //Check whether the returned mutex ID is valid
    if(mutex->id != NULL)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -541,7 +490,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-__weak_func void *osAllocMem(size_t size)
+void *osAllocMem(size_t size)
 {
    void *p;
 
@@ -553,8 +502,7 @@ __weak_func void *osAllocMem(size_t size)
    osResumeAllTasks();
 
    //Debug message
-   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n",
-      size, (uintptr_t) p);
+   TRACE_DEBUG("Allocating %u bytes at 0x%08X\r\n", size, (uint_t) p);
 
    //Return a pointer to the newly allocated memory block
    return p;
@@ -566,13 +514,13 @@ __weak_func void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-__weak_func void osFreeMem(void *p)
+void osFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)
    {
       //Debug message
-      TRACE_DEBUG("Freeing memory at 0x%08" PRIXPTR "\r\n", (uintptr_t) p);
+      TRACE_DEBUG("Freeing memory at 0x%08X\r\n", (uint_t) p);
 
       //Enter critical section
       osSuspendAllTasks();

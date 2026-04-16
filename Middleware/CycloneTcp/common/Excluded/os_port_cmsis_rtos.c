@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -32,16 +32,9 @@
 //Dependencies
 #include <stdio.h>
 #include <stdlib.h>
-#include "os_port.h"
-#include "os_port_cmsis_rtos.h"
-#include "debug.h"
-
-//Default task parameters
-const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
-{
-   256,             //Size of the stack
-   osPriorityNormal //Task priority
-};
+#include "../../CycloneTcp/common/os_port.h"
+#include "../../CycloneTcp/common/os_port_cmsis_rtos.h"
+#include "../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -74,29 +67,27 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a task
- * @param[in] name NULL-terminated string identifying the task
+ * @brief Create a new task
+ * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] arg Argument passed to the task function
- * @param[in] params Task parameters
- * @return Task identifier referencing the newly created task
+ * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] stackSize The initial size of the stack, in words
+ * @param[in] priority The priority at which the task should run
+ * @return If the function succeeds, the return value is a pointer to the
+ *   new task. If the function fails, the return value is NULL
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
-   const OsTaskParameters *params)
+OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
+   void *param, size_t stackSize, int_t priority)
 {
    osThreadId threadId;
    osThreadDef_t threadDef;
 
-   //Initialize thread parameters
-   memset(&threadDef, 0, sizeof(threadDef));
-
-   //Set thread parameters
 #if defined(osCMSIS_RTX) && (osCMSIS_RTX < 0x50000)
    threadDef.pthread = (os_pthread) taskCode;
-   threadDef.tpriority = (osPriority) params->priority;
+   threadDef.tpriority = (osPriority) priority;
    threadDef.instances = 1;
-   threadDef.stacksize = params->stackSize * sizeof(uint32_t);
+   threadDef.stacksize = stackSize * sizeof(uint_t);
 #elif defined(osCMSIS_RTX) && (osCMSIS_RTX >= 0x50000)
    threadDef.pthread = (os_pthread) taskCode;
    threadDef.attr.name = name;
@@ -104,8 +95,8 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
    threadDef.attr.cb_mem = NULL;
    threadDef.attr.cb_size = 0;
    threadDef.attr.stack_mem = NULL;
-   threadDef.attr.stack_size = params->stackSize * sizeof(uint32_t);
-   threadDef.attr.priority = (osPriority_t) params->priority;
+   threadDef.attr.stack_size = stackSize * sizeof(uint_t);
+   threadDef.attr.priority = (osPriority_t) priority;
    threadDef.attr.tz_module = 0;
    threadDef.attr.reserved = 0;
 #elif defined(osCMSIS_FreeRTOS)
@@ -115,46 +106,41 @@ OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
    threadDef.attr.cb_mem = NULL;
    threadDef.attr.cb_size = 0;
    threadDef.attr.stack_mem = NULL;
-   threadDef.attr.stack_size = params->stackSize * sizeof(uint32_t);
-   threadDef.attr.priority = (osPriority_t) params->priority;
+   threadDef.attr.stack_size = stackSize * sizeof(uint_t);
+   threadDef.attr.priority = (osPriority_t) priority;
    threadDef.attr.tz_module = 0;
    threadDef.attr.reserved = 0;
 #else
    threadDef.name = (char_t *) name;
    threadDef.pthread = (os_pthread) taskCode;
-   threadDef.tpriority = (osPriority) params->priority;
+   threadDef.tpriority = (osPriority) priority;
    threadDef.instances = 1;
-   threadDef.stacksize = params->stackSize;
+   threadDef.stacksize = stackSize;
 #endif
 
    //Create a new thread
-   threadId = osThreadCreate(&threadDef, arg);
-
-   //Return the handle referencing the newly created thread
-   return (OsTaskId) threadId;
+   threadId = osThreadCreate(&threadDef, param);
+   //Return a handle to the newly created thread
+   return (OsTask *) threadId;
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] taskId Task identifier referencing the task to be deleted
+ * @param[in] task Pointer to the task to be deleted
  **/
 
-void osDeleteTask(OsTaskId taskId)
+void osDeleteTask(OsTask *task)
 {
 #if (osCMSIS >= 0x20000)
    //Delete the specified thread
-   if(taskId == OS_SELF_TASK_ID)
-   {
+   if(task == NULL)
       osThreadExit();
-   }
    else
-   {
-      osThreadTerminate((osThreadId_t) taskId);
-   }
+      osThreadTerminate((osThreadId_t) task);
 #else
    //Delete the specified thread
-   osThreadTerminate((osThreadId) taskId);
+   osThreadTerminate((osThreadId) task);
 #endif
 }
 
@@ -303,9 +289,7 @@ void osResetEvent(OsEvent *event)
 {
 #if defined(osCMSIS_RTX) && (osCMSIS_RTX < 0x50000)
    //Force the specified event to the nonsignaled state
-   while(osSemaphoreWait(event->id, 0) > 0)
-   {
-   }
+   while(osSemaphoreWait(event->id, 0) > 0);
 #else
    //Force the specified event to the nonsignaled state
    osSemaphoreWait(event->id, 0);
@@ -325,8 +309,8 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 {
    int32_t ret;
 
-   //Wait until the specified event is in the signaled state or the timeout
-   //interval elapses
+   //Wait until the specified event is in the signaled
+   //state or the timeout interval elapses
    if(timeout == INFINITE_DELAY)
    {
       //Infinite timeout period
@@ -373,33 +357,21 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 #elif defined(osCMSIS_RTX) && (osCMSIS_RTX >= 0x50000)
    //Check return value
    if(ret > 0)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 #elif defined(osCMSIS_FreeRTOS)
    //Check return value
    if(ret > 0)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 #else
    //Check return value
    if(ret == osOK)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 #endif
 }
 
@@ -455,13 +427,9 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
    //Check whether the returned semaphore ID is valid
    if(semaphore->id != NULL)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -525,23 +493,15 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 #if defined(osCMSIS_RTX) || defined(osCMSIS_FreeRTOS)
    //Check return value
    if(ret > 0)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 #else
    //Check return value
    if(ret == osOK)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 #endif
 }
 
@@ -590,13 +550,9 @@ bool_t osCreateMutex(OsMutex *mutex)
 
    //Check whether the returned mutex ID is valid
    if(mutex->id != NULL)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -676,7 +632,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-__weak_func void *osAllocMem(size_t size)
+void *osAllocMem(size_t size)
 {
    void *p;
 
@@ -688,8 +644,7 @@ __weak_func void *osAllocMem(size_t size)
    osResumeAllTasks();
 
    //Debug message
-   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n",
-      size, (uintptr_t) p);
+   TRACE_DEBUG("Allocating %u bytes at 0x%08X\r\n", size, (uint_t) p);
 
    //Return a pointer to the newly allocated memory block
    return p;
@@ -701,13 +656,13 @@ __weak_func void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-__weak_func void osFreeMem(void *p)
+void osFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)
    {
       //Debug message
-      TRACE_DEBUG("Freeing memory at 0x%08" PRIXPTR "\r\n", (uintptr_t) p);
+      TRACE_DEBUG("Freeing memory at 0x%08X\r\n", (uint_t) p);
 
       //Enter critical section
       osSuspendAllTasks();

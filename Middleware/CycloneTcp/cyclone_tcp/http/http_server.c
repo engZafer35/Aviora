@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -35,7 +35,7 @@
  * - RFC 2818: HTTP Over TLS
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -43,13 +43,13 @@
 
 //Dependencies
 #include <stdlib.h>
-#include "core/net.h"
-#include "http/http_server.h"
-#include "http/http_server_auth.h"
-#include "http/http_server_misc.h"
-#include "http/mime.h"
-#include "http/ssi.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_server_auth.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_server_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/mime.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/ssi.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (HTTP_SERVER_SUPPORT == ENABLED)
@@ -62,22 +62,6 @@
 
 void httpServerGetDefaultSettings(HttpServerSettings *settings)
 {
-   uint_t i;
-
-   //Initialize listener task parameters
-   settings->listenerTask = OS_TASK_DEFAULT_PARAMS;
-   settings->listenerTask.stackSize = HTTP_SERVER_STACK_SIZE;
-   settings->listenerTask.priority = HTTP_SERVER_PRIORITY;
-
-   //Initialize connection task parameters
-   for(i = 0; i < HTTP_SERVER_MAX_CONNECTIONS; i++)
-   {
-      //Default task parameters
-      settings->connectionTask[i] = OS_TASK_DEFAULT_PARAMS;
-      settings->connectionTask[i].stackSize = HTTP_SERVER_STACK_SIZE;
-      settings->connectionTask[i].priority = HTTP_SERVER_PRIORITY;
-   }
-
    //The HTTP server is not bound to any interface
    settings->interface = NULL;
 
@@ -139,18 +123,11 @@ error_t httpServerInit(HttpServerContext *context, const HttpServerSettings *set
       return ERROR_INVALID_PARAMETER;
 
    //Check settings
-   if(settings->connections == NULL || settings->maxConnections < 1 ||
-      settings->maxConnections > HTTP_SERVER_MAX_CONNECTIONS)
-   {
+   if(settings->maxConnections == 0 || settings->connections == NULL)
       return ERROR_INVALID_PARAMETER;
-   }
 
    //Clear the HTTP server context
    osMemset(context, 0, sizeof(HttpServerContext));
-
-   //Initialize task parameters
-   context->taskParams = settings->listenerTask;
-   context->taskId = OS_INVALID_TASK_ID;
 
    //Save user settings
    context->settings = *settings;
@@ -169,10 +146,6 @@ error_t httpServerInit(HttpServerContext *context, const HttpServerSettings *set
 
       //Initialize the structure
       osMemset(connection, 0, sizeof(HttpConnection));
-
-      //Initialize task parameters
-      connection->taskParams = settings->connectionTask[i];
-      connection->taskId = OS_INVALID_TASK_ID;
 
       //Create an event object to manage connection lifetime
       if(!osCreateEvent(&connection->startEvent))
@@ -237,7 +210,6 @@ error_t httpServerInit(HttpServerContext *context, const HttpServerSettings *set
 error_t httpServerStart(HttpServerContext *context)
 {
    uint_t i;
-   HttpConnection *connection;
 
    //Make sure the HTTP server context is valid
    if(context == NULL)
@@ -249,24 +221,22 @@ error_t httpServerStart(HttpServerContext *context)
    //Loop through client connections
    for(i = 0; i < context->settings.maxConnections; i++)
    {
-      //Point to the current session
-      connection = &context->connections[i];
-
-      //Create a task
-      connection->taskId = osCreateTask("HTTP Connection", httpConnectionTask,
-         connection, &connection->taskParams);
+      //Create a task to service a given HTTP client connection
+      context->connections[i].taskHandle = osCreateTask("HTTP Connection",
+         httpConnectionTask, &context->connections[i],
+         HTTP_SERVER_STACK_SIZE, HTTP_SERVER_PRIORITY);
 
       //Unable to create the task?
-      if(connection->taskId == OS_INVALID_TASK_ID)
+      if(context->connections[i].taskHandle == OS_INVALID_HANDLE)
          return ERROR_OUT_OF_RESOURCES;
    }
 
-   //Create a task
-   context->taskId = osCreateTask("HTTP Listener", httpListenerTask,
-      context, &context->taskParams);
+   //Create the HTTP server listener task
+   context->taskHandle = osCreateTask("HTTP Listener", httpListenerTask,
+      context, HTTP_SERVER_STACK_SIZE, HTTP_SERVER_PRIORITY);
 
    //Unable to create the task?
-   if(context->taskId == OS_INVALID_TASK_ID)
+   if(context->taskHandle == OS_INVALID_HANDLE)
       return ERROR_OUT_OF_RESOURCES;
 
    //The HTTP server has successfully started
@@ -319,9 +289,6 @@ void httpListenerTask(void *param)
             //Make sure the socket handle is valid
             if(socket != NULL)
             {
-               //Just for sanity
-               (void) counter;
-
                //Debug message
                TRACE_INFO("Connection #%u established with client %s port %" PRIu16 "...\r\n",
                   counter, ipAddrToString(&clientIpAddr, NULL), clientPort);
@@ -340,15 +307,10 @@ void httpListenerTask(void *param)
                connection->running = TRUE;
                //Service the current connection request
                osSetEvent(&connection->startEvent);
-            }
-            else
-            {
-               //Just for sanity
-               osReleaseSemaphore(&context->semaphore);
-            }
 
-            //We are done
-            break;
+               //We are done
+               break;
+            }
          }
       }
    }
@@ -417,12 +379,6 @@ void httpConnectionTask(void *param)
 
 #if (TLS_TICKET_SUPPORT == ENABLED)
             //Enable session ticket mechanism
-            error = tlsEnableSessionTickets(connection->tlsContext, TRUE);
-            //Any error to report?
-            if(error)
-               break;
-
-            //Register ticket encryption/decryption callbacks
             error = tlsSetTicketCallbacks(connection->tlsContext, tlsEncryptTicket,
                tlsDecryptTicket, &connection->serverContext->tlsTicketContext);
             //Any error to report?
@@ -674,12 +630,6 @@ error_t httpWriteHeader(HttpConnection *connection)
 {
    error_t error;
 
-#if (NET_RTOS_SUPPORT == DISABLED)
-   //Flush buffer
-   connection->bufferPos = 0;
-   connection->bufferLen = 0;
-#endif
-
    //Format HTTP response header
    error = httpFormatResponseHeader(connection, connection->buffer);
 
@@ -765,7 +715,7 @@ error_t httpReadStream(HttpConnection *connection,
 
          //The HTTP_FLAG_BREAK_CHAR flag causes the function to stop reading
          //data as soon as the specified break character is encountered
-         if((flags & HTTP_FLAG_BREAK_CHAR) != 0)
+         if((flags & HTTP_FLAG_BREAK_CRLF) != 0)
          {
             //Check whether a break character has been received
             if(p[n - 1] == LSB(flags))
@@ -773,7 +723,7 @@ error_t httpReadStream(HttpConnection *connection,
          }
          //The HTTP_FLAG_WAIT_ALL flag causes the function to return
          //only when the requested number of bytes have been read
-         else if((flags & HTTP_FLAG_WAIT_ALL) == 0)
+         else if(!(flags & HTTP_FLAG_WAIT_ALL))
          {
             break;
          }
@@ -827,11 +777,11 @@ error_t httpWriteStream(HttpConnection *connection,
       //Any data to send?
       if(length > 0)
       {
-         char_t s[12];
+         char_t s[8];
 
-         //The chunk-size field is a string of hex digits indicating the size
-         //of the chunk
-         n = osSprintf(s, "%" PRIXSIZE "\r\n", length);
+         //The chunk-size field is a string of hex digits
+         //indicating the size of the chunk
+         n = osSprintf(s, "%X\r\n", length);
 
          //Send the chunk-size field
          error = httpSend(connection, s, n, HTTP_FLAG_DELAY);

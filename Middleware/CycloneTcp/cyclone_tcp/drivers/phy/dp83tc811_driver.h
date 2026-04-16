@@ -1,12 +1,12 @@
 /**
  * @file dp83tc811_driver.h
- * @brief DP83TC811 100Base-T1 Ethernet PHY driver
+ * @brief DP83TC811 Ethernet PHY driver
  *
  * @section License
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _DP83TC811_DRIVER_H
 #define _DP83TC811_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //PHY address
 #ifndef DP83TC811_PHY_ADDR
@@ -186,11 +186,11 @@
 #define DP83TC811_TDR_AUTO_TDR_AUTO_RUN                    0x0100
 
 //Register Control register
-#define DP83TC811_REGCR_CMD                                0xC000
-#define DP83TC811_REGCR_CMD_ADDR                           0x0000
-#define DP83TC811_REGCR_CMD_DATA_NO_POST_INC               0x4000
-#define DP83TC811_REGCR_CMD_DATA_POST_INC_RW               0x8000
-#define DP83TC811_REGCR_CMD_DATA_POST_INC_W                0xC000
+#define DP83TC811_REGCR_COMMAND                            0xC000
+#define DP83TC811_REGCR_COMMAND_ADDR                       0x0000
+#define DP83TC811_REGCR_COMMAND_DATA_NO_POST_INC           0x4000
+#define DP83TC811_REGCR_COMMAND_DATA_POST_INC_RW           0x8000
+#define DP83TC811_REGCR_COMMAND_DATA_POST_INC_W            0xC000
 #define DP83TC811_REGCR_DEVAD                              0x001F
 
 //Interrupt Test register
@@ -495,7 +495,6 @@ extern const PhyDriver dp83tc811PhyDriver;
 
 //DP83TC811 related functions
 error_t dp83tc811Init(NetInterface *interface);
-void dp83tc811InitHook(NetInterface *interface);
 
 void dp83tc811Tick(NetInterface *interface);
 

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -41,25 +41,25 @@
  *     SNMP Framework
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL SNMP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "snmp/snmp_agent.h"
-#include "snmp/snmp_agent_dispatch.h"
-#include "snmp/snmp_agent_pdu.h"
-#include "snmp/snmp_agent_misc.h"
-#include "snmp/snmp_agent_trap.h"
-#include "snmp/snmp_agent_inform.h"
-#include "mibs/mib2_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_dispatch.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_pdu.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_trap.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_inform.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib2_module.h"
 #include "core/crypto.h"
 #include "encoding/asn1.h"
 #include "encoding/oid.h"
-#include "debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (SNMP_AGENT_SUPPORT == ENABLED)
@@ -72,11 +72,6 @@
 
 void snmpAgentGetDefaultSettings(SnmpAgentSettings *settings)
 {
-   //Default task parameters
-   settings->task = OS_TASK_DEFAULT_PARAMS;
-   settings->task.stackSize = SNMP_AGENT_STACK_SIZE;
-   settings->task.priority = SNMP_AGENT_PRIORITY;
-
    //The SNMP agent is not bound to any interface
    settings->interface = NULL;
 
@@ -120,10 +115,6 @@ error_t snmpAgentInit(SnmpAgentContext *context,
 
    //Clear the SNMP agent context
    osMemset(context, 0, sizeof(SnmpAgentContext));
-
-   //Initialize task parameters
-   context->taskParams = settings->task;
-   context->taskId = OS_INVALID_TASK_ID;
 
    //Save user settings
    context->settings = *settings;
@@ -220,6 +211,7 @@ error_t snmpAgentInit(SnmpAgentContext *context,
 error_t snmpAgentStart(SnmpAgentContext *context)
 {
    error_t error;
+   OsTask *task;
 
    //Make sure the SNMP agent context is valid
    if(context == NULL)
@@ -228,7 +220,7 @@ error_t snmpAgentStart(SnmpAgentContext *context)
    //Debug message
    TRACE_INFO("Starting SNMP agent...\r\n");
 
-   //Make sure the SNMP agent is not already running
+   //Make sure the Modbus/TCP server is not already running
    if(context->running)
       return ERROR_ALREADY_RUNNING;
 
@@ -268,12 +260,11 @@ error_t snmpAgentStart(SnmpAgentContext *context)
       context->stop = FALSE;
       context->running = TRUE;
 
-      //Create a task
-      context->taskId = osCreateTask("SNMP Agent", (OsTaskCode) snmpAgentTask,
-         context, &context->taskParams);
-
+      //Start the SNMP agent service
+      task = osCreateTask("SNMP Agent", (OsTaskCode) snmpAgentTask,
+         context, SNMP_AGENT_STACK_SIZE, SNMP_AGENT_PRIORITY);
       //Failed to create task?
-      if(context->taskId == OS_INVALID_TASK_ID)
+      if(task == OS_INVALID_HANDLE)
       {
          //Report an error
          error = ERROR_OUT_OF_RESOURCES;
@@ -388,13 +379,9 @@ error_t snmpAgentLoadMib(SnmpAgentContext *context, const MibModule *module)
       {
          //Invoke user callback, if any
          if(module->load != NULL)
-         {
             error = module->load(context);
-         }
          else
-         {
             error = NO_ERROR;
-         }
 
          //Check status code
          if(!error)
@@ -1622,7 +1609,7 @@ error_t snmpAgentSendTrap(SnmpAgentContext *context,
    {
       //Total number of messages which were passed from the SNMP protocol
       //entity to the transport service
-      MIB2_SNMP_INC_COUNTER32(snmpOutPkts, 1);
+      MIB2_INC_COUNTER32(snmpGroup.snmpOutPkts, 1);
 
       //Debug message
       TRACE_INFO("Sending SNMP message to %s port %" PRIu16
@@ -1731,7 +1718,7 @@ error_t snmpAgentSendInform(SnmpAgentContext *context,
          {
             //Total number of messages which were passed from the SNMP protocol
             //entity to the transport service
-            MIB2_SNMP_INC_COUNTER32(snmpOutPkts, 1);
+            MIB2_INC_COUNTER32(snmpGroup.snmpOutPkts, 1);
 
             //Debug message
             TRACE_INFO("Sending SNMP message to %s port %" PRIu16
@@ -1831,7 +1818,7 @@ error_t snmpAgentSendInform(SnmpAgentContext *context,
          {
             //Total number of messages which were passed from the SNMP protocol
             //entity to the transport service
-            MIB2_SNMP_INC_COUNTER32(snmpOutPkts, 1);
+            MIB2_INC_COUNTER32(snmpGroup.snmpOutPkts, 1);
 
             //Debug message
             TRACE_INFO("Sending SNMP message to %s port %" PRIu16
@@ -1972,10 +1959,8 @@ void snmpAgentTask(SnmpAgentContext *context)
       {
          //Stop SNMP agent operation
          context->running = FALSE;
-         //Task epilogue
-         osExitTask();
          //Kill ourselves
-         osDeleteTask(OS_SELF_TASK_ID);
+         osDeleteTask(NULL);
       }
 
       //Any datagram received?

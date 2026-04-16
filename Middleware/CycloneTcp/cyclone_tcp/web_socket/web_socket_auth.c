@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,13 +33,13 @@
 
 //Dependencies
 #include <stdlib.h>
-#include "core/net.h"
-#include "web_socket/web_socket.h"
-#include "web_socket/web_socket_auth.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/web_socket/web_socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/web_socket/web_socket_auth.h"
 #include "encoding/base64.h"
 #include "hash/md5.h"
-#include "str.h"
-#include "debug.h"
+#include "../../../CycloneTcp/common/str.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (WEB_SOCKET_SUPPORT == ENABLED)
@@ -140,13 +140,9 @@ error_t webSocketParseAuthenticateField(WebSocket *webSocket, char_t *value)
          {
             //Save stale flag
             if(!osStrcasecmp(value, "true"))
-            {
                authContext->stale = TRUE;
-            }
             else
-            {
                authContext->stale = FALSE;
-            }
          }
 #endif
 

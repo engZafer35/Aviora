@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,22 +25,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL SLAAC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/ethernet.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_misc.h"
-#include "ipv6/slaac.h"
-#include "ipv6/slaac_misc.h"
-#include "ipv6/ndp.h"
-#include "ipv6/ndp_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ethernet.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/slaac.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/slaac_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV6_SUPPORT == ENABLED && SLAAC_SUPPORT == ENABLED)
@@ -134,8 +134,8 @@ void slaacParseRouterAdv(SlaacContext *context,
    while(1)
    {
       //Search the Options field for any Prefix Information options
-      prefixInfoOption = ndpGetOption(message->options + n, length - n,
-         NDP_OPT_PREFIX_INFORMATION);
+      prefixInfoOption = ndpGetOption(message->options + n,
+         length - n, NDP_OPT_PREFIX_INFORMATION);
 
       //No more option of the specified type?
       if(prefixInfoOption == NULL)
@@ -265,13 +265,9 @@ void slaacParsePrefixInfoOption(SlaacContext *context,
       //The length of time in seconds that the prefix is valid for the
       //purpose of on-link determination
       if(validLifetime < (MAX_DELAY / 1000))
-      {
          validLifetime *= 1000;
-      }
       else
-      {
          validLifetime = MAX_DELAY;
-      }
    }
    else
    {
@@ -288,13 +284,9 @@ void slaacParsePrefixInfoOption(SlaacContext *context,
       //The length of time in seconds that addresses generated from the
       //prefix via stateless address autoconfiguration remain preferred
       if(preferredLifetime < (MAX_DELAY / 1000))
-      {
          preferredLifetime *= 1000;
-      }
       else
-      {
          preferredLifetime = MAX_DELAY;
-      }
    }
    else
    {
@@ -330,13 +322,9 @@ void slaacParsePrefixInfoOption(SlaacContext *context,
             //Compute the remaining time to the valid lifetime expiration
             //of the previously autoconfigured address
             if(timeCompare(time, entry->timestamp + entry->validLifetime) < 0)
-            {
                remainingLifetime = entry->timestamp + entry->validLifetime - time;
-            }
             else
-            {
                remainingLifetime = 0;
-            }
 
             //The specific action to perform for the valid lifetime of the
             //address depends on the Valid Lifetime in the received Router
@@ -381,7 +369,7 @@ void slaacParsePrefixInfoOption(SlaacContext *context,
       }
    }
 
-   //IPv6 address not found in the list?
+   //The IPv6 address is not yet in the list?
    if(!found)
    {
       //Loop through the list of IPv6 addresses
@@ -448,8 +436,8 @@ error_t slaacGenerateLinkLocalAddr(SlaacContext *context)
    }
    else
    {
-      //A link-local address is formed by combining the well-known link-local
-      //prefix fe80::/10 with the interface identifier
+      //A link-local address is formed by combining the well-known
+      //link-local prefix fe80::/10 with the interface identifier
       ipv6GenerateLinkLocalAddr(&logicalInterface->eui64, &addr);
 
       //Check whether Duplicate Address Detection should be performed

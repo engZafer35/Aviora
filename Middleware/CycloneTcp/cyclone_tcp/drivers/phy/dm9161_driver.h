@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _DM9161_DRIVER_H
 #define _DM9161_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //PHY address
 #ifndef DM9161_PHY_ADDR
@@ -203,7 +203,6 @@ extern const PhyDriver dm9161PhyDriver;
 
 //DM9161 related functions
 error_t dm9161Init(NetInterface *interface);
-void dm9161InitHook(NetInterface *interface);
 
 void dm9161Tick(NetInterface *interface);
 

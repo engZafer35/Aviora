@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _MV88E6060_DRIVER_H
 #define _MV88E6060_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //PHY address
 #ifndef MV88E6060_PHY_ADDR
@@ -258,8 +258,8 @@
 #define MV88E6060_PHY_INT_STAT_FIFO_ERR_INT                 0x0080
 #define MV88E6060_PHY_INT_STAT_MDIX_INT                     0x0040
 #define MV88E6060_PHY_INT_STAT_E_DET_INT                    0x0010
-#define MV88E6060_PHY_INT_STAT_POLARITY_INT                 0x0002
-#define MV88E6060_PHY_INT_STAT_JABBER_INT                   0x0001
+#define MV88E6060_PHY_INT_STAT_POLARITYINT                  0x0002
+#define MV88E6060_PHY_INT_STAT_JABBERINT                    0x0001
 
 //PHY Interrupt Port Summary register
 #define MV88E6060_PHY_INT_PORT_SUMMARY_PORT4_INT_ACTIVE     0x0010
@@ -555,7 +555,6 @@ extern const SwitchDriver mv88e6060SwitchDriver;
 
 //MV88E6060 related functions
 error_t mv88e6060Init(NetInterface *interface);
-void mv88e6060InitHook(NetInterface *interface);
 
 void mv88e6060Tick(NetInterface *interface);
 
@@ -603,12 +602,6 @@ void mv88e6060FlushDynamicFdbTable(NetInterface *interface, uint8_t port);
 
 void mv88e6060SetUnknownMcastFwdPorts(NetInterface *interface,
    bool_t enable, uint32_t forwardPorts);
-
-void mv88e6060WriteSmiReg(NetInterface *interface, uint8_t deviceAddr,
-   uint8_t regAddr, uint16_t data);
-
-uint16_t mv88e6060ReadSmiReg(NetInterface *interface, uint8_t deviceAddr,
-   uint8_t regAddr);
 
 void mv88e6060WritePhyReg(NetInterface *interface, uint8_t port,
    uint8_t address, uint16_t data);

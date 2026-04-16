@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _NET_MISC_H
@@ -40,9 +40,9 @@ struct _NetRxAncillary;
 #define NetRxAncillary struct _NetRxAncillary
 
 //Dependencies
-#include "core/net.h"
-#include "core/ethernet.h"
-#include "core/ip.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ethernet.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ip.h"
 
 //Get a given bit of the PRNG internal state
 #define NET_RAND_GET_BIT(s, n) ((s[(n - 1) / 8] >> ((n - 1) % 8)) & 1)
@@ -115,10 +115,11 @@ typedef struct
 struct _NetTxAncillary
 {
    uint8_t ttl;         ///<Time-to-live value
-   uint8_t tos;         ///<Type-of-service value
-   bool_t dontFrag;     ///<Do not fragment the IP packet
    bool_t dontRoute;    ///<Do not send the packet via a router
    bool_t routerAlert;  ///<Add an IP Router Alert option
+#if (IP_DIFF_SERV_SUPPORT == ENABLED)
+   uint8_t dscp;        ///<Differentiated services codepoint
+#endif
 #if (ETH_SUPPORT == ENABLED)
    MacAddr srcMacAddr;  ///<Source MAC address
    MacAddr destMacAddr; ///<Destination MAC address
@@ -149,11 +150,9 @@ struct _NetTxAncillary
 struct _NetRxAncillary
 {
    uint8_t ttl;            ///<Time-to-live value
-   uint8_t tos;            ///<Type-of-service value
 #if (ETH_SUPPORT == ENABLED)
    MacAddr srcMacAddr;     ///<Source MAC address
    MacAddr destMacAddr;    ///<Destination MAC address
-   uint16_t ethType;       ///<Ethernet type field
 #endif
 #if (ETH_PORT_TAGGING_SUPPORT == ENABLED)
    uint8_t port;           ///<Ingress port identifier
@@ -213,10 +212,9 @@ bool_t netTimerRunning(NetTimer *timer);
 bool_t netTimerExpired(NetTimer *timer);
 
 void netInitRand(void);
-uint32_t netGenerateRand(void);
-uint32_t netGenerateRandRange(uint32_t min, uint32_t max);
-void netGenerateRandData(uint8_t *data, size_t length);
-uint32_t netGenerateRandBit(NetRandState *state);
+uint32_t netGetRand(void);
+int32_t netGetRandRange(int32_t min, int32_t max);
+uint32_t netGetRandBit(NetRandState *state);
 
 //C++ guard
 #ifdef __cplusplus

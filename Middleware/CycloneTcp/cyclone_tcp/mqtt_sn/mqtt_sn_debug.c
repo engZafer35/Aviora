@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,23 +25,23 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL MQTT_SN_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "mqtt_sn/mqtt_sn_client.h"
-#include "mqtt_sn/mqtt_sn_debug.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt_sn/mqtt_sn_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt_sn/mqtt_sn_debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (MQTT_SN_CLIENT_SUPPORT == ENABLED)
 
 //MQTT-SN message types
-const char_t *const mqttSnMsgTypeLabel[] =
+const char_t *mqttSnMsgTypeLabel[] =
 {
    "ADVERTISE",     //0x00
    "SEARCHGW",      //0x01
@@ -76,7 +76,7 @@ const char_t *const mqttSnMsgTypeLabel[] =
 };
 
 //MQTT-SN return codes
-const char_t *const mqttSnReturnCodeLabel[] =
+const char_t *mqttSnReturnCodeLabel[] =
 {
    "Accepted",                   //0x00
    "Rejected: congestion",       //0x01
@@ -1049,13 +1049,9 @@ const char_t *mqttSnGetMessageName(uint16_t msgType)
 
    //Get the name associated with the message type
    if(msgType < arraysize(mqttSnMsgTypeLabel))
-   {
       return mqttSnMsgTypeLabel[msgType];
-   }
    else
-   {
       return defaultLabel;
-   }
 }
 
 
@@ -1072,13 +1068,9 @@ const char_t *mqttSnGetReturnCodeDesc(uint16_t returnCode)
 
    //Get the description associated with the return code
    if(returnCode < arraysize(mqttSnReturnCodeLabel))
-   {
       return mqttSnReturnCodeLabel[returnCode];
-   }
    else
-   {
       return defaultLabel;
-   }
 }
 
 #endif

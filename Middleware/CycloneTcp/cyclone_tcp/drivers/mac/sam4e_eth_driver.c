@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,9 +34,9 @@
 //Dependencies
 #include <limits.h>
 #include "sam4e.h"
-#include "core/net.h"
-#include "drivers/mac/sam4e_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/sam4e_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -180,25 +180,19 @@ error_t sam4eEthInit(NetInterface *interface)
    sam4eEthInitBufferDesc(interface);
 
    //Clear transmit status register
-   GMAC->GMAC_TSR = GMAC_TSR_HRESP | GMAC_TSR_UND | GMAC_TSR_TXCOMP |
-      GMAC_TSR_TFC | GMAC_TSR_TXGO | GMAC_TSR_RLE | GMAC_TSR_COL |
-      GMAC_TSR_UBR;
-
+   GMAC->GMAC_TSR = GMAC_TSR_HRESP | GMAC_TSR_UND | GMAC_TSR_TXCOMP | GMAC_TSR_TFC |
+      GMAC_TSR_TXGO | GMAC_TSR_RLE | GMAC_TSR_COL | GMAC_TSR_UBR;
    //Clear receive status register
-   GMAC->GMAC_RSR = GMAC_RSR_HNO | GMAC_RSR_RXOVR | GMAC_RSR_REC |
-      GMAC_RSR_BNA;
+   GMAC->GMAC_RSR = GMAC_RSR_HNO | GMAC_RSR_RXOVR | GMAC_RSR_REC | GMAC_RSR_BNA;
 
    //First disable all GMAC interrupts
    GMAC->GMAC_IDR = 0xFFFFFFFF;
-
    //Only the desired ones are enabled
-   GMAC->GMAC_IER = GMAC_IER_HRESP | GMAC_IER_ROVR | GMAC_IER_TCOMP |
-      GMAC_IER_TFC | GMAC_IER_RLEX | GMAC_IER_TUR | GMAC_IER_RXUBR |
-      GMAC_IER_RCOMP;
+   GMAC->GMAC_IER = GMAC_IER_HRESP | GMAC_IER_ROVR | GMAC_IER_TCOMP | GMAC_IER_TFC |
+      GMAC_IER_RLEX | GMAC_IER_TUR | GMAC_IER_RXUBR | GMAC_IER_RCOMP;
 
-   //Read GMAC_ISR register to clear any pending interrupt
+   //Read GMAC ISR register to clear any pending interrupt
    status = GMAC->GMAC_ISR;
-   (void) status;
 
    //Set priority grouping (4 bits for pre-emption priority, no bits for subpriority)
    NVIC_SetPriorityGrouping(SAM4E_ETH_IRQ_PRIORITY_GROUPING);
@@ -218,15 +212,16 @@ error_t sam4eEthInit(NetInterface *interface)
 }
 
 
+//SAM4E-EK or SAM4E-Xplained-Pro evaluation board?
+#if defined(USE_SAM4E_EK) || defined(USE_SAM4E_XPLAINED_PRO)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void sam4eEthInitGpio(NetInterface *interface)
+void sam4eEthInitGpio(NetInterface *interface)
 {
-//SAM4E-EK or SAM4E-Xplained-Pro evaluation board?
-#if defined(USE_SAM4E_EK) || defined(USE_SAM4E_XPLAINED_PRO)
    //Enable PIO peripheral clock
    PMC->PMC_PCER0 = (1 << ID_PIOD);
 
@@ -242,8 +237,9 @@ __weak_func void sam4eEthInitGpio(NetInterface *interface)
 
    //Select MII operation mode
    GMAC->GMAC_UR = GMAC_UR_RMIIMII;
-#endif
 }
+
+#endif
 
 
 /**
@@ -397,12 +393,11 @@ void GMAC_Handler(void)
    //This flag will be set if a higher priority task must be woken
    flag = FALSE;
 
-   //Each time the software reads GMAC_ISR, it has to check the contents
-   //of GMAC_TSR, GMAC_RSR and GMAC_NSR
+   //Each time the software reads GMAC_ISR, it has to check the
+   //contents of GMAC_TSR, GMAC_RSR and GMAC_NSR
    isr = GMAC->GMAC_ISR;
    tsr = GMAC->GMAC_TSR;
    rsr = GMAC->GMAC_RSR;
-   (void) isr;
 
    //Packet transmitted?
    if((tsr & (GMAC_TSR_HRESP | GMAC_TSR_UND | GMAC_TSR_TXCOMP | GMAC_TSR_TFC |
@@ -543,7 +538,7 @@ error_t sam4eEthSendPacket(NetInterface *interface,
 
 error_t sam4eEthReceivePacket(NetInterface *interface)
 {
-   static uint32_t temp[ETH_MAX_FRAME_SIZE / 4];
+   static uint8_t temp[ETH_MAX_FRAME_SIZE];
    error_t error;
    uint_t i;
    uint_t j;
@@ -553,8 +548,7 @@ error_t sam4eEthReceivePacket(NetInterface *interface)
    size_t size;
    size_t length;
 
-   //Initialize variables
-   size = 0;
+   //Initialize SOF and EOF indices
    sofIndex = UINT_MAX;
    eofIndex = UINT_MAX;
 
@@ -624,7 +618,7 @@ error_t sam4eEthReceivePacket(NetInterface *interface)
          //Calculate the number of bytes to read at a time
          n = MIN(size, SAM4E_ETH_RX_BUFFER_SIZE);
          //Copy data from receive buffer
-         osMemcpy((uint8_t *) temp + length, rxBuffer[rxBufferIndex], n);
+         osMemcpy(temp + length, rxBuffer[rxBufferIndex], n);
          //Update byte counters
          length += n;
          size -= n;
@@ -652,7 +646,7 @@ error_t sam4eEthReceivePacket(NetInterface *interface)
       ancillary = NET_DEFAULT_RX_ANCILLARY;
 
       //Pass the packet to the upper layer
-      nicProcessPacket(interface, (uint8_t *) temp, length, &ancillary);
+      nicProcessPacket(interface, temp, length, &ancillary);
       //Valid packet received
       error = NO_ERROR;
    }

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,22 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _LLMNR_COMMON_H
 #define _LLMNR_COMMON_H
 
 //Dependencies
-#include "core/net.h"
-#include "dns/dns_common.h"
-
-//Maximum size of LLMNR messages
-#ifndef LLMNR_MESSAGE_MAX_SIZE
-   #define LLMNR_MESSAGE_MAX_SIZE 512
-#elif (LLMNR_MESSAGE_MAX_SIZE < 1)
-   #error LLMNR_MESSAGE_MAX_SIZE parameter is not valid
-#endif
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_common.h"
 
 //Default resource record TTL (cache lifetime)
 #ifndef LLMNR_DEFAULT_RESOURCE_RECORD_TTL
@@ -51,10 +44,8 @@
 
 //LLMNR port number
 #define LLMNR_PORT 5355
-//Default IP TTL value for LLMNR queries
-#define LLMNR_DEFAULT_QUERY_IP_TTL 1
-//Default IP TTL value for LLMNR responses
-#define LLMNR_DEFAULT_RESPONSE_IP_TTL 255
+//Default IP TTL value
+#define LLMNR_DEFAULT_IP_TTL 255
 
 //LLMNR IPv4 multicast group
 #define LLMNR_IPV4_MULTICAST_ADDR IPV4_ADDR(224, 0, 0, 252)
@@ -65,10 +56,8 @@ extern "C" {
 #endif
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -77,7 +66,7 @@ extern "C" {
  * @brief LLMNR message header
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t id;         //0-1
 #if defined(_CPU_BIG_ENDIAN) && !defined(__ICCRX__)
@@ -102,15 +91,14 @@ typedef __packed_struct
    uint16_t nscount;    //8-9
    uint16_t arcount;    //10-11
    uint8_t questions[]; //12
-} LlmnrHeader;
+} __end_packed LlmnrHeader;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
+
 
 //LLMNR IPv6 multicast group
 extern const Ipv6Addr LLMNR_IPV6_MULTICAST_ADDR;

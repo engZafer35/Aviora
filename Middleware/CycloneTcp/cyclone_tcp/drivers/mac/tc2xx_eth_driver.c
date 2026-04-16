@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -38,9 +38,9 @@
 #include TC_INCLUDE(TCPATH/Ifx_reg.h)
 #include TC_INCLUDE(TCPATH/IfxCpu_bf.h)
 #include "interrupts.h"
-#include "core/net.h"
-#include "drivers/mac/tc2xx_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/tc2xx_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -59,7 +59,7 @@ static Tc2xxTxDmaDesc txDmaDesc[TC2XX_ETH_TX_BUFFER_COUNT]
    __align(4);
 //Receive DMA descriptors
 static Tc2xxRxDmaDesc rxDmaDesc[TC2XX_ETH_RX_BUFFER_COUNT]
-   __align(4);
+  __align(4);
 
 //GCC compiler?
 #else
@@ -277,12 +277,17 @@ error_t tc2xxEthInit(NetInterface *interface)
 }
 
 
+//AURIX TC265 Starter Kit, AURIX TC277 TFT Application Kit or
+//AURIX TC297 TFT Application Kit?
+#if defined(USE_KIT_AURIX_TC265_TRB) || defined(USE_KIT_AURIX_TC277_TFT) || \
+   defined(USE_KIT_AURIX_TC297_TFT)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void tc2xxEthInitGpio(NetInterface *interface)
+void tc2xxEthInitGpio(NetInterface *interface)
 {
 //AURIX TC265 Starter Kit?
 #if defined(USE_KIT_AURIX_TC265_TRB)
@@ -437,6 +442,8 @@ __weak_func void tc2xxEthInitGpio(NetInterface *interface)
    MODULE_ETH.GPCTL.B.EPR = 1;
 #endif
 }
+
+#endif
 
 
 /**
@@ -625,7 +632,7 @@ void tc2xxEthIrqHandler(int_t arg)
    //Packet received?
    if((status & ETH_STATUS_RI) != 0)
    {
-      //Clear RI interrupt flag
+      //Disable RI interrupt flag
       MODULE_ETH.STATUS.U = ETH_STATUS_RI;
 
       //Set event flag

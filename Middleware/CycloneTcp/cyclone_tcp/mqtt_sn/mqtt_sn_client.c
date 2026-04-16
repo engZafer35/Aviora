@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,19 +25,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL MQTT_SN_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "mqtt_sn/mqtt_sn_client.h"
-#include "mqtt_sn/mqtt_sn_client_message.h"
-#include "mqtt_sn/mqtt_sn_client_transport.h"
-#include "mqtt_sn/mqtt_sn_client_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt_sn/mqtt_sn_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt_sn/mqtt_sn_client_message.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt_sn/mqtt_sn_client_transport.h"
+#include "../../../CycloneTcp/cyclone_tcp/mqtt_sn/mqtt_sn_client_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (MQTT_SN_CLIENT_SUPPORT == ENABLED)
@@ -651,13 +651,9 @@ error_t mqttSnClientPublish(MqttSnClientContext *context,
 
    //Initialize message identifier
    if(dup)
-   {
       publishMsgId = *msgId;
-   }
    else
-   {
       publishMsgId = 0;
-   }
 
    //Publish procedure
    while(!error)

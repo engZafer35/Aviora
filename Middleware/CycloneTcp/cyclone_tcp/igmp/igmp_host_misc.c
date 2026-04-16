@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,18 +25,18 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL IGMP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "ipv4/ipv4.h"
-#include "igmp/igmp_host.h"
-#include "igmp/igmp_host_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_host.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_host_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV4_SUPPORT == ENABLED && IGMP_HOST_SUPPORT == ENABLED)
@@ -243,7 +243,7 @@ void igmpHostProcessMembershipQuery(NetInterface *interface,
                      if(maxRespTime < (entry->timer - time))
                      {
                         //Restart delay timer
-                        entry->timer = time + netGenerateRandRange(0, maxRespTime);
+                        entry->timer = time + igmpRand(maxRespTime);
                      }
                   }
                }
@@ -252,7 +252,7 @@ void igmpHostProcessMembershipQuery(NetInterface *interface,
                   //Switch to the "Delaying Member" state
                   entry->state = IGMP_HOST_GROUP_STATE_DELAYING_MEMBER;
                   //Delay the response by a random amount of time
-                  entry->timer = time + netGenerateRandRange(0, maxRespTime);
+                  entry->timer = time + igmpRand(maxRespTime);
                }
                else
                {
@@ -307,6 +307,19 @@ void igmpHostProcessMembershipReport(NetInterface *interface,
          }
       }
    }
+}
+
+
+/**
+ * @brief Get a random value in the specified range
+ * @param[in] max Upper bound
+ * @return Random value in the specified range
+ **/
+
+uint32_t igmpRand(uint32_t max)
+{
+   //Return a random value in the given range
+   return netGetRand() % (max + 1);
 }
 
 #endif

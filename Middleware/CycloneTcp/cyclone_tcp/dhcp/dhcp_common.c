@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,22 +25,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL DHCP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "dhcp/dhcp_client.h"
-#include "dhcp/dhcp_server.h"
-#include "dhcp/dhcp_common.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_common.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
-#if (IPV4_SUPPORT == ENABLED && (DHCP_CLIENT_SUPPORT == ENABLED || \
-   DHCP_SERVER_SUPPORT == ENABLED))
+#if (IPV4_SUPPORT == ENABLED)
 
 
 /**
@@ -107,7 +104,7 @@ error_t dhcpAddOption(DhcpMessage *message, size_t *messageLen,
 
 
 /**
- * @brief Search a DHCP message for a given option
+ * @brief Find the specified option in a DHCP message
  * @param[in] message Pointer to the DHCP message
  * @param[in] length Length of the message
  * @param[in] optionCode Code of the option to find
@@ -171,7 +168,7 @@ DhcpOption *dhcpGetOption(const DhcpMessage *message, size_t length,
       }
    }
 
-   //The specified option code was not found
+   //The specified option code does not exist
    return NULL;
 }
 

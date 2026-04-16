@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "drivers/phy/dp83826_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/phy/dp83826_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -59,8 +59,6 @@ const PhyDriver dp83826PhyDriver =
 
 error_t dp83826Init(NetInterface *interface)
 {
-   uint16_t value;
-
    //Debug message
    TRACE_INFO("Initializing DP83826...\r\n");
 
@@ -95,15 +93,11 @@ error_t dp83826Init(NetInterface *interface)
    dp83826DumpPhyReg(interface);
 
    //Configure PWR_DOWN/INT pin as an interrupt output
-   value = dp83826ReadPhyReg(interface, DP83826_PHYSCR);
-   value |= DP83826_PHYSCR_INT_EN | DP83826_PHYSCR_INT_OE;
-   dp83826WritePhyReg(interface, DP83826_PHYSCR, value);
+   dp83826WritePhyReg(interface, DP83826_PHYSCR, DP83826_PHYSCR_INT_EN |
+      DP83826_PHYSCR_INT_OE);
 
    //The PHY will generate interrupts when link status changes are detected
    dp83826WritePhyReg(interface, DP83826_MISR1, DP83826_MISR1_LINK_INT_EN);
-
-   //Perform custom configuration
-   dp83826InitHook(interface);
 
    //Force the TCP/IP stack to poll the link state at startup
    interface->phyEvent = TRUE;
@@ -112,16 +106,6 @@ error_t dp83826Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief DP83826 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void dp83826InitHook(NetInterface *interface)
-{
 }
 
 
@@ -323,58 +307,4 @@ void dp83826DumpPhyReg(NetInterface *interface)
 
    //Terminate with a line feed
    TRACE_DEBUG("\r\n");
-}
-
-
-/**
- * @brief Write MMD register
- * @param[in] interface Underlying network interface
- * @param[in] devAddr Device address
- * @param[in] regAddr Register address
- * @param[in] data MMD register value
- **/
-
-void dp83826WriteMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr, uint16_t data)
-{
-   //Select register operation
-   dp83826WritePhyReg(interface, DP83826_REGCR,
-      DP83826_REGCR_CMD_ADDR | (devAddr & DP83826_REGCR_DEVAD));
-
-   //Write MMD register address
-   dp83826WritePhyReg(interface, DP83826_ADDAR, regAddr);
-
-   //Select data operation
-   dp83826WritePhyReg(interface, DP83826_REGCR,
-      DP83826_REGCR_CMD_DATA_NO_POST_INC | (devAddr & DP83826_REGCR_DEVAD));
-
-   //Write the content of the MMD register
-   dp83826WritePhyReg(interface, DP83826_ADDAR, data);
-}
-
-
-/**
- * @brief Read MMD register
- * @param[in] interface Underlying network interface
- * @param[in] devAddr Device address
- * @param[in] regAddr Register address
- * @return MMD register value
- **/
-
-uint16_t dp83826ReadMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr)
-{
-   //Select register operation
-   dp83826WritePhyReg(interface, DP83826_REGCR,
-      DP83826_REGCR_CMD_ADDR | (devAddr & DP83826_REGCR_DEVAD));
-
-   //Write MMD register address
-   dp83826WritePhyReg(interface, DP83826_ADDAR, regAddr);
-
-   //Select data operation
-   dp83826WritePhyReg(interface, DP83826_REGCR,
-      DP83826_REGCR_CMD_DATA_NO_POST_INC | (devAddr & DP83826_REGCR_DEVAD));
-
-   //Read the content of the MMD register
-   return dp83826ReadPhyReg(interface, DP83826_ADDAR);
 }

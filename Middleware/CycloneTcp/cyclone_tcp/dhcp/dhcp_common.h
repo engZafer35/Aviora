@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _DHCP_COMMON_H
 #define _DHCP_COMMON_H
 
 //Dependencies
-#include "core/net.h"
-#include "core/ethernet.h"
-#include "ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ethernet.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
 
 //UDP ports used by DHCP servers and clients
 #define DHCP_SERVER_PORT 67
@@ -192,10 +192,8 @@ typedef enum
 } DhcpOptionCode;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -204,7 +202,7 @@ typedef enum
  * @brief DHCP message
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t op;           //0
    uint8_t htype;        //1
@@ -223,27 +221,26 @@ typedef __packed_struct
    uint8_t file[128];    //108-235
    uint32_t magicCookie; //236-239
    uint8_t options[];    //240
-} DhcpMessage;
+} __end_packed DhcpMessage;
 
 
 /**
  * @brief DHCP option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t code;    //0
    uint8_t length;  //1
    uint8_t value[]; //2
-} DhcpOption;
+} __end_packed DhcpOption;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
+
 
 //DHCP related functions
 error_t dhcpAddOption(DhcpMessage *message, size_t *messageLen,

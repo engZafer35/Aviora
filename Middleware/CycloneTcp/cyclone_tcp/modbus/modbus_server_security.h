@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _MODBUS_SERVER_SECURITY_H
 #define _MODBUS_SERVER_SECURITY_H
 
 //Dependencies
-#include "core/net.h"
-#include "modbus/modbus_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_server.h"
 
 //TLS supported?
 #if (MODBUS_SERVER_TLS_SUPPORT == ENABLED)
@@ -41,7 +41,6 @@
    #include "encoding/asn1.h"
    #include "encoding/oid.h"
    #include "pkix/x509_cert_parse.h"
-   #include "pkix/x509_cert_ext_parse.h"
 #endif
 
 //C++ guard

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,9 +33,9 @@
 
 //Dependencies
 #include "mk70f12.h"
-#include "core/net.h"
-#include "drivers/mac/mk7x_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/mk7x_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -239,15 +239,16 @@ error_t mk7xEthInit(NetInterface *interface)
 }
 
 
+//TWR-K70F120M evaluation board?
+#if defined(USE_TWR_K70F120M)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void mk7xEthInitGpio(NetInterface *interface)
+void mk7xEthInitGpio(NetInterface *interface)
 {
-//TWR-K70F120M evaluation board?
-#if defined(USE_TWR_K70F120M)
    //Enable PORTA and PORTB peripheral clocks
    SIM->SCGC5 |= SIM_SCGC5_PORTA_MASK | SIM_SCGC5_PORTB_MASK;
 
@@ -270,8 +271,9 @@ __weak_func void mk7xEthInitGpio(NetInterface *interface)
    PORTB->PCR[0] = PORT_PCR_MUX(4) | PORT_PCR_PE_MASK | PORT_PCR_PS_MASK;
    //Configure RMII0_MDC (PTB1)
    PORTB->PCR[1] = PORT_PCR_MUX(4);
-#endif
 }
+
+#endif
 
 
 /**
@@ -372,6 +374,7 @@ void mk7xEthEnableIrq(NetInterface *interface)
    NVIC_EnableIRQ(ENET_Receive_IRQn);
    NVIC_EnableIRQ(ENET_Error_IRQn);
 
+
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
    {
@@ -401,6 +404,7 @@ void mk7xEthDisableIrq(NetInterface *interface)
    NVIC_DisableIRQ(ENET_Transmit_IRQn);
    NVIC_DisableIRQ(ENET_Receive_IRQn);
    NVIC_DisableIRQ(ENET_Error_IRQn);
+
 
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
@@ -978,7 +982,6 @@ uint32_t mk7xEthCalcCrc(const void *data, size_t length)
    {
       //Update CRC value
       crc ^= p[i];
-
       //The message is processed bit by bit
       for(j = 0; j < 8; j++)
       {

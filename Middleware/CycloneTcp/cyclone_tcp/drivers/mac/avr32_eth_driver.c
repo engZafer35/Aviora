@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -36,9 +36,9 @@
 #include <avr32/io.h>
 #include "interrupt.h"
 #include "intc.h"
-#include "core/net.h"
-#include "drivers/mac/avr32_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/avr32_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -180,31 +180,22 @@ error_t avr32EthInit(NetInterface *interface)
    avr32EthInitBufferDesc(interface);
 
    //Clear transmit status register
-   AVR32_MACB.tsr = AVR32_MACB_TSR_UND_MASK | AVR32_MACB_TSR_COMP_MASK |
-      AVR32_MACB_TSR_BEX_MASK | AVR32_MACB_TSR_TGO_MASK |
-      AVR32_MACB_TSR_RLE_MASK | AVR32_MACB_TSR_COL_MASK |
-      AVR32_MACB_TSR_UBR_MASK;
-
+   AVR32_MACB.tsr = AVR32_MACB_TSR_UND_MASK | AVR32_MACB_TSR_COMP_MASK | AVR32_MACB_TSR_BEX_MASK |
+      AVR32_MACB_TSR_TGO_MASK | AVR32_MACB_TSR_RLE_MASK | AVR32_MACB_TSR_COL_MASK | AVR32_MACB_TSR_UBR_MASK;
    //Clear receive status register
-   AVR32_MACB.rsr = AVR32_MACB_RSR_OVR_MASK | AVR32_MACB_RSR_REC_MASK |
-      AVR32_MACB_RSR_BNA_MASK;
+   AVR32_MACB.rsr = AVR32_MACB_RSR_OVR_MASK | AVR32_MACB_RSR_REC_MASK | AVR32_MACB_RSR_BNA_MASK;
 
    //First disable all EMAC interrupts
    AVR32_MACB.idr = 0xFFFFFFFF;
-
    //Only the desired ones are enabled
-   AVR32_MACB.ier = AVR32_MACB_IER_ROVR_MASK | AVR32_MACB_IER_TCOMP_MASK |
-      AVR32_MACB_IER_TXERR_MASK | AVR32_MACB_IER_RLE_MASK |
-      AVR32_MACB_IER_TUND_MASK | AVR32_MACB_IER_RXUBR_MASK |
-      AVR32_MACB_IER_RCOMP_MASK;
+   AVR32_MACB.ier = AVR32_MACB_IER_ROVR_MASK | AVR32_MACB_IER_TCOMP_MASK | AVR32_MACB_IER_TXERR_MASK |
+      AVR32_MACB_IER_RLE_MASK | AVR32_MACB_IER_TUND_MASK | AVR32_MACB_IER_RXUBR_MASK | AVR32_MACB_IER_RCOMP_MASK;
 
-   //Read EMAC_ISR register to clear any pending interrupt
+   //Read EMAC ISR register to clear any pending interrupt
    status = AVR32_MACB.isr;
-   (void) status;
 
    //Register interrupt handler
-   INTC_register_interrupt(avr32EthIrqWrapper, AVR32_MACB_IRQ,
-      AVR32_ETH_IRQ_PRIORITY);
+   INTC_register_interrupt(avr32EthIrqWrapper, AVR32_MACB_IRQ, AVR32_ETH_IRQ_PRIORITY);
 
    //Enable the EMAC to transmit and receive data
    AVR32_MACB.ncr |= AVR32_MACB_NCR_TE_MASK | AVR32_MACB_NCR_RE_MASK;
@@ -217,15 +208,16 @@ error_t avr32EthInit(NetInterface *interface)
 }
 
 
+//EVK1105 evaluation board?
+#if defined(USE_EVK1105)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void avr32EthInitGpio(NetInterface *interface)
+void avr32EthInitGpio(NetInterface *interface)
 {
-//EVK1105 evaluation board?
-#if defined(USE_EVK1105)
    //Assign RMII pins to peripheral A function
    AVR32_GPIO.port[1].pmr0c = MACB_RMII_MASK;
    AVR32_GPIO.port[1].pmr1c =MACB_RMII_MASK;
@@ -235,8 +227,9 @@ __weak_func void avr32EthInitGpio(NetInterface *interface)
 
    //Select RMII operation mode
    AVR32_MACB.usrio &= ~AVR32_MACB_USRIO_RMII_MASK;
-#endif
 }
+
+#endif
 
 
 /**
@@ -405,12 +398,11 @@ bool_t avr32EthIrqHandler(void)
    //This flag will be set if a higher priority task must be woken
    flag = FALSE;
 
-   //Each time the software reads EMAC_ISR, it has to check the contents
-   //of EMAC_TSR, EMAC_RSR and EMAC_NSR
+   //Each time the software reads EMAC_ISR, it has to check the
+   //contents of EMAC_TSR, EMAC_RSR and EMAC_NSR
    isr = AVR32_MACB.isr;
    tsr = AVR32_MACB.tsr;
    rsr = AVR32_MACB.rsr;
-   (void) isr;
 
    //Packet transmitted?
    if((tsr & (AVR32_MACB_TSR_UND_MASK | AVR32_MACB_TSR_COMP_MASK |
@@ -553,7 +545,7 @@ error_t avr32EthSendPacket(NetInterface *interface,
 
 uint_t avr32EthReceivePacket(NetInterface *interface)
 {
-   static uint32_t temp[ETH_MAX_FRAME_SIZE / 4];
+   static uint8_t temp[ETH_MAX_FRAME_SIZE];
    error_t error;
    uint_t i;
    uint_t j;
@@ -563,8 +555,7 @@ uint_t avr32EthReceivePacket(NetInterface *interface)
    size_t size;
    size_t length;
 
-   //Initialize variables
-   size = 0;
+   //Initialize SOF and EOF indices
    sofIndex = UINT_MAX;
    eofIndex = UINT_MAX;
 
@@ -634,7 +625,7 @@ uint_t avr32EthReceivePacket(NetInterface *interface)
          //Calculate the number of bytes to read at a time
          n = MIN(size, AVR32_ETH_RX_BUFFER_SIZE);
          //Copy data from receive buffer
-         osMemcpy((uint8_t *) temp + length, rxBuffer[rxBufferIndex], n);
+         osMemcpy(temp + length, rxBuffer[rxBufferIndex], n);
          //Update byte counters
          length += n;
          size -= n;
@@ -662,7 +653,7 @@ uint_t avr32EthReceivePacket(NetInterface *interface)
       ancillary = NET_DEFAULT_RX_ANCILLARY;
 
       //Pass the packet to the upper layer
-      nicProcessPacket(interface, (uint8_t *) temp, length, &ancillary);
+      nicProcessPacket(interface, temp, length, &ancillary);
       //Valid packet received
       error = NO_ERROR;
    }

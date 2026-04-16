@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -32,21 +32,21 @@
  * details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL SNMP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "mibs/mib_common.h"
-#include "mibs/snmp_vacm_mib_module.h"
-#include "mibs/snmp_vacm_mib_impl.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/snmp_vacm_mib_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/snmp_vacm_mib_impl.h"
 #include "core/crypto.h"
 #include "encoding/asn1.h"
 #include "encoding/oid.h"
-#include "debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (SNMP_VACM_MIB_SUPPORT == ENABLED)

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _DEBUG_H
@@ -31,7 +31,8 @@
 
 //Dependencies
 #include <stdio.h>
-#include "os_port.h"
+
+#include "../../CycloneTcp/common/os_port.h"
 
 //Trace level definitions
 #define TRACE_LEVEL_OFF      0
@@ -44,12 +45,12 @@
 
 //Default trace level
 #ifndef TRACE_LEVEL
-   #define TRACE_LEVEL TRACE_LEVEL_DEBUG
+   #define TRACE_LEVEL TRACE_LEVEL_OFF
 #endif
 
 //Trace output redirection
 #ifndef TRACE_PRINTF
-   #define TRACE_PRINTF(...) osSuspendAllTasks(), fprintf(stdout, __VA_ARGS__), osResumeAllTasks()
+   #define TRACE_PRINTF(...) osSuspendAllTasks(), fprintf(stderr, __VA_ARGS__), osResumeAllTasks()
 #endif
 
 #ifndef TRACE_ARRAY

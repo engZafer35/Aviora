@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _DHCPV6_RELAY_H
 #define _DHCPV6_RELAY_H
 
 //Dependencies
-#include "dhcpv6/dhcpv6_common.h"
-#include "core/socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcpv6/dhcpv6_common.h"
 
 //DHCPv6 relay agent support
 #ifndef DHCPV6_RELAY_SUPPORT
@@ -76,7 +76,6 @@ extern "C" {
 
 typedef struct
 {
-   OsTaskParameters task;                                     ///<Task parameters
    NetInterface *serverInterface;                             ///<Network-facing interface
    NetInterface *clientInterface[DHCPV6_RELAY_MAX_CLIENT_IF]; ///<Client-facing interfaces
    uint_t clientInterfaceCount;                               ///<Number of client-facing interfaces
@@ -101,8 +100,6 @@ typedef struct
    bool_t stopRequest;                                        ///<Stop request
    OsEvent ackEvent;                                          ///<Event object use to acknowledge user requests
    OsEvent event;                                             ///<Event object used to poll the sockets
-   OsTaskParameters taskParams;                               ///<Task parameters
-   OsTaskId taskId;                                           ///<Task identifier
    uint8_t buffer[DHCPV6_MAX_MSG_SIZE];                       ///<Scratch buffer to store DHCPv6 messages
 } Dhcpv6RelayContext;
 

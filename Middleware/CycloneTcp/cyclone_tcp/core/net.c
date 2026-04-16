@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,41 +33,41 @@
 
 //Dependencies
 #include <stdlib.h>
-#include "core/net.h"
-#include "core/socket.h"
-#include "core/raw_socket.h"
-#include "core/tcp_timer.h"
-#include "core/tcp_misc.h"
-#include "core/ethernet.h"
-#include "ipv4/arp.h"
-#include "ipv4/ipv4.h"
-#include "ipv4/ipv4_routing.h"
-#include "ipv4/auto_ip_misc.h"
-#include "igmp/igmp_host.h"
-#include "igmp/igmp_router.h"
-#include "igmp/igmp_snooping.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_routing.h"
-#include "ipv6/mld.h"
-#include "ipv6/ndp.h"
-#include "ipv6/ndp_router_adv.h"
-#include "dhcp/dhcp_client_misc.h"
-#include "dhcp/dhcp_server_misc.h"
-#include "dhcpv6/dhcpv6_client_misc.h"
-#include "dns/dns_cache.h"
-#include "dns/dns_client.h"
-#include "mdns/mdns_client.h"
-#include "mdns/mdns_responder.h"
-#include "mdns/mdns_common.h"
-#include "dns_sd/dns_sd.h"
-#include "netbios/nbns_client.h"
-#include "netbios/nbns_responder.h"
-#include "netbios/nbns_common.h"
-#include "llmnr/llmnr_responder.h"
-#include "str.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/raw_socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/tcp_timer.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/tcp_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ethernet.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/arp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_routing.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/auto_ip_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_host.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_router.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_snooping.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_routing.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/mld.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_router_adv.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_client_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_server_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcpv6/dhcpv6_client_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_cache.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_responder.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns_sd/dns_sd.h"
+#include "../../../CycloneTcp/cyclone_tcp/netbios/nbns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/netbios/nbns_responder.h"
+#include "../../../CycloneTcp/cyclone_tcp/netbios/nbns_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/llmnr/llmnr_responder.h"
+#include "../../../CycloneTcp/common/str.h"
+#include "../../../CycloneTcp/common/debug.h"
 
-#if (defined(WEB_SOCKET_SUPPORT) && WEB_SOCKET_SUPPORT == ENABLED)
+#if (WEB_SOCKET_SUPPORT == ENABLED)
    #include "web_socket/web_socket.h"
 #endif
 
@@ -76,68 +76,18 @@ NetContext netContext;
 
 
 /**
- * @brief Initialize settings with default values
- * @param[out] settings Structure that contains TCP/IP stack settings
- **/
-
-void netGetDefaultSettings(NetSettings *settings)
-{
-   //Default task parameters
-   settings->task = OS_TASK_DEFAULT_PARAMS;
-   settings->task.stackSize = NET_TASK_STACK_SIZE;
-   settings->task.priority = NET_TASK_PRIORITY;
-}
-
-
-/**
- * @brief Initialize TCP/IP stack (deprecated)
- * @param[in] context Pointer to the TCP/IP stack context
- * @param[in] settings TCP/IP stack specific settings
+ * @brief TCP/IP stack initialization
  * @return Error code
  **/
 
 error_t netInit(void)
 {
    error_t error;
-   NetSettings netSettings;
-
-   //Get default settings
-   netGetDefaultSettings(&netSettings);
-
-   //Initialize TCP/IP stack
-   error = netInitEx(&netContext, &netSettings);
-
-   //Check status code
-   if(!error)
-   {
-      //Start TCP/IP stack
-      error = netStart(&netContext);
-   }
-
-   //Return status code
-   return error;
-}
-
-
-/**
- * @brief Initialize TCP/IP stack
- * @param[in] context Pointer to the TCP/IP stack context
- * @param[in] settings TCP/IP stack specific settings
- * @return Error code
- **/
-
-error_t netInitEx(NetContext *context, const NetSettings *settings)
-{
-   error_t error;
    uint_t i;
    NetInterface *interface;
 
    //Clear TCP/IP stack context
-   osMemset(context, 0, sizeof(NetContext));
-
-   //Initialize task parameters
-   context->taskParams = settings->task;
-   context->taskId = OS_INVALID_TASK_ID;
+   osMemset(&netContext, 0, sizeof(NetContext));
 
    //The TCP/IP process is currently suspended
    netTaskRunning = FALSE;
@@ -185,10 +135,6 @@ error_t netInitEx(NetContext *context, const NetSettings *settings)
       //Default PHY address
       interface->phyAddr = UINT8_MAX;
 #endif
-#if (TCP_SUPPORT == ENABLED)
-      //Default TCP initial retransmission timeout
-      interface->initialRto = TCP_INITIAL_RTO;
-#endif
    }
 
    //Socket related initialization
@@ -197,7 +143,7 @@ error_t netInitEx(NetContext *context, const NetSettings *settings)
    if(error)
       return error;
 
-#if (defined(WEB_SOCKET_SUPPORT) && WEB_SOCKET_SUPPORT == ENABLED)
+#if (WEB_SOCKET_SUPPORT == ENABLED)
    //WebSocket related initialization
    webSocketInit();
 #endif
@@ -297,33 +243,26 @@ error_t netInitEx(NetContext *context, const NetSettings *settings)
    dnsSdTickCounter = 0;
 #endif
 
-   //Successful initialization
-   return NO_ERROR;
-}
-
-
-/**
- * @brief Start TCP/IP stack
- * @param[in] context Pointer to the TCP/IP stack context
- * @return Error code
- **/
-
-error_t netStart(NetContext *context)
-{
-   //Create a task
-   context->taskId = osCreateTask("TCP/IP", (OsTaskCode) netTaskEx, context,
-      &context->taskParams);
+#if (NET_STATIC_OS_RESOURCES == ENABLED)
+   //Create a task to handle TCP/IP events
+   osCreateStaticTask(&netTaskInstance, "TCP/IP Stack", (OsTaskCode) netTask,
+      NULL, netTaskStack, NET_TASK_STACK_SIZE, NET_TASK_PRIORITY);
+#else
+   //Create a task to handle TCP/IP events
+   netTaskHandle = osCreateTask("TCP/IP Stack", (OsTaskCode) netTask,
+      NULL, NET_TASK_STACK_SIZE, NET_TASK_PRIORITY);
 
    //Unable to create the task?
-   if(context->taskId == OS_INVALID_TASK_ID)
+   if(netTaskHandle == OS_INVALID_HANDLE)
       return ERROR_OUT_OF_RESOURCES;
+#endif
 
 #if (NET_RTOS_SUPPORT == DISABLED)
    //The TCP/IP process is now running
    netTaskRunning = TRUE;
 #endif
 
-   //Successful processing
+   //Successful initialization
    return NO_ERROR;
 }
 
@@ -345,10 +284,7 @@ error_t netSeedRand(const uint8_t *seed, size_t length)
       return ERROR_INVALID_PARAMETER;
 
    //Get exclusive access
-   if(netTaskRunning)
-   {
-      osAcquireMutex(&netMutex);
-   }
+   osAcquireMutex(&netMutex);
 
    //Save random seed
    for(i = 0, j = 0; i < NET_RAND_SEED_SIZE; i++)
@@ -367,98 +303,10 @@ error_t netSeedRand(const uint8_t *seed, size_t length)
    netInitRand();
 
    //Release exclusive access
-   if(netTaskRunning)
-   {
-      osReleaseMutex(&netMutex);
-   }
+   osReleaseMutex(&netMutex);
 
    //Successful processing
    return NO_ERROR;
-}
-
-
-/**
- * @brief Generate a random 32-bit value
- * @return Random value
- **/
-
-uint32_t netGetRand(void)
-{
-   uint32_t value;
-
-   //Get exclusive access
-   if(netTaskRunning)
-   {
-      osAcquireMutex(&netMutex);
-   }
-
-   //Generate a random 32-bit value
-   value = netGenerateRand();
-
-   //Release exclusive access
-   if(netTaskRunning)
-   {
-      osReleaseMutex(&netMutex);
-   }
-
-   //Return the random value
-   return value;
-}
-
-
-/**
- * @brief Generate a random value in the specified range
- * @param[in] min Lower bound
- * @param[in] max Upper bound
- * @return Random value in the specified range
- **/
-
-uint32_t netGetRandRange(uint32_t min, uint32_t max)
-{
-   uint32_t value;
-
-   //Get exclusive access
-   if(netTaskRunning)
-   {
-      osAcquireMutex(&netMutex);
-   }
-
-   //Generate a random value in the specified range
-   value = netGenerateRandRange(min, max);
-
-   //Release exclusive access
-   if(netTaskRunning)
-   {
-      osReleaseMutex(&netMutex);
-   }
-
-   //Return the random value
-   return value;
-}
-
-
-/**
- * @brief Get a string of random data
- * @param[out] data Buffer where to store random data
- * @param[in] length Number of random bytes to generate
- **/
-
-void netGetRandData(uint8_t *data, size_t length)
-{
-   //Get exclusive access
-   if(netTaskRunning)
-   {
-      osAcquireMutex(&netMutex);
-   }
-
-   //Generate a random value in the specified range
-   netGenerateRandData(data, length);
-
-   //Release exclusive access
-   if(netTaskRunning)
-   {
-      osReleaseMutex(&netMutex);
-   }
 }
 
 
@@ -641,14 +489,12 @@ error_t netSetInterfaceName(NetInterface *interface, const char_t *name)
    if(interface == NULL || name == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //Make sure the length of the interface name is acceptable
-   if(osStrlen(name) > NET_MAX_IF_NAME_LEN)
-      return ERROR_INVALID_LENGTH;
-
    //Get exclusive access
    osAcquireMutex(&netMutex);
+
    //Set interface name
-   osStrcpy(interface->name, name);
+   strSafeCopy(interface->name, name, NET_MAX_IF_NAME_LEN);
+
    //Release exclusive access
    osReleaseMutex(&netMutex);
 
@@ -670,14 +516,12 @@ error_t netSetHostname(NetInterface *interface, const char_t *name)
    if(interface == NULL || name == NULL)
       return ERROR_INVALID_PARAMETER;
 
-   //Make sure the length of the host name is acceptable
-   if(osStrlen(name) > NET_MAX_HOSTNAME_LEN)
-      return ERROR_INVALID_LENGTH;
-
    //Get exclusive access
    osAcquireMutex(&netMutex);
+
    //Set host name
-   osStrcpy(interface->hostname, name);
+   strSafeCopy(interface->hostname, name, NET_MAX_HOSTNAME_LEN);
+
    //Release exclusive access
    osReleaseMutex(&netMutex);
 
@@ -1085,112 +929,18 @@ bool_t netGetLinkState(NetInterface *interface)
    bool_t linkState;
 
    //Make sure the network interface is valid
-   if(interface != NULL)
-   {
-      //Get exclusive access
-      osAcquireMutex(&netMutex);
-      //Retrieve link state
-      linkState = interface->linkState;
-      //Release exclusive access
-      osReleaseMutex(&netMutex);
-   }
-   else
-   {
-      //Unknown link state
-      linkState = FALSE;
-   }
+   if(interface == NULL)
+      return FALSE;
+
+   //Get exclusive access
+   osAcquireMutex(&netMutex);
+   //Retrieve link state
+   linkState = interface->linkState;
+   //Release exclusive access
+   osReleaseMutex(&netMutex);
 
    //Return link state
    return linkState;
-}
-
-
-/**
- * @brief Get link speed
- * @param[in] interface Pointer to the desired network interface
- * @return Link speed
- **/
-
-uint_t netGetLinkSpeed(NetInterface *interface)
-{
-   uint_t linkSpeed;
-
-   //Make sure the network interface is valid
-   if(interface != NULL)
-   {
-      //Get exclusive access
-      osAcquireMutex(&netMutex);
-      //Retrieve link speed
-      linkSpeed = interface->linkSpeed;
-      //Release exclusive access
-      osReleaseMutex(&netMutex);
-   }
-   else
-   {
-      //Unknown link speed
-      linkSpeed = NIC_LINK_SPEED_UNKNOWN;
-   }
-
-   //Return link speed
-   return linkSpeed;
-}
-
-
-/**
- * @brief Get duplex mode
- * @param[in] interface Pointer to the desired network interface
- * @return Duplex mode
- **/
-
-NicDuplexMode netGetDuplexMode(NetInterface *interface)
-{
-   NicDuplexMode duplexMode;
-
-   //Make sure the network interface is valid
-   if(interface != NULL)
-   {
-      //Get exclusive access
-      osAcquireMutex(&netMutex);
-      //Retrieve duplex mode
-      duplexMode = interface->duplexMode;
-      //Release exclusive access
-      osReleaseMutex(&netMutex);
-   }
-   else
-   {
-      //Unknown duplex mode
-      duplexMode = NIC_UNKNOWN_DUPLEX_MODE;
-   }
-
-   //Return duplex mode
-   return duplexMode;
-}
-
-
-/**
- * @brief Enable promiscuous mode
- * @param[in] interface Pointer to the desired network interface
- * @param[in] enable Enable or disable promiscuous mode
- * @return Error code
- **/
-
-error_t netEnablePromiscuousMode(NetInterface *interface, bool_t enable)
-{
-   //Make sure the network interface is valid
-   if(interface == NULL)
-      return ERROR_INVALID_PARAMETER;
-
-#if (ETH_SUPPORT == ENABLED)
-   //Get exclusive access
-   osAcquireMutex(&netMutex);
-   //Enable or disable promiscuous mode
-   interface->promiscuous = enable;
-   //Release exclusive access
-   osReleaseMutex(&netMutex);
-#endif
-
-   //Successful processing
-   return NO_ERROR;
 }
 
 
@@ -1293,7 +1043,7 @@ error_t netConfigInterface(NetInterface *interface)
          break;
 #endif
 
-#if (NBNS_CLIENT_SUPPORT == ENABLED || NBNS_RESPONDER_SUPPORT == ENABLED)
+#if 0//(NBNS_CLIENT_SUPPORT == ENABLED || NBNS_RESPONDER_SUPPORT == ENABLED)
       //NetBIOS Name Service related initialization
       error = nbnsInit(interface);
       //Any error to report?
@@ -1521,21 +1271,10 @@ error_t netStopInterface(NetInterface *interface)
 
 
 /**
- * @brief TCP/IP events handling (deprecated)
+ * @brief TCP/IP events handling
  **/
 
 void netTask(void)
-{
-   netTaskEx(&netContext);
-}
-
-
-/**
- * @brief TCP/IP events handling
- * @param[in] context Pointer to the TCP/IP stack context
- **/
-
-void netTaskEx(NetContext *context)
 {
    uint_t i;
    bool_t status;
@@ -1582,13 +1321,9 @@ void netTaskEx(NetContext *context)
 
       //Compute the maximum blocking time when waiting for an event
       if(timeCompare(time, netTimestamp) < 0)
-      {
          timeout = netTimestamp - time;
-      }
       else
-      {
          timeout = 0;
-      }
 
       //Receive notifications when a frame has been received, or the
       //link state of any network interfaces has changed

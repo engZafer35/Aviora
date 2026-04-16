@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -32,9 +32,9 @@
 //Dependencies
 #include <stdio.h>
 #include <stdlib.h>
-#include "os_port.h"
-#include "os_port_none.h"
-#include "debug.h"
+#include "../../CycloneTcp/common/os_port.h"
+#include "../../CycloneTcp/common/os_port_none.h"
+#include "../../CycloneTcp/common/debug.h"
 
 //Platform-specific dependencies
 #if defined(__linux__) || defined(__FreeBSD__)
@@ -44,14 +44,7 @@
 #endif
 
 //Tick count
-volatile systime_t systemTicks = 0;
-
-//Default task parameters
-const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
-{
-   0, //Size of the stack
-   0  //Task priority
-};
+systime_t systemTicks = 0;
 
 
 /**
@@ -71,35 +64,35 @@ void osInitKernel(void)
 
 void osStartKernel(void)
 {
-   //Not implemented
 }
 
 
 /**
- * @brief Create a task
- * @param[in] name NULL-terminated string identifying the task
+ * @brief Create a new task
+ * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] arg Argument passed to the task function
- * @param[in] params Task parameters
- * @return Task identifier referencing the newly created task
+ * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] stackSize The initial size of the stack, in words
+ * @param[in] priority The priority at which the task should run
+ * @return If the function succeeds, the return value is a pointer to the
+ *   new task. If the function fails, the return value is NULL
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
-   const OsTaskParameters *params)
+OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
+   void *param, size_t stackSize, int_t priority)
 {
-   //Return a dummy task identifier
-   return (OsTaskId) 1;
+   //Return a non-NULL pointer
+   return (OsTask *) (-1);
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] taskId Task identifier referencing the task to be deleted
+ * @param[in] task Pointer to the task to be deleted
  **/
 
-void osDeleteTask(OsTaskId taskId)
+void osDeleteTask(OsTask *task)
 {
-   //Not implemented
 }
 
 
@@ -110,7 +103,6 @@ void osDeleteTask(OsTaskId taskId)
 
 void osDelayTask(systime_t delay)
 {
-   //Not implemented
 }
 
 
@@ -120,7 +112,6 @@ void osDelayTask(systime_t delay)
 
 void osSwitchTask(void)
 {
-   //Not implemented
 }
 
 
@@ -130,7 +121,6 @@ void osSwitchTask(void)
 
 void osSuspendAllTasks(void)
 {
-   //Not implemented
 }
 
 
@@ -140,7 +130,6 @@ void osSuspendAllTasks(void)
 
 void osResumeAllTasks(void)
 {
-   //Not implemented
 }
 
 
@@ -167,7 +156,6 @@ bool_t osCreateEvent(OsEvent *event)
 
 void osDeleteEvent(OsEvent *event)
 {
-   //Not implemented
 }
 
 
@@ -324,7 +312,6 @@ bool_t osCreateMutex(OsMutex *mutex)
 
 void osDeleteMutex(OsMutex *mutex)
 {
-   //Not implemented
 }
 
 
@@ -335,7 +322,6 @@ void osDeleteMutex(OsMutex *mutex)
 
 void osAcquireMutex(OsMutex *mutex)
 {
-   //Not implemented
 }
 
 
@@ -346,7 +332,6 @@ void osAcquireMutex(OsMutex *mutex)
 
 void osReleaseMutex(OsMutex *mutex)
 {
-   //Not implemented
 }
 
 
@@ -385,7 +370,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-__weak_func void *osAllocMem(size_t size)
+void *osAllocMem(size_t size)
 {
    void *p;
 
@@ -393,8 +378,7 @@ __weak_func void *osAllocMem(size_t size)
    p = malloc(size);
 
    //Debug message
-   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n",
-      size, (uintptr_t) p);
+   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n", size, (uintptr_t) p);
 
    //Return a pointer to the newly allocated memory block
    return p;
@@ -406,7 +390,7 @@ __weak_func void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-__weak_func void osFreeMem(void *p)
+void osFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)

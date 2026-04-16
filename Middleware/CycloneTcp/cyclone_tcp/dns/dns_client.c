@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,19 +25,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL DNS_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "dns/dns_cache.h"
-#include "dns/dns_client.h"
-#include "dns/dns_common.h"
-#include "dns/dns_debug.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_cache.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (DNS_CLIENT_SUPPORT == ENABLED)
@@ -71,7 +71,7 @@ error_t dnsResolve(NetInterface *interface, const char_t *name,
    entry = dnsFindEntry(interface, name, type, HOST_NAME_RESOLVER_DNS);
 
    //Check whether a matching entry has been found
-   if(entry != NULL)
+   if(entry)
    {
       //Host name already resolved?
       if(entry->state == DNS_STATE_RESOLVED ||
@@ -84,7 +84,7 @@ error_t dnsResolve(NetInterface *interface, const char_t *name,
       }
       else
       {
-         //Host name resolution is in progress
+         //Host name resolution is in progress...
          error = ERROR_IN_PROGRESS;
       }
    }
@@ -100,16 +100,15 @@ error_t dnsResolve(NetInterface *interface, const char_t *name,
       entry->type = type;
       entry->protocol = HOST_NAME_RESOLVER_DNS;
       entry->interface = interface;
-
       //Select primary DNS server
       entry->dnsServerIndex = 0;
 
       //Get an ephemeral port number
       entry->port = udpGetDynamicPort();
 
-      //An identifier is used by the DNS client to match replies with
-      //corresponding requests
-      entry->id = (uint16_t) netGenerateRand();
+      //An identifier is used by the DNS client to match replies
+      //with corresponding requests
+      entry->id = (uint16_t) netGetRand();
 
       //Callback function to be called when a DNS response is received
       error = udpAttachRxCallback(interface, entry->port, dnsProcessResponse,
@@ -167,7 +166,7 @@ error_t dnsResolve(NetInterface *interface, const char_t *name,
       entry = dnsFindEntry(interface, name, type, HOST_NAME_RESOLVER_DNS);
 
       //Check whether a matching entry has been found
-      if(entry != NULL)
+      if(entry)
       {
          //Host name successfully resolved?
          if(entry->state == DNS_STATE_RESOLVED)
@@ -306,7 +305,7 @@ error_t dnsSendQuery(DnsCacheEntry *entry)
    message->rd = 1;
    message->ra = 0;
    message->z = 0;
-   message->rcode = DNS_RCODE_NOERROR;
+   message->rcode = DNS_RCODE_NO_ERROR;
 
    //The DNS query contains one question
    message->qdcount = HTONS(1);
@@ -462,23 +461,16 @@ void dnsProcessResponse(NetInterface *interface,
                break;
 
             //Check the type of the query
-            if(entry->type == HOST_TYPE_IPV4 &&
-               ntohs(question->qtype) != DNS_RR_TYPE_A)
-            {
+            if(entry->type == HOST_TYPE_IPV4 && ntohs(question->qtype) != DNS_RR_TYPE_A)
                break;
-            }
-
-            if(entry->type == HOST_TYPE_IPV6 &&
-               ntohs(question->qtype) != DNS_RR_TYPE_AAAA)
-            {
+            if(entry->type == HOST_TYPE_IPV6 && ntohs(question->qtype) != DNS_RR_TYPE_AAAA)
                break;
-            }
 
-            //Check response code
-            if(message->rcode != DNS_RCODE_NOERROR)
+            //Check return code
+            if(message->rcode != DNS_RCODE_NO_ERROR)
             {
-               //Select the next DNS server
-               dnsSelectNextServer(entry);
+               //The entry should be deleted since name resolution has failed
+               dnsDeleteEntry(entry);
                //Exit immediately
                break;
             }
@@ -578,49 +570,6 @@ void dnsProcessResponse(NetInterface *interface,
             break;
          }
       }
-   }
-}
-
-
-/**
- * @brief Select the next DNS server
- * @param[in] entry Pointer to a valid DNS cache entry
- **/
-
-void dnsSelectNextServer(DnsCacheEntry *entry)
-{
-   error_t error;
-
-#if defined(DNS_SELECT_NEXT_SERVER_HOOK)
-   DNS_SELECT_NEXT_SERVER_HOOK(entry);
-#endif
-
-   //Select the next DNS server
-   entry->dnsServerIndex++;
-
-   //An identifier is used by the DNS client to match replies with
-   //corresponding requests
-   entry->id = (uint16_t) netGenerateRand();
-
-   //Initialize retransmission counter
-   entry->retransmitCount = DNS_CLIENT_MAX_RETRIES;
-   //Send DNS query
-   error = dnsSendQuery(entry);
-
-   //DNS message successfully sent?
-   if(!error)
-   {
-      //Save the time at which the query message was sent
-      entry->timestamp = osGetSystemTime();
-      //Set timeout value
-      entry->timeout = DNS_CLIENT_INIT_TIMEOUT;
-      //Decrement retransmission counter
-      entry->retransmitCount--;
-   }
-   else
-   {
-      //The entry should be deleted since name resolution has failed
-      dnsDeleteEntry(entry);
    }
 }
 
