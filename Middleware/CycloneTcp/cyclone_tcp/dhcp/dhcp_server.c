@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -33,18 +33,18 @@
  * - RFC 4039: Rapid Commit Option for the DHCP version 4
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL DHCP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "dhcp/dhcp_server.h"
-#include "dhcp/dhcp_server_misc.h"
-#include "date_time.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_server_misc.h"
+#include "../../../CycloneTcp/common/date_time.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV4_SUPPORT == ENABLED && DHCP_SERVER_SUPPORT == ENABLED)
@@ -81,14 +81,7 @@ void dhcpServerGetDefaultSettings(DhcpServerSettings *settings)
 
    //DNS servers
    for(i = 0; i < DHCP_SERVER_MAX_DNS_SERVERS; i++)
-   {
       settings->dnsServer[i] = IPV4_UNSPECIFIED_ADDR;
-   }
-
-   //Add DHCP options callback
-   settings->addOptionsCallback = NULL;
-   //Parse DHCP options callback
-   settings->parseOptionsCallback = NULL;
 }
 
 

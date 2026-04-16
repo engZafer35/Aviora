@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -30,26 +30,26 @@
  * language used to generate dynamic content to web pages
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL HTTP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "http/http_server.h"
-#include "http/http_server_misc.h"
-#include "http/mime.h"
-#include "http/ssi.h"
-#include "str.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_server_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/mime.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/ssi.h"
+#include "../../../CycloneTcp/common/str.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //File system support?
 #if (HTTP_SERVER_FS_SUPPORT == ENABLED)
    #include "fs_port.h"
 #else
-   #include "resource_manager.h"
+   #include "../../../CycloneTcp/common/resource_manager.h"
 #endif
 
 //Check TCP/IP stack configuration
@@ -71,13 +71,13 @@ error_t ssiExecuteScript(HttpConnection *connection, const char_t *uri, uint_t l
 
 #if (HTTP_SERVER_FS_SUPPORT == ENABLED)
    bool_t more;
-   size_t n;
-   size_t pos;
+   uint_t pos;
+   uint_t n;
    char_t *buffer;
    FsFile *file;
 #else
-   size_t i;
-   size_t j;
+   uint_t i;
+   uint_t j;
    const char_t *data;
 #endif
 
@@ -485,13 +485,9 @@ error_t ssiProcessIncludeCommand(HttpConnection *connection,
 
       //Remove the filename from the path if applicable
       if(p)
-      {
          osStrcpy(p + 1, value);
-      }
       else
-      {
          osStrcpy(path, value);
-      }
    }
    //The virtual parameter defines the included file as relative to the document root
    else if(!osStrcasecmp(attribute, "virtual"))
@@ -599,8 +595,7 @@ error_t ssiProcessIncludeCommand(HttpConnection *connection,
  * @return Error code
  **/
 
-error_t ssiProcessEchoCommand(HttpConnection *connection, const char_t *tag,
-   size_t length)
+error_t ssiProcessEchoCommand(HttpConnection *connection, const char_t *tag, size_t length)
 {
    error_t error;
    char_t *separator;
@@ -702,31 +697,17 @@ error_t ssiProcessEchoCommand(HttpConnection *connection, const char_t *tag,
       //The information following the "?" in the URL for this request
       osStrcpy(connection->buffer, connection->request.queryString);
    }
-#if (HTTP_SERVER_BASIC_AUTH_SUPPORT == ENABLED || HTTP_SERVER_DIGEST_AUTH_SUPPORT == ENABLED)
    //User name?
    else if(!osStrcasecmp(value, "AUTH_USER"))
    {
+#if (HTTP_SERVER_BASIC_AUTH_SUPPORT == ENABLED || HTTP_SERVER_DIGEST_AUTH_SUPPORT == ENABLED)
       //The username provided by the user to the server
       osStrcpy(connection->buffer, connection->request.auth.user);
-   }
-   //Authentication method?
-   else if(!osStrcasecmp(value, "AUTH_TYPE"))
-   {
-      //Check the authentication method used in this request
-      if(connection->request.auth.mode == HTTP_AUTH_MODE_BASIC)
-      {
-         osStrcpy(connection->buffer, "Basic");
-      }
-      else if(connection->request.auth.mode == HTTP_AUTH_MODE_DIGEST)
-      {
-         osStrcpy(connection->buffer, "Digest");
-      }
-      else
-      {
-         osStrcpy(connection->buffer, "None");
-      }
-   }
+#else
+      //Basic access authentication is not supported
+      connection->buffer[0] = '\0';
 #endif
+   }
    //GMT time?
    else if(!osStrcasecmp(value, "DATE_GMT"))
    {
@@ -773,8 +754,7 @@ error_t ssiProcessEchoCommand(HttpConnection *connection, const char_t *tag,
  * @return Error code
  **/
 
-error_t ssiProcessExecCommand(HttpConnection *connection, const char_t *tag,
-   size_t length)
+error_t ssiProcessExecCommand(HttpConnection *connection, const char_t *tag, size_t length)
 {
    char_t *separator;
    char_t *attribute;
@@ -808,9 +788,7 @@ error_t ssiProcessExecCommand(HttpConnection *connection, const char_t *tag,
 
    //Remove leading simple or double quote
    if(value[0] == '\'' || value[0] == '\"')
-   {
       value++;
-   }
 
    //Get the length of the attribute value
    length = osStrlen(value);
@@ -819,18 +797,12 @@ error_t ssiProcessExecCommand(HttpConnection *connection, const char_t *tag,
    if(length > 0)
    {
       if(value[length - 1] == '\'' || value[length - 1] == '\"')
-      {
          value[length - 1] = '\0';
-      }
    }
 
    //Enforce attribute name
-   if(osStrcasecmp(attribute, "cgi") && osStrcasecmp(attribute, "cmd") &&
-      osStrcasecmp(attribute, "cmd_argument"))
-   {
+   if(osStrcasecmp(attribute, "cgi") && osStrcasecmp(attribute, "cmd") && osStrcasecmp(attribute, "cmd_argument"))
       return ERROR_INVALID_TAG;
-   }
-
    //Check the length of the CGI parameter
    if(osStrlen(value) > HTTP_SERVER_CGI_PARAM_MAX_LEN)
       return ERROR_INVALID_TAG;
@@ -856,11 +828,10 @@ error_t ssiProcessExecCommand(HttpConnection *connection, const char_t *tag,
  * @retval ERROR_NO_MATCH if the tag does not appear in the string
  **/
 
-error_t ssiSearchTag(const char_t *s, size_t sLen, const char_t *tag,
-   size_t tagLen, size_t *pos)
+error_t ssiSearchTag(const char_t *s, size_t sLen, const char_t *tag, size_t tagLen, uint_t *pos)
 {
-   size_t i;
-   size_t j;
+   uint_t i;
+   uint_t j;
 
    //Parse the input string
    for(i = 0; i <= sLen; i++)

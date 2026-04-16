@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,11 +33,11 @@
 
 //Dependencies
 #include <stdlib.h>
-#include "coap/coap_server.h"
-#include "coap/coap_server_transport.h"
-#include "coap/coap_server_misc.h"
-#include "coap/coap_debug.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_server_transport.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_server_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (COAP_SERVER_SUPPORT == ENABLED)
@@ -50,19 +50,11 @@
 
 void coapServerGetDefaultSettings(CoapServerSettings *settings)
 {
-   //Default task parameters
-   settings->task = OS_TASK_DEFAULT_PARAMS;
-   settings->task.stackSize = COAP_SERVER_STACK_SIZE;
-   settings->task.priority = COAP_SERVER_PRIORITY;
-
    //The CoAP server is not bound to any interface
    settings->interface = NULL;
 
    //CoAP port number
    settings->port = COAP_PORT;
-
-   //UDP initialization callback
-   settings->udpInitCallback = NULL;
 
 #if (COAP_SERVER_DTLS_SUPPORT == ENABLED)
    //DTLS initialization callback function
@@ -95,10 +87,6 @@ error_t coapServerInit(CoapServerContext *context,
 
    //Clear the CoAP server context
    osMemset(context, 0, sizeof(CoapServerContext));
-
-   //Initialize task parameters
-   context->taskParams = settings->task;
-   context->taskId = OS_INVALID_TASK_ID;
 
    //Save user settings
    context->settings = *settings;
@@ -170,6 +158,7 @@ error_t coapServerSetCookieSecret(CoapServerContext *context,
 error_t coapServerStart(CoapServerContext *context)
 {
    error_t error;
+   OsTask *task;
 
    //Make sure the CoAP server context is valid
    if(context == NULL)
@@ -214,26 +203,15 @@ error_t coapServerStart(CoapServerContext *context)
       if(error)
          break;
 
-      //Any registered callback?
-      if(context->settings.udpInitCallback != NULL)
-      {
-         //Invoke user callback function
-         error = context->settings.udpInitCallback(context, context->socket);
-         //Any error to report?
-         if(error)
-            break;
-      }
-
       //Start the CoAP server
       context->stop = FALSE;
       context->running = TRUE;
 
-      //Create a task
-      context->taskId = osCreateTask("CoAP Server", (OsTaskCode) coapServerTask,
-         context, &context->taskParams);
-
+      //Create the CoAP server task
+      task = osCreateTask("CoAP Server", (OsTaskCode) coapServerTask,
+         context, COAP_SERVER_STACK_SIZE, COAP_SERVER_PRIORITY);
       //Failed to create task?
-      if(context->taskId == OS_INVALID_TASK_ID)
+      if(task == OS_INVALID_HANDLE)
       {
          //Report an error
          error = ERROR_OUT_OF_RESOURCES;
@@ -342,10 +320,8 @@ void coapServerTask(CoapServerContext *context)
       {
          //Stop CoAP server operation
          context->running = FALSE;
-         //Task epilogue
-         osExitTask();
          //Kill ourselves
-         osDeleteTask(OS_SELF_TASK_ID);
+         osDeleteTask(NULL);
       }
 
       //Any datagram received?

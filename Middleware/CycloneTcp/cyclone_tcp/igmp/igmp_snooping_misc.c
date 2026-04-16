@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,19 +25,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL IGMP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "ipv4/ipv4.h"
-#include "ipv4/ipv4_misc.h"
-#include "igmp/igmp_snooping.h"
-#include "igmp/igmp_snooping_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_snooping.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_snooping_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV4_SUPPORT == ENABLED && IGMP_SNOOPING_SUPPORT == ENABLED)
@@ -54,8 +54,8 @@
  **/
 
 void igmpSnoopingProcessMessage(IgmpSnoopingContext *context,
-   const Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
-   size_t length, const NetRxAncillary *ancillary)
+   Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
+   size_t length, NetRxAncillary *ancillary)
 {
    //Check the ingress port the IGMP message was received on
    if(ancillary->port == 0)
@@ -110,8 +110,8 @@ void igmpSnoopingProcessMessage(IgmpSnoopingContext *context,
  **/
 
 void igmpSnoopingProcessMembershipQuery(IgmpSnoopingContext *context,
-   const Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
-   size_t length, const NetRxAncillary *ancillary)
+   Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
+   size_t length, NetRxAncillary *ancillary)
 {
    uint_t i;
    uint32_t portMap;
@@ -235,8 +235,8 @@ void igmpSnoopingProcessMembershipQuery(IgmpSnoopingContext *context,
  **/
 
 void igmpSnoopingProcessMembershipReport(IgmpSnoopingContext *context,
-   const Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
-   size_t length, const NetRxAncillary *ancillary)
+   Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
+   size_t length, NetRxAncillary *ancillary)
 {
    uint32_t portMap;
    IgmpSnoopingGroup *group;
@@ -300,8 +300,8 @@ void igmpSnoopingProcessMembershipReport(IgmpSnoopingContext *context,
  **/
 
 void igmpSnoopingProcessLeaveGroup(IgmpSnoopingContext *context,
-   const Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
-   size_t length, const NetRxAncillary *ancillary)
+   Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
+   size_t length, NetRxAncillary *ancillary)
 {
    uint32_t portMap;
    IgmpSnoopingGroup *group;
@@ -354,8 +354,8 @@ void igmpSnoopingProcessLeaveGroup(IgmpSnoopingContext *context,
  **/
 
 void igmpSnoopingProcessUnknownMessage(IgmpSnoopingContext *context,
-   const Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
-   size_t length, const NetRxAncillary *ancillary)
+   Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
+   size_t length, NetRxAncillary *ancillary)
 {
    uint32_t portMap;
 
@@ -385,7 +385,7 @@ void igmpSnoopingProcessUnknownMessage(IgmpSnoopingContext *context,
 
 error_t igmpSnoopingForwardMessage(IgmpSnoopingContext *context,
    uint32_t forwardPorts, const MacAddr *destMacAddr,
-   const Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
+   Ipv4PseudoHeader *pseudoHeader, const IgmpMessage *message,
    size_t length)
 {
    error_t error;
@@ -563,7 +563,7 @@ void igmpSnoopingEnableMonitoring(IgmpSnoopingContext *context, bool_t enable)
    if(interface->switchDriver != NULL &&
       interface->switchDriver->enableIgmpSnooping != NULL)
    {
-      //Enable IGMP snooping
+      //Flush the filtering database
       interface->switchDriver->enableIgmpSnooping(interface, enable);
    }
 }

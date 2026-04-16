@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,16 +33,16 @@
 
 //Dependencies
 #include <stdlib.h>
-#include "core/net.h"
-#include "web_socket/web_socket.h"
-#include "web_socket/web_socket_auth.h"
-#include "web_socket/web_socket_frame.h"
-#include "web_socket/web_socket_transport.h"
-#include "web_socket/web_socket_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/web_socket/web_socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/web_socket/web_socket_auth.h"
+#include "../../../CycloneTcp/cyclone_tcp/web_socket/web_socket_frame.h"
+#include "../../../CycloneTcp/cyclone_tcp/web_socket/web_socket_transport.h"
+#include "../../../CycloneTcp/cyclone_tcp/web_socket/web_socket_misc.h"
 #include "encoding/base64.h"
 #include "hash/sha1.h"
-#include "str.h"
-#include "debug.h"
+#include "../../../CycloneTcp/common/str.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (WEB_SOCKET_SUPPORT == ENABLED)
@@ -679,13 +679,9 @@ error_t webSocketFormatClientHandshake(WebSocket *webSocket, uint16_t serverPort
 
    //Add Origin header field
    if(webSocket->origin[0] != '\0')
-   {
       p += osSprintf(p, "Origin: %s\r\n", webSocket->origin);
-   }
    else
-   {
       p += osSprintf(p, "Origin: null\r\n");
-   }
 
    //Add Upgrade header field
    p += osSprintf(p, "Upgrade: websocket\r\n");
@@ -815,7 +811,7 @@ error_t webSocketFormatErrorResponse(WebSocket *webSocket,
       if(statusCodeList[i].value == statusCode)
       {
          //Append the textual phrase to the Status-Line
-         p += osSprintf(p, "%s", statusCodeList[i].message);
+         p += osSprintf(p, statusCodeList[i].message);
          //Break the loop and continue processing
          break;
       }

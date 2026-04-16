@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _ETHERNET_H
 #define _ETHERNET_H
 
 //Dependencies
-#include "core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //Ethernet support
 #ifndef ETH_SUPPORT
@@ -108,12 +108,10 @@
 #define ETH_MIN_FRAME_SIZE 64
 //Maximum Ethernet frame size
 #define ETH_MAX_FRAME_SIZE 1518
-//Ethernet header size
-#define ETH_HEADER_SIZE 14
-//Ethernet CRC field size
-#define ETH_CRC_SIZE 4
 //Ethernet maximum transmission unit
 #define ETH_MTU 1500
+//Ethernet CRC field size
+#define ETH_CRC_SIZE 4
 
 //VLAN tag control information
 #define VLAN_PCP_POS 13
@@ -168,15 +166,12 @@ typedef enum
    ETH_TYPE_IPV6  = 0x86DD,
    ETH_TYPE_EAPOL = 0x888E,
    ETH_TYPE_VMAN  = 0x88A8,
-   ETH_TYPE_LLDP  = 0x88CC,
-   ETH_TYPE_PTP   = 0x88F7
+   ETH_TYPE_LLDP  = 0x88CC
 } EthType;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -185,71 +180,69 @@ typedef enum
  * @brief MAC address
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
-   __packed_union
+   __start_packed union
    {
       uint8_t b[6];
       uint16_t w[3];
    };
-} MacAddr;
+} __end_packed MacAddr;
 
 
 /**
  * @brief EUI-64 identifier
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
-   __packed_union
+   __start_packed union
    {
       uint8_t b[8];
       uint16_t w[4];
       uint32_t dw[2];
    };
-} Eui64;
+} __end_packed Eui64;
 
 
 /**
  * @brief Ethernet frame header
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    MacAddr destAddr; //0-5
    MacAddr srcAddr;  //6-11
    uint16_t type;    //12-13
    uint8_t data[];   //14
-} EthHeader;
+} __end_packed EthHeader;
 
 
 /**
  * @brief LLC header
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t dsap;    //0
    uint8_t ssap;    //1
    uint8_t control; //2
-} LlcHeader;
+} __end_packed LlcHeader;
 
 
 /**
  * @brief VLAN tag
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t tci;  //0-1
    uint16_t type; //2-3
-} VlanTag;
+} __end_packed VlanTag;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
 

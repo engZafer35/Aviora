@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _NET_LEGACY_H
@@ -35,6 +35,51 @@
 #if !defined(_WIN32)
 
 //Deprecated properties
+#ifdef TCP_IP_MAX_IF_NAME_LEN
+   #warning TCP_IP_MAX_IF_NAME_LEN property is deprecated. NET_MAX_IF_NAME_LEN should be used instead.
+   #define NET_MAX_IF_NAME_LEN TCP_IP_MAX_IF_NAME_LEN
+#endif
+
+#ifdef TCP_IP_MAX_HOSTNAME_LEN
+   #warning TCP_IP_MAX_HOSTNAME_LEN property is deprecated. NET_MAX_HOSTNAME_LEN should be used instead.
+   #define NET_MAX_HOSTNAME_LEN TCP_IP_MAX_HOSTNAME_LEN
+#endif
+
+#ifdef TCP_IP_MAX_PROXY_NAME_LEN
+   #warning TCP_IP_MAX_PROXY_NAME_LEN property is deprecated. NET_MAX_PROXY_NAME_LEN should be used instead.
+   #define NET_MAX_PROXY_NAME_LEN TCP_IP_MAX_PROXY_NAME_LEN
+#endif
+
+#ifdef TCP_IP_STATIC_OS_RESOURCES
+   #warning TCP_IP_STATIC_OS_RESOURCES property is deprecated. NET_STATIC_OS_RESOURCES should be used instead.
+   #define NET_STATIC_OS_RESOURCES TCP_IP_STATIC_OS_RESOURCES
+#endif
+
+#ifdef TCP_IP_TICK_STACK_SIZE
+   #warning TCP_IP_TICK_STACK_SIZE property is deprecated. NET_TICK_STACK_SIZE should be used instead.
+   #define NET_TICK_STACK_SIZE TCP_IP_TICK_STACK_SIZE
+#endif
+
+#ifdef TCP_IP_TICK_PRIORITY
+   #warning TCP_IP_TICK_PRIORITY property is deprecated. NET_TICK_PRIORITY should be used instead.
+   #define NET_TICK_PRIORITY TCP_IP_TICK_PRIORITY
+#endif
+
+#ifdef TCP_IP_TICK_INTERVAL
+   #warning TCP_IP_TICK_INTERVAL property is deprecated. NET_TICK_INTERVAL should be used instead.
+   #define NET_TICK_INTERVAL TCP_IP_TICK_INTERVAL
+#endif
+
+#ifdef TCP_IP_RX_STACK_SIZE
+   #warning TCP_IP_RX_STACK_SIZE property is deprecated. NET_RX_STACK_SIZE should be used instead.
+   #define NET_RX_STACK_SIZE TCP_IP_RX_STACK_SIZE
+#endif
+
+#ifdef TCP_IP_RX_PRIORITY
+   #warning TCP_IP_RX_PRIORITY property is deprecated. NET_RX_PRIORITY should be used instead.
+   #define NET_RX_PRIORITY TCP_IP_RX_PRIORITY
+#endif
+
 #ifdef TCP_SYN_QUEUE_SIZE
    #warning TCP_SYN_QUEUE_SIZE property is deprecated. TCP_DEFAULT_SYN_QUEUE_SIZE should be used instead.
    #define TCP_DEFAULT_SYN_QUEUE_SIZE TCP_SYN_QUEUE_SIZE
@@ -92,6 +137,32 @@
 #define SOCKET_PROTOCOL_TCP SOCKET_IP_PROTO_TCP
 #define SOCKET_PROTOCOL_UDP SOCKET_IP_PROTO_UDP
 #define SOCKET_PROTOCOL_ICMPV6 SOCKET_IP_PROTO_ICMPV6
+
+//Deprecated functions
+#define tcpIpStackInit netInit
+#define tcpIpStackSetInterfaceName netSetInterfaceName
+#define tcpIpStackSetHostname netSetHostname
+#define tcpIpStackSetDriver netSetDriver
+#define tcpIpStackSetPhyDriver netSetPhyDriver
+#define tcpIpStackSetSpiDriver netSetSpiDriver
+#define tcpIpStackSetUartDriver netSetUartDriver
+#define tcpIpStackSetExtIntDriver netSetExtIntDriver
+#define tcpIpStackSetMacAddr netSetMacAddr
+#define tcpIpStackGetLinkState netGetLinkState
+#define tcpIpStackConfigInterface netConfigInterface
+#define tcpIpStackTickTask netTickTask
+#define tcpIpStackRxTask netRxTask
+#define tcpIpStackGetDefaultInterface netGetDefaultInterface
+#define tcpIpStackInitRand netInitRand
+#define tcpIpStackGetRand netGetRand
+#define tcpIpStackGetRandRange netGetRandRange
+#define tcpIpStackAttachLinkChangeCallback netAttachLinkChangeCallback
+#define tcpIpStackDetachLinkChangeCallback netDetachLinkChangeCallback
+#define tcpIpStackInvokeLinkChangeCallback netInvokeLinkChangeCallback
+
+#define ChunkedBuffer NetBuffer
+#define chunkedBufferGetLength netBufferGetLength
+#define chunkedBufferRead netBufferRead
 
 #ifdef SMTP_DEFAULT_TIMEOUT
    #define SMTP_CLIENT_DEFAULT_TIMEOUT SMTP_DEFAULT_TIMEOUT
@@ -195,80 +266,14 @@
 #define netMutex (netContext.mutex)
 #define netEvent (netContext.event)
 #define netTaskRunning (netContext.running)
+#define netTaskHandle (netContext.taskHandle)
+#define netTaskInstance (netContext.taskInstance)
+#define netTaskStack (netContext.taskStack)
 #define netTimestamp (netContext.timestamp)
 #define netInterface (netContext.interfaces)
 
 #ifdef IGMP_SUPPORT
    #define IGMP_HOST_SUPPORT IGMP_SUPPORT
 #endif
-
-#ifdef COAP_SERVER_STACK_SIZE
-   #define COAP_SERVER_TASK_STACK_SIZE COAP_SERVER_STACK_SIZE
-#endif
-
-#ifdef COAP_SERVER_PRIORITY
-   #define COAP_SERVER_TASK_PRIORITY COAP_SERVER_PRIORITY
-#endif
-
-#ifdef DHCPV6_RELAY_STACK_SIZE
-   #define DHCPV6_RELAY_TASK_STACK_SIZE DHCPV6_RELAY_STACK_SIZE
-#endif
-
-#ifdef DHCPV6_RELAY_PRIORITY
-   #define DHCPV6_RELAY_TASK_PRIORITY DHCPV6_RELAY_PRIORITY
-#endif
-
-#ifdef FTP_SERVER_STACK_SIZE
-   #define FTP_SERVER_TASK_STACK_SIZE FTP_SERVER_STACK_SIZE
-#endif
-
-#ifdef FTP_SERVER_PRIORITY
-   #define FTP_SERVER_TASK_PRIORITY FTP_SERVER_PRIORITY
-#endif
-
-#ifdef HTTP_SERVER_STACK_SIZE
-   #define HTTP_SERVER_TASK_STACK_SIZE HTTP_SERVER_STACK_SIZE
-#endif
-
-#ifdef HTTP_SERVER_PRIORITY
-   #define HTTP_SERVER_TASK_PRIORITY HTTP_SERVER_PRIORITY
-#endif
-
-#ifdef ICECAST_CLIENT_STACK_SIZE
-   #define ICECAST_CLIENT_TASK_STACK_SIZE ICECAST_CLIENT_STACK_SIZE
-#endif
-
-#ifdef ICECAST_CLIENT_PRIORITY
-   #define ICECAST_CLIENT_TASK_PRIORITY ICECAST_CLIENT_PRIORITY
-#endif
-
-#ifdef MODBUS_SERVER_STACK_SIZE
-   #define MODBUS_SERVER_TASK_STACK_SIZE MODBUS_SERVER_STACK_SIZE
-#endif
-
-#ifdef MODBUS_SERVER_PRIORITY
-   #define MODBUS_SERVER_TASK_PRIORITY MODBUS_SERVER_PRIORITY
-#endif
-
-#ifdef SNMP_AGENT_STACK_SIZE
-   #define SNMP_AGENT_TASK_STACK_SIZE SNMP_AGENT_STACK_SIZE
-#endif
-
-#ifdef SNMP_AGENT_PRIORITY
-   #define SNMP_AGENT_TASK_PRIORITY SNMP_AGENT_PRIORITY
-#endif
-
-#ifdef TFTP_SERVER_STACK_SIZE
-   #define TFTP_SERVER_TASK_STACK_SIZE TFTP_SERVER_STACK_SIZE
-#endif
-
-#ifdef TFTP_SERVER_PRIORITY
-   #define TFTP_SERVER_TASK_PRIORITY TFTP_SERVER_PRIORITY
-#endif
-
-#define icmpEnableEchoRequest icmpEnableEchoRequests
-#define icmpEnableBroadcastEchoRequest icmpEnableBroadcastEchoRequests
-#define icmpv6EnableEchoRequest icmpv6EnableEchoRequests
-#define icmpv6EnableMulticastEchoRequest icmpv6EnableMulticastEchoRequests
 
 #endif

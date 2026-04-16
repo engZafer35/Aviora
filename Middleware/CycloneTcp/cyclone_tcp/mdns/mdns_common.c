@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -33,22 +33,24 @@
  * - RFC 6763: DNS-Based Service Discovery
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL MDNS_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "ipv4/ipv4_misc.h"
-#include "ipv6/ipv6_misc.h"
-#include "mdns/mdns_client.h"
-#include "mdns/mdns_responder.h"
-#include "mdns/mdns_responder_misc.h"
-#include "dns_sd/dns_sd_misc.h"
-#include "dns/dns_debug.h"
-#include "debug.h"
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_responder.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (MDNS_CLIENT_SUPPORT == ENABLED || MDNS_RESPONDER_SUPPORT == ENABLED)
@@ -143,7 +145,7 @@ void mdnsProcessMessage(NetInterface *interface,
 
    //mDNS messages received with non-zero response codes must be silently
    //ignored
-   if(dnsHeader->rcode != DNS_RCODE_NOERROR)
+   if(dnsHeader->rcode != DNS_RCODE_NO_ERROR)
       return;
 
    //Save mDNS message
@@ -202,8 +204,7 @@ void mdnsProcessResponse(NetInterface *interface, MdnsMessage *response)
    for(i = 0; i < ntohs(response->dnsHeader->qdcount); i++)
    {
       //Parse domain name
-      offset = dnsParseName(response->dnsHeader, response->length, offset,
-         NULL, 0);
+      offset = dnsParseName(response->dnsHeader, response->length, offset, NULL, 0);
       //Invalid name?
       if(!offset)
          break;
@@ -377,7 +378,7 @@ error_t mdnsCreateMessage(MdnsMessage *message, bool_t queryResponse)
          message->dnsHeader->rd = 0;
          message->dnsHeader->ra = 0;
          message->dnsHeader->z = 0;
-         message->dnsHeader->rcode = DNS_RCODE_NOERROR;
+         message->dnsHeader->rcode = DNS_RCODE_NO_ERROR;
          message->dnsHeader->qdcount = 0;
          message->dnsHeader->ancount = 0;
          message->dnsHeader->nscount = 0;
@@ -461,18 +462,25 @@ error_t mdnsSendMessage(NetInterface *interface, const MdnsMessage *message,
    IpAddr ipAddr;
    NetTxAncillary ancillary;
 
+   //Make sure the mDNS message is valid
+   if(message->buffer == NULL)
+      return ERROR_FAILURE;
+
    //Convert 16-bit values to network byte order
    message->dnsHeader->qdcount = htons(message->dnsHeader->qdcount);
    message->dnsHeader->nscount = htons(message->dnsHeader->nscount);
    message->dnsHeader->ancount = htons(message->dnsHeader->ancount);
    message->dnsHeader->arcount = htons(message->dnsHeader->arcount);
 
-   //Adjust the length of the multi-part buffer
-   error = netBufferSetLength(message->buffer, message->offset + message->length);
-
-   //Check status code
-   if(!error)
+   //Start of exception handling block
+   do
    {
+      //Adjust the length of the multi-part buffer
+      error = netBufferSetLength(message->buffer, message->offset + message->length);
+      //Any error to report?
+      if(error)
+         break;
+
       //Debug message
       TRACE_INFO("Sending mDNS message (%" PRIuSIZE " bytes)...\r\n", message->length);
       //Dump message
@@ -489,8 +497,11 @@ error_t mdnsSendMessage(NetInterface *interface, const MdnsMessage *message,
          ancillary.ttl = MDNS_DEFAULT_IP_TTL;
 
          //Send mDNS message
-         udpSendBuffer(interface, NULL, MDNS_PORT, destIpAddr, destPort,
+         error = udpSendBuffer(interface, NULL, MDNS_PORT, destIpAddr, destPort,
             message->buffer, message->offset, &ancillary);
+         //Any error to report?
+         if(error)
+            break;
       }
       else
       {
@@ -505,8 +516,11 @@ error_t mdnsSendMessage(NetInterface *interface, const MdnsMessage *message,
          ancillary.ttl = MDNS_DEFAULT_IP_TTL;
 
          //Send mDNS message
-         udpSendBuffer(interface, NULL, MDNS_PORT, &ipAddr, MDNS_PORT,
+         error = udpSendBuffer(interface, NULL, MDNS_PORT, &ipAddr, MDNS_PORT,
             message->buffer, message->offset, &ancillary);
+         //Any error to report?
+         if(error)
+            break;
 #endif
 
 #if (IPV6_SUPPORT == ENABLED)
@@ -520,11 +534,16 @@ error_t mdnsSendMessage(NetInterface *interface, const MdnsMessage *message,
          ancillary.ttl = MDNS_DEFAULT_IP_TTL;
 
          //Send mDNS message
-         udpSendBuffer(interface, NULL, MDNS_PORT, &ipAddr, MDNS_PORT,
+         error = udpSendBuffer(interface, NULL, MDNS_PORT, &ipAddr, MDNS_PORT,
             message->buffer, message->offset, &ancillary);
+         //Any error to report?
+         if(error)
+            break;
 #endif
       }
-   }
+
+      //End of exception handling block
+   } while(0);
 
    //Return status code
    return error;
@@ -569,19 +588,13 @@ size_t mdnsEncodeName(const char_t *instance, const char_t *service,
       //If an instance name precedes the service name, then
       //remove the null label
       if(length > 0)
-      {
          length--;
-      }
 
       //Encode service name
       if(dest != NULL)
-      {
          n = dnsEncodeName(service, dest + length);
-      }
       else
-      {
          n = dnsEncodeName(service, NULL);
-      }
 
       //Failed to encode instance name?
       if(!n)
@@ -593,9 +606,7 @@ size_t mdnsEncodeName(const char_t *instance, const char_t *service,
 
    //Skip the separator that may precede the domain name
    if(*domain == '.')
-   {
       domain++;
-   }
 
    //Any domain name to encode?
    if(*domain != '\0')
@@ -603,19 +614,13 @@ size_t mdnsEncodeName(const char_t *instance, const char_t *service,
       //If an instance or a service name precedes the domain name, then
       //remove the null label
       if(length > 0)
-      {
          length--;
-      }
 
       //Encode domain name
       if(dest != NULL)
-      {
          n = dnsEncodeName(domain, dest + length);
-      }
       else
-      {
          n = dnsEncodeName(domain, NULL);
-      }
 
       //Failed to encode instance name?
       if(!n)
@@ -787,17 +792,19 @@ int_t mdnsCompareName(const DnsHeader *message, size_t length, size_t pos,
 /**
  * @brief Compare resource records
  * @param[in] message1 Pointer to the first mDNS message
+ * @param[in] offset1 Offset of the first but of the resource record
  * @param[in] record1 Pointer the first resource record
  * @param[in] message2 Pointer to the second mDNS message
+ * @param[in] offset2 Offset of the first but of the resource record
  * @param[in] record2 Pointer the second resource record
  * @return The function returns 0 if the resource records match, -1 if the first
  *   resource record lexicographically precedes the second one, or 1 if the
  *   second resource record lexicographically precedes the first one
  **/
 
-int_t mdnsCompareRecord(const MdnsMessage *message1,
+int_t mdnsCompareRecord(const MdnsMessage *message1, size_t offset1,
    const DnsResourceRecord *record1, const MdnsMessage *message2,
-   const DnsResourceRecord *record2)
+   size_t offset2, const DnsResourceRecord *record2)
 {
    int_t res;
    size_t n1;
@@ -816,16 +823,9 @@ int_t mdnsCompareRecord(const MdnsMessage *message1,
    //The determination of lexicographically later record is performed by
    //first comparing the record class (excluding the cache-flush bit)
    if(value1 < value2)
-   {
       return -1;
-   }
    else if(value1 > value2)
-   {
       return 1;
-   }
-   else
-   {
-   }
 
    //Convert the record type to host byte order
    value1 = ntohs(record1->rtype);
@@ -833,16 +833,9 @@ int_t mdnsCompareRecord(const MdnsMessage *message1,
 
    //Then compare the record type
    if(value1 < value2)
-   {
       return -1;
-   }
    else if(value1 > value2)
-   {
       return 1;
-   }
-   else
-   {
-   }
 
    //If the rrtype and rrclass both match, then the rdata is compared
    if(value1 == DNS_RR_TYPE_NS || value1 == DNS_RR_TYPE_SOA ||
@@ -911,15 +904,12 @@ int_t mdnsCompareRecord(const MdnsMessage *message1,
  * @param[in] service Service name
  * @param[in] domain Domain name
  * @param[in] rtype Resource record type
- * @param[in] rdata Resource record data
- * @param[in] rdlength Length of the resource record data, in bytes
  * @return The function returns TRUE is the specified resource record is a
  *   duplicate. Otherwise FALSE is returned
  **/
 
-bool_t mdnsCheckDuplicateRecord(const MdnsMessage *message,
-   const char_t *instance, const char_t *service, const char_t *domain,
-   uint16_t rtype, const uint8_t *rdata, size_t rdlength)
+bool_t mdnsCheckDuplicateRecord(const MdnsMessage *message, const char_t *instance,
+   const char_t *service, const char_t *domain, uint16_t rtype)
 {
    uint_t i;
    uint_t k;
@@ -990,26 +980,10 @@ bool_t mdnsCheckDuplicateRecord(const MdnsMessage *message,
             if(!mdnsCompareName(message->dnsHeader, message->length,
                offset, instance, service, domain, 0))
             {
-               //Valid resource record data?
-               if(rdata != NULL)
-               {
-                  //Compare resource record data
-                  if(ntohs(record->rdlength) == rdlength &&
-                     !osMemcmp(record->rdata, rdata, rdlength))
-                  {
-                     //The resource record is already present in the Answer Section
-                     duplicate = TRUE;
-                     //We are done
-                     break;
-                  }
-               }
-               else
-               {
-                  //The resource record is already present in the Answer Section
-                  duplicate = TRUE;
-                  //We are done
-                  break;
-               }
+               //The resource record is already present in the Answer Section
+               duplicate = TRUE;
+               //We are done
+               break;
             }
          }
 

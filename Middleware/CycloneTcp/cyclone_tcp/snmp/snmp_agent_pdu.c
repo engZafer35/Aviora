@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,25 +25,25 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL SNMP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "snmp/snmp_agent.h"
-#include "snmp/snmp_agent_pdu.h"
-#include "snmp/snmp_agent_misc.h"
-#include "snmp/snmp_agent_object.h"
-#include "mibs/mib2_module.h"
-#include "mibs/snmp_mib_module.h"
-#include "mibs/snmp_usm_mib_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_pdu.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_object.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib2_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/snmp_mib_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/snmp_usm_mib_module.h"
 #include "core/crypto.h"
 #include "encoding/asn1.h"
 #include "encoding/oid.h"
-#include "debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (SNMP_AGENT_SUPPORT == ENABLED)
@@ -118,7 +118,7 @@ error_t snmpProcessPdu(SnmpAgentContext *context)
       {
          //Total number of SNMP Get-Response PDUs which have been generated
          //by the SNMP protocol entity
-         MIB2_SNMP_INC_COUNTER32(snmpOutGetResponses, 1);
+         MIB2_INC_COUNTER32(snmpGroup.snmpOutGetResponses, 1);
 
          //Format PDU header
          error = snmpWritePduHeader(&context->response);
@@ -153,7 +153,7 @@ error_t snmpProcessGetRequestPdu(SnmpAgentContext *context)
 
       //Total number of SNMP Get-Request PDUs which have been accepted and
       //processed by the SNMP protocol entity
-      MIB2_SNMP_INC_COUNTER32(snmpInGetRequests, 1);
+      MIB2_INC_COUNTER32(snmpGroup.snmpInGetRequests, 1);
    }
    else if(context->request.pduType == SNMP_PDU_GET_NEXT_REQUEST)
    {
@@ -162,7 +162,7 @@ error_t snmpProcessGetRequestPdu(SnmpAgentContext *context)
 
       //Total number of SNMP Get-NextRequest PDUs which have been accepted
       //and processed by the SNMP protocol entity
-      MIB2_SNMP_INC_COUNTER32(snmpInGetNexts, 1);
+      MIB2_INC_COUNTER32(snmpGroup.snmpInGetNexts, 1);
    }
 
    //Enforce access policy
@@ -171,7 +171,7 @@ error_t snmpProcessGetRequestPdu(SnmpAgentContext *context)
    {
       //Total number of SNMP messages delivered to the SNMP protocol entity
       //which represented an SNMP operation which was not allowed by the SNMP
-      MIB2_SNMP_INC_COUNTER32(snmpInBadCommunityUses, 1);
+      MIB2_INC_COUNTER32(snmpGroup.snmpInBadCommunityUses, 1);
       SNMP_MIB_INC_COUNTER32(snmpGroup.snmpInBadCommunityUses, 1);
 
       //Report an error
@@ -300,7 +300,7 @@ error_t snmpProcessGetRequestPdu(SnmpAgentContext *context)
          //Total number of MIB objects which have been retrieved successfully
          //by the SNMP protocol entity as the result of receiving valid SNMP
          //Get-Request and Get-NextRequest PDUs
-         MIB2_SNMP_INC_COUNTER32(snmpInTotalReqVars, 1);
+         MIB2_INC_COUNTER32(snmpGroup.snmpInTotalReqVars, 1);
       }
 
       //Append variable binding to the list
@@ -391,7 +391,7 @@ error_t snmpProcessGetBulkRequestPdu(SnmpAgentContext *context)
    {
       //Total number of SNMP messages delivered to the SNMP protocol entity
       //which represented an SNMP operation which was not allowed by the SNMP
-      MIB2_SNMP_INC_COUNTER32(snmpInBadCommunityUses, 1);
+      MIB2_INC_COUNTER32(snmpGroup.snmpInBadCommunityUses, 1);
       SNMP_MIB_INC_COUNTER32(snmpGroup.snmpInBadCommunityUses, 1);
 
       //Report an error
@@ -504,7 +504,7 @@ error_t snmpProcessGetBulkRequestPdu(SnmpAgentContext *context)
          //Total number of MIB objects which have been retrieved successfully
          //by the SNMP protocol entity as the result of receiving valid SNMP
          //Get-Request and Get-NextRequest PDUs
-         MIB2_SNMP_INC_COUNTER32(snmpInTotalReqVars, 1);
+         MIB2_INC_COUNTER32(snmpGroup.snmpInTotalReqVars, 1);
       }
 
       //Append variable binding to the list
@@ -594,7 +594,7 @@ error_t snmpProcessSetRequestPdu(SnmpAgentContext *context)
 
    //Total number of SNMP Set-Request PDUs which have been accepted and
    //processed by the SNMP protocol entity
-   MIB2_SNMP_INC_COUNTER32(snmpInSetRequests, 1);
+   MIB2_INC_COUNTER32(snmpGroup.snmpInSetRequests, 1);
 
    //Enforce access policy
    if(context->user.mode != SNMP_ACCESS_WRITE_ONLY &&
@@ -602,7 +602,7 @@ error_t snmpProcessSetRequestPdu(SnmpAgentContext *context)
    {
       //Total number of SNMP messages delivered to the SNMP protocol entity
       //which represented an SNMP operation which was not allowed by the SNMP
-      MIB2_SNMP_INC_COUNTER32(snmpInBadCommunityUses, 1);
+      MIB2_INC_COUNTER32(snmpGroup.snmpInBadCommunityUses, 1);
       SNMP_MIB_INC_COUNTER32(snmpGroup.snmpInBadCommunityUses, 1);
 
       //Report an error
@@ -669,7 +669,7 @@ error_t snmpProcessSetRequestPdu(SnmpAgentContext *context)
          //Total number of MIB objects which have been altered successfully
          //by the SNMP protocol entity as the result of receiving valid
          //SNMP Set-Request PDUs
-         MIB2_SNMP_INC_COUNTER32(snmpInTotalSetVars, 1);
+         MIB2_INC_COUNTER32(snmpGroup.snmpInTotalSetVars, 1);
 
          //Advance data pointer
          p += n;
@@ -788,7 +788,7 @@ error_t snmpFormatReportPdu(SnmpAgentContext *context, error_t errorIndication)
       //Total number of packets received by the SNMP engine which were dropped
       //because they requested a securityLevel that was unknown to the SNMP
       //engine or otherwise unavailable
-      SNMP_USM_MIB_INC_COUNTER32(usmStatsUnsupportedSecLevels, 1);
+      SNMP_USM_MIB_INC_COUNTER32(usmStatsUnsupportedSecLevels , 1);
       SNMP_USM_MIB_GET_COUNTER32(counter, usmStatsUnsupportedSecLevels);
 
       //Add the usmStatsUnsupportedSecLevels counter in the varBindList
@@ -799,7 +799,7 @@ error_t snmpFormatReportPdu(SnmpAgentContext *context, error_t errorIndication)
    case ERROR_NOT_IN_TIME_WINDOW:
       //Total number of packets received by the SNMP engine which were dropped
       //because they appeared outside of the authoritative SNMP engine's window
-      SNMP_USM_MIB_INC_COUNTER32(usmStatsNotInTimeWindows, 1);
+      SNMP_USM_MIB_INC_COUNTER32(usmStatsNotInTimeWindows , 1);
       SNMP_USM_MIB_GET_COUNTER32(counter, usmStatsNotInTimeWindows);
 
       //Add the usmStatsNotInTimeWindows counter in the varBindList
@@ -810,7 +810,7 @@ error_t snmpFormatReportPdu(SnmpAgentContext *context, error_t errorIndication)
    case ERROR_UNKNOWN_USER_NAME:
       //Total number of packets received by the SNMP engine which were dropped
       //because they referenced a user that was not known to the SNMP engine
-      SNMP_USM_MIB_INC_COUNTER32(usmStatsUnknownUserNames, 1);
+      SNMP_USM_MIB_INC_COUNTER32(usmStatsUnknownUserNames , 1);
       SNMP_USM_MIB_GET_COUNTER32(counter, usmStatsUnknownUserNames);
 
       //Add the usmStatsUnknownUserNames counter in the varBindList
@@ -822,7 +822,7 @@ error_t snmpFormatReportPdu(SnmpAgentContext *context, error_t errorIndication)
       //Total number of packets received by the SNMP engine which were dropped
       //because they referenced an snmpEngineID that was not known to the SNMP
       //engine
-      SNMP_USM_MIB_INC_COUNTER32(usmStatsUnknownEngineIDs, 1);
+      SNMP_USM_MIB_INC_COUNTER32(usmStatsUnknownEngineIDs , 1);
       SNMP_USM_MIB_GET_COUNTER32(counter, usmStatsUnknownEngineIDs);
 
       //Add the usmStatsUnknownEngineIDs counter in the varBindList
@@ -833,7 +833,7 @@ error_t snmpFormatReportPdu(SnmpAgentContext *context, error_t errorIndication)
    case ERROR_AUTHENTICATION_FAILED:
       //Total number of packets received by the SNMP engine which were dropped
       //because they didn't contain the expected digest value
-      SNMP_USM_MIB_INC_COUNTER32(usmStatsWrongDigests, 1);
+      SNMP_USM_MIB_INC_COUNTER32(usmStatsWrongDigests , 1);
       SNMP_USM_MIB_GET_COUNTER32(counter, usmStatsWrongDigests);
 
       //Add the usmStatsWrongDigests counter in the varBindList
@@ -844,7 +844,7 @@ error_t snmpFormatReportPdu(SnmpAgentContext *context, error_t errorIndication)
    case ERROR_DECRYPTION_FAILED:
       //Total number of packets received by the SNMP engine which were dropped
       //because they could not be decrypted
-      SNMP_USM_MIB_INC_COUNTER32(usmStatsDecryptionErrors, 1);
+      SNMP_USM_MIB_INC_COUNTER32(usmStatsDecryptionErrors , 1);
       SNMP_USM_MIB_GET_COUNTER32(counter, usmStatsDecryptionErrors);
 
       //Add the usmStatsDecryptionErrors counter in the varBindList

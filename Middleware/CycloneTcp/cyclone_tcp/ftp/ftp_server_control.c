@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,19 +25,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL FTP_TRACE_LEVEL
 
 //Dependencies
-#include "ftp/ftp_server.h"
-#include "ftp/ftp_server_commands.h"
-#include "ftp/ftp_server_control.h"
-#include "ftp/ftp_server_transport.h"
-#include "ftp/ftp_server_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_server_commands.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_server_control.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_server_transport.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_server_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (FTP_SERVER_SUPPORT == ENABLED)
@@ -46,7 +46,7 @@
 /**
  * @brief Register control connection events
  * @param[in] connection Pointer to the client connection
- * @param[in] eventDesc Socket events to be registered
+ * @param[in] eventDesc Event to be registered
  **/
 
 void ftpServerRegisterControlChannelEvents(FtpClientConnection *connection,

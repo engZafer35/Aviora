@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,9 +34,9 @@
 //Dependencies
 #include <p32xxxx.h>
 #include <sys/kmem.h>
-#include "core/net.h"
-#include "drivers/mac/pic32mx_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/pic32mx_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -222,14 +222,22 @@ error_t pic32mxEthInit(NetInterface *interface)
 }
 
 
+//PIC32 Ethernet Starter Kit, PIC32 Ethernet Starter Kit II or
+//chipKIT Pro MX7 evaluation board?
+#if defined(USE_PIC32_ETH_STARTER_KIT) || defined(USE_PIC32_ETH_STARTER_KIT_2) || \
+   defined(USE_CHIPKIT_PRO_MX7)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void pic32mxEthInitGpio(NetInterface *interface)
+void pic32mxEthInitGpio(NetInterface *interface)
 {
+   //No analog pins are shared with the alternate RMII interface
 }
+
+#endif
 
 
 /**
@@ -528,7 +536,7 @@ error_t pic32mxEthSendPacket(NetInterface *interface,
 
 error_t pic32mxEthReceivePacket(NetInterface *interface)
 {
-   static uint32_t temp[PIC32MX_ETH_RX_BUFFER_SIZE / 4];
+   static uint8_t temp[PIC32MX_ETH_RX_BUFFER_SIZE];
    error_t error;
    size_t n;
    NetRxAncillary ancillary;
@@ -555,7 +563,7 @@ error_t pic32mxEthReceivePacket(NetInterface *interface)
             ancillary = NET_DEFAULT_RX_ANCILLARY;
 
             //Pass the packet to the upper layer
-            nicProcessPacket(interface, (uint8_t *) temp, n, &ancillary);
+            nicProcessPacket(interface, temp, n, &ancillary);
 
             //Valid packet received
             error = NO_ERROR;

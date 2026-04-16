@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,19 +25,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL MODBUS_TRACE_LEVEL
 
 //Dependencies
-#include "modbus/modbus_server.h"
-#include "modbus/modbus_server_pdu.h"
-#include "modbus/modbus_server_security.h"
-#include "modbus/modbus_server_transport.h"
-#include "modbus/modbus_server_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_server_pdu.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_server_security.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_server_transport.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_server_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (MODBUS_SERVER_SUPPORT == ENABLED)
@@ -52,7 +52,6 @@ void modbusServerTick(ModbusServerContext *context)
 {
    uint_t i;
    systime_t time;
-   systime_t timeout;
    ModbusClientConnection *connection;
 
    //Get current time
@@ -67,29 +66,15 @@ void modbusServerTick(ModbusServerContext *context)
       //Check the state of the current connection
       if(connection->state != MODBUS_CONNECTION_STATE_CLOSED)
       {
-         //Retrieve idle connection timeout
-         timeout = context->settings.timeout;
-
-         //A value of zero means no timeout
-         if(timeout != 0)
+         //Disconnect inactive client after idle timeout
+         if(timeCompare(time, connection->timestamp + MODBUS_SERVER_TIMEOUT) >= 0)
          {
-            //Disconnect inactive client after idle timeout
-            if(timeCompare(time, connection->timestamp + timeout) >= 0)
-            {
-               //Debug message
-               TRACE_INFO("Modbus server: Closing inactive connection...\r\n");
-               //Close the Modbus/TCP connection
-               modbusServerCloseConnection(connection);
-            }
+            //Debug message
+            TRACE_INFO("Modbus server: Closing inactive connection...\r\n");
+            //Close the Modbus/TCP connection
+            modbusServerCloseConnection(connection);
          }
       }
-   }
-
-   //Any registered callback?
-   if(context->settings.tickCallback != NULL)
-   {
-      //Invoke user callback function
-      context->settings.tickCallback(context);
    }
 }
 
@@ -97,7 +82,7 @@ void modbusServerTick(ModbusServerContext *context)
 /**
  * @brief Register connection events
  * @param[in] connection Pointer to the client connection
- * @param[in] eventDesc Socket events to be registered
+ * @param[in] eventDesc Event to be registered
  **/
 
 void modbusServerRegisterConnectionEvents(ModbusClientConnection *connection,
@@ -252,10 +237,6 @@ void modbusServerProcessConnectionEvents(ModbusClientConnection *connection)
             //Modbus request successfully received?
             if(connection->requestAduPos >= connection->requestAduLen)
             {
-#if (MODBUS_SERVER_DIAG_SUPPORT == ENABLED)
-               //Total number of messages received
-               context->rxMessageCount++;
-#endif
                //Check unit identifier
                if(context->settings.unitId == 0 ||
                   context->settings.unitId == 255 ||
@@ -293,10 +274,6 @@ void modbusServerProcessConnectionEvents(ModbusClientConnection *connection)
             //Modbus response successfully sent?
             if(connection->responseAduPos >= connection->responseAduLen)
             {
-#if (MODBUS_SERVER_DIAG_SUPPORT == ENABLED)
-               //Total number of messages sent
-               context->txMessageCount++;
-#endif
                //Flush receive buffer
                connection->requestAduLen = 0;
                connection->requestAduPos = 0;
@@ -332,11 +309,6 @@ void modbusServerProcessConnectionEvents(ModbusClientConnection *connection)
    //Any communication error?
    if(error != NO_ERROR && error != ERROR_TIMEOUT)
    {
-#if (MODBUS_SERVER_DIAG_SUPPORT == ENABLED)
-      //Total number of communication errors
-      context->commErrorCount++;
-#endif
-
       //Close the Modbus/TCP connection
       modbusServerCloseConnection(connection);
    }
@@ -468,13 +440,9 @@ void *modbusServerGetRequestPdu(ModbusClientConnection *connection,
 
    //Retrieve the length of the PDU
    if(connection->requestAduLen >= sizeof(ModbusHeader))
-   {
       *length = connection->requestAduLen - sizeof(ModbusHeader);
-   }
    else
-   {
       *length = 0;
-   }
 
    //Return a pointer to the request PDU
    return requestPdu;
@@ -528,7 +496,7 @@ void modbusServerUnlock(ModbusClientConnection *connection)
    context = connection->context;
 
    //Any registered callback?
-   if(context->settings.unlockCallback != NULL)
+   if(context->settings.lockCallback != NULL)
    {
       //Invoke user callback function
       context->settings.unlockCallback();
@@ -537,10 +505,10 @@ void modbusServerUnlock(ModbusClientConnection *connection)
 
 
 /**
- * @brief Read a single coil
+ * @brief Get coil state
  * @param[in] connection Pointer to the client connection
- * @param[in] address Address of the coil
- * @param[out] state Current state of the coil
+ * @param[in] address Coil address
+ * @param[out] state Current coil state
  * @return Error code
  **/
 
@@ -572,10 +540,10 @@ error_t modbusServerReadCoil(ModbusClientConnection *connection,
 
 
 /**
- * @brief Read a single discrete input
+ * @brief Get discrete input state
  * @param[in] connection Pointer to the client connection
- * @param[in] address Address of the discrete input
- * @param[out] state Current state of the discrete input
+ * @param[in] address Coil address
+ * @param[out] state Current coil state
  * @return Error code
  **/
 
@@ -613,10 +581,10 @@ error_t modbusServerReadDiscreteInput(ModbusClientConnection *connection,
 
 
 /**
- * @brief Write a single coil
+ * @brief Set coil state
  * @param[in] connection Pointer to the client connection
  * @param[in] address Address of the coil
- * @param[in] state Desired state of the coil
+ * @param[in] state Desired coil state
  * @param[in] commit This flag indicates the current phase (validation phase
  *   or write phase if the validation was successful)
  * @return Error code
@@ -650,10 +618,10 @@ error_t modbusServerWriteCoil(ModbusClientConnection *connection,
 
 
 /**
- * @brief Read a single holding register
+ * @brief Get holding register value
  * @param[in] connection Pointer to the client connection
- * @param[in] address Address of the holding register
- * @param[out] value Current value of the holding register
+ * @param[in] address Register address
+ * @param[out] value Current register value
  * @return Error code
  **/
 
@@ -691,10 +659,10 @@ error_t modbusServerReadHoldingReg(ModbusClientConnection *connection,
 
 
 /**
- * @brief Read a single input register
+ * @brief Get input register value
  * @param[in] connection Pointer to the client connection
- * @param[in] address Address of the input register
- * @param[out] value Current value of the input register
+ * @param[in] address Register address
+ * @param[out] value Current register value
  * @return Error code
  **/
 
@@ -732,10 +700,10 @@ error_t modbusServerReadInputReg(ModbusClientConnection *connection,
 
 
 /**
- * @brief Write a single register
+ * @brief Set register value
  * @param[in] connection Pointer to the client connection
- * @param[in] address Address of the register
- * @param[in] value Desired value of the register
+ * @param[in] address Register address
+ * @param[in] value Desired register value
  * @param[in] commit This flag indicates the current phase (validation phase
  *   or write phase if the validation was successful)
  * @return Error code
@@ -786,24 +754,20 @@ ModbusExceptionCode modbusServerTranslateExceptionCode(error_t status)
       //for the server
       exceptionCode = MODBUS_EXCEPTION_ILLEGAL_FUNCTION;
       break;
-
    case ERROR_INVALID_ADDRESS:
       //The data address received in the query is not an allowable address
       //for the server
       exceptionCode = MODBUS_EXCEPTION_ILLEGAL_DATA_ADDRESS;
       break;
-
    case ERROR_INVALID_VALUE:
       //A value contained in the query data field is not an allowable value
       //for the server
       exceptionCode = MODBUS_EXCEPTION_ILLEGAL_DATA_VALUE;
       break;
-
    case ERROR_DEVICE_BUSY:
       //The client should retransmit the message later when the server is free
       exceptionCode = MODBUS_EXCEPTION_SLAVE_DEVICE_BUSY;
       break;
-
    default:
       //An unrecoverable error occurred while the server was attempting to
       //perform the requested action

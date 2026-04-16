@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,18 +25,18 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL MODBUS_TRACE_LEVEL
 
 //Dependencies
-#include "modbus/modbus_server.h"
-#include "modbus/modbus_server_pdu.h"
-#include "modbus/modbus_server_misc.h"
-#include "modbus/modbus_debug.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_server_pdu.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_server_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (MODBUS_SERVER_SUPPORT == ENABLED)
@@ -59,7 +59,7 @@ error_t modbusServerProcessRequest(ModbusClientConnection *connection)
    ModbusExceptionCode exceptionCode;
    ModbusServerContext *context;
 
-   //Point to the Modbus/TCP server context
+   //Point to the Modbus server context
    context = connection->context;
    //Point to the Modbus request PDU
    request = modbusServerGetRequestPdu(connection, &requestLen);
@@ -206,11 +206,6 @@ error_t modbusServerProcessRequest(ModbusClientConnection *connection)
       error == ERROR_READ_FAILED ||
       error == ERROR_DEVICE_BUSY)
    {
-#if (MODBUS_SERVER_DIAG_SUPPORT == ENABLED)
-      //Total number of exception errors
-      context->exceptionErrorCount++;
-#endif
-
       //Retrieve exception code
       exceptionCode = modbusServerTranslateExceptionCode(error);
 
@@ -226,11 +221,6 @@ error_t modbusServerProcessRequest(ModbusClientConnection *connection)
 
 /**
  * @brief Process Read Coils request
- *
- * This function code is used to read from 1 to 2000 contiguous status of
- * coils in a remote device. The request specifies the starting address and
- * the number of coils
- *
  * @param[in] connection Pointer to the client connection
  * @param[in] request Pointer to the request PDU
  * @param[in] length Length of the request PDU, in bytes
@@ -273,9 +263,7 @@ error_t modbusServerProcessReadCoilsReq(ModbusClientConnection *connection,
    //If the quantity of coils is not a multiple of eight, the remaining
    //bits in the final data byte will be padded with zeros
    if((quantity % 8) != 0)
-   {
       response->coilStatus[response->byteCount - 1] = 0;
-   }
 
    //Lock access to Modbus table
    modbusServerLock(connection);
@@ -292,13 +280,9 @@ error_t modbusServerProcessReadCoilsReq(ModbusClientConnection *connection,
          //The coils in the response message are packed as one coil per bit
          //of the data field
          if(state)
-         {
             MODBUS_SET_COIL(response->coilStatus, i);
-         }
          else
-         {
             MODBUS_RESET_COIL(response->coilStatus, i);
-         }
       }
    }
 
@@ -324,11 +308,6 @@ error_t modbusServerProcessReadCoilsReq(ModbusClientConnection *connection,
 
 /**
  * @brief Process Read Discrete Inputs request
- *
- * This function code is used to read from 1 to 2000 contiguous status of
- * discrete inputs in a remote device. The request specifies the starting
- * address and the number of inputs
- *
  * @param[in] connection Pointer to the client connection
  * @param[in] request Pointer to the request PDU
  * @param[in] length Length of the request PDU, in bytes
@@ -371,9 +350,7 @@ error_t modbusServerProcessReadDiscreteInputsReq(ModbusClientConnection *connect
    //If the quantity of coils is not a multiple of eight, the remaining
    //bits in the final data byte will be padded with zeros
    if((quantity % 8) != 0)
-   {
       response->inputStatus[response->byteCount - 1] = 0;
-   }
 
    //Lock access to Modbus table
    modbusServerLock(connection);
@@ -390,13 +367,9 @@ error_t modbusServerProcessReadDiscreteInputsReq(ModbusClientConnection *connect
          //The coils in the response message are packed as one coil per bit
          //of the data field
          if(state)
-         {
             MODBUS_SET_COIL(response->inputStatus, i);
-         }
          else
-         {
             MODBUS_RESET_COIL(response->inputStatus, i);
-         }
       }
    }
 
@@ -422,11 +395,6 @@ error_t modbusServerProcessReadDiscreteInputsReq(ModbusClientConnection *connect
 
 /**
  * @brief Process Read Holding Registers request
- *
- * This function code is used to read the contents of a contiguous block of
- * holding registers in a remote device. The request specifies the starting
- * register address and the number of registers
- *
  * @param[in] connection Pointer to the client connection
  * @param[in] request Pointer to the request PDU
  * @param[in] length Length of the request PDU, in bytes
@@ -500,11 +468,6 @@ error_t modbusServerProcessReadHoldingRegsReq(ModbusClientConnection *connection
 
 /**
  * @brief Process Read Input Registers request
- *
- * This function code is used to read from 1 to 125 contiguous input registers
- * in a remote device. The request specifies the starting register address and
- * the number of registers
- *
  * @param[in] connection Pointer to the client connection
  * @param[in] request Pointer to the request PDU
  * @param[in] length Length of the request PDU, in bytes
@@ -578,11 +541,6 @@ error_t modbusServerProcessReadInputRegsReq(ModbusClientConnection *connection,
 
 /**
  * @brief Process Write Single Coil request
- *
- * This function code is used to write a single output to either ON or OFF in
- * a remote device. The request specifies the address of the coil to be forced
- * and the requested ON/OFF state
- *
  * @param[in] connection Pointer to the client connection
  * @param[in] request Pointer to the request PDU
  * @param[in] length Length of the request PDU, in bytes
@@ -655,11 +613,6 @@ error_t modbusServerProcessWriteSingleCoilReq(ModbusClientConnection *connection
 
 /**
  * @brief Process Write Single Register request
- *
- * This function code is used to write a single holding register in a remote
- * device. The request specifies the address of the register to be written and
- * the register value
- *
  * @param[in] connection Pointer to the client connection
  * @param[in] request Pointer to the request PDU
  * @param[in] length Length of the request PDU, in bytes
@@ -717,11 +670,6 @@ error_t modbusServerProcessWriteSingleRegReq(ModbusClientConnection *connection,
 
 /**
  * @brief Process Write Multiple Coils request
- *
- * This function code is used to force each coil in a sequence of coils to
- * either ON or OFF in a remote device. The request specifies the starting
- * address, the number of outputs and the requested ON/OFF states
- *
  * @param[in] connection Pointer to the client connection
  * @param[in] request Pointer to the request PDU
  * @param[in] length Length of the request PDU, in bytes
@@ -814,11 +762,6 @@ error_t modbusServerProcessWriteMultipleCoilsReq(ModbusClientConnection *connect
 
 /**
  * @brief Process Write Multiple Registers request
- *
- * This function code is used to write a block of contiguous registers (1 to
- * 123 registers) in a remote device. The request specifies the starting
- * address, the number of registers and the requested written values
- *
  * @param[in] connection Pointer to the client connection
  * @param[in] request Pointer to the request PDU
  * @param[in] length Length of the request PDU, in bytes
@@ -911,12 +854,6 @@ error_t modbusServerProcessWriteMultipleRegsReq(ModbusClientConnection *connecti
 
 /**
  * @brief Process Mask Write Register request
- *
- * This function code is used to modify the contents of a specified holding
- * register using a combination of an AND mask, an OR mask, and the register's
- * current contents. The function can be used to set or clear individual bits
- * in the register
- *
  * @param[in] connection Pointer to the client connection
  * @param[in] request Pointer to the request PDU
  * @param[in] length Length of the request PDU, in bytes
@@ -990,11 +927,6 @@ error_t modbusServerProcessMaskWriteRegReq(ModbusClientConnection *connection,
 
 /**
  * @brief Process Read/Write Multiple Registers request
- *
- * This function code performs a combination of one read operation and one
- * write operation in a single Modbus transaction. The write operation is
- * performed before the read
- *
  * @param[in] connection Pointer to the client connection
  * @param[in] request Pointer to the request PDU
  * @param[in] length Length of the request PDU, in bytes
@@ -1058,6 +990,16 @@ error_t modbusServerProcessReadWriteMultipleRegsReq(ModbusClientConnection *conn
    //Lock access to Modbus table
    modbusServerLock(connection);
 
+   //Read the specified number of registers
+   for(i = 0; i < readQuantity && !error; i++)
+   {
+      //Retrieve the value of the current register
+      error = modbusServerReadHoldingReg(connection, readAddress + i, &value);
+
+      //Convert the value to network byte order
+      response->readRegValue[i] = htons(value);
+   }
+
    //Consistency check (first phase)
    for(i = 0; i < writeQuantity && !error; i++)
    {
@@ -1072,16 +1014,6 @@ error_t modbusServerProcessReadWriteMultipleRegsReq(ModbusClientConnection *conn
       //Write the value of the current register
       error = modbusServerWriteReg(connection, writeAddress + i,
          ntohs(request->writeRegValue[i]), TRUE);
-   }
-
-   //Read the specified number of registers
-   for(i = 0; i < readQuantity && !error; i++)
-   {
-      //Retrieve the value of the current register
-      error = modbusServerReadHoldingReg(connection, readAddress + i, &value);
-
-      //Convert the value to network byte order
-      response->readRegValue[i] = htons(value);
    }
 
    //Unlock access to Modbus table

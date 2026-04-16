@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _DP83822_DRIVER_H
 #define _DP83822_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //PHY address
 #ifndef DP83822_PHY_ADDR
@@ -484,7 +484,6 @@ extern const PhyDriver dp83822PhyDriver;
 
 //DP83822 related functions
 error_t dp83822Init(NetInterface *interface);
-void dp83822InitHook(NetInterface *interface);
 
 void dp83822Tick(NetInterface *interface);
 
@@ -499,12 +498,6 @@ void dp83822WritePhyReg(NetInterface *interface, uint8_t address,
 uint16_t dp83822ReadPhyReg(NetInterface *interface, uint8_t address);
 
 void dp83822DumpPhyReg(NetInterface *interface);
-
-void dp83822WriteMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr, uint16_t data);
-
-uint16_t dp83822ReadMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr);
 
 //C++ guard
 #ifdef __cplusplus

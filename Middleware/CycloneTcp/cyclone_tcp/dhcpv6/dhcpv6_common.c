@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -33,28 +33,25 @@
  * with the latter to obtain configuration parameters. Refer to RFC 3315
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL DHCPV6_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "dhcpv6/dhcpv6_client.h"
-#include "dhcpv6/dhcpv6_relay.h"
-#include "dhcpv6/dhcpv6_common.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcpv6/dhcpv6_common.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
-#if (IPV6_SUPPORT == ENABLED && (DHCPV6_CLIENT_SUPPORT == ENABLED || \
-   DHCPV6_RELAY_SUPPORT == ENABLED))
+#if (IPV6_SUPPORT == ENABLED)
 
-//All DHCPv6 relay agents and servers (ff02::1:2)
+//All DHCPv6 relay agents and servers (FF02::1:2)
 const Ipv6Addr DHCPV6_ALL_RELAY_AGENTS_AND_SERVERS_ADDR =
    IPV6_ADDR(0xFF02, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0001, 0x0002);
 
-//All DHCPv6 servers (ff05::1:3)
+//All DHCPv6 servers (FF05::1:3)
 const Ipv6Addr DHCPV6_ALL_SERVERS_ADDR =
    IPV6_ADDR(0xFF05, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0001, 0x0003);
 
@@ -79,7 +76,7 @@ Dhcpv6StatusCode dhcpv6GetStatusCode(const uint8_t *options, size_t length)
    //Search for the Status Code option
    option = dhcpv6GetOption(options, length, DHCPV6_OPT_STATUS_CODE);
 
-   //Option found?
+   //Check whether the option has been found
    if(option != NULL && ntohs(option->length) >= sizeof(Dhcpv6StatusCodeOption))
    {
       //The option contains a status code and a status message
@@ -218,7 +215,7 @@ Dhcpv6Option *dhcpv6AddSubOption(Dhcpv6Option *baseOption, size_t *messageLen,
 
 
 /**
- * @brief Search a DHCPv6 message for a given option
+ * @brief Find the specified option in a DHCPv6 message
  * @param[in] options Pointer to the Options field
  * @param[in] optionsLength Length of the Options field
  * @param[in] optionCode Code of the option to find
@@ -256,6 +253,40 @@ Dhcpv6Option *dhcpv6GetOption(const uint8_t *options,
 
    //The specified option code was not found
    return NULL;
+}
+
+
+/**
+ * @brief Multiplication by a randomization factor
+ *
+ * Each of the computations of a new RT include a randomization factor
+ * RAND, which is a random number chosen with a uniform distribution
+ * between -0.1 and +0.1. The randomization factor is included to
+ * minimize synchronization of messages transmitted by DHCPv6 clients
+ *
+ * @param[in] value Input value
+ * @return Value resulting from the randomization process
+ **/
+
+int32_t dhcpv6Rand(int32_t value)
+{
+   //Use a randomization factor chosen with a uniform
+   //distribution between -0.1 and +0.1
+   return value * dhcpv6RandRange(-100, 100) / 1000;
+}
+
+
+/**
+ * @brief Get a random value in the specified range
+ * @param[in] min Lower bound
+ * @param[in] max Upper bound
+ * @return Random value in the specified range
+ **/
+
+int32_t dhcpv6RandRange(int32_t min, int32_t max)
+{
+   //Return a random value in the given range
+   return min + netGetRand() % (max - min + 1);
 }
 
 #endif

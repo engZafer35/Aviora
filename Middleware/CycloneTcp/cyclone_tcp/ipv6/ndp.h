@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _NDP_H
 #define _NDP_H
 
 //Dependencies
-#include "core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //NDP support
 #ifndef NDP_SUPPORT
@@ -256,10 +256,8 @@ typedef enum
 } NdpState;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -268,21 +266,21 @@ typedef enum
  * @brief Router Solicitation message
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;      //0
    uint8_t code;      //1
    uint16_t checksum; //2-3
    uint32_t reserved; //4-7
    uint8_t options[]; //8
-} NdpRouterSolMessage;
+} __end_packed NdpRouterSolMessage;
 
 
 /**
  * @brief Router Advertisement message
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;                  //0
    uint8_t code;                  //1
@@ -307,14 +305,14 @@ typedef __packed_struct
    uint32_t reachableTime;        //8-11
    uint32_t retransTimer;         //12-15
    uint8_t options[];             //16
-} NdpRouterAdvMessage;
+} __end_packed NdpRouterAdvMessage;
 
 
 /**
  * @brief Neighbor Solicitation message
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;        //0
    uint8_t code;        //1
@@ -322,14 +320,14 @@ typedef __packed_struct
    uint32_t reserved;   //4-7
    Ipv6Addr targetAddr; //8-23
    uint8_t options[];   //24
-} NdpNeighborSolMessage;
+} __end_packed NdpNeighborSolMessage;
 
 
 /**
  * @brief Neighbor Advertisement message
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;          //0
    uint8_t code;          //1
@@ -348,14 +346,14 @@ typedef __packed_struct
    uint8_t reserved2[3];  //5-7
    Ipv6Addr targetAddr;   //8-23
    uint8_t options[];     //24
-} NdpNeighborAdvMessage;
+} __end_packed NdpNeighborAdvMessage;
 
 
 /**
  * @brief Redirect message
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;        //0
    uint8_t code;        //1
@@ -364,38 +362,38 @@ typedef __packed_struct
    Ipv6Addr targetAddr; //8-23
    Ipv6Addr destAddr;   //24-39
    uint8_t options[];   //40
-} NdpRedirectMessage;
+} __end_packed NdpRedirectMessage;
 
 
 /**
  * @brief Neighbor Discovery option general format
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;    //0
    uint8_t length;  //1
    uint8_t value[]; //2
-} NdpOption;
+} __end_packed NdpOption;
 
 
 /**
  * @brief Source/Target Link-Layer Address option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;          //0
    uint8_t length;        //1
    MacAddr linkLayerAddr; //2-7
-} NdpLinkLayerAddrOption;
+} __end_packed NdpLinkLayerAddrOption;
 
 
 /**
  * @brief Prefix Information option (PIO)
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;               //0
    uint8_t length;             //1
@@ -415,41 +413,41 @@ typedef __packed_struct
    uint32_t preferredLifetime; //8-11
    uint32_t reserved2;         //12-15
    Ipv6Addr prefix;            //16-31
-} NdpPrefixInfoOption;
+} __end_packed NdpPrefixInfoOption;
 
 
 /**
  * @brief Redirected Header option (RHO)
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;       //0
    uint8_t length;     //1
    uint16_t reserved1; //2-3
    uint32_t reserved2; //4-7
    uint8_t ipPacket[]; //8
-} NdpRedirectedHeaderOption;
+} __end_packed NdpRedirectedHeaderOption;
 
 
 /**
  * @brief MTU option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;      //0
    uint8_t length;    //1
    uint16_t reserved; //2-3
    uint32_t mtu;      //4-7
-} NdpMtuOption;
+} __end_packed NdpMtuOption;
 
 
 /**
  * @brief Route Information option (RIO)
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;           //0
    uint8_t length;         //1
@@ -465,42 +463,42 @@ typedef __packed_struct
 #endif
    uint32_t routeLifetime; //4-7
    Ipv6Addr prefix;        //8
-} NdpRouteInfoOption;
+} __end_packed NdpRouteInfoOption;
 
 
 /**
  * @brief Recursive DNS Server option (RDNSS)
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;       //0
    uint8_t length;     //1
    uint16_t reserved;  //2-3
    uint32_t lifetime;  //4-7
    Ipv6Addr address[]; //8
-} NdpRdnssOption;
+} __end_packed NdpRdnssOption;
 
 
 /**
  * @brief DNS Search List option (DNSSL)
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;          //0
    uint8_t length;        //1
    uint16_t reserved;     //2-3
    uint32_t lifetime;     //4-7
    uint8_t domainNames[]; //8
-} NdpDnsslOption;
+} __end_packed NdpDnsslOption;
 
 
 /**
  * @brief 6LoWPAN Context option (6CO)
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;           //0
    uint8_t length;         //1
@@ -517,13 +515,11 @@ typedef __packed_struct
    uint16_t reserved2;     //4-5
    uint16_t validLifetime; //6-7
    Ipv6Addr contextPrefix; //8
-} NdpContextOption;
+} __end_packed NdpContextOption;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
 
@@ -589,7 +585,6 @@ typedef struct
    bool_t rtrAdvReceived;                                        ///<Valid RA message received
    systime_t timestamp;                                          ///<Timestamp to manage retransmissions
    systime_t timeout;                                            ///<Timeout value
-   bool_t enable;                                                ///<Enable address resolution using Neighbor Discovery protocol
    NdpNeighborCacheEntry neighborCache[NDP_NEIGHBOR_CACHE_SIZE]; ///<Neighbor cache
    NdpDestCacheEntry destCache[NDP_DEST_CACHE_SIZE];             ///<Destination cache
 } NdpContext;
@@ -600,38 +595,28 @@ extern systime_t ndpTickCounter;
 
 //NDP related functions
 error_t ndpInit(NetInterface *interface);
-error_t ndpEnable(NetInterface *interface, bool_t enable);
-
-error_t ndpAddStaticEntry(NetInterface *interface, const Ipv6Addr *ipAddr,
-   const MacAddr *macAddr);
-
-error_t ndpRemoveStaticEntry(NetInterface *interface, const Ipv6Addr *ipAddr);
 
 error_t ndpResolve(NetInterface *interface, const Ipv6Addr *ipAddr,
    MacAddr *macAddr);
 
 error_t ndpEnqueuePacket(NetInterface *srcInterface,
    NetInterface *destInterface, const Ipv6Addr *ipAddr, NetBuffer *buffer,
-   size_t offset, NetTxAncillary *ancillary);
+      size_t offset, NetTxAncillary *ancillary);
 
 void ndpTick(NetInterface *interface);
 void ndpLinkChangeEvent(NetInterface *interface);
 
-void ndpProcessRouterAdv(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, uint8_t hopLimit);
+void ndpProcessRouterAdv(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, uint8_t hopLimit);
 
-void ndpProcessNeighborSol(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, uint8_t hopLimit);
+void ndpProcessNeighborSol(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, uint8_t hopLimit);
 
-void ndpProcessNeighborAdv(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, uint8_t hopLimit);
+void ndpProcessNeighborAdv(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, uint8_t hopLimit);
 
-void ndpProcessRedirect(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, uint8_t hopLimit);
+void ndpProcessRedirect(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, uint8_t hopLimit);
 
 error_t ndpSendRouterSol(NetInterface *interface);
 

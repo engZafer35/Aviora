@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,18 +25,18 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _KSZ8091_DRIVER_H
 #define _KSZ8091_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //PHY address
 #ifndef KSZ8091_PHY_ADDR
-   #define KSZ8091_PHY_ADDR 0
+   #define KSZ8091_PHY_ADDR 7
 #elif (KSZ8091_PHY_ADDR < 0 || KSZ8091_PHY_ADDR > 31)
    #error KSZ8091_PHY_ADDR parameter is not valid
 #endif
@@ -311,7 +311,6 @@ extern const PhyDriver ksz8091PhyDriver;
 
 //KSZ8091 related functions
 error_t ksz8091Init(NetInterface *interface);
-void ksz8091InitHook(NetInterface *interface);
 
 void ksz8091Tick(NetInterface *interface);
 

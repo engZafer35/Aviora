@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,26 +23,20 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Dependencies
-#include <string.h>
-#include "fs_port.h"
-#include "fs_port_posix.h"
-#include "str.h"
-#include "path.h"
-#include "error.h"
-#include "debug.h"
-#include <dirent.h>
+#include "../../CycloneTcp/common/fs_port_posix.h"
 
-#ifdef _WIN32
-   #include <direct.h>
-#else
-   #include <sys/types.h>
-   #include <sys/stat.h>
-   #include <unistd.h>
-#endif
+#include <string.h>
+#include <dirent.h>
+#include <direct.h>
+#include "../../CycloneTcp/common/debug.h"
+#include "../../CycloneTcp/common/error.h"
+#include "../../CycloneTcp/common/fs_port.h"
+#include "../../CycloneTcp/common/path.h"
+#include "../../CycloneTcp/common/str.h"
 
 
 /**
@@ -482,11 +476,7 @@ error_t fsCreateDir(const char_t *path)
       return ERROR_INVALID_PARAMETER;
 
    //Create a new directory
-#ifdef _WIN32
    ret = _mkdir(path);
-#else
-   ret = mkdir(path, 0777);
-#endif
 
    //On success, zero is returned
    if(ret == 0)
@@ -519,11 +509,7 @@ error_t fsRemoveDir(const char_t *path)
       return ERROR_INVALID_PARAMETER;
 
    //Remove the specified directory
-#ifdef _WIN32
    ret = _rmdir(path);
-#else
-   ret = rmdir(path);
-#endif
 
    //On success, zero is returned
    if(ret == 0)

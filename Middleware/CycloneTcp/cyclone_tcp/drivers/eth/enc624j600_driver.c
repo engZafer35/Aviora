@@ -1,12 +1,12 @@
 /**
  * @file enc624j600_driver.c
- * @brief ENC624J600 Ethernet controller
+ * @brief ENC624J600/ENC424J600 Ethernet controller
  *
  * @section License
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "drivers/eth/enc624j600_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/eth/enc624j600_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -76,14 +76,10 @@ error_t enc624j600Init(NetInterface *interface)
    //Debug message
    TRACE_INFO("Initializing ENC624J600 Ethernet controller...\r\n");
 
-   //Initialize SPI interface
+   //Initialize SPI
    interface->spiDriver->init();
-
-   //Initialize external interrupt line driver
-   if(interface->extIntDriver != NULL)
-   {
-      interface->extIntDriver->init();
-   }
+   //Initialize external interrupt line
+   interface->extIntDriver->init();
 
    //Point to the driver context
    context = (Enc624j600Context *) interface->nicContext;
@@ -165,9 +161,6 @@ error_t enc624j600Init(NetInterface *interface)
    //Set RXEN to enable reception
    enc624j600SetBit(interface, ENC624J600_ECON1, ENC624J600_ECON1_RXEN);
 
-   //Perform custom configuration
-   enc624j600InitHook(interface);
-
    //Dump registers for debugging purpose
    enc624j600DumpReg(interface);
    enc624j600DumpPhyReg(interface);
@@ -182,16 +175,6 @@ error_t enc624j600Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief ENC624J600 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void enc624j600InitHook(NetInterface *interface)
-{
 }
 
 
@@ -213,10 +196,7 @@ void enc624j600Tick(NetInterface *interface)
 void enc624j600EnableIrq(NetInterface *interface)
 {
    //Enable interrupts
-   if(interface->extIntDriver != NULL)
-   {
-      interface->extIntDriver->enableIrq();
-   }
+   interface->extIntDriver->enableIrq();
 }
 
 
@@ -228,10 +208,7 @@ void enc624j600EnableIrq(NetInterface *interface)
 void enc624j600DisableIrq(NetInterface *interface)
 {
    //Disable interrupts
-   if(interface->extIntDriver != NULL)
-   {
-      interface->extIntDriver->disableIrq();
-   }
+   interface->extIntDriver->disableIrq();
 }
 
 
@@ -489,7 +466,8 @@ error_t enc624j600ReceivePacket(NetInterface *interface)
       {
          //Limit the number of data to read
          length = MIN(length, ENC624J600_ETH_RX_BUFFER_SIZE);
-         //Read packet data
+
+         //Read the Ethernet frame
          enc624j600ReadBuffer(interface, ENC624J600_CMD_RRXDATA, temp, length);
 
          //Valid packet received
@@ -662,15 +640,15 @@ error_t enc624j600SoftReset(NetInterface *interface)
    //Wait at least 25us for the reset to take place
    sleep(1);
 
-   //Read EUDAST to confirm that the system reset took place. EUDAST should
-   //have reverted back to its reset default
+   //Read EUDAST to confirm that the system reset took place.
+   //EUDAST should have reverted back to its reset default
    if(enc624j600ReadReg(interface, ENC624J600_EUDAST) != 0x0000)
    {
       return ERROR_FAILURE;
    }
 
-   //Wait at least 256us for the PHY registers and PHY status bits to become
-   //available
+   //Wait at least 256us for the PHY registers and PHY
+   //status bits to become available
    sleep(1);
 
    //The controller is now ready to accept further commands
@@ -859,7 +837,7 @@ void enc624j600WriteBuffer(NetInterface *interface,
  * @brief Read SRAM buffer
  * @param[in] interface Underlying network interface
  * @param[in] opcode SRAM buffer operation
- * @param[out] data Buffer where to store the incoming data
+ * @param[in] data Buffer where to store the incoming data
  * @param[in] length Number of data to read
  **/
 

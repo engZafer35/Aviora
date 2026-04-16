@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -35,9 +35,9 @@
 #include "iodefine.h"
 #include "cpg_iobitmask.h"
 #include "intc.h"
-#include "core/net.h"
-#include "drivers/mac/rza1_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/rza1_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -141,12 +141,11 @@ error_t rza1EthInit(NetInterface *interface)
    //Start EDMAC transmitting and receiving units
    ETHER.EDSR0 = ETHER_EDSR0_ENT | ETHER_EDSR0_ENR;
 
-   //To execute a software reset with this register, 1 must be written to
-   //both the SWRT and SWRR bits simultaneously
+   //To execute a software reset with this register, 1 must be
+   //written to both the SWRT and SWRR bits simultaneously
    ETHER.EDMR0 = ETHER_EDMR0_SWRT | ETHER_EDMR0_SWRR;
-
    //Wait for the reset to complete
-   while((ETHER.EDMR0 & (ETHER_EDMR0_SWRT | ETHER_EDMR0_SWRR)) != 0)
+   while(ETHER.EDMR0 & (ETHER_EDMR0_SWRT | ETHER_EDMR0_SWRR))
    {
    }
 
@@ -199,7 +198,7 @@ error_t rza1EthInit(NetInterface *interface)
    ETHER.CSMR = 0;
 
    //Enable multicast address filtering
-   ETHER.ECMR0 |= ETHER_ECMR0_MCT;
+   ETHER.ECMR0 |= ETH_ECMR0_MCT;
 
    //Set the upper 32 bits of the MAC address
    ETHER.MAHR0 = (interface->macAddr.b[0] << 24) | (interface->macAddr.b[1] << 16) |
@@ -231,8 +230,8 @@ error_t rza1EthInit(NetInterface *interface)
    //Configure interrupt priority
    R_INTC_Set_Priority(INTC_ID_ETHERI, RZA1_ETH_IRQ_PRIORITY);
 
-   //Enable transmission and reception
-   ETHER.ECMR0 |= ETHER_ECMR0_TE | ETHER_ECMR0_RE;
+   //Enable EDMAC transmission and reception
+   ETHER.ECMR0 |= ETH_ECMR0_RE | ETH_ECMR0_TE;
 
    //Instruct the DMA to poll the receive descriptor list
    ETHER.EDRRR0 = ETHER_EDRRR0_RR;
@@ -245,12 +244,16 @@ error_t rza1EthInit(NetInterface *interface)
 }
 
 
+//RSK-RZ/A1H, Stream it! RZ, Hachiko or VK-RZ/A1H evaluation board?
+#if defined(USE_RSK_RZA1H) || defined(USE_STREAM_IT_RZ) || \
+   defined(USE_HACHIKO) || defined(USE_VK_RZA1H)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void rza1EthInitGpio(NetInterface *interface)
+void rza1EthInitGpio(NetInterface *interface)
 {
 //RSK RZ/A1H or Hachiko evaluation board?
 #if defined(USE_RSK_RZA1H) || defined(USE_HACHIKO)
@@ -649,6 +652,8 @@ __weak_func void rza1EthInitGpio(NetInterface *interface)
 #endif
 }
 
+#endif
+
 
 /**
  * @brief Initialize DMA descriptor lists
@@ -957,7 +962,7 @@ error_t rza1EthSendPacket(NetInterface *interface,
  **/
 error_t rza1EthReceivePacket(NetInterface *interface)
 {
-   static uint32_t temp[RZA1_ETH_RX_BUFFER_SIZE / 4];
+   static uint8_t temp[RZA1_ETH_RX_BUFFER_SIZE];
    error_t error;
    size_t n;
    NetRxAncillary ancillary;
@@ -984,7 +989,7 @@ error_t rza1EthReceivePacket(NetInterface *interface)
             ancillary = NET_DEFAULT_RX_ANCILLARY;
 
             //Pass the packet to the upper layer
-            nicProcessPacket(interface, (uint8_t *) temp, n, &ancillary);
+            nicProcessPacket(interface, temp, n, &ancillary);
 
             //Valid packet received
             error = NO_ERROR;
@@ -1112,23 +1117,15 @@ error_t rza1EthUpdateMacAddrFilter(NetInterface *interface)
 
 error_t rza1EthUpdateMacConfig(NetInterface *interface)
 {
-   uint32_t mode;
-
-   //Read EMAC mode register
-   mode = ETHER.ECMR0;
-
    //Half-duplex or full-duplex mode?
    if(interface->duplexMode == NIC_FULL_DUPLEX_MODE)
    {
-      mode |= ETHER_ECMR0_DM;
+      ETHER.ECMR0 |= ETH_ECMR0_DM;
    }
    else
    {
-      mode &= ~ETHER_ECMR0_DM;
+      ETHER.ECMR0 &= ~ETH_ECMR0_DM;
    }
-
-   //Update EMAC mode register
-   ETHER.ECMR0 = mode;
 
    //Successful processing
    return NO_ERROR;

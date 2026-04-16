@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -35,14 +35,13 @@
 #include <stdint.h>
 #include "msp432.h"
 #include "inc/hw_emac.h"
-#include "driverlib/types.h"
 #include "driverlib/gpio.h"
 #include "driverlib/interrupt.h"
 #include "driverlib/pin_map.h"
 #include "driverlib/sysctl.h"
-#include "core/net.h"
-#include "drivers/mac/msp432e4_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/msp432e4_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -131,20 +130,22 @@ error_t msp432e4EthInit(NetInterface *interface)
    //Save underlying network interface
    nicDriverInterface = interface;
 
-   //Enable and reset EMAC peripheral
+   //Enable Ethernet controller clock
    SysCtlPeripheralEnable(SYSCTL_PERIPH_EMAC0);
-   SysCtlPeripheralReset(SYSCTL_PERIPH_EMAC0);
 
-   //Wait for the EMAC peripheral to be ready
+   //Reset Ethernet controller
+   SysCtlPeripheralReset(SYSCTL_PERIPH_EMAC0);
+   //Wait for the reset to complete
    while(!SysCtlPeripheralReady(SYSCTL_PERIPH_EMAC0))
    {
    }
 
-   //Enable and reset PHY peripheral
+   //Enable internal PHY clock
    SysCtlPeripheralEnable(SYSCTL_PERIPH_EPHY0);
-   SysCtlPeripheralReset(SYSCTL_PERIPH_EPHY0);
 
-   //Wait for the PHY peripheral to be ready
+   //Reset internal PHY
+   SysCtlPeripheralReset(SYSCTL_PERIPH_EPHY0);
+   //Wait for the reset to complete
    while(!SysCtlPeripheralReady(SYSCTL_PERIPH_EPHY0))
    {
    }
@@ -153,14 +154,14 @@ error_t msp432e4EthInit(NetInterface *interface)
    msp432e4EthInitGpio(interface);
 
    //Perform a software reset
-   EMAC0_DMABUSMOD_R |= EMAC_DMABUSMOD_SWR;
+   EMAC0->DMABUSMOD |= EMAC_DMABUSMOD_SWR;
    //Wait for the reset to complete
-   while((EMAC0_DMABUSMOD_R & EMAC_DMABUSMOD_SWR) != 0)
+   while((EMAC0->DMABUSMOD & EMAC_DMABUSMOD_SWR) != 0)
    {
    }
 
    //Adjust MDC clock range depending on SYSCLK frequency
-   EMAC0_MIIADDR_R = EMAC_MIIADDR_CR_100_150;
+   EMAC0->MIIADDR = EMAC_MIIADDR_CR_100_150;
 
    //Internal or external Ethernet PHY?
    if(interface->phyDriver != NULL)
@@ -210,34 +211,34 @@ error_t msp432e4EthInit(NetInterface *interface)
    }
 
    //Use default MAC configuration
-   EMAC0_CFG_R = EMAC_CFG_DRO;
+   EMAC0->CFG = EMAC_CFG_DRO;
 
    //Set the MAC address of the station
-   EMAC0_ADDR0L_R = interface->macAddr.w[0] | (interface->macAddr.w[1] << 16);
-   EMAC0_ADDR0H_R = interface->macAddr.w[2];
+   EMAC0->ADDR0L = interface->macAddr.w[0] | (interface->macAddr.w[1] << 16);
+   EMAC0->ADDR0H = interface->macAddr.w[2];
 
    //The MAC supports 3 additional addresses for unicast perfect filtering
-   EMAC0_ADDR1L_R = 0;
-   EMAC0_ADDR1H_R = 0;
-   EMAC0_ADDR2L_R = 0;
-   EMAC0_ADDR2H_R = 0;
-   EMAC0_ADDR3L_R = 0;
-   EMAC0_ADDR3H_R = 0;
+   EMAC0->ADDR1L = 0;
+   EMAC0->ADDR1H = 0;
+   EMAC0->ADDR2L = 0;
+   EMAC0->ADDR2H = 0;
+   EMAC0->ADDR3L = 0;
+   EMAC0->ADDR3H = 0;
 
    //Initialize hash table
-   EMAC0_HASHTBLL_R = 0;
-   EMAC0_HASHTBLH_R = 0;
+   EMAC0->HASHTBLL = 0;
+   EMAC0->HASHTBLH = 0;
 
    //Configure the receive filter
-   EMAC0_FRAMEFLTR_R = EMAC_FRAMEFLTR_HPF | EMAC_FRAMEFLTR_HMC;
+   EMAC0->FRAMEFLTR = EMAC_FRAMEFLTR_HPF | EMAC_FRAMEFLTR_HMC;
    //Disable flow control
-   EMAC0_FLOWCTL_R = 0;
+   EMAC0->FLOWCTL = 0;
    //Enable store and forward mode
-   EMAC0_DMAOPMODE_R = EMAC_DMAOPMODE_RSF | EMAC_DMAOPMODE_TSF;
+   EMAC0->DMAOPMODE = EMAC_DMAOPMODE_RSF | EMAC_DMAOPMODE_TSF;
 
    //Configure DMA bus mode
-   EMAC0_DMABUSMOD_R = EMAC_DMABUSMOD_AAL | EMAC_DMABUSMOD_USP |
-      EMAC_DMABUSMOD_RPBL_32 | EMAC_DMABUSMOD_PR_1_1 | EMAC_DMABUSMOD_PBL_32 |
+   EMAC0->DMABUSMOD = EMAC_DMABUSMOD_AAL | EMAC_DMABUSMOD_USP |
+      EMAC_DMABUSMOD_RPBL_1 | EMAC_DMABUSMOD_PR_1_1 | EMAC_DMABUSMOD_PBL_1 |
       EMAC_DMABUSMOD_ATDS;
 
    //Initialize DMA descriptor lists
@@ -245,20 +246,20 @@ error_t msp432e4EthInit(NetInterface *interface)
 
    //Prevent interrupts from being generated when the transmit statistic
    //counters reach half their maximum value
-   EMAC0_MMCTXIM_R = EMAC_MMCTXIM_OCTCNT | EMAC_MMCTXIM_MCOLLGF |
+   EMAC0->MMCTXIM = EMAC_MMCTXIM_OCTCNT | EMAC_MMCTXIM_MCOLLGF |
       EMAC_MMCTXIM_SCOLLGF | EMAC_MMCTXIM_GBF;
 
    //Prevent interrupts from being generated when the receive statistic
    //counters reach half their maximum value
-   EMAC0_MMCRXIM_R = EMAC_MMCRXIM_UCGF | EMAC_MMCRXIM_ALGNERR |
+   EMAC0->MMCRXIM = EMAC_MMCRXIM_UCGF | EMAC_MMCRXIM_ALGNERR |
       EMAC_MMCRXIM_CRCERR | EMAC_MMCRXIM_GBF;
 
    //Disable MAC interrupts
-   EMAC0_IM_R = EMAC_IM_TSI | EMAC_IM_PMT;
+   EMAC0->IM = EMAC_IM_TSI | EMAC_IM_PMT;
    //Enable the desired DMA interrupts
-   EMAC0_DMAIM_R = EMAC_DMAIM_NIE | EMAC_DMAIM_RIE | EMAC_DMAIM_TIE;
+   EMAC0->DMAIM = EMAC_DMAIM_NIE | EMAC_DMAIM_RIE | EMAC_DMAIM_TIE;
    //Enable PHY interrupts
-   EMAC0_EPHYIM_R = EMAC_EPHYIM_INT;
+   EMAC0->EPHYIM = EMAC_EPHYIM_INT;
 
 #ifdef ti_sysbios_BIOS___VERS
    //Configure Ethernet interrupt
@@ -276,9 +277,9 @@ error_t msp432e4EthInit(NetInterface *interface)
 #endif
 
    //Enable MAC transmission and reception
-   EMAC0_CFG_R |= EMAC_CFG_TE | EMAC_CFG_RE;
+   EMAC0->CFG |= EMAC_CFG_TE | EMAC_CFG_RE;
    //Enable DMA transmission and reception
-   EMAC0_DMAOPMODE_R |= EMAC_DMAOPMODE_ST | EMAC_DMAOPMODE_SR;
+   EMAC0->DMAOPMODE |= EMAC_DMAOPMODE_ST | EMAC_DMAOPMODE_SR;
 
    //Accept any packets from the upper layer
    osSetEvent(&interface->nicTxEvent);
@@ -288,15 +289,16 @@ error_t msp432e4EthInit(NetInterface *interface)
 }
 
 
+//MSP-EXP432E401Y evaluation board?
+#if defined(USE_MSP_EXP432E401Y)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void msp432e4EthInitGpio(NetInterface *interface)
+void msp432e4EthInitGpio(NetInterface *interface)
 {
-//MSP-EXP432E401Y evaluation board?
-#if defined(USE_MSP_EXP432E401Y)
    //Enable GPIO clock
    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);
 
@@ -306,8 +308,9 @@ __weak_func void msp432e4EthInitGpio(NetInterface *interface)
 
    //Configure Ethernet LED pins for proper operation
    GPIOPinTypeEthernetLED(GPIO_PORTF_BASE, GPIO_PIN_0 | GPIO_PIN_4);
-#endif
 }
+
+#endif
 
 
 /**
@@ -369,9 +372,9 @@ void msp432e4EthInitDmaDesc(NetInterface *interface)
    rxCurDmaDesc = &rxDmaDesc[0];
 
    //Start location of the TX descriptor list
-   EMAC0_TXDLADDR_R = (uint32_t) txDmaDesc;
+   EMAC0->TXDLADDR = (uint32_t) txDmaDesc;
    //Start location of the RX descriptor list
-   EMAC0_RXDLADDR_R = (uint32_t) rxDmaDesc;
+   EMAC0->RXDLADDR = (uint32_t) rxDmaDesc;
 }
 
 
@@ -486,13 +489,13 @@ void msp432e4EthIrqHandler(void)
    flag = FALSE;
 
    //Read PHY status register
-   status = EMAC0_EPHYRIS_R;
+   status = EMAC0->EPHYRIS;
 
    //PHY interrupt?
    if((status & EMAC_EPHYRIS_INT) != 0)
    {
       //Disable PHY interrupt
-      EMAC0_EPHYIM_R &= ~EMAC_EPHYIM_INT;
+      EMAC0->EPHYIM &= ~EMAC_EPHYIM_INT;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -501,13 +504,13 @@ void msp432e4EthIrqHandler(void)
    }
 
    //Read DMA status register
-   status = EMAC0_DMARIS_R;
+   status = EMAC0->DMARIS;
 
    //Packet transmitted?
    if((status & EMAC_DMARIS_TI) != 0)
    {
       //Clear TI interrupt flag
-      EMAC0_DMARIS_R = EMAC_DMARIS_TI;
+      EMAC0->DMARIS = EMAC_DMARIS_TI;
 
       //Check whether the TX buffer is available for writing
       if((txCurDmaDesc->tdes0 & EMAC_TDES0_OWN) == 0)
@@ -521,7 +524,7 @@ void msp432e4EthIrqHandler(void)
    if((status & EMAC_DMARIS_RI) != 0)
    {
       //Disable RIE interrupt
-      EMAC0_DMAIM_R &= ~EMAC_DMAIM_RIE;
+      EMAC0->DMAIM &= ~EMAC_DMAIM_RIE;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -530,7 +533,7 @@ void msp432e4EthIrqHandler(void)
    }
 
    //Clear NIS interrupt flag
-   EMAC0_DMARIS_R = EMAC_DMARIS_NIS;
+   EMAC0->DMARIS = EMAC_DMARIS_NIS;
 
    //Interrupt service routine epilogue
    osExitIsr(flag);
@@ -548,10 +551,10 @@ void msp432e4EthEventHandler(NetInterface *interface)
    uint32_t status;
 
    //PHY interrupt?
-   if((EMAC0_EPHYRIS_R & EMAC_EPHYRIS_INT) != 0)
+   if((EMAC0->EPHYRIS & EMAC_EPHYRIS_INT) != 0)
    {
       //Clear PHY interrupt flag
-      EMAC0_EPHYMISC_R = EMAC_EPHYMISC_INT;
+      EMAC0->EPHYMISC = EMAC_EPHYMISC_INT;
 
       //Internal or external Ethernet PHY?
       if(interface->phyDriver != NULL)
@@ -620,10 +623,10 @@ void msp432e4EthEventHandler(NetInterface *interface)
    }
 
    //Packet received?
-   if((EMAC0_DMARIS_R & EMAC_DMARIS_RI) != 0)
+   if((EMAC0->DMARIS & EMAC_DMARIS_RI) != 0)
    {
       //Clear interrupt flag
-      EMAC0_DMARIS_R = EMAC_DMARIS_RI;
+      EMAC0->DMARIS = EMAC_DMARIS_RI;
 
       //Process all pending packets
       do
@@ -636,9 +639,9 @@ void msp432e4EthEventHandler(NetInterface *interface)
    }
 
    //Re-enable DMA interrupts
-   EMAC0_DMAIM_R = EMAC_DMAIM_NIE | EMAC_DMAIM_RIE | EMAC_DMAIM_TIE;
+   EMAC0->DMAIM = EMAC_DMAIM_NIE | EMAC_DMAIM_RIE | EMAC_DMAIM_TIE;
    //Re-enable PHY interrupts
-   EMAC0_EPHYIM_R = EMAC_EPHYIM_INT;
+   EMAC0->EPHYIM = EMAC_EPHYIM_INT;
 }
 
 
@@ -686,9 +689,9 @@ error_t msp432e4EthSendPacket(NetInterface *interface,
    txCurDmaDesc->tdes0 |= EMAC_TDES0_OWN;
 
    //Clear TU flag to resume processing
-   EMAC0_DMARIS_R = EMAC_DMARIS_TU;
+   EMAC0->DMARIS = EMAC_DMARIS_TU;
    //Instruct the DMA to poll the transmit descriptor list
-   EMAC0_TXPOLLD_R = 0;
+   EMAC0->TXPOLLD = 0;
 
    //Point to the next descriptor in the list
    txCurDmaDesc = (Msp432e4TxDmaDesc *) txCurDmaDesc->tdes3;
@@ -766,9 +769,9 @@ error_t msp432e4EthReceivePacket(NetInterface *interface)
    }
 
    //Clear RU flag to resume processing
-   EMAC0_DMARIS_R = EMAC_DMARIS_RU;
+   EMAC0->DMARIS = EMAC_DMARIS_RU;
    //Instruct the DMA to poll the receive descriptor list
-   EMAC0_RXPOLLD_R = 0;
+   EMAC0->RXPOLLD = 0;
 
    //Return status code
    return error;
@@ -795,8 +798,8 @@ error_t msp432e4EthUpdateMacAddrFilter(NetInterface *interface)
    TRACE_DEBUG("Updating MAC filter...\r\n");
 
    //Set the MAC address of the station
-   EMAC0_ADDR0L_R = interface->macAddr.w[0] | (interface->macAddr.w[1] << 16);
-   EMAC0_ADDR0H_R = interface->macAddr.w[2];
+   EMAC0->ADDR0L = interface->macAddr.w[0] | (interface->macAddr.w[1] << 16);
+   EMAC0->ADDR0H = interface->macAddr.w[2];
 
    //The MAC supports 3 additional addresses for unicast perfect filtering
    unicastMacAddr[0] = MAC_UNSPECIFIED_ADDR;
@@ -846,51 +849,51 @@ error_t msp432e4EthUpdateMacAddrFilter(NetInterface *interface)
    if(j >= 1)
    {
       //When the AE bit is set, the entry is used for perfect filtering
-      EMAC0_ADDR1L_R = unicastMacAddr[0].w[0] | (unicastMacAddr[0].w[1] << 16);
-      EMAC0_ADDR1H_R = unicastMacAddr[0].w[2] | EMAC_ADDR1H_AE;
+      EMAC0->ADDR1L = unicastMacAddr[0].w[0] | (unicastMacAddr[0].w[1] << 16);
+      EMAC0->ADDR1H = unicastMacAddr[0].w[2] | EMAC_ADDR1H_AE;
    }
    else
    {
       //When the AE bit is cleared, the entry is ignored
-      EMAC0_ADDR1L_R = 0;
-      EMAC0_ADDR1H_R = 0;
+      EMAC0->ADDR1L = 0;
+      EMAC0->ADDR1H = 0;
    }
 
    //Configure the second unicast address filter
    if(j >= 2)
    {
       //When the AE bit is set, the entry is used for perfect filtering
-      EMAC0_ADDR2L_R = unicastMacAddr[1].w[0] | (unicastMacAddr[1].w[1] << 16);
-      EMAC0_ADDR2H_R = unicastMacAddr[1].w[2] | EMAC_ADDR2H_AE;
+      EMAC0->ADDR2L = unicastMacAddr[1].w[0] | (unicastMacAddr[1].w[1] << 16);
+      EMAC0->ADDR2H = unicastMacAddr[1].w[2] | EMAC_ADDR2H_AE;
    }
    else
    {
       //When the AE bit is cleared, the entry is ignored
-      EMAC0_ADDR2L_R = 0;
-      EMAC0_ADDR2H_R = 0;
+      EMAC0->ADDR2L = 0;
+      EMAC0->ADDR2H = 0;
    }
 
    //Configure the third unicast address filter
    if(j >= 3)
    {
       //When the AE bit is set, the entry is used for perfect filtering
-      EMAC0_ADDR3L_R = unicastMacAddr[2].w[0] | (unicastMacAddr[2].w[1] << 16);
-      EMAC0_ADDR3H_R = unicastMacAddr[2].w[2] | EMAC_ADDR3H_AE;
+      EMAC0->ADDR3L = unicastMacAddr[2].w[0] | (unicastMacAddr[2].w[1] << 16);
+      EMAC0->ADDR3H = unicastMacAddr[2].w[2] | EMAC_ADDR3H_AE;
    }
    else
    {
       //When the AE bit is cleared, the entry is ignored
-      EMAC0_ADDR3L_R = 0;
-      EMAC0_ADDR3H_R = 0;
+      EMAC0->ADDR3L = 0;
+      EMAC0->ADDR3H = 0;
    }
 
    //Configure the multicast hash table
-   EMAC0_HASHTBLL_R = hashTable[0];
-   EMAC0_HASHTBLH_R = hashTable[1];
+   EMAC0->HASHTBLL = hashTable[0];
+   EMAC0->HASHTBLH = hashTable[1];
 
    //Debug message
-   TRACE_DEBUG("  HASHTBLL = %08" PRIX32 "\r\n", EMAC0_HASHTBLL_R);
-   TRACE_DEBUG("  HASHTBLH = %08" PRIX32 "\r\n", EMAC0_HASHTBLH_R);
+   TRACE_DEBUG("  HASHTBLL = %08" PRIX32 "\r\n", EMAC0->HASHTBLL);
+   TRACE_DEBUG("  HASHTBLH = %08" PRIX32 "\r\n", EMAC0->HASHTBLH);
 
    //Successful processing
    return NO_ERROR;
@@ -908,7 +911,7 @@ error_t msp432e4EthUpdateMacConfig(NetInterface *interface)
    uint32_t config;
 
    //Read current MAC configuration
-   config = EMAC0_CFG_R;
+   config = EMAC0->CFG;
 
    //10BASE-T or 100BASE-TX operation mode?
    if(interface->linkSpeed == NIC_LINK_SPEED_100MBPS)
@@ -931,7 +934,7 @@ error_t msp432e4EthUpdateMacConfig(NetInterface *interface)
    }
 
    //Update MAC configuration register
-   EMAC0_CFG_R = config;
+   EMAC0->CFG = config;
 
    //Successful processing
    return NO_ERROR;
@@ -955,7 +958,7 @@ void msp432e4EthWritePhyReg(uint8_t opcode, uint8_t phyAddr,
    if(opcode == SMI_OPCODE_WRITE)
    {
       //Take care not to alter MDC clock configuration
-      temp = EMAC0_MIIADDR_R & EMAC_MIIADDR_CR_M;
+      temp = EMAC0->MIIADDR & EMAC_MIIADDR_CR_M;
       //Set up a write operation
       temp |= EMAC_MIIADDR_MIIW | EMAC_MIIADDR_MIIB;
       //PHY address
@@ -964,12 +967,12 @@ void msp432e4EthWritePhyReg(uint8_t opcode, uint8_t phyAddr,
       temp |= (regAddr << EMAC_MIIADDR_MII_S) & EMAC_MIIADDR_MII_M;
 
       //Data to be written in the PHY register
-      EMAC0_MIIDATA_R = data & EMAC_MIIDATA_DATA_M;
+      EMAC0->MIIDATA = data & EMAC_MIIDATA_DATA_M;
 
       //Start a write operation
-      EMAC0_MIIADDR_R = temp;
+      EMAC0->MIIADDR = temp;
       //Wait for the write to complete
-      while((EMAC0_MIIADDR_R & EMAC_MIIADDR_MIIB) != 0)
+      while((EMAC0->MIIADDR & EMAC_MIIADDR_MIIB) != 0)
       {
       }
    }
@@ -998,7 +1001,7 @@ uint16_t msp432e4EthReadPhyReg(uint8_t opcode, uint8_t phyAddr,
    if(opcode == SMI_OPCODE_READ)
    {
       //Take care not to alter MDC clock configuration
-      temp = EMAC0_MIIADDR_R & EMAC_MIIADDR_CR_M;
+      temp = EMAC0->MIIADDR & EMAC_MIIADDR_CR_M;
       //Set up a read operation
       temp |= EMAC_MIIADDR_MIIB;
       //PHY address
@@ -1007,14 +1010,14 @@ uint16_t msp432e4EthReadPhyReg(uint8_t opcode, uint8_t phyAddr,
       temp |= (regAddr << EMAC_MIIADDR_MII_S) & EMAC_MIIADDR_MII_M;
 
       //Start a read operation
-      EMAC0_MIIADDR_R = temp;
+      EMAC0->MIIADDR = temp;
       //Wait for the read to complete
-      while((EMAC0_MIIADDR_R & EMAC_MIIADDR_MIIB) != 0)
+      while((EMAC0->MIIADDR & EMAC_MIIADDR_MIIB) != 0)
       {
       }
 
       //Get register value
-      data = EMAC0_MIIDATA_R & EMAC_MIIDATA_DATA_M;
+      data = EMAC0->MIIDATA & EMAC_MIIDATA_DATA_M;
    }
    else
    {

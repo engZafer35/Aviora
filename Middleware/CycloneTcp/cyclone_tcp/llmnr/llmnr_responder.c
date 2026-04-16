@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,17 +25,18 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL LLMNR_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "llmnr/llmnr_responder.h"
-#include "dns/dns_debug.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/llmnr/llmnr_responder.h"
+#include "../../../CycloneTcp/cyclone_tcp/llmnr/llmnr_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (LLMNR_RESPONDER_SUPPORT == ENABLED)
@@ -110,7 +111,7 @@ void llmnrProcessQuery(NetInterface *interface,
    //Ensure the LLMNR message is valid
    if(length < sizeof(LlmnrHeader))
       return;
-   if(length > LLMNR_MESSAGE_MAX_SIZE)
+   if(length > DNS_MESSAGE_MAX_SIZE)
       return;
 
    //Point to the LLMNR message header
@@ -173,7 +174,7 @@ void llmnrProcessQuery(NetInterface *interface,
 
    //LLMNR messages received with non-zero response codes must be silently
    //ignored
-   if(message->rcode != DNS_RCODE_NOERROR)
+   if(message->rcode != DNS_RCODE_NO_ERROR)
       return;
 
    //LLMNR responders must silently discard LLMNR queries with QDCOUNT not
@@ -237,21 +238,19 @@ error_t llmnrSendResponse(NetInterface *interface, const IpAddr *destIpAddr,
    uint16_t destPort, uint16_t id, uint16_t qtype, uint16_t qclass)
 {
    error_t error;
-   uint_t i;
-   uint_t j;
-   bool_t linkScope;
    size_t length;
    size_t offset;
    NetBuffer *buffer;
    LlmnrHeader *message;
    DnsQuestion *question;
+   DnsResourceRecord *record;
    NetTxAncillary ancillary;
 
    //Initialize status code
    error = NO_ERROR;
 
    //Allocate a memory buffer to hold the LLMNR response message
-   buffer = udpAllocBuffer(LLMNR_MESSAGE_MAX_SIZE, &offset);
+   buffer = udpAllocBuffer(DNS_MESSAGE_MAX_SIZE, &offset);
    //Failed to allocate buffer?
    if(buffer == NULL)
       return ERROR_OUT_OF_MEMORY;
@@ -269,7 +268,7 @@ error_t llmnrSendResponse(NetInterface *interface, const IpAddr *destIpAddr,
    message->tc = 0;
    message->t = 0;
    message->z = 0;
-   message->rcode = DNS_RCODE_NOERROR;
+   message->rcode = DNS_RCODE_NO_ERROR;
    message->qdcount = HTONS(1);
    message->ancount = 0;
    message->nscount = 0;
@@ -292,38 +291,34 @@ error_t llmnrSendResponse(NetInterface *interface, const IpAddr *destIpAddr,
    //Update the length of the response message
    length += sizeof(DnsQuestion);
 
-   //Check whether the source address of the query is a link-scope address
-   linkScope = ipIsLinkLocalAddr(destIpAddr);
-
 #if (IPV4_SUPPORT == ENABLED)
    //A resource record requested?
    if(qtype == DNS_RR_TYPE_A || qtype == DNS_RR_TYPE_ANY)
    {
-      Ipv4AddrEntry *entry;
-
-      //If the source address of the query is a routable address, then the
-      //responder must include a routable address first in the response, if
-      //available (refer to RFC 4795, section 2.6)
-      for(i = 0; i < 2; i++, linkScope = !linkScope)
+      //Valid IPv4 host address?
+      if(interface->ipv4Context.addrList[0].state == IPV4_ADDR_STATE_VALID)
       {
-         //Loop through the list of IPv4 addresses assigned to the interface
-         for(j = 0; j < IPV4_ADDR_LIST_SIZE; j++)
-         {
-            //Point to the current entry
-            entry = &interface->ipv4Context.addrList[j];
+         //Encode the host name using the DNS name notation
+         length += dnsEncodeName(interface->hostname,
+            (uint8_t *) message + length);
 
-            //Check the state of the address
-            if(entry->state == IPV4_ADDR_STATE_VALID)
-            {
-               //Link-scope or routable address?
-               if(ipv4IsLinkLocalAddr(entry->addr) == linkScope)
-               {
-                  //Format A resource record
-                  llmnrFormatIpv4AddrRecord(interface, message, &length,
-                     entry->addr);
-               }
-            }
-         }
+         //Point to the corresponding resource record
+         record = DNS_GET_RESOURCE_RECORD(message, length);
+
+         //Fill in resource record
+         record->rtype = HTONS(DNS_RR_TYPE_A);
+         record->rclass = HTONS(DNS_RR_CLASS_IN);
+         record->ttl = HTONL(LLMNR_DEFAULT_RESOURCE_RECORD_TTL);
+         record->rdlength = HTONS(sizeof(Ipv4Addr));
+
+         //Copy IPv4 address
+         ipv4CopyAddr(record->rdata, &interface->ipv4Context.addrList[0].addr);
+
+         //Number of resource records in the answer section
+         message->ancount++;
+
+         //Update the length of the response message
+         length += sizeof(DnsResourceRecord) + sizeof(Ipv4Addr);
       }
    }
 #endif
@@ -332,32 +327,30 @@ error_t llmnrSendResponse(NetInterface *interface, const IpAddr *destIpAddr,
    //AAAA resource record requested?
    if(qtype == DNS_RR_TYPE_AAAA || qtype == DNS_RR_TYPE_ANY)
    {
-      Ipv6AddrEntry *entry;
-
-      //If the source address of the query is a routable address, then the
-      //responder must include a routable address first in the response, if
-      //available (refer to RFC 4795, section 2.6)
-      for(i = 0; i < 2; i++, linkScope = !linkScope)
+      //Valid IPv6 link-local address?
+      if(ipv6GetLinkLocalAddrState(interface) == IPV6_ADDR_STATE_PREFERRED)
       {
-         //Loop through the list of IPv6 addresses assigned to the interface
-         for(j = 0; j < IPV6_ADDR_LIST_SIZE; j++)
-         {
-            //Point to the current entry
-            entry = &interface->ipv6Context.addrList[j];
+         //Encode the host name using the DNS name notation
+         length += dnsEncodeName(interface->hostname,
+            (uint8_t *) message + length);
 
-            //Check the state of the address
-            if(entry->state == IPV6_ADDR_STATE_PREFERRED ||
-               entry->state == IPV6_ADDR_STATE_DEPRECATED)
-            {
-               //Link-scope or routable address?
-               if(ipv6IsLinkLocalUnicastAddr(&entry->addr) == linkScope)
-               {
-                  //Format AAAA resource record
-                  llmnrFormatIpv6AddrRecord(interface, message, &length,
-                     &entry->addr);
-               }
-            }
-         }
+         //Point to the corresponding resource record
+         record = DNS_GET_RESOURCE_RECORD(message, length);
+
+         //Fill in resource record
+         record->rtype = HTONS(DNS_RR_TYPE_AAAA);
+         record->rclass = HTONS(DNS_RR_CLASS_IN);
+         record->ttl = HTONL(LLMNR_DEFAULT_RESOURCE_RECORD_TTL);
+         record->rdlength = HTONS(sizeof(Ipv6Addr));
+
+         //Copy IPv6 address
+         ipv6CopyAddr(record->rdata, &interface->ipv6Context.addrList[0].addr);
+
+         //Number of resource records in the answer section
+         message->ancount++;
+
+         //Update the length of the response message
+         length += sizeof(DnsResourceRecord) + sizeof(Ipv6Addr);
       }
    }
 #endif
@@ -384,7 +377,7 @@ error_t llmnrSendResponse(NetInterface *interface, const IpAddr *destIpAddr,
       //field in the IPV4 header MAY be set to any value. However, it is
       //recommended that the value 255 be used for compatibility with early
       //implementations (refer to RFC 4795, section 2.5)
-      ancillary.ttl = LLMNR_DEFAULT_RESPONSE_IP_TTL;
+      ancillary.ttl = LLMNR_DEFAULT_IP_TTL;
 
       //This flag tells the stack that the destination is on a locally attached
       //network and not to perform a lookup of the routing table
@@ -400,126 +393,6 @@ error_t llmnrSendResponse(NetInterface *interface, const IpAddr *destIpAddr,
 
    //Return status code
    return error;
-}
-
-
-/**
- * @brief Format A resource record
- * @param[in] interface Underlying network interface
- * @param[in] message Pointer to the LLMNR message
- * @param[in,out] length Actual length of the LLMNR message, in bytes
- * @param[in] ipv4Addr IPv4 address to be added
- * @return Error code
- **/
-
-error_t llmnrFormatIpv4AddrRecord(NetInterface *interface,
-   LlmnrHeader *message, size_t *length, Ipv4Addr ipv4Addr)
-{
-#if (IPV4_SUPPORT == ENABLED)
-   size_t n;
-   size_t offset;
-   DnsResourceRecord *record;
-
-   //Set the position to the end of the buffer
-   offset = *length;
-
-   //The first pass calculates the length of the DNS encoded host name
-   n = dnsEncodeName(interface->hostname, NULL);
-
-   //Check the length of the resulting LLMNR message
-   if((offset + n) > LLMNR_MESSAGE_MAX_SIZE)
-      return ERROR_MESSAGE_TOO_LONG;
-
-   //The second pass encodes the host name using the DNS name notation
-   offset += dnsEncodeName(interface->hostname, (uint8_t *) message + offset);
-
-   //Consider the length of the resource record itself
-   n = sizeof(DnsResourceRecord) + sizeof(Ipv4Addr);
-
-   //Check the length of the resulting LLMNR message
-   if((offset + n) > LLMNR_MESSAGE_MAX_SIZE)
-      return ERROR_MESSAGE_TOO_LONG;
-
-   //Point to the corresponding resource record
-   record = DNS_GET_RESOURCE_RECORD(message, offset);
-
-   //Fill in resource record
-   record->rtype = HTONS(DNS_RR_TYPE_A);
-   record->rclass = HTONS(DNS_RR_CLASS_IN);
-   record->ttl = HTONL(LLMNR_DEFAULT_RESOURCE_RECORD_TTL);
-   record->rdlength = HTONS(sizeof(Ipv4Addr));
-
-   //Copy IPv4 address
-   ipv4CopyAddr(record->rdata, &ipv4Addr);
-
-   //Number of resource records in the answer section
-   message->ancount++;
-   //Update the length of the LLMNR response message
-   *length = offset + n;
-#endif
-
-   //Successful processing
-   return NO_ERROR;
-}
-
-
-/**
- * @brief Format AAAA resource record
- * @param[in] interface Underlying network interface
- * @param[in] message Pointer to the LLMNR message
- * @param[in,out] length Actual length of the LLMNR message, in bytes
- * @param[in] ipv6Addr IPv6 address to be added
- * @return Error code
- **/
-
-error_t llmnrFormatIpv6AddrRecord(NetInterface *interface,
-   LlmnrHeader *message, size_t *length, const Ipv6Addr *ipv6Addr)
-{
-#if (IPV6_SUPPORT == ENABLED)
-   size_t n;
-   size_t offset;
-   DnsResourceRecord *record;
-
-   //Set the position to the end of the buffer
-   offset = *length;
-
-   //The first pass calculates the length of the DNS encoded host name
-   n = dnsEncodeName(interface->hostname, NULL);
-
-   //Check the length of the resulting LLMNR message
-   if((offset + n) > LLMNR_MESSAGE_MAX_SIZE)
-      return ERROR_MESSAGE_TOO_LONG;
-
-   //The second pass encodes the host name using the DNS name notation
-   offset += dnsEncodeName(interface->hostname, (uint8_t *) message + offset);
-
-   //Consider the length of the resource record itself
-   n = sizeof(DnsResourceRecord) + sizeof(Ipv6Addr);
-
-   //Check the length of the resulting LLMNR message
-   if((offset + n) > LLMNR_MESSAGE_MAX_SIZE)
-      return ERROR_MESSAGE_TOO_LONG;
-
-   //Point to the corresponding resource record
-   record = DNS_GET_RESOURCE_RECORD(message, offset);
-
-   //Fill in resource record
-   record->rtype = HTONS(DNS_RR_TYPE_AAAA);
-   record->rclass = HTONS(DNS_RR_CLASS_IN);
-   record->ttl = HTONL(LLMNR_DEFAULT_RESOURCE_RECORD_TTL);
-   record->rdlength = HTONS(sizeof(Ipv6Addr));
-
-   //Copy IPv6 address
-   ipv6CopyAddr(record->rdata, ipv6Addr);
-
-   //Number of resource records in the answer section
-   message->ancount++;
-   //Update the length of the LLMNR response message
-   *length = offset + n;
-#endif
-
-   //Successful processing
-   return NO_ERROR;
 }
 
 #endif

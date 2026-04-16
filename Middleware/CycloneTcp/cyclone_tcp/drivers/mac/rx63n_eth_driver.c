@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,9 +34,9 @@
 //Dependencies
 #include <iorx63n.h>
 #include <intrinsics.h>
-#include "core/net.h"
-#include "drivers/mac/rx63n_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/rx63n_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -134,7 +134,6 @@ error_t rx63nEthInit(NetInterface *interface)
 
    //Reset EDMAC module
    EDMAC.EDMR.BIT.SWR = 1;
-   //Wait for the reset to complete
    sleep(10);
 
    //Valid Ethernet PHY or switch driver?
@@ -225,18 +224,22 @@ error_t rx63nEthInit(NetInterface *interface)
 }
 
 
+//RDK-RX63N, RSK-RX63N or RSK-RX63N-256K evaluation board?
+#if defined(USE_RDK_RX63N) || defined(USE_RSK_RX63N) || \
+   defined(USE_RSK_RX63N_256K)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void rx63nEthInitGpio(NetInterface *interface)
+void rx63nEthInitGpio(NetInterface *interface)
 {
-#if defined(USE_RDK_RX63N)
    //Unlock MPC registers
    MPC.PWPR.BIT.B0WI = 0;
    MPC.PWPR.BIT.PFSWE = 1;
 
+#if defined(USE_RDK_RX63N)
    //Select RMII interface mode
    MPC.PFENET.BIT.PHYMODE = 0;
 
@@ -284,15 +287,7 @@ __weak_func void rx63nEthInitGpio(NetInterface *interface)
    PORTB.PMR.BIT.B7 = 1;
    MPC.PB7PFS.BYTE = 0x12;
 
-   //Lock MPC registers
-   MPC.PWPR.BIT.PFSWE = 0;
-   MPC.PWPR.BIT.B0WI = 0;
-
 #elif defined(USE_RSK_RX63N) || defined(USE_RSK_RX63N_256K)
-   //Unlock MPC registers
-   MPC.PWPR.BIT.B0WI = 0;
-   MPC.PWPR.BIT.PFSWE = 1;
-
    //Select MII interface mode
    MPC.PFENET.BIT.PHYMODE = 1;
 
@@ -367,12 +362,14 @@ __weak_func void rx63nEthInitGpio(NetInterface *interface)
    //Configure ET_COL (PC7)
    PORTC.PMR.BIT.B7 = 1;
    MPC.PC7PFS.BYTE = 0x11;
+#endif
 
    //Lock MPC registers
    MPC.PWPR.BIT.PFSWE = 0;
    MPC.PWPR.BIT.B0WI = 0;
-#endif
 }
+
+#endif
 
 
 /**
@@ -961,7 +958,7 @@ uint32_t rx63nEthReadSmi(uint_t length)
       usleep(1);
 
       //Check MDIO state
-      if(ETHERC.PIR.BIT.MDI != 0)
+      if(ETHERC.PIR.BIT.MDI)
       {
          data |= 0x01;
       }

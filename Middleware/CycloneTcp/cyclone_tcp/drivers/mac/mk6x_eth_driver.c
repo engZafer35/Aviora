@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,9 +33,9 @@
 
 //Dependencies
 #include "fsl_device_registers.h"
-#include "core/net.h"
-#include "drivers/mac/mk6x_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/mk6x_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -239,12 +239,19 @@ error_t mk6xEthInit(NetInterface *interface)
 }
 
 
+//FRDM-K64F, FRDM-K66F, TWR-K60N512, TWR-K60D100M, TWR-K60F120M,
+//TWR-K64F120M, TWR-K65F180M or embOS/IP Switch Board?
+#if defined(USE_FRDM_K64F) || defined(USE_FRDM_K66F) || \
+   defined(USE_TWR_K60N512) || defined(USE_TWR_K60D100M) || \
+   defined(USE_TWR_K60F120M) || defined(USE_TWR_K64F120M) || \
+   defined(USE_TWR_K65F180M) || defined(USE_EMBOS_IP_SWITCH_BOARD)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void mk6xEthInitGpio(NetInterface *interface)
+void mk6xEthInitGpio(NetInterface *interface)
 {
 //TWR-K60N512, TWR-K60D100M or TWR-K60F120M evaluation board?
 #if defined(USE_TWR_K60N512) || defined(USE_TWR_K60D100M) || \
@@ -388,6 +395,8 @@ __weak_func void mk6xEthInitGpio(NetInterface *interface)
 #endif
 }
 
+#endif
+
 
 /**
  * @brief Initialize buffer descriptors
@@ -489,6 +498,7 @@ void mk6xEthEnableIrq(NetInterface *interface)
    NVIC_EnableIRQ(ENET_Receive_IRQn);
    NVIC_EnableIRQ(ENET_Error_IRQn);
 
+
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
    {
@@ -518,6 +528,7 @@ void mk6xEthDisableIrq(NetInterface *interface)
    NVIC_DisableIRQ(ENET_Transmit_IRQn);
    NVIC_DisableIRQ(ENET_Receive_IRQn);
    NVIC_DisableIRQ(ENET_Error_IRQn);
+
 
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
@@ -1097,7 +1108,6 @@ uint32_t mk6xEthCalcCrc(const void *data, size_t length)
    {
       //Update CRC value
       crc ^= p[i];
-
       //The message is processed bit by bit
       for(j = 0; j < 8; j++)
       {

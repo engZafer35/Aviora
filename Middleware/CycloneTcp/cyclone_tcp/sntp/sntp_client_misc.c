@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -30,7 +30,7 @@
  * in the Internet. Refer to RFC 4330 for more details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -38,10 +38,10 @@
 
 //Dependencies
 #include <ctype.h>
-#include "core/net.h"
-#include "sntp/sntp_client.h"
-#include "sntp/sntp_client_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/sntp/sntp_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/sntp/sntp_client_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (SNTP_CLIENT_SUPPORT == ENABLED)
@@ -173,23 +173,15 @@ error_t sntpClientReceiveResponse(SntpClientContext *context)
 
    //Compute request timeout
    if(timeCompare(context->startTime + context->timeout, time) > 0)
-   {
       t1 = context->startTime + context->timeout - time;
-   }
    else
-   {
       t1 = 0;
-   }
 
    //Compute retransmission timeout
    if(timeCompare(context->retransmitStartTime + context->retransmitTimeout, time) > 0)
-   {
       t2 = context->retransmitStartTime + context->retransmitTimeout - time;
-   }
    else
-   {
       t2 = 0;
-   }
 
    //Adjust receive timeout
    error = socketSetTimeout(context->socket, MIN(t1, t2));

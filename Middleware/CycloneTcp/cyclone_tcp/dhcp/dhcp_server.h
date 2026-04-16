@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _DHCP_SERVER_H
 #define _DHCP_SERVER_H
 
 //Dependencies
-#include "core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //DHCP server support
 #ifndef DHCP_SERVER_SUPPORT
@@ -69,35 +69,10 @@
    #error DHCP_SERVER_MAX_DNS_SERVERS parameter is not valid
 #endif
 
-//Application specific context
-#ifndef DHCP_SERVER_PRIVATE_CONTEXT
-   #define DHCP_SERVER_PRIVATE_CONTEXT
-#endif
-
-//Forward declaration of DhcpServerContext structure
-struct _DhcpServerContext;
-#define DhcpServerContext struct _DhcpServerContext
-
 //C++ guard
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-
-/**
- * @brief Add DHCP options callback
- **/
-
-typedef void (*DhcpServerAddOptionsCallback)(DhcpServerContext *context,
-   DhcpMessage *message, size_t *length, DhcpMessageType type);
-
-
-/**
- * @brief Parse DHCP options callback
- **/
-
-typedef error_t (*DhcpServerParseOptionsCallback)(DhcpServerContext *context,
-   const DhcpMessage *message, size_t length, DhcpMessageType type);
 
 
 /**
@@ -123,17 +98,15 @@ typedef struct
 
 typedef struct
 {
-   NetInterface *interface;                             ///<Underlying network interface
-   uint_t ipAddrIndex;                                  ///<Index of the IP address assigned to the DHCP server
-   bool_t rapidCommit;                                  ///<Quick configuration using rapid commit
-   uint32_t leaseTime;                                  ///<Lease time, in seconds, assigned to the DHCP clients
-   Ipv4Addr ipAddrRangeMin;                             ///<Lowest IP address in the pool that is available for dynamic address assignment
-   Ipv4Addr ipAddrRangeMax;                             ///<Highest IP address in the pool that is available for dynamic address assignment
-   Ipv4Addr subnetMask;                                 ///<Subnet mask
-   Ipv4Addr defaultGateway;                             ///<Default gateway
-   Ipv4Addr dnsServer[DHCP_SERVER_MAX_DNS_SERVERS];     ///<DNS servers
-   DhcpServerAddOptionsCallback addOptionsCallback;     ///<Add DHCP options callback
-   DhcpServerParseOptionsCallback parseOptionsCallback; ///<Parse DHCP options callback
+   NetInterface *interface;                         ///<Underlying network interface
+   uint_t ipAddrIndex;                              ///<Index of the IP address assigned to the DHCP server
+   bool_t rapidCommit;                              ///<Quick configuration using rapid commit
+   uint32_t leaseTime;                              ///<Lease time, in seconds, assigned to the DHCP clients
+   Ipv4Addr ipAddrRangeMin;                         ///<Lowest IP address in the pool that is available for dynamic address assignment
+   Ipv4Addr ipAddrRangeMax;                         ///<Highest IP address in the pool that is available for dynamic address assignment
+   Ipv4Addr subnetMask;                             ///<Subnet mask
+   Ipv4Addr defaultGateway;                         ///<Default gateway
+   Ipv4Addr dnsServer[DHCP_SERVER_MAX_DNS_SERVERS]; ///<DNS servers
 } DhcpServerSettings;
 
 
@@ -141,14 +114,13 @@ typedef struct
  * @brief DHCP server context
  **/
 
-struct _DhcpServerContext
+typedef struct
 {
    DhcpServerSettings settings;                              ///<DHCP server settings
    bool_t running;                                           ///<This flag tells whether the DHCP server is running or not
    Ipv4Addr nextIpAddr;                                      ///<Next IP address to be assigned
    DhcpServerBinding clientBinding[DHCP_SERVER_MAX_CLIENTS]; ///<List of bindings
-   DHCP_SERVER_PRIVATE_CONTEXT                               ///<Application specific context
-};
+} DhcpServerContext;
 
 
 //DHCP server related functions

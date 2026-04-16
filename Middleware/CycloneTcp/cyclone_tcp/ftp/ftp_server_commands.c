@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,14 +33,14 @@
 
 //Dependencies
 #include <stdlib.h>
-#include "ipv4/ipv4_misc.h"
-#include "ftp/ftp_server.h"
-#include "ftp/ftp_server_commands.h"
-#include "ftp/ftp_server_data.h"
-#include "ftp/ftp_server_misc.h"
-#include "str.h"
-#include "path.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_server_commands.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_server_data.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_server_misc.h"
+#include "../../../CycloneTcp/common/str.h"
+#include "../../../CycloneTcp/common/path.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (FTP_SERVER_SUPPORT == ENABLED)
@@ -1064,7 +1064,6 @@ void ftpServerProcessEprt(FtpClientConnection *connection, char_t *param)
       //A delimiter character must be specified
       delimiter[0] = param[0];
       delimiter[1] = '\0';
-
       //Skip delimiter character
       param++;
 
@@ -1561,8 +1560,8 @@ void ftpServerProcessCwd(FtpClientConnection *connection, char_t *param)
    }
 
    //Retrieve the full pathname
-   error = ftpServerGetPath(connection, param, connection->path,
-      FTP_SERVER_MAX_PATH_LEN);
+   error = ftpServerGetPath(connection, param,
+      connection->path, FTP_SERVER_MAX_PATH_LEN);
 
    //Make sure the pathname is valid
    if(error)
@@ -1696,8 +1695,8 @@ void ftpServerProcessList(FtpClientConnection *connection, char_t *param)
    else
    {
       //Retrieve the full pathname
-      error = ftpServerGetPath(connection, param, connection->path,
-         FTP_SERVER_MAX_PATH_LEN);
+      error = ftpServerGetPath(connection, param,
+         connection->path, FTP_SERVER_MAX_PATH_LEN);
 
       //Any error to report?
       if(error)
@@ -1930,8 +1929,8 @@ void ftpServerProcessMkd(FtpClientConnection *connection, char_t *param)
    }
 
    //Retrieve the full pathname
-   error = ftpServerGetPath(connection, param, connection->path,
-      FTP_SERVER_MAX_PATH_LEN);
+   error = ftpServerGetPath(connection, param,
+      connection->path, FTP_SERVER_MAX_PATH_LEN);
 
    //Any error to report?
    if(error)
@@ -2006,8 +2005,8 @@ void ftpServerProcessRmd(FtpClientConnection *connection, char_t *param)
    }
 
    //Retrieve the full pathname of the directory
-   error = ftpServerGetPath(connection, param, connection->path,
-      FTP_SERVER_MAX_PATH_LEN);
+   error = ftpServerGetPath(connection, param,
+      connection->path, FTP_SERVER_MAX_PATH_LEN);
 
    //Any error to report?
    if(error)
@@ -2081,8 +2080,8 @@ void ftpServerProcessSize(FtpClientConnection *connection, char_t *param)
    }
 
    //Retrieve the full pathname
-   error = ftpServerGetPath(connection, param, connection->path,
-      FTP_SERVER_MAX_PATH_LEN);
+   error = ftpServerGetPath(connection, param,
+      connection->path, FTP_SERVER_MAX_PATH_LEN);
 
    //Any error to report?
    if(error)
@@ -2155,8 +2154,8 @@ void ftpServerProcessRetr(FtpClientConnection *connection, char_t *param)
    }
 
    //Retrieve the full pathname
-   error = ftpServerGetPath(connection, param, connection->path,
-      FTP_SERVER_MAX_PATH_LEN);
+   error = ftpServerGetPath(connection, param,
+      connection->path, FTP_SERVER_MAX_PATH_LEN);
 
    //Any error to report?
    if(error)
@@ -2263,8 +2262,8 @@ void ftpServerProcessStor(FtpClientConnection *connection, char_t *param)
    }
 
    //Retrieve the full pathname
-   error = ftpServerGetPath(connection, param, connection->path,
-      FTP_SERVER_MAX_PATH_LEN);
+   error = ftpServerGetPath(connection, param,
+      connection->path, FTP_SERVER_MAX_PATH_LEN);
 
    //Any error to report?
    if(error)
@@ -2372,8 +2371,8 @@ void ftpServerProcessAppe(FtpClientConnection *connection, char_t *param)
    }
 
    //Retrieve the full pathname
-   error = ftpServerGetPath(connection, param, connection->path,
-      FTP_SERVER_MAX_PATH_LEN);
+   error = ftpServerGetPath(connection, param,
+      connection->path, FTP_SERVER_MAX_PATH_LEN);
 
    //Any error to report?
    if(error)
@@ -2419,8 +2418,6 @@ void ftpServerProcessAppe(FtpClientConnection *connection, char_t *param)
       fsCloseFile(connection->file);
       //Format response
       osStrcpy(connection->response, "550 File unavailable\r\n");
-      //Exit immediately
-      return;
    }
 
    //Check current data transfer mode
@@ -2496,8 +2493,8 @@ void ftpServerProcessRnfr(FtpClientConnection *connection, char_t *param)
    }
 
    //Retrieve the full pathname
-   error = ftpServerGetPath(connection, param, connection->path,
-      FTP_SERVER_MAX_PATH_LEN);
+   error = ftpServerGetPath(connection, param,
+      connection->path, FTP_SERVER_MAX_PATH_LEN);
 
    //Any error to report?
    if(error)
@@ -2585,8 +2582,8 @@ void ftpServerProcessRnto(FtpClientConnection *connection, char_t *param)
    }
 
    //Retrieve the full pathname
-   error = ftpServerGetPath(connection, param, newPath,
-      FTP_SERVER_MAX_PATH_LEN);
+   error = ftpServerGetPath(connection, param,
+      newPath, FTP_SERVER_MAX_PATH_LEN);
 
    //Any error to report?
    if(error)
@@ -2669,8 +2666,8 @@ void ftpServerProcessDele(FtpClientConnection *connection, char_t *param)
    }
 
    //Retrieve the full pathname of the file
-   error = ftpServerGetPath(connection, param, connection->path,
-      FTP_SERVER_MAX_PATH_LEN);
+   error = ftpServerGetPath(connection, param,
+      connection->path, FTP_SERVER_MAX_PATH_LEN);
 
    //Any error to report?
    if(error)

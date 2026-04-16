@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _IP101_DRIVER_H
 #define _IP101_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //PHY address
 #ifndef IP101_PHY_ADDR
@@ -49,7 +49,7 @@
 #define IP101_ANAR                         0x04
 #define IP101_ANLPAR                       0x05
 #define IP101_ANER                         0x06
-#define IP101_ANNPTR                       0x07
+#define IP101_ANNPR                        0x07
 #define IP101_ANLPNPR                      0x08
 #define IP101_MMDACR                       0x0D
 #define IP101_MMDAADR                      0x0E
@@ -58,14 +58,6 @@
 #define IP101_PHYSMR                       0x12
 #define IP101_IOSCR                        0x1D
 #define IP101_PHYMCSSR                     0x1E
-
-//IP101 MMD registers
-#define IP101_PCS_CTRL1                    0x03, 0x00
-#define IP101_PCS_STAT1                    0x03, 0x01
-#define IP101_EEE_CAPABILITY               0x03, 0x14
-#define IP101_EEE_WAKE_ERROR_COUNT         0x03, 0x16
-#define IP101_EEE_ADV                      0x07, 0x3C
-#define IP101_EEE_LP_ABILITY               0x07, 0x3D
 
 //Control register
 #define IP101_BMCR_RESET                   0x8000
@@ -134,11 +126,11 @@
 #define IP101_ANER_LP_AN_ABLE              0x0001
 
 //Auto-Negotiation Next Page Transmit register
-#define IP101_ANNPTR_NEXT_PAGE             0x8000
-#define IP101_ANNPTR_MSG_PAGE              0x2000
-#define IP101_ANNPTR_ACK2                  0x1000
-#define IP101_ANNPTR_TOGGLE                0x0800
-#define IP101_ANNPTR_MESSAGE               0x07FF
+#define IP101_ANNPR_NEXT_PAGE              0x8000
+#define IP101_ANNPR_MSG_PAGE               0x2000
+#define IP101_ANNPR_ACK2                   0x1000
+#define IP101_ANNPR_TOGGLE                 0x0800
+#define IP101_ANNPR_MESSAGE                0x07FF
 
 //Auto-Negotiation Link Partner Next Page register
 #define IP101_ANLPNPR_NEXT_PAGE            0x8000
@@ -213,7 +205,6 @@ extern const PhyDriver ip101PhyDriver;
 
 //IP101 related functions
 error_t ip101Init(NetInterface *interface);
-void ip101InitHook(NetInterface *interface);
 
 void ip101Tick(NetInterface *interface);
 
@@ -228,12 +219,6 @@ void ip101WritePhyReg(NetInterface *interface, uint8_t address,
 uint16_t ip101ReadPhyReg(NetInterface *interface, uint8_t address);
 
 void ip101DumpPhyReg(NetInterface *interface);
-
-void ip101WriteMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr, uint16_t data);
-
-uint16_t ip101ReadMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr);
 
 //C++ guard
 #ifdef __cplusplus

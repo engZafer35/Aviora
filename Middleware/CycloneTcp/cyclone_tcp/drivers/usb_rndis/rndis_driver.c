@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,12 +33,12 @@
 
 //Dependencies
 #include "usbd_def.h"
-#include "usbd_rndis.h"
-#include "core/net.h"
-#include "rndis.h"
-#include "rndis_driver.h"
-#include "rndis_debug.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/usb_rndis/usbd_rndis.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/usb_rndis/rndis.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/usb_rndis/rndis_driver.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/usb_rndis/rndis_debug.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 NetInterface *rndisDriverInterface;

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "drivers/eth/ksz8851_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/eth/ksz8851_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -79,15 +79,12 @@ error_t ksz8851Init(NetInterface *interface)
    TRACE_INFO("Initializing KSZ8851 Ethernet controller...\r\n");
 
 #if (KSZ8851_SPI_SUPPORT == ENABLED)
-   //Initialize SPI interface
+   //Initialize SPI
    interface->spiDriver->init();
 #endif
 
-   //Initialize external interrupt line driver
-   if(interface->extIntDriver != NULL)
-   {
-      interface->extIntDriver->init();
-   }
+   //Initialize external interrupt line
+   interface->extIntDriver->init();
 
    //Debug message
    TRACE_DEBUG("CIDER=0x%04" PRIX16 "\r\n", ksz8851ReadReg(interface, KSZ8851_CIDER));
@@ -159,9 +156,6 @@ error_t ksz8851Init(NetInterface *interface)
    //Enable RX operation
    ksz8851SetBit(interface, KSZ8851_RXCR1, KSZ8851_RXCR1_RXE);
 
-   //Perform custom configuration
-   ksz8851InitHook(interface);
-
    //Accept any packets from the upper layer
    osSetEvent(&interface->nicTxEvent);
 
@@ -172,16 +166,6 @@ error_t ksz8851Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief KSZ8851 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void ksz8851InitHook(NetInterface *interface)
-{
 }
 
 
@@ -203,10 +187,7 @@ void ksz8851Tick(NetInterface *interface)
 void ksz8851EnableIrq(NetInterface *interface)
 {
    //Enable interrupts
-   if(interface->extIntDriver != NULL)
-   {
-      interface->extIntDriver->enableIrq();
-   }
+   interface->extIntDriver->enableIrq();
 }
 
 
@@ -218,10 +199,7 @@ void ksz8851EnableIrq(NetInterface *interface)
 void ksz8851DisableIrq(NetInterface *interface)
 {
    //Disable interrupts
-   if(interface->extIntDriver != NULL)
-   {
-      interface->extIntDriver->disableIrq();
-   }
+   interface->extIntDriver->disableIrq();
 }
 
 
@@ -305,26 +283,25 @@ bool_t ksz8851IrqHandler(NetInterface *interface)
 
 void ksz8851EventHandler(NetInterface *interface)
 {
-   uint16_t isr;
-   uint16_t psr;
+   uint16_t status;
    uint_t frameCount;
 
    //Read interrupt status register
-   isr = ksz8851ReadReg(interface, KSZ8851_ISR);
+   status = ksz8851ReadReg(interface, KSZ8851_ISR);
 
-   //Link status change?
-   if((isr & KSZ8851_ISR_LCIS) != 0)
+   //Check whether the link status has changed?
+   if((status & KSZ8851_ISR_LCIS) != 0)
    {
       //Clear interrupt flag
       ksz8851WriteReg(interface, KSZ8851_ISR, KSZ8851_ISR_LCIS);
       //Read PHY status register
-      psr = ksz8851ReadReg(interface, KSZ8851_P1SR);
+      status = ksz8851ReadReg(interface, KSZ8851_P1SR);
 
       //Check link state
-      if((psr & KSZ8851_P1SR_LINK_GOOD) != 0)
+      if((status & KSZ8851_P1SR_LINK_GOOD) != 0)
       {
          //Get current speed
-         if((psr & KSZ8851_P1SR_OPERATION_SPEED) != 0)
+         if((status & KSZ8851_P1SR_OPERATION_SPEED) != 0)
          {
             interface->linkSpeed = NIC_LINK_SPEED_100MBPS;
          }
@@ -334,7 +311,7 @@ void ksz8851EventHandler(NetInterface *interface)
          }
 
          //Determine the new duplex mode
-         if((psr & KSZ8851_P1SR_OPERATION_DUPLEX) != 0)
+         if((status & KSZ8851_P1SR_OPERATION_DUPLEX) != 0)
          {
             interface->duplexMode = NIC_FULL_DUPLEX_MODE;
          }
@@ -356,8 +333,8 @@ void ksz8851EventHandler(NetInterface *interface)
       nicNotifyLinkChange(interface);
    }
 
-   //Packet received?
-   if((isr & KSZ8851_ISR_RXIS) != 0)
+   //Check whether a packet has been received?
+   if((status & KSZ8851_ISR_RXIS) != 0)
    {
       //Clear interrupt flag
       ksz8851WriteReg(interface, KSZ8851_ISR, KSZ8851_ISR_RXIS);
@@ -468,9 +445,9 @@ error_t ksz8851SendPacket(NetInterface *interface,
 error_t ksz8851ReceivePacket(NetInterface *interface)
 {
    static uint8_t temp[KSZ8851_ETH_RX_BUFFER_SIZE];
-   error_t error;
-   size_t length;
+   size_t n;
    uint16_t status;
+   NetRxAncillary ancillary;
 
    //Read received frame status from RXFHSR
    status = ksz8851ReadReg(interface, KSZ8851_RXFHSR);
@@ -483,60 +460,35 @@ error_t ksz8851ReceivePacket(NetInterface *interface)
          KSZ8851_RXFHSR_RXRF | KSZ8851_RXFHSR_RXCE)) == 0)
       {
          //Read received frame byte size from RXFHBCR
-         length = ksz8851ReadReg(interface, KSZ8851_RXFHBCR) & KSZ8851_RXFHBCR_RXBC;
+         n = ksz8851ReadReg(interface, KSZ8851_RXFHBCR) & KSZ8851_RXFHBCR_RXBC;
 
-         //Check packet length
-         if(length > 0 && length <= KSZ8851_ETH_RX_BUFFER_SIZE)
+         //Ensure the frame size is acceptable
+         if(n > 0 && n <= KSZ8851_ETH_RX_BUFFER_SIZE)
          {
             //Reset QMU RXQ frame pointer to zero
             ksz8851WriteReg(interface, KSZ8851_RXFDPR, KSZ8851_RXFDPR_RXFPAI);
             //Enable RXQ read access
             ksz8851SetBit(interface, KSZ8851_RXQCR, KSZ8851_RXQCR_SDA);
-            //Read packet data
-            ksz8851ReadFifo(interface, temp, length);
+            //Read data
+            ksz8851ReadFifo(interface, temp, n);
             //End RXQ read access
             ksz8851ClearBit(interface, KSZ8851_RXQCR, KSZ8851_RXQCR_SDA);
 
+            //Additional options can be passed to the stack along with the packet
+            ancillary = NET_DEFAULT_RX_ANCILLARY;
+
+            //Pass the packet to the upper layer
+            nicProcessPacket(interface, temp, n, &ancillary);
             //Valid packet received
-            error = NO_ERROR;
-         }
-         else
-         {
-            //The packet length is not acceptable
-            error = ERROR_INVALID_LENGTH;
+            return NO_ERROR;
          }
       }
-      else
-      {
-         //The received packet contains an error
-         error = ERROR_INVALID_PACKET;
-      }
-   }
-   else
-   {
-      //The received packet is not valid
-      error = ERROR_INVALID_PACKET;
    }
 
-   //Check whether a valid packet has been received
-   if(!error)
-   {
-      NetRxAncillary ancillary;
-
-      //Additional options can be passed to the stack along with the packet
-      ancillary = NET_DEFAULT_RX_ANCILLARY;
-
-      //Pass the packet to the upper layer
-      nicProcessPacket(interface, temp, length, &ancillary);
-   }
-   else
-   {
-      //Release the current error frame from RXQ
-      ksz8851SetBit(interface, KSZ8851_RXQCR, KSZ8851_RXQCR_RRXEF);
-   }
-
-   //Return status code
-   return error;
+   //Release the current error frame from RXQ
+   ksz8851SetBit(interface, KSZ8851_RXQCR, KSZ8851_RXQCR_RRXEF);
+   //Report an error
+   return ERROR_INVALID_PACKET;
 }
 
 
@@ -716,7 +668,7 @@ void ksz8851WriteFifo(NetInterface *interface, const uint8_t *data,
    size_t length)
 {
 #if (KSZ8851_SPI_SUPPORT == ENABLED)
-   size_t i;
+   uint_t i;
 
    //Pull the CS pin low
    interface->spiDriver->assertCs();
@@ -739,7 +691,7 @@ void ksz8851WriteFifo(NetInterface *interface, const uint8_t *data,
    //Terminate the operation by raising the CS pin
    interface->spiDriver->deassertCs();
 #else
-   size_t i;
+   uint_t i;
 
    //Data phase
    for(i = 0; i < length; i += 2)
@@ -759,14 +711,14 @@ void ksz8851WriteFifo(NetInterface *interface, const uint8_t *data,
 /**
  * @brief Read RX FIFO
  * @param[in] interface Underlying network interface
- * @param[out] data Buffer where to store the incoming data
+ * @param[in] data Buffer where to store the incoming data
  * @param[in] length Number of data to read
  **/
 
 void ksz8851ReadFifo(NetInterface *interface, uint8_t *data, size_t length)
 {
 #if (KSZ8851_SPI_SUPPORT == ENABLED)
-   size_t i;
+   uint_t i;
 
    //Pull the CS pin low
    interface->spiDriver->assertCs();
@@ -801,7 +753,7 @@ void ksz8851ReadFifo(NetInterface *interface, uint8_t *data, size_t length)
    //Terminate the operation by raising the CS pin
    interface->spiDriver->deassertCs();
 #else
-   size_t i;
+   uint_t i;
    uint16_t temp;
 
    //The first 2 bytes are dummy data and must be discarded

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,19 +25,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL WEB_SOCKET_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "web_socket/web_socket.h"
-#include "web_socket/web_socket_frame.h"
-#include "web_socket/web_socket_transport.h"
-#include "web_socket/web_socket_misc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/web_socket/web_socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/web_socket/web_socket_frame.h"
+#include "../../../CycloneTcp/cyclone_tcp/web_socket/web_socket_transport.h"
+#include "../../../CycloneTcp/cyclone_tcp/web_socket/web_socket_misc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (WEB_SOCKET_SUPPORT == ENABLED)
@@ -337,13 +337,9 @@ error_t webSocketParseFrameHeader(WebSocket *webSocket,
          //When sending a Close frame in response, the endpoint typically
          //echos the status code it received
          if(webSocketCheckStatusCode(statusCode))
-         {
             webSocket->statusCode = statusCode;
-         }
          else
-         {
             webSocket->statusCode = WS_STATUS_CODE_PROTOCOL_ERROR;
-         }
 
          //The body may contain UTF-8-encoded data
          if(rxContext->payloadLen > 2)
@@ -421,21 +417,13 @@ error_t webSocketParseFrameHeader(WebSocket *webSocket,
 
    //Check status code
    if(webSocket->statusCode == WS_STATUS_CODE_NO_STATUS_RCVD)
-   {
       return NO_ERROR;
-   }
    else if(webSocket->statusCode == WS_STATUS_CODE_NORMAL_CLOSURE)
-   {
       return ERROR_END_OF_STREAM;
-   }
    else if(webSocket->statusCode == WS_STATUS_CODE_PROTOCOL_ERROR)
-   {
       return ERROR_INVALID_FRAME;
-   }
    else
-   {
       return ERROR_FAILURE;
-   }
 }
 
 

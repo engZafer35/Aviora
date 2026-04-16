@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,9 +34,9 @@
 //Dependencies
 #include "bsp_irq_cfg.h"
 #include "s5d9.h"
-#include "core/net.h"
-#include "drivers/mac/s5d9_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/s5d9_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -52,10 +52,10 @@ static uint8_t txBuffer[S5D9_ETH_TX_BUFFER_COUNT][S5D9_ETH_TX_BUFFER_SIZE];
 static uint8_t rxBuffer[S5D9_ETH_RX_BUFFER_COUNT][S5D9_ETH_RX_BUFFER_SIZE];
 //Transmit DMA descriptors
 #pragma data_alignment = 32
-static S5d9EthTxDmaDesc txDmaDesc[S5D9_ETH_TX_BUFFER_COUNT];
+static S5d9TxDmaDesc txDmaDesc[S5D9_ETH_TX_BUFFER_COUNT];
 //Receive DMA descriptors
 #pragma data_alignment = 32
-static S5d9EthRxDmaDesc rxDmaDesc[S5D9_ETH_RX_BUFFER_COUNT];
+static S5d9RxDmaDesc rxDmaDesc[S5D9_ETH_RX_BUFFER_COUNT];
 
 //ARM or GCC compiler?
 #else
@@ -67,10 +67,10 @@ static uint8_t txBuffer[S5D9_ETH_TX_BUFFER_COUNT][S5D9_ETH_TX_BUFFER_SIZE]
 static uint8_t rxBuffer[S5D9_ETH_RX_BUFFER_COUNT][S5D9_ETH_RX_BUFFER_SIZE]
    __attribute__((aligned(32)));
 //Transmit DMA descriptors
-static S5d9EthTxDmaDesc txDmaDesc[S5D9_ETH_TX_BUFFER_COUNT]
+static S5d9TxDmaDesc txDmaDesc[S5D9_ETH_TX_BUFFER_COUNT]
    __attribute__((aligned(32)));
 //Receive DMA descriptors
-static S5d9EthRxDmaDesc rxDmaDesc[S5D9_ETH_RX_BUFFER_COUNT]
+static S5d9RxDmaDesc rxDmaDesc[S5D9_ETH_RX_BUFFER_COUNT]
    __attribute__((aligned(32)));
 
 #endif
@@ -133,8 +133,7 @@ error_t s5d9EthInit(NetInterface *interface)
    s5d9EthInitGpio(interface);
 
    //Reset EDMAC0 module
-   R_EDMAC0->EDMR |= EDMAC_EDMR_SWR;
-   //Wait for the reset to complete
+   R_EDMAC0->EDMR_b.SWR = 1;
    sleep(10);
 
    //Valid Ethernet PHY or switch driver?
@@ -173,36 +172,46 @@ error_t s5d9EthInit(NetInterface *interface)
       (interface->macAddr.b[2] << 8) | interface->macAddr.b[3];
 
    //Set the lower 16 bits of the MAC address
-   R_ETHERC0->MALR = (interface->macAddr.b[4] << 8) | interface->macAddr.b[5];
+   R_ETHERC0->MALR_b.MALR = (interface->macAddr.b[4] << 8) | interface->macAddr.b[5];
 
-   //Select little endian mode and set descriptor length (16 bytes)
-   R_EDMAC0->EDMR = EDMAC_EDMR_DE | EDMAC_EDMR_DL_16;
+   //Set descriptor length (16 bytes)
+   R_EDMAC0->EDMR_b.DL = 0;
+   //Select little endian mode
+   R_EDMAC0->EDMR_b.DE = 1;
    //Use store and forward mode
-   R_EDMAC0->TFTR = 0;
-   //Set transmit and receive FIFO size
-   R_EDMAC0->FDR = EDMAC_FDR_TFD_2048 | EDMAC_FDR_RFD_4096;
-   //Enable continuous reception of multiple frames
-   R_EDMAC0->RMCR = EDMAC_RMCR_RNR;
-   //Select write-back complete interrupt mode and enable transmit interrupts
-   R_EDMAC0->TRIMD = EDMAC_TRIMD_TIM | EDMAC_TRIMD_TIS;
+   R_EDMAC0->TFTR_b.TFT = 0;
 
-   //Disable all ETHERC interrupts
-   R_ETHERC0->ECSIPR = 0;
-   //Enable the desired EDMAC interrupts
-   R_EDMAC0->EESIPR = EDMAC_EESIPR_TWBIP | EDMAC_EESIPR_FRIP;
+   //Set transmit FIFO size (2048 bytes)
+   R_EDMAC0->FDR_b.TFD = 7;
+   //Set receive FIFO size (2048 bytes)
+   R_EDMAC0->FDR_b.RFD = 7;
+
+   //Enable continuous reception of multiple frames
+   R_EDMAC0->RMCR_b.RNR = 1;
+
+   //Accept transmit interrupt notifications
+   R_EDMAC0->TRIMD_b.TIM = 0;
+   R_EDMAC0->TRIMD_b.TIS = 1;
+
+   //Disable all EDMAC interrupts
+   R_EDMAC0->EESIPR = 0;
+   //Enable only the desired EDMAC interrupts
+   R_EDMAC0->EESIPR_b.TWBIP = 1;
+   R_EDMAC0->EESIPR_b.FRIP = 1;
 
    //Set priority grouping (4 bits for pre-emption priority, no bits for subpriority)
    NVIC_SetPriorityGrouping(S5D9_ETH_IRQ_PRIORITY_GROUPING);
 
    //Configure EDMAC interrupt priority
-   NVIC_SetPriority(EDMAC0_EINT_IRQn, NVIC_EncodePriority(S5D9_ETH_IRQ_PRIORITY_GROUPING,
+   NVIC_SetPriority(ETHER_EINT0_IRQn, NVIC_EncodePriority(S5D9_ETH_IRQ_PRIORITY_GROUPING,
       S5D9_ETH_IRQ_GROUP_PRIORITY, S5D9_ETH_IRQ_SUB_PRIORITY));
 
    //Enable transmission and reception
-   R_ETHERC0->ECMR |= ETHERC_ECMR_TE | ETHERC_ECMR_RE;
+   R_ETHERC0->ECMR_b.TE = 1;
+   R_ETHERC0->ECMR_b.RE = 1;
 
    //Instruct the DMA to poll the receive descriptor list
-   R_EDMAC0->EDRRR = EDMAC_EDRRR_RR;
+   R_EDMAC0->EDRRR_b.RR = 1;
 
    //Accept any packets from the upper layer
    osSetEvent(&interface->nicTxEvent);
@@ -212,15 +221,16 @@ error_t s5d9EthInit(NetInterface *interface)
 }
 
 
+//PK-S5D9 evaluation board?
+#if defined(USE_PK_S5D9)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void s5d9EthInitGpio(NetInterface *interface)
+void s5d9EthInitGpio(NetInterface *interface)
 {
-//PK-S5D9 evaluation board?
-#if defined(USE_PK_S5D9)
    //Disable protection
    R_SYSTEM->PRCR = 0xA50B;
    //Disable VBATT channel 0 input (P4_2)
@@ -288,8 +298,9 @@ __weak_func void s5d9EthInitGpio(NetInterface *interface)
    //Lock PFS registers
    R_PMISC->PWPR_b.PFSWE = 0;
    R_PMISC->PWPR_b.BOWI = 1;
-#endif
 }
+
+#endif
 
 
 /**
@@ -381,7 +392,7 @@ void s5d9EthTick(NetInterface *interface)
 void s5d9EthEnableIrq(NetInterface *interface)
 {
    //Enable Ethernet MAC interrupts
-   NVIC_EnableIRQ(EDMAC0_EINT_IRQn);
+   NVIC_EnableIRQ(ETHER_EINT0_IRQn);
 
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
@@ -409,7 +420,7 @@ void s5d9EthEnableIrq(NetInterface *interface)
 void s5d9EthDisableIrq(NetInterface *interface)
 {
    //Disable Ethernet MAC interrupts
-   NVIC_DisableIRQ(EDMAC0_EINT_IRQn);
+   NVIC_DisableIRQ(ETHER_EINT0_IRQn);
 
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
@@ -433,7 +444,7 @@ void s5d9EthDisableIrq(NetInterface *interface)
  * @brief S5D9 Ethernet MAC interrupt service routine
  **/
 
-void EDMAC0_EINT_IRQHandler(void)
+void ETHER_EINT0_IRQHandler(void)
 {
    bool_t flag;
    uint32_t status;
@@ -464,8 +475,8 @@ void EDMAC0_EINT_IRQHandler(void)
    //Packet received?
    if((status & EDMAC_EESR_FR) != 0)
    {
-      //Clear FR interrupt flag
-      R_EDMAC0->EESR = EDMAC_EESR_FR;
+      //Disable FR interrupts
+      R_EDMAC0->EESIPR_b.FRIP = 0;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -474,7 +485,7 @@ void EDMAC0_EINT_IRQHandler(void)
    }
 
    //Clear IR flag
-   R_ICU->IELSRn_b[EDMAC0_EINT_IRQn].IR = 0;
+   R_ICU->IELSRn_b[ETHER_EINT0_IRQn].IR = 0;
 
    //Interrupt service routine epilogue
    osExitIsr(flag);
@@ -490,14 +501,25 @@ void s5d9EthEventHandler(NetInterface *interface)
 {
    error_t error;
 
-   //Process all pending packets
-   do
+   //Packet received?
+   if((R_EDMAC0->EESR & EDMAC_EESR_FR) != 0)
    {
-      //Read incoming packet
-      error = s5d9EthReceivePacket(interface);
+      //Clear FR interrupt flag
+      R_EDMAC0->EESR = EDMAC_EESR_FR;
 
-      //No more data in the receive buffer?
-   } while(error != ERROR_BUFFER_EMPTY);
+      //Process all pending packets
+      do
+      {
+         //Read incoming packet
+         error = s5d9EthReceivePacket(interface);
+
+         //No more data in the receive buffer?
+      } while(error != ERROR_BUFFER_EMPTY);
+   }
+
+   //Re-enable EDMAC interrupts
+   R_EDMAC0->EESIPR_b.TWBIP = 1;
+   R_EDMAC0->EESIPR_b.FRIP = 1;
 }
 
 
@@ -559,7 +581,7 @@ error_t s5d9EthSendPacket(NetInterface *interface,
    }
 
    //Instruct the DMA to poll the transmit descriptor list
-   R_EDMAC0->EDTRR = EDMAC_EDTRR_TR;
+   R_EDMAC0->EDTRR_b.TR = 1;
 
    //Check whether the next buffer is available for writing
    if((txDmaDesc[txIndex].td0 & EDMAC_TD0_TACT) == 0)
@@ -638,7 +660,7 @@ error_t s5d9EthReceivePacket(NetInterface *interface)
       }
 
       //Instruct the DMA to poll the receive descriptor list
-      R_EDMAC0->EDRRR = EDMAC_EDRRR_RR;
+      R_EDMAC0->EDRRR_b.RR = 1;
    }
    else
    {
@@ -665,50 +687,38 @@ error_t s5d9EthUpdateMacAddrFilter(NetInterface *interface)
    //Debug message
    TRACE_DEBUG("Updating MAC filter...\r\n");
 
-   //Promiscuous mode?
-   if(interface->promiscuous)
+   //Set the upper 32 bits of the MAC address
+   R_ETHERC0->MAHR = (interface->macAddr.b[0] << 24) | (interface->macAddr.b[1] << 16) |
+      (interface->macAddr.b[2] << 8) | interface->macAddr.b[3];
+
+   //Set the lower 16 bits of the MAC address
+   R_ETHERC0->MALR_b.MALR = (interface->macAddr.b[4] << 8) | interface->macAddr.b[5];
+
+   //This flag will be set if multicast addresses should be accepted
+   acceptMulticast = FALSE;
+
+   //The MAC address filter contains the list of MAC addresses to accept
+   //when receiving an Ethernet frame
+   for(i = 0; i < MAC_ADDR_FILTER_SIZE; i++)
    {
-      //Accept all frames regardless of their destination address
-      R_ETHERC0->ECMR |= ETHERC_ECMR_PRM;
+      //Valid entry?
+      if(interface->macAddrFilter[i].refCount > 0)
+      {
+         //Accept multicast addresses
+         acceptMulticast = TRUE;
+         //We are done
+         break;
+      }
+   }
+
+   //Enable or disable the reception of multicast frames
+   if(acceptMulticast)
+   {
+      R_EDMAC0->EESR_b.RMAF = 1;
    }
    else
    {
-      //Disable promiscuous mode
-      R_ETHERC0->ECMR &= ~ETHERC_ECMR_PRM;
-
-      //Set the upper 32 bits of the MAC address
-      R_ETHERC0->MAHR = (interface->macAddr.b[0] << 24) | (interface->macAddr.b[1] << 16) |
-         (interface->macAddr.b[2] << 8) | interface->macAddr.b[3];
-
-      //Set the lower 16 bits of the MAC address
-      R_ETHERC0->MALR = (interface->macAddr.b[4] << 8) | interface->macAddr.b[5];
-
-      //This flag will be set if multicast addresses should be accepted
-      acceptMulticast = FALSE;
-
-      //The MAC address filter contains the list of MAC addresses to accept
-      //when receiving an Ethernet frame
-      for(i = 0; i < MAC_ADDR_FILTER_SIZE; i++)
-      {
-         //Valid entry?
-         if(interface->macAddrFilter[i].refCount > 0)
-         {
-            //Accept multicast addresses
-            acceptMulticast = TRUE;
-            //We are done
-            break;
-         }
-      }
-
-      //Enable or disable the reception of multicast frames
-      if(acceptMulticast || interface->acceptAllMulticast)
-      {
-         R_EDMAC0->EESR |= EDMAC_EESR_RMAF;
-      }
-      else
-      {
-         R_EDMAC0->EESR &= ~EDMAC_EESR_RMAF;
-      }
+      R_EDMAC0->EESR_b.RMAF = 0;
    }
 
    //Successful processing
@@ -724,33 +734,25 @@ error_t s5d9EthUpdateMacAddrFilter(NetInterface *interface)
 
 error_t s5d9EthUpdateMacConfig(NetInterface *interface)
 {
-   uint32_t mode;
-
-   //Read ETHERC mode register
-   mode = R_ETHERC0->ECMR;
-
    //10BASE-T or 100BASE-TX operation mode?
    if(interface->linkSpeed == NIC_LINK_SPEED_100MBPS)
    {
-      mode |= ETHERC_ECMR_RTM;
+      R_ETHERC0->ECMR_b.RTM = 1;
    }
    else
    {
-      mode &= ~ETHERC_ECMR_RTM;
+      R_ETHERC0->ECMR_b.RTM = 0;
    }
 
    //Half-duplex or full-duplex mode?
    if(interface->duplexMode == NIC_FULL_DUPLEX_MODE)
    {
-      mode |= ETHERC_ECMR_DM;
+      R_ETHERC0->ECMR_b.DM = 1;
    }
    else
    {
-      mode &= ~ETHERC_ECMR_DM;
+      R_ETHERC0->ECMR_b.DM = 0;
    }
-
-   //Update ETHERC mode register
-   R_ETHERC0->ECMR = mode;
 
    //Successful processing
    return NO_ERROR;
@@ -834,7 +836,7 @@ void s5d9EthWriteSmi(uint32_t data, uint_t length)
    data <<= 32 - length;
 
    //Configure MDIO as an output
-   R_ETHERC0->PIR |= ETHERC_PIR_MMD;
+   R_ETHERC0->PIR_b.MMD = 1;
 
    //Write the specified number of bits
    while(length--)
@@ -842,19 +844,19 @@ void s5d9EthWriteSmi(uint32_t data, uint_t length)
       //Write MDIO
       if((data & 0x80000000) != 0)
       {
-         R_ETHERC0->PIR |= ETHERC_PIR_MDO;
+         R_ETHERC0->PIR_b.MDO = 1;
       }
       else
       {
-         R_ETHERC0->PIR &= ~ETHERC_PIR_MDO;
+         R_ETHERC0->PIR_b.MDO = 0;
       }
 
       //Assert MDC
       usleep(1);
-      R_ETHERC0->PIR |= ETHERC_PIR_MDC;
+      R_ETHERC0->PIR_b.MDC = 1;
       //Deassert MDC
       usleep(1);
-      R_ETHERC0->PIR &= ~ETHERC_PIR_MDC;
+      R_ETHERC0->PIR_b.MDC = 0;
 
       //Rotate data
       data <<= 1;
@@ -873,7 +875,7 @@ uint32_t s5d9EthReadSmi(uint_t length)
    uint32_t data = 0;
 
    //Configure MDIO as an input
-   R_ETHERC0->PIR &= ~ETHERC_PIR_MMD;
+   R_ETHERC0->PIR_b.MMD = 0;
 
    //Read the specified number of bits
    while(length--)
@@ -882,14 +884,14 @@ uint32_t s5d9EthReadSmi(uint_t length)
       data <<= 1;
 
       //Assert MDC
-      R_ETHERC0->PIR |= ETHERC_PIR_MDC;
+      R_ETHERC0->PIR_b.MDC = 1;
       usleep(1);
       //Deassert MDC
-      R_ETHERC0->PIR &= ~ETHERC_PIR_MDC;
+      R_ETHERC0->PIR_b.MDC = 0;
       usleep(1);
 
       //Check MDIO state
-      if((R_ETHERC0->PIR & ETHERC_PIR_MDI) != 0)
+      if(R_ETHERC0->PIR_b.MDI)
       {
          data |= 0x01;
       }

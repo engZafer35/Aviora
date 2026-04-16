@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -33,7 +33,7 @@
  * - RFC 2428: FTP Extensions for IPv6 and NATs
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -42,11 +42,12 @@
 //Dependencies
 #include <stdlib.h>
 #include <ctype.h>
-#include "ftp/ftp_client.h"
-#include "ftp/ftp_client_transport.h"
-#include "ftp/ftp_client_misc.h"
-#include "str.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_client_transport.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_client_misc.h"
+#include "../../../CycloneTcp/common/str.h"
+#include "../../../CycloneTcp/common/error.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (FTP_CLIENT_SUPPORT == ENABLED)

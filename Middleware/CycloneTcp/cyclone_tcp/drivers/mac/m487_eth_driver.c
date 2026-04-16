@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,9 +33,9 @@
 
 //Dependencies
 #include "m480.h"
-#include "core/net.h"
-#include "drivers/mac/m487_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/m487_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -51,10 +51,10 @@ static uint8_t txBuffer[M487_ETH_TX_BUFFER_COUNT][M487_ETH_TX_BUFFER_SIZE];
 static uint8_t rxBuffer[M487_ETH_RX_BUFFER_COUNT][M487_ETH_RX_BUFFER_SIZE];
 //Transmit DMA descriptors
 #pragma data_alignment = 4
-static M487TxDmaDesc txDmaDesc[M487_ETH_TX_BUFFER_COUNT];
+static Nuc472TxDmaDesc txDmaDesc[M487_ETH_TX_BUFFER_COUNT];
 //Receive DMA descriptors
 #pragma data_alignment = 4
-static M487RxDmaDesc rxDmaDesc[M487_ETH_RX_BUFFER_COUNT];
+static Nuc472RxDmaDesc rxDmaDesc[M487_ETH_RX_BUFFER_COUNT];
 
 //Keil MDK-ARM or GCC compiler?
 #else
@@ -66,10 +66,10 @@ static uint8_t txBuffer[M487_ETH_TX_BUFFER_COUNT][M487_ETH_TX_BUFFER_SIZE]
 static uint8_t rxBuffer[M487_ETH_RX_BUFFER_COUNT][M487_ETH_RX_BUFFER_SIZE]
    __attribute__((aligned(4)));
 //Transmit DMA descriptors
-static M487TxDmaDesc txDmaDesc[M487_ETH_TX_BUFFER_COUNT]
+static Nuc472TxDmaDesc txDmaDesc[M487_ETH_TX_BUFFER_COUNT]
    __attribute__((aligned(4)));
 //Receive DMA descriptors
-static M487RxDmaDesc rxDmaDesc[M487_ETH_RX_BUFFER_COUNT]
+static Nuc472RxDmaDesc rxDmaDesc[M487_ETH_RX_BUFFER_COUNT]
    __attribute__((aligned(4)));
 
 #endif
@@ -206,15 +206,16 @@ error_t m487EthInit(NetInterface *interface)
 }
 
 
+//NuMaker-PFM-M487 or NuMaker-IoT-M487 evaluation board?
+#if defined(USE_NUMAKER_PFM_M487) || defined(USE_NUMAKER_IOT_M487)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void m487EthInitGpio(NetInterface *interface)
+void m487EthInitGpio(NetInterface *interface)
 {
-//NuMaker-PFM-M487 or NuMaker-IoT-M487 evaluation board?
-#if defined(USE_NUMAKER_PFM_M487) || defined(USE_NUMAKER_IOT_M487)
    uint32_t temp;
 
    //Select RMII interface mode
@@ -237,7 +238,7 @@ __weak_func void m487EthInitGpio(NetInterface *interface)
    temp = (temp & ~SYS_GPC_MFPH_PC8MFP_Msk) | SYS_GPC_MFPH_PC8MFP_EMAC_RMII_REFCLK;
    SYS->GPC_MFPH = temp;
 
-   //Configure EMAC_RMII_MDC (PE.8), EMAC_RMII_MDIO (PE.9),
+   //Configure EMAC_RMII_MDC (PE.8) and EMAC_RMII_MDIO (PE.9),
    //EMAC_RMII_TXD0 (PE.10), EMAC_RMII_TXD1 (PE.11) and
    //EMAC_RMII_TXEN (PE.12)
    temp = SYS->GPE_MFPH;
@@ -254,8 +255,9 @@ __weak_func void m487EthInitGpio(NetInterface *interface)
    temp = (temp & ~GPIO_SLEWCTL_HSREN11_Msk) | (GPIO_SLEWCTL_HIGH << GPIO_SLEWCTL_HSREN11_Pos);
    temp = (temp & ~GPIO_SLEWCTL_HSREN12_Msk) | (GPIO_SLEWCTL_HIGH << GPIO_SLEWCTL_HSREN11_Pos);
    PE->SLEWCTL = temp;
-#endif
 }
+
+#endif
 
 
 /**
@@ -350,6 +352,7 @@ void m487EthEnableIrq(NetInterface *interface)
    NVIC_EnableIRQ(EMAC_TX_IRQn);
    NVIC_EnableIRQ(EMAC_RX_IRQn);
 
+
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
    {
@@ -378,6 +381,7 @@ void m487EthDisableIrq(NetInterface *interface)
    //Disable Ethernet MAC interrupts
    NVIC_DisableIRQ(EMAC_TX_IRQn);
    NVIC_DisableIRQ(EMAC_RX_IRQn);
+
 
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
@@ -447,8 +451,8 @@ void EMAC_RX_IRQHandler(void)
    //Packet received?
    if((EMAC->INTSTS & EMAC_INTSTS_RXGDIF_Msk) != 0)
    {
-      //Clear RXGDIF interrupt flag
-      EMAC->INTSTS = EMAC_INTSTS_RXGDIF_Msk;
+      //Disable receive interrupts
+      EMAC->INTEN &= ~EMAC_INTEN_RXIEN_Msk;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -470,14 +474,25 @@ void m487EthEventHandler(NetInterface *interface)
 {
    error_t error;
 
-   //Process all pending packets
-   do
+   //Packet received?
+   if((EMAC->INTSTS & EMAC_INTSTS_RXGDIF_Msk) != 0)
    {
-      //Read incoming packet
-      error = m487EthReceivePacket(interface);
+      //Clear interrupt flag
+      EMAC->INTSTS = EMAC_INTSTS_RXGDIF_Msk;
 
-      //No more data in the receive buffer?
-   } while(error != ERROR_BUFFER_EMPTY);
+      //Process all pending packets
+      do
+      {
+         //Read incoming packet
+         error = m487EthReceivePacket(interface);
+
+         //No more data in the receive buffer?
+      } while(error != ERROR_BUFFER_EMPTY);
+   }
+
+   //Re-enable DMA interrupts
+   EMAC->INTEN = EMAC_INTEN_TXCPIEN_Msk | EMAC_INTEN_TXIEN_Msk |
+      EMAC_INTEN_RXGDIEN_Msk | EMAC_INTEN_RXIEN_Msk;
 }
 
 

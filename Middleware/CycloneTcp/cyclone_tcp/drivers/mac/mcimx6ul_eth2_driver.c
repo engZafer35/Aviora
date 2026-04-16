@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -35,9 +35,9 @@
 #include "fsl_device_registers.h"
 #include "fsl_gpio.h"
 #include "fsl_iomuxc.h"
-#include "core/net.h"
-#include "drivers/mac/mcimx6ul_eth2_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/mcimx6ul_eth2_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -228,15 +228,16 @@ error_t mcimx6ulEth2Init(NetInterface *interface)
 }
 
 
+//MCIMX6UL-EVKB or MCIMX6ULL-EVK evaluation board?
+#if defined(USE_MCIMX6UL_EVKB) || defined(USE_MCIMX6ULL_EVK)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void mcimx6ulEth2InitGpio(NetInterface *interface)
+void mcimx6ulEth2InitGpio(NetInterface *interface)
 {
-//MCIMX6UL-EVKB or MCIMX6ULL-EVK evaluation board?
-#if defined(USE_MCIMX6UL_EVKB) || defined(USE_MCIMX6ULL_EVK)
    gpio_pin_config_t pinConfig;
 
    //Enable ENET2_TX_CLK output driver
@@ -393,8 +394,9 @@ __weak_func void mcimx6ulEth2InitGpio(NetInterface *interface)
    pinConfig.outputLogic = 0;
    pinConfig.interruptMode = kGPIO_NoIntmode;
    GPIO_PinInit(GPIO5, 6, &pinConfig);
-#endif
 }
+
+#endif
 
 
 /**
@@ -667,7 +669,7 @@ void mcimx6ulEth2EventHandler(NetInterface *interface)
 error_t mcimx6ulEth2SendPacket(NetInterface *interface,
    const NetBuffer *buffer, size_t offset, NetTxAncillary *ancillary)
 {
-   static uint32_t temp[MCIMX6UL_ETH2_TX_BUFFER_SIZE / 4];
+   static uint8_t temp[MCIMX6UL_ETH2_TX_BUFFER_SIZE];
    size_t length;
 
    //Retrieve the length of the packet
@@ -741,7 +743,7 @@ error_t mcimx6ulEth2SendPacket(NetInterface *interface,
 
 error_t mcimx6ulEth2ReceivePacket(NetInterface *interface)
 {
-   static uint32_t temp[MCIMX6UL_ETH2_RX_BUFFER_SIZE / 4];
+   static uint8_t temp[MCIMX6UL_ETH2_RX_BUFFER_SIZE];
    error_t error;
    size_t n;
    NetRxAncillary ancillary;
@@ -768,7 +770,7 @@ error_t mcimx6ulEth2ReceivePacket(NetInterface *interface)
             ancillary = NET_DEFAULT_RX_ANCILLARY;
 
             //Pass the packet to the upper layer
-            nicProcessPacket(interface, (uint8_t *) temp, n, &ancillary);
+            nicProcessPacket(interface, temp, n, &ancillary);
 
             //Valid packet received
             error = NO_ERROR;
@@ -1073,7 +1075,6 @@ uint32_t mcimx6ulEth2CalcCrc(const void *data, size_t length)
    {
       //Update CRC value
       crc ^= p[i];
-
       //The message is processed bit by bit
       for(j = 0; j < 8; j++)
       {

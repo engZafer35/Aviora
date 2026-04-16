@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,15 +23,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Dependencies
+#include "../../CycloneTcp/common/fs_port_fatfs.h"
+
 #include <string.h>
-#include "fs_port.h"
-#include "fs_port_fatfs.h"
-#include "error.h"
-#include "debug.h"
+
+#include "../../CycloneTcp/common/debug.h"
+#include "../../CycloneTcp/common/error.h"
+#include "../../CycloneTcp/common/fs_port.h"
 
 //FatFs revision
 #define FATFS_R(major, minor, patch) ((major << 16) | (minor << 8) | (0x ## patch))
@@ -81,14 +83,6 @@
    #define FATFS_REVISON FATFS_R(0, 13, b)
 #elif (FF_DEFINED == 86604)
    #define FATFS_REVISON FATFS_R(0, 13, c)
-#elif (FF_DEFINED == 86606)
-   #define FATFS_REVISON FATFS_R(0, 14, 0)
-#elif (FF_DEFINED == 80196)
-   #define FATFS_REVISON FATFS_R(0, 14, a)
-#elif (FF_DEFINED == 86631)
-   #define FATFS_REVISON FATFS_R(0, 14, b)
-#elif (FF_DEFINED == 80286)
-   #define FATFS_REVISON FATFS_R(0, 15, 0)
 #else
    #define FATFS_REVISON FATFS_R(0, 0, 0)
 #endif

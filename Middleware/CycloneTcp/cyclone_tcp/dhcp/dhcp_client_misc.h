@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _DHCP_CLIENT_MISC_H
 #define _DHCP_CLIENT_MISC_H
 
 //Dependencies
-#include "core/net.h"
-#include "dhcp/dhcp_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_client.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -50,7 +50,6 @@ void dhcpClientLinkChangeEvent(DhcpClientContext *context);
 error_t dhcpClientSendDiscover(DhcpClientContext *context);
 error_t dhcpClientSendRequest(DhcpClientContext *context);
 error_t dhcpClientSendDecline(DhcpClientContext *context);
-error_t dhcpClientSendRelease(DhcpClientContext *context);
 
 void dhcpClientProcessMessage(NetInterface *interface,
    const IpPseudoHeader *pseudoHeader, const UdpHeader *udpHeader,

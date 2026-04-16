@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,17 +25,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL MODBUS_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "modbus/modbus_server.h"
-#include "modbus/modbus_server_security.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/modbus/modbus_server_security.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (MODBUS_SERVER_SUPPORT == ENABLED && MODBUS_SERVER_TLS_SUPPORT == ENABLED)
@@ -54,7 +54,7 @@ const uint8_t MODBUS_ROLE_OID[11] = {0x2B, 0x06, 0x01, 0x04, 0x01, 0x83, 0x89, 0
  **/
 
 error_t modbusServerParseCertificate(TlsContext *tlsContext,
-   const X509CertInfo *certInfo, uint_t pathLen, void *param)
+   const X509CertificateInfo *certInfo, uint_t pathLen, void *param)
 {
    error_t error;
    size_t n;
@@ -71,8 +71,8 @@ error_t modbusServerParseCertificate(TlsContext *tlsContext,
    {
       //The X.509 v3 certificate format also allows communities to define
       //private extensions to carry information unique to those communities
-      data = certInfo->tbsCert.extensions.raw.value;
-      length = certInfo->tbsCert.extensions.raw.length;
+      data = certInfo->tbsCert.extensions.rawData;
+      length = certInfo->tbsCert.extensions.rawDataLen;
 
       //Loop through the extensions
       while(length > 0)
@@ -84,12 +84,12 @@ error_t modbusServerParseCertificate(TlsContext *tlsContext,
             return error;
 
          //Role OID extension found?
-         if(!oidComp(extension.oid.value, extension.oid.length, MODBUS_ROLE_OID,
+         if(!oidComp(extension.oid, extension.oidLen, MODBUS_ROLE_OID,
             sizeof(MODBUS_ROLE_OID)))
          {
             //Extract the client role OID from the certificate
-            error = modbusServerParseRoleOid(connection, extension.data.value,
-               extension.data.length);
+            error = modbusServerParseRoleOid(connection, extension.value,
+               extension.valueLen);
             //Any error to report?
             if(error)
                return error;
@@ -196,12 +196,6 @@ error_t modbusServerOpenSecureConnection(ModbusServerContext *context,
 
 #if (TLS_TICKET_SUPPORT == ENABLED)
    //Enable session ticket mechanism
-   error = tlsEnableSessionTickets(connection->tlsContext, TRUE);
-   //Any error to report?
-   if(error)
-      return error;
-
-   //Register ticket encryption/decryption callbacks
    error = tlsSetTicketCallbacks(connection->tlsContext, tlsEncryptTicket,
       tlsDecryptTicket, &context->tlsTicketContext);
    //Any error to report?

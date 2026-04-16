@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "drivers/phy/ksz9031_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/phy/ksz9031_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -59,8 +59,6 @@ const PhyDriver ksz9031PhyDriver =
 
 error_t ksz9031Init(NetInterface *interface)
 {
-   uint16_t value;
-
    //Debug message
    TRACE_INFO("Initializing KSZ9031...\r\n");
 
@@ -94,25 +92,9 @@ error_t ksz9031Init(NetInterface *interface)
    //Dump PHY registers for debugging purpose
    ksz9031DumpPhyReg(interface);
 
-   //Select single-LED mode
-   value = ksz9031ReadMmdReg(interface, KSZ9031_COMMON_CTRL);
-   value |= KSZ9031_COMMON_CTRL_LED_MODE_OVERRIDE;
-   ksz9031WriteMmdReg(interface, KSZ9031_COMMON_CTRL, value);
-
-   //Change the FLP interval to 16ms (silicon errata workaround 5)
-   ksz9031WriteMmdReg(interface, KSZ9031_AN_FLP_BURST_TRANSMIT_HI, 0x0006);
-   ksz9031WriteMmdReg(interface, KSZ9031_AN_FLP_BURST_TRANSMIT_LO, 0x1A80);
-
-   //Restart auto-negotiation for the 16ms FLP interval setting to take effect
-   ksz9031WritePhyReg(interface, KSZ9031_BMCR, KSZ9031_BMCR_AN_EN |
-      KSZ9031_BMCR_RESTART_AN);
-
    //The PHY will generate interrupts when link status changes are detected
    ksz9031WritePhyReg(interface, KSZ9031_ICSR, KSZ9031_ICSR_LINK_DOWN_IE |
       KSZ9031_ICSR_LINK_UP_IE);
-
-   //Perform custom configuration
-   ksz9031InitHook(interface);
 
    //Force the TCP/IP stack to poll the link state at startup
    interface->phyEvent = TRUE;
@@ -121,16 +103,6 @@ error_t ksz9031Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief KSZ9031 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void ksz9031InitHook(NetInterface *interface)
-{
 }
 
 
@@ -349,58 +321,4 @@ void ksz9031DumpPhyReg(NetInterface *interface)
 
    //Terminate with a line feed
    TRACE_DEBUG("\r\n");
-}
-
-
-/**
- * @brief Write MMD register
- * @param[in] interface Underlying network interface
- * @param[in] devAddr Device address
- * @param[in] regAddr Register address
- * @param[in] data MMD register value
- **/
-
-void ksz9031WriteMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr, uint16_t data)
-{
-   //Select register operation
-   ksz9031WritePhyReg(interface, KSZ9031_MMDACR,
-      KSZ9031_MMDACR_FUNC_ADDR | (devAddr & KSZ9031_MMDACR_DEVAD));
-
-   //Write MMD register address
-   ksz9031WritePhyReg(interface, KSZ9031_MMDAADR, regAddr);
-
-   //Select data operation
-   ksz9031WritePhyReg(interface, KSZ9031_MMDACR,
-      KSZ9031_MMDACR_FUNC_DATA_NO_POST_INC | (devAddr & KSZ9031_MMDACR_DEVAD));
-
-   //Write the content of the MMD register
-   ksz9031WritePhyReg(interface, KSZ9031_MMDAADR, data);
-}
-
-
-/**
- * @brief Read MMD register
- * @param[in] interface Underlying network interface
- * @param[in] devAddr Device address
- * @param[in] regAddr Register address
- * @return MMD register value
- **/
-
-uint16_t ksz9031ReadMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr)
-{
-   //Select register operation
-   ksz9031WritePhyReg(interface, KSZ9031_MMDACR,
-      KSZ9031_MMDACR_FUNC_ADDR | (devAddr & KSZ9031_MMDACR_DEVAD));
-
-   //Write MMD register address
-   ksz9031WritePhyReg(interface, KSZ9031_MMDAADR, regAddr);
-
-   //Select data operation
-   ksz9031WritePhyReg(interface, KSZ9031_MMDACR,
-      KSZ9031_MMDACR_FUNC_DATA_NO_POST_INC | (devAddr & KSZ9031_MMDACR_DEVAD));
-
-   //Read the content of the MMD register
-   return ksz9031ReadPhyReg(interface, KSZ9031_MMDAADR);
 }

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -30,20 +30,20 @@
  * Network Management Protocol (SNMP). Refer to RFC 3415 for complete details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL SNMP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "snmp/snmp_agent.h"
-#include "snmp/snmp_agent_vacm.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent.h"
+#include "../../../CycloneTcp/cyclone_tcp/snmp/snmp_agent_vacm.h"
 #include "core/crypto.h"
 #include "encoding/asn1.h"
 #include "encoding/oid.h"
-#include "debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (SNMP_AGENT_SUPPORT == ENABLED && SNMP_AGENT_VACM_SUPPORT == ENABLED)
@@ -306,13 +306,9 @@ SnmpGroupEntry *snmpFindGroupEntry(SnmpAgentContext *context,
 
    //Any matching entry found?
    if(i < SNMP_AGENT_GROUP_TABLE_SIZE)
-   {
       return entry;
-   }
    else
-   {
       return NULL;
-   }
 }
 
 
@@ -411,13 +407,9 @@ SnmpAccessEntry *snmpFindAccessEntry(SnmpAgentContext *context,
 
    //Return a pointer to the matching entry
    if(i < SNMP_AGENT_ACCESS_TABLE_SIZE)
-   {
       return entry;
-   }
    else
-   {
       return NULL;
-   }
 }
 
 
@@ -493,41 +485,23 @@ SnmpAccessEntry *snmpSelectAccessEntry(SnmpAgentContext *context,
       //to deciding how to weight the preferences between ContextPrefixes,
       //SecurityModels, and SecurityLevels (refer to RFC 3415, section 4)
       if(selectedEntry == NULL)
-      {
          acceptable = TRUE;
-      }
       else if(entry->securityModel == SNMP_SECURITY_MODEL_ANY)
-      {
          acceptable = FALSE;
-      }
       else if(selectedEntry->securityModel == SNMP_SECURITY_MODEL_ANY)
-      {
          acceptable = TRUE;
-      }
       else if(osStrlen(selectedEntry->contextPrefix) == contextNameLen)
-      {
          acceptable = FALSE;
-      }
       else if(osStrlen(entry->contextPrefix) == contextNameLen)
-      {
          acceptable = TRUE;
-      }
       else if(osStrlen(selectedEntry->contextPrefix) > osStrlen(entry->contextPrefix))
-      {
          acceptable = FALSE;
-      }
       else if(osStrlen(entry->contextPrefix) > osStrlen(selectedEntry->contextPrefix))
-      {
          acceptable = TRUE;
-      }
       else if(selectedEntry->securityLevel >= entry->securityLevel)
-      {
          acceptable = FALSE;
-      }
       else
-      {
          acceptable = TRUE;
-      }
 
       //Select the proper entry
       if(acceptable)
@@ -631,13 +605,9 @@ SnmpViewEntry *snmpFindViewEntry(SnmpAgentContext *context,
 
    //Return a pointer to the matching entry
    if(i < SNMP_AGENT_VIEW_TABLE_SIZE)
-   {
       return entry;
-   }
    else
-   {
       return NULL;
-   }
 }
 
 

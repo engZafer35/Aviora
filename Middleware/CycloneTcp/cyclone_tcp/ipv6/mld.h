@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _MLD_H
 #define _MLD_H
 
 //Dependencies
-#include "core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //MLD support
 #ifndef MLD_SUPPORT
@@ -76,10 +76,8 @@ typedef enum
 } MldState;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -88,7 +86,7 @@ typedef enum
  * @brief MLD message
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t type;           //0
    uint8_t code;           //1
@@ -96,15 +94,14 @@ typedef __packed_struct
    uint16_t maxRespDelay;  //4-5
    uint16_t reserved;      //6-7
    Ipv6Addr multicastAddr; //8-23
-} MldMessage;
+} __end_packed MldMessage;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
+
 
 //Tick counter to handle periodic operations
 extern systime_t mldTickCounter;
@@ -117,16 +114,16 @@ error_t mldStopListening(NetInterface *interface, Ipv6FilterEntry *entry);
 void mldTick(NetInterface *interface);
 void mldLinkChangeEvent(NetInterface *interface);
 
-void mldProcessListenerQuery(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, uint8_t hopLimit);
+void mldProcessListenerQuery(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, uint8_t hopLimit);
 
-void mldProcessListenerReport(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, uint8_t hopLimit);
+void mldProcessListenerReport(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, uint8_t hopLimit);
 
 error_t mldSendListenerReport(NetInterface *interface, Ipv6Addr *ipAddr);
 error_t mldSendListenerDone(NetInterface *interface, Ipv6Addr *ipAddr);
+
+uint32_t mldRand(uint32_t max);
 
 void mldDumpMessage(const MldMessage *message);
 

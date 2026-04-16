@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,17 +25,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _HTTP_SERVER_H
 #define _HTTP_SERVER_H
 
 //Dependencies
-#include "os_port.h"
-#include "core/socket.h"
-#include "web_socket/web_socket.h"
-#include "http/http_common.h"
+#include "../../../CycloneTcp/common/os_port.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/web_socket/web_socket.h"
 
 //HTTP server support
 #ifndef HTTP_SERVER_SUPPORT
@@ -131,13 +131,6 @@
 //Priority at which the HTTP server should run
 #ifndef HTTP_SERVER_PRIORITY
    #define HTTP_SERVER_PRIORITY OS_TASK_PRIORITY_NORMAL
-#endif
-
-//Maximum number of simultaneous client connections
-#ifndef HTTP_SERVER_MAX_CONNECTIONS
-   #define HTTP_SERVER_MAX_CONNECTIONS 10
-#elif (HTTP_SERVER_MAX_CONNECTIONS < 1)
-   #error HTTP_SERVER_MAX_CONNECTIONS parameter is not valid
 #endif
 
 //HTTP connection timeout
@@ -290,7 +283,7 @@
 #if (HTTP_SERVER_FS_SUPPORT == ENABLED)
    #include "fs_port.h"
 #else
-   #include "resource_manager.h"
+   #include "../../../CycloneTcp/common/resource_manager.h"
 #endif
 
 //TLS supported?
@@ -545,27 +538,25 @@ typedef struct
 
 typedef struct
 {
-   OsTaskParameters listenerTask;                                ///<Listener task parameters
-   OsTaskParameters connectionTask[HTTP_SERVER_MAX_CONNECTIONS]; ///<Connection task parameters
-   NetInterface *interface;                                      ///<Underlying network interface
-   uint16_t port;                                                ///<HTTP server port number
-   IpAddr ipAddr;                                                ///<HTTP server IP address
-   uint_t backlog;                                               ///<Maximum length of the pending connection queue
-   uint_t maxConnections;                                        ///<Maximum number of client connections
-   HttpConnection *connections;                                  ///<Client connections
-   char_t rootDirectory[HTTP_SERVER_ROOT_DIR_MAX_LEN + 1];       ///<Web root directory
-   char_t defaultDocument[HTTP_SERVER_DEFAULT_DOC_MAX_LEN + 1];  ///<Default home page
+   NetInterface *interface;                                     ///<Underlying network interface
+   uint16_t port;                                               ///<HTTP server port number
+   IpAddr ipAddr;                                               ///<HTTP server IP address
+   uint_t backlog;                                              ///<Maximum length of the pending connection queue
+   uint_t maxConnections;                                       ///<Maximum number of client connections
+   HttpConnection *connections;                                 ///<Client connections
+   char_t rootDirectory[HTTP_SERVER_ROOT_DIR_MAX_LEN + 1];      ///<Web root directory
+   char_t defaultDocument[HTTP_SERVER_DEFAULT_DOC_MAX_LEN + 1]; ///<Default home page
 #if (HTTP_SERVER_TLS_SUPPORT == ENABLED)
-   bool_t useTls;                                                ///<Deprecated flag
-   TlsInitCallback tlsInitCallback;                              ///<TLS initialization callback function
+   bool_t useTls;                                               ///<Deprecated flag
+   TlsInitCallback tlsInitCallback;                             ///<TLS initialization callback function
 #endif
 #if (HTTP_SERVER_BASIC_AUTH_SUPPORT == ENABLED || HTTP_SERVER_DIGEST_AUTH_SUPPORT == ENABLED)
-   HttpRandCallback randCallback;                                ///<Random data generation callback function
-   HttpAuthCallback authCallback;                                ///<HTTP authentication callback function
+   HttpRandCallback randCallback;                               ///<Random data generation callback function
+   HttpAuthCallback authCallback;                               ///<HTTP authentication callback function
 #endif
-   HttpCgiCallback cgiCallback;                                  ///<CGI callback function
-   HttpRequestCallback requestCallback;                          ///<HTTP request callback function
-   HttpUriNotFoundCallback uriNotFoundCallback;                  ///<URI not found callback function
+   HttpCgiCallback cgiCallback;                                 ///<CGI callback function
+   HttpRequestCallback requestCallback;                         ///<HTTP request callback function
+   HttpUriNotFoundCallback uriNotFoundCallback;                 ///<URI not found callback function
 } HttpServerSettings;
 
 
@@ -588,9 +579,8 @@ typedef struct
 struct _HttpServerContext
 {
    HttpServerSettings settings;                                  ///<User settings
+   OsTask *taskHandle;                                           ///<Listener task handle
    OsSemaphore semaphore;                                        ///<Semaphore limiting the number of connections
-   OsTaskParameters taskParams;                                  ///<Task parameters
-   OsTaskId taskId;                                              ///<Task identifier
    Socket *socket;                                               ///<Listening socket
    HttpConnection *connections;                                  ///<Client connections
 #if (HTTP_SERVER_TLS_SUPPORT == ENABLED && TLS_TICKET_SUPPORT == ENABLED)
@@ -615,10 +605,9 @@ struct _HttpConnection
 {
    HttpServerSettings *settings;                       ///<Reference to the HTTP server settings
    HttpServerContext *serverContext;                   ///<Reference to the HTTP server context
+   OsTask *taskHandle;                                 ///<Client task handle
    OsEvent startEvent;
    bool_t running;
-   OsTaskParameters taskParams;                        ///<Task parameters
-   OsTaskId taskId;                                    ///<Task identifier
    Socket *socket;                                     ///<Socket
 #if (HTTP_SERVER_TLS_SUPPORT == ENABLED)
    TlsContext *tlsContext;                             ///<TLS context

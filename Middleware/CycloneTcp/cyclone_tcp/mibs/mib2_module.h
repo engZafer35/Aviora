@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,18 +25,18 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _MIB2_MODULE_H
 #define _MIB2_MODULE_H
 
 //Dependencies
-#include "core/net.h"
-#include "core/udp.h"
-#include "core/tcp.h"
-#include "ipv4/ipv4.h"
-#include "mibs/mib_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/tcp.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/udp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib_common.h"
 
 //MIB-II module support
 #ifndef MIB2_SUPPORT
@@ -150,48 +150,13 @@
    #error MIB2_IP_ADDRESS_SIZE parameter is not valid
 #endif
 
-//Macro definitions (Interface group)
-#if (MIB2_SUPPORT == ENABLED && MIB2_IF_GROUP_SUPPORT == ENABLED)
-   #define MIB2_IF_SET_TIME_TICKS(name, value) mib2Base.ifGroup.name = value
-   #define MIB2_IF_INC_COUNTER32(name, value) mib2Base.ifGroup.name += value
+//Macro definitions
+#if (MIB2_SUPPORT == ENABLED)
+   #define MIB2_SET_TIME_TICKS(name, value) mib2Base.name = value
+   #define MIB2_INC_COUNTER32(name, value) mib2Base.name += value
 #else
-   #define MIB2_IF_SET_TIME_TICKS(name, value)
-   #define MIB2_IF_INC_COUNTER32(name, value)
-#endif
-
-//Macro definitions (IP group)
-#if (MIB2_SUPPORT == ENABLED && MIB2_IP_GROUP_SUPPORT == ENABLED)
-   #define MIB2_IP_INC_COUNTER32(name, value) mib2Base.ipGroup.name += value
-#else
-   #define MIB2_IP_INC_COUNTER32(name, value)
-#endif
-
-//Macro definitions (ICMP group)
-#if (MIB2_SUPPORT == ENABLED && MIB2_ICMP_GROUP_SUPPORT == ENABLED)
-   #define MIB2_ICMP_INC_COUNTER32(name, value) mib2Base.icmpGroup.name += value
-#else
-   #define MIB2_ICMP_INC_COUNTER32(name, value)
-#endif
-
-//Macro definitions (TCP group)
-#if (MIB2_SUPPORT == ENABLED && MIB2_TCP_GROUP_SUPPORT == ENABLED)
-   #define MIB2_TCP_INC_COUNTER32(name, value) mib2Base.tcpGroup.name += value
-#else
-   #define MIB2_TCP_INC_COUNTER32(name, value)
-#endif
-
-//Macro definitions (UDP group)
-#if (MIB2_SUPPORT == ENABLED && MIB2_UDP_GROUP_SUPPORT == ENABLED)
-   #define MIB2_UDP_INC_COUNTER32(name, value) mib2Base.udpGroup.name += value
-#else
-   #define MIB2_UDP_INC_COUNTER32(name, value)
-#endif
-
-//Macro definitions (SNMP group)
-#if (MIB2_SUPPORT == ENABLED && MIB2_SNMP_GROUP_SUPPORT == ENABLED)
-   #define MIB2_SNMP_INC_COUNTER32(name, value) mib2Base.snmpGroup.name += value
-#else
-   #define MIB2_SNMP_INC_COUNTER32(name, value)
+   #define MIB2_SET_TIME_TICKS(name, value)
+   #define MIB2_INC_COUNTER32(name, value)
 #endif
 
 //C++ guard
@@ -540,27 +505,19 @@ typedef struct
 
 typedef struct
 {
-#if (MIB2_SYS_GROUP_SUPPORT == ENABLED)
    Mib2SysGroup sysGroup;
-#endif
-#if (MIB2_IF_GROUP_SUPPORT == ENABLED)
    Mib2IfGroup ifGroup;
-#endif
-#if (MIB2_IP_GROUP_SUPPORT == ENABLED)
+#if (IPV4_SUPPORT == ENABLED)
    Mib2IpGroup ipGroup;
-#endif
-#if (MIB2_ICMP_GROUP_SUPPORT == ENABLED)
    Mib2IcmpGroup icmpGroup;
 #endif
-#if (MIB2_TCP_GROUP_SUPPORT == ENABLED)
+#if (TCP_SUPPORT == ENABLED)
    Mib2TcpGroup tcpGroup;
 #endif
-#if (MIB2_UDP_GROUP_SUPPORT == ENABLED)
+#if (UDP_SUPPORT == ENABLED)
    Mib2UdpGroup udpGroup;
 #endif
-#if (MIB2_SNMP_GROUP_SUPPORT == ENABLED)
    Mib2SnmpGroup snmpGroup;
-#endif
 } Mib2Base;
 
 

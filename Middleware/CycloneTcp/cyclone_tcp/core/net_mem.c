@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL MEM_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/net_mem.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net_mem.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Maximum number of chunks for dynamically allocated buffers
 #if (IPV4_SUPPORT == ENABLED && IPV6_SUPPORT == ENABLED)
@@ -278,13 +278,16 @@ NetBuffer *netBufferAlloc(size_t length)
  * @brief Dispose a multi-part buffer
  * @param[in] buffer Pointer to the multi-part buffer to be released
  **/
-
+#include "main.h"
 void netBufferFree(NetBuffer *buffer)
 {
    //Properly dispose data chunks
    netBufferSetLength(buffer, 0);
    //Release multi-part buffer
    memPoolFree(buffer);
+//   {volatile uint32_t n = 500 * 4; while(n > 0) n--;}
+//   HAL_Delay(1); //zafer
+   usleep(500);
 }
 
 
@@ -303,9 +306,7 @@ size_t netBufferGetLength(const NetBuffer *buffer)
 
    //Loop through data chunks
    for(i = 0; i < buffer->chunkCount; i++)
-   {
       length += buffer->chunk[i].length;
-   }
 
    //Return total length
    return length;

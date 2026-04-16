@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,27 +25,25 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL DNS_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "dns/dns_client.h"
-#include "dns/dns_common.h"
-#include "mdns/mdns_client.h"
-#include "mdns/mdns_responder.h"
-#include "mdns/mdns_common.h"
-#include "llmnr/llmnr_client.h"
-#include "llmnr/llmnr_responder.h"
-#include "debug.h"
+#include <string.h>
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_responder.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_common.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (DNS_CLIENT_SUPPORT == ENABLED || MDNS_CLIENT_SUPPORT == ENABLED || \
-   MDNS_RESPONDER_SUPPORT == ENABLED || LLMNR_CLIENT_SUPPORT == ENABLED || \
-   LLMNR_RESPONDER_SUPPORT == ENABLED)
+   MDNS_RESPONDER_SUPPORT == ENABLED)
 
 
 /**
@@ -129,8 +127,8 @@ size_t dnsEncodeName(const char_t *src, uint8_t *dest)
  * @return The position of the resource record that immediately follows the domain name
  **/
 
-size_t dnsParseName(const DnsHeader *message, size_t length, size_t pos,
-   char_t *dest, uint_t level)
+size_t dnsParseName(const DnsHeader *message,
+   size_t length, size_t pos, char_t *dest, uint_t level)
 {
    size_t n;
    size_t pointer;
@@ -239,8 +237,8 @@ size_t dnsParseName(const DnsHeader *message, size_t length, size_t pos,
  *   second domain name lexicographically precedes the first name
  **/
 
-int_t dnsCompareName(const DnsHeader *message, size_t length, size_t pos,
-   const char_t *name, uint_t level)
+int_t dnsCompareName(const DnsHeader *message, size_t length,
+   size_t pos, const char_t *name, uint_t level)
 {
    int_t res;
    size_t n;
@@ -338,9 +336,8 @@ int_t dnsCompareName(const DnsHeader *message, size_t length, size_t pos,
  *   second domain name lexicographically precedes the first name
  **/
 
-int_t dnsCompareEncodedName(const DnsHeader *message1, size_t length1,
-   size_t pos1, const DnsHeader *message2, size_t length2, size_t pos2,
-   uint_t level)
+int_t dnsCompareEncodedName(const DnsHeader *message1, size_t length1, size_t pos1,
+   const DnsHeader *message2, size_t length2, size_t pos2, uint_t level)
 {
    int_t res;
    size_t n;
@@ -372,13 +369,9 @@ int_t dnsCompareEncodedName(const DnsHeader *message1, size_t length1,
          //The domain name which still has remaining data is deemed
          //lexicographically later
          if(n1 < n2)
-         {
             return -1;
-         }
          else if(n1 > n2)
-         {
             return 1;
-         }
 
          //The domain names match each other
          return 0;
@@ -451,13 +444,9 @@ int_t dnsCompareEncodedName(const DnsHeader *message1, size_t length1,
          //The domain name which still has remaining data is deemed
          //lexicographically later
          if(n1 < n2)
-         {
             return -1;
-         }
          else if(n1 > n2)
-         {
             return 1;
-         }
 
          //Advance data pointer
          pos1 += n1;
@@ -467,59 +456,6 @@ int_t dnsCompareEncodedName(const DnsHeader *message1, size_t length1,
 
    //Malformed DNS message
    return -2;
-}
-
-
-/**
- * @brief Generate domain name for reverse DNS lookup (IPv4)
- * @param[in] ipv4Addr IPv4 address
- * @param[out] buffer Output buffer where to store the resulting domain name
- **/
-
-void dnsGenerateIpv4ReverseName(Ipv4Addr ipv4Addr, char_t *buffer)
-{
-   uint8_t *p;
-
-   //Cast the IPv4 address as byte array
-   p = (uint8_t *) &ipv4Addr;
-
-   //The decimal numbers are concatenated in the reverse order
-   osSprintf(buffer, "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8,
-      p[3], p[2], p[1], p[0]);
-}
-
-
-/**
- * @brief Generate domain name for reverse DNS lookup (IPv6)
- * @param[in] ipv6Addr IPv6 address
- * @param[out] buffer Output buffer where to store the resulting domain name
- **/
-
-void dnsGenerateIpv6ReverseName(const Ipv6Addr *ipv6Addr, char_t *buffer)
-{
-   uint_t i;
-   uint_t m;
-   uint_t n;
-   uint8_t digit;
-
-   //Generate the domain name for reverse DNS lookup
-   for(i = 0; i < 32; i++)
-   {
-      //Calculate the shift count
-      n = (31 - i) / 2;
-      m = (i % 2) * 4;
-
-      //Extract current nibble
-      digit = (ipv6Addr->b[n] >> m) & 0x0F;
-      //The nibbles are concatenated in the reverse order
-      buffer += osSprintf(buffer, "%" PRIx8, digit);
-
-      //Add a delimiter character
-      if(i != 31)
-      {
-         buffer += osSprintf(buffer, ".");
-      }
-   }
 }
 
 #endif

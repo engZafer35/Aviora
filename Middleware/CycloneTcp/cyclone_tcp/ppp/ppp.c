@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,26 +25,26 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL PPP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "ppp/ppp.h"
-#include "ppp/ppp_hdlc.h"
-#include "ppp/ppp_debug.h"
-#include "ppp/lcp.h"
-#include "ppp/ipcp.h"
-#include "ppp/ipv6cp.h"
-#include "ppp/pap.h"
-#include "ppp/chap.h"
-#include "mibs/mib2_module.h"
-#include "mibs/if_mib_module.h"
-#include "str.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ppp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ppp_hdlc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ppp_debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/lcp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ipcp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ipv6cp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/pap.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/chap.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib2_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/if_mib_module.h"
+#include "../../../CycloneTcp/common/str.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (PPP_SUPPORT == ENABLED)
@@ -203,7 +203,6 @@ error_t pppSetTimeout(NetInterface *interface, systime_t timeout)
    //Check parameters
    if(interface == NULL)
       return ERROR_INVALID_PARAMETER;
-
    //Make sure PPP has been properly configured
    if(interface->pppContext == NULL)
       return ERROR_NOT_CONFIGURED;
@@ -233,23 +232,14 @@ error_t pppSetTimeout(NetInterface *interface, systime_t timeout)
  * @return Error code
  **/
 
-error_t pppSetAuthInfo(NetInterface *interface, const char_t *username,
-   const char_t *password)
+error_t pppSetAuthInfo(NetInterface *interface,
+   const char_t *username, const char_t *password)
 {
    PppContext *context;
 
    //Check parameters
    if(interface == NULL || username == NULL || password == NULL)
       return ERROR_INVALID_PARAMETER;
-
-   //Make sure the length of the user name is acceptable
-   if(osStrlen(username) > PPP_MAX_USERNAME_LEN)
-      return ERROR_INVALID_LENGTH;
-
-   //Make sure the length of the password is acceptable
-   if(osStrlen(password) > PPP_MAX_PASSWORD_LEN)
-      return ERROR_INVALID_LENGTH;
-
    //Make sure PPP has been properly configured
    if(interface->pppContext == NULL)
       return ERROR_NOT_CONFIGURED;
@@ -261,9 +251,9 @@ error_t pppSetAuthInfo(NetInterface *interface, const char_t *username,
    osAcquireMutex(&netMutex);
 
    //Save user name
-   osStrcpy(context->username, username);
+   strSafeCopy(context->username, username, PPP_MAX_USERNAME_LEN);
    //Save password
-   osStrcpy(context->password, password);
+   strSafeCopy(context->password, password, PPP_MAX_PASSWORD_LEN);
 
    //Release exclusive access
    osReleaseMutex(&netMutex);
@@ -336,7 +326,6 @@ error_t pppSendAtCommand(NetInterface *interface, const char_t *data)
    //Check parameters
    if(interface == NULL)
       return ERROR_INVALID_PARAMETER;
-
    //Make sure PPP has been properly configured
    if(interface->pppContext == NULL)
       return ERROR_NOT_CONFIGURED;
@@ -484,7 +473,6 @@ error_t pppConnect(NetInterface *interface)
    //Check parameters
    if(interface == NULL)
       return ERROR_INVALID_PARAMETER;
-
    //Make sure PPP has been properly configured
    if(interface->pppContext == NULL)
       return ERROR_NOT_CONFIGURED;
@@ -753,7 +741,6 @@ error_t pppClose(NetInterface *interface)
    //Check parameters
    if(interface == NULL)
       return ERROR_INVALID_PARAMETER;
-
    //Make sure PPP has been properly configured
    if(interface->pppContext == NULL)
       return ERROR_NOT_CONFIGURED;
@@ -921,7 +908,7 @@ void pppProcessFrame(NetInterface *interface, uint8_t *frame, size_t length,
 
    //Total number of octets received on the interface, including framing
    //characters
-   MIB2_IF_INC_COUNTER32(ifTable[interface->index].ifInOctets, length);
+   MIB2_INC_COUNTER32(ifGroup.ifTable[interface->index].ifInOctets, length);
    IF_MIB_INC_COUNTER32(ifTable[interface->index].ifInOctets, length);
    IF_MIB_INC_COUNTER64(ifXTable[interface->index].ifHCInOctets, length);
 
@@ -1032,8 +1019,8 @@ void pppProcessFrame(NetInterface *interface, uint8_t *frame, size_t length,
  * @return Error code
  **/
 
-error_t pppSendFrame(NetInterface *interface, NetBuffer *buffer, size_t offset,
-   uint16_t protocol)
+error_t pppSendFrame(NetInterface *interface,
+   NetBuffer *buffer, size_t offset, uint16_t protocol)
 {
    error_t error;
    size_t length;
@@ -1117,7 +1104,7 @@ error_t pppSendFrame(NetInterface *interface, NetBuffer *buffer, size_t offset,
 
    //Total number of octets transmitted out of the interface, including
    //framing characters
-   MIB2_IF_INC_COUNTER32(ifTable[interface->index].ifOutOctets, length);
+   MIB2_INC_COUNTER32(ifGroup.ifTable[interface->index].ifOutOctets, length);
    IF_MIB_INC_COUNTER32(ifTable[interface->index].ifOutOctets, length);
    IF_MIB_INC_COUNTER64(ifXTable[interface->index].ifHCOutOctets, length);
 

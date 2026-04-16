@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _TCP_H
@@ -33,7 +33,8 @@
 
 //Dependencies
 #include "net_config.h"
-#include "core/ip.h"
+
+#include "../../../CycloneTcp/cyclone_tcp/core/ip.h"
 
 //TCP support
 #ifndef TCP_SUPPORT
@@ -322,10 +323,8 @@ typedef enum
 } TcpOptionKind;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -334,7 +333,7 @@ typedef enum
  * @brief TCP header
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t srcPort;       //0-1
    uint16_t destPort;      //2-3
@@ -355,25 +354,23 @@ typedef __packed_struct
    uint16_t checksum;      //16-17
    uint16_t urgentPointer; //18-19
    uint8_t options[];      //20
-} TcpHeader;
+} __end_packed TcpHeader;
 
 
 /**
  * @brief TCP option
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint8_t kind;
    uint8_t length;
    uint8_t value[];
-} TcpOption;
+} __end_packed TcpOption;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
 
@@ -405,9 +402,6 @@ typedef struct _TcpSynQueueItem
    IpAddr destAddr;
    uint32_t isn;
    uint16_t mss;
-#if (TCP_SACK_SUPPORT == ENABLED)
-   bool_t sackPermitted;
-#endif
 } TcpSynQueueItem;
 
 
@@ -451,22 +445,17 @@ extern systime_t tcpTickCounter;
 
 //TCP related functions
 error_t tcpInit(void);
-
-error_t tcpSetInitialRto(NetInterface *interface, systime_t initialRto);
-
 uint16_t tcpGetDynamicPort(void);
 
-error_t tcpConnect(Socket *socket, const IpAddr *remoteIpAddr,
-   uint16_t remotePort);
-
+error_t tcpConnect(Socket *socket, const IpAddr *remoteIpAddr, uint16_t remotePort);
 error_t tcpListen(Socket *socket, uint_t backlog);
 Socket *tcpAccept(Socket *socket, IpAddr *clientIpAddr, uint16_t *clientPort);
 
-error_t tcpSend(Socket *socket, const uint8_t *data, size_t length,
-   size_t *written, uint_t flags);
+error_t tcpSend(Socket *socket, const uint8_t *data,
+   size_t length, size_t *written, uint_t flags);
 
-error_t tcpReceive(Socket *socket, uint8_t *data, size_t size,
-   size_t *received, uint_t flags);
+error_t tcpReceive(Socket *socket, uint8_t *data,
+   size_t size, size_t *received, uint_t flags);
 
 error_t tcpShutdown(Socket *socket, uint_t how);
 error_t tcpAbort(Socket *socket);

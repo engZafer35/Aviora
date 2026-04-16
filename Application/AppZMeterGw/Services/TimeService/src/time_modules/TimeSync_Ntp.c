@@ -37,75 +37,75 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
         return FAILURE;
     }
 
-    struct addrinfo hints;
-    struct addrinfo *res = NULL;
-    char portStr[8];
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family   = AF_INET;
-    hints.ai_socktype = SOCK_DGRAM;
-
-    (void)snprintf(portStr, sizeof(portStr), "%u", (unsigned)gs_ntpPort);
-
-    if (0 != getaddrinfo(gs_ntpHost, portStr, &hints, &res))
-    {
-        DEBUG_ERROR("->[E] NTP DNS failed (%s)", gs_ntpHost);
-        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP DNS failed");
-        return FAILURE;
-    }
-
-    int sock = SOCKET(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (sock < 0)
-    {
-        freeaddrinfo(res);
-        DEBUG_ERROR("->[E] NTP socket failed");
-        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP socket failed");
-        return FAILURE;
-    }
-
-    /* Set receive timeout (best-effort) */
-#if defined(SO_RCVTIMEO)
-    struct timeval tv;
-    tv.tv_sec = 3;
-    tv.tv_usec = 0;
-    (void)SETSOCKOPT(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
-#endif
-
-    U8 pkt[NTP_PACKET_SIZE];
-    memset(pkt, 0, sizeof(pkt));
-    /* LI=0, VN=4, Mode=3(client) */
-    pkt[0] = 0x23;
-
-    if ((int)sizeof(pkt) != SENDTO(sock, pkt, sizeof(pkt), 0, res->ai_addr, (SOCKLEN_t)res->ai_addrlen))
-    {
-        CLOSESOCKET(sock);
-        freeaddrinfo(res);
-        DEBUG_ERROR("->[E] NTP sendto failed");
-        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP sendto failed");
-        return FAILURE;
-    }
-
-    struct sockaddr_storage from;
-    SOCKLEN_t fromLen = (SOCKLEN_t)sizeof(from);
-    int r = RECVFROM(sock, pkt, sizeof(pkt), 0, (struct sockaddr *)&from, &fromLen);
-
-    CLOSESOCKET(sock);
-    freeaddrinfo(res);
-
-    if (r < (int)NTP_PACKET_SIZE)
-    {
-        DEBUG_ERROR("->[E] NTP recv failed");
-        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP recv failed");
-        return FAILURE;
-    }
-
-    /* Transmit Timestamp seconds field at bytes 40..43 (big-endian) */
-    U32 sec1900 = ((U32)pkt[40] << 24) | ((U32)pkt[41] << 16) | ((U32)pkt[42] << 8) | (U32)pkt[43];
-    if (sec1900 < NTP_EPOCH_OFFSET)
-    {
-        return FAILURE;
-    }
-    *outEpochUtc = sec1900 - NTP_EPOCH_OFFSET;
+//    struct addrinfo hints;
+//    struct addrinfo *res = NULL;
+//    char portStr[8];
+//
+//    memset(&hints, 0, sizeof(hints));
+//    hints.ai_family   = AF_INET;
+//    hints.ai_socktype = SOCK_DGRAM;
+//
+//    (void)snprintf(portStr, sizeof(portStr), "%u", (unsigned)gs_ntpPort);
+//
+//    if (0 != getaddrinfo(gs_ntpHost, portStr, &hints, &res))
+//    {
+//        DEBUG_ERROR("->[E] NTP DNS failed (%s)", gs_ntpHost);
+//        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP DNS failed");
+//        return FAILURE;
+//    }
+//
+//    int sock = SOCKET(res->ai_family, res->ai_socktype, res->ai_protocol);
+//    if (sock < 0)
+//    {
+//        freeaddrinfo(res);
+//        DEBUG_ERROR("->[E] NTP socket failed");
+//        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP socket failed");
+//        return FAILURE;
+//    }
+//
+//    /* Set receive timeout (best-effort) */
+//#if defined(SO_RCVTIMEO)
+//    struct timeval tv;
+//    tv.tv_sec = 3;
+//    tv.tv_usec = 0;
+//    (void)SETSOCKOPT(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+//#endif
+//
+//    U8 pkt[NTP_PACKET_SIZE];
+//    memset(pkt, 0, sizeof(pkt));
+//    /* LI=0, VN=4, Mode=3(client) */
+//    pkt[0] = 0x23;
+//
+//    if ((int)sizeof(pkt) != SENDTO(sock, pkt, sizeof(pkt), 0, res->ai_addr, (SOCKLEN_t)res->ai_addrlen))
+//    {
+//        CLOSESOCKET(sock);
+//        freeaddrinfo(res);
+//        DEBUG_ERROR("->[E] NTP sendto failed");
+//        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP sendto failed");
+//        return FAILURE;
+//    }
+//
+//    struct sockaddr_storage from;
+//    SOCKLEN_t fromLen = (SOCKLEN_t)sizeof(from);
+//    int r = RECVFROM(sock, pkt, sizeof(pkt), 0, (struct sockaddr *)&from, &fromLen);
+//
+//    CLOSESOCKET(sock);
+//    freeaddrinfo(res);
+//
+//    if (r < (int)NTP_PACKET_SIZE)
+//    {
+//        DEBUG_ERROR("->[E] NTP recv failed");
+//        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP recv failed");
+//        return FAILURE;
+//    }
+//
+//    /* Transmit Timestamp seconds field at bytes 40..43 (big-endian) */
+//    U32 sec1900 = ((U32)pkt[40] << 24) | ((U32)pkt[41] << 16) | ((U32)pkt[42] << 8) | (U32)pkt[43];
+//    if (sec1900 < NTP_EPOCH_OFFSET)
+//    {
+//        return FAILURE;
+//    }
+//    *outEpochUtc = sec1900 - NTP_EPOCH_OFFSET;
     return SUCCESS;
 }
 

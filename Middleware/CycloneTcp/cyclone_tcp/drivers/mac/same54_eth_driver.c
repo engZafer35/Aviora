@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,10 +33,10 @@
 
 //Dependencies
 #include <limits.h>
-#include "sam.h"
-#include "core/net.h"
-#include "drivers/mac/same54_eth_driver.h"
-#include "debug.h"
+#include "same54.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/same54_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -124,19 +124,19 @@ error_t same54EthInit(NetInterface *interface)
    nicDriverInterface = interface;
 
    //Enable GMAC bus clocks (CLK_GMAC_APB and CLK_GMAC_AHB)
-   MCLK_REGS->MCLK_APBCMASK |= MCLK_APBCMASK_GMAC_Msk;
-   MCLK_REGS->MCLK_AHBMASK |= MCLK_AHBMASK_GMAC_Msk;
+   MCLK->APBCMASK.bit.GMAC_ = 1;
+   MCLK->AHBMASK.bit.GMAC_ = 1;
 
    //Disable transmit and receive circuits
-   GMAC_REGS->GMAC_NCR = 0;
+   GMAC->NCR.reg = 0;
 
    //GPIO configuration
    same54EthInitGpio(interface);
 
    //Configure MDC clock speed
-   GMAC_REGS->GMAC_NCFGR = GMAC_NCFGR_CLK(5);
+   GMAC->NCFGR.reg = GMAC_NCFGR_CLK(5);
    //Enable management port (MDC and MDIO)
-   GMAC_REGS->GMAC_NCR |= GMAC_NCR_MPE_Msk;
+   GMAC->NCR.reg |= GMAC_NCR_MPE;
 
    //Valid Ethernet PHY or switch driver?
    if(interface->phyDriver != NULL)
@@ -162,44 +162,38 @@ error_t same54EthInit(NetInterface *interface)
    }
 
    //Set the MAC address of the station
-   GMAC_REGS->SA[0].GMAC_SAB = interface->macAddr.w[0] | (interface->macAddr.w[1] << 16);
-   GMAC_REGS->SA[0].GMAC_SAT = interface->macAddr.w[2];
+   GMAC->Sa[0].SAB.reg = interface->macAddr.w[0] | (interface->macAddr.w[1] << 16);
+   GMAC->Sa[0].SAT.reg = interface->macAddr.w[2];
 
    //The MAC supports 3 additional addresses for unicast perfect filtering
-   GMAC_REGS->SA[1].GMAC_SAB = 0;
-   GMAC_REGS->SA[2].GMAC_SAB = 0;
-   GMAC_REGS->SA[3].GMAC_SAB = 0;
+   GMAC->Sa[1].SAB.reg = 0;
+   GMAC->Sa[2].SAB.reg = 0;
+   GMAC->Sa[3].SAB.reg = 0;
 
    //Initialize hash table
-   GMAC_REGS->GMAC_HRB = 0;
-   GMAC_REGS->GMAC_HRT = 0;
+   GMAC->HRB.reg = 0;
+   GMAC->HRT.reg = 0;
 
    //Configure the receive filter
-   GMAC_REGS->GMAC_NCFGR |= GMAC_NCFGR_MAXFS_Msk | GMAC_NCFGR_MTIHEN_Msk;
+   GMAC->NCFGR.reg |= GMAC_NCFGR_MAXFS | GMAC_NCFGR_MTIHEN;
 
    //Initialize buffer descriptors
    same54EthInitBufferDesc(interface);
 
    //Clear transmit status register
-   GMAC_REGS->GMAC_TSR = GMAC_TSR_HRESP_Msk | GMAC_TSR_UND_Msk |
-      GMAC_TSR_TXCOMP_Msk | GMAC_TSR_TFC_Msk | GMAC_TSR_TXGO_Msk |
-      GMAC_TSR_RLE_Msk | GMAC_TSR_COL_Msk | GMAC_TSR_UBR_Msk;
-
+   GMAC->TSR.reg = GMAC_TSR_HRESP | GMAC_TSR_UND | GMAC_TSR_TXCOMP | GMAC_TSR_TFC |
+      GMAC_TSR_TXGO | GMAC_TSR_RLE | GMAC_TSR_COL | GMAC_TSR_UBR;
    //Clear receive status register
-   GMAC_REGS->GMAC_RSR = GMAC_RSR_HNO_Msk | GMAC_RSR_RXOVR_Msk |
-      GMAC_RSR_REC_Msk | GMAC_RSR_BNA_Msk;
+   GMAC->RSR.reg = GMAC_RSR_HNO | GMAC_RSR_RXOVR | GMAC_RSR_REC | GMAC_RSR_BNA;
 
    //First disable all GMAC interrupts
-   GMAC_REGS->GMAC_IDR = 0xFFFFFFFF;
-
+   GMAC->IDR.reg = 0xFFFFFFFF;
    //Only the desired ones are enabled
-   GMAC_REGS->GMAC_IER = GMAC_IER_HRESP_Msk | GMAC_IER_ROVR_Msk |
-      GMAC_IER_TCOMP_Msk | GMAC_IER_TFC_Msk | GMAC_IER_RLEX_Msk |
-      GMAC_IER_TUR_Msk | GMAC_IER_RXUBR_Msk | GMAC_IER_RCOMP_Msk;
+   GMAC->IER.reg = GMAC_IER_HRESP | GMAC_IER_ROVR | GMAC_IER_TCOMP | GMAC_IER_TFC |
+      GMAC_IER_RLEX | GMAC_IER_TUR | GMAC_IER_RXUBR | GMAC_IER_RCOMP;
 
-   //Read GMAC_ISR register to clear any pending interrupt
-   status = GMAC_REGS->GMAC_ISR;
-   (void) status;
+   //Read GMAC ISR register to clear any pending interrupt
+   status = GMAC->ISR.reg;
 
    //Set priority grouping (3 bits for pre-emption priority, no bits for subpriority)
    NVIC_SetPriorityGrouping(SAME54_ETH_IRQ_PRIORITY_GROUPING);
@@ -209,7 +203,7 @@ error_t same54EthInit(NetInterface *interface)
       SAME54_ETH_IRQ_GROUP_PRIORITY, SAME54_ETH_IRQ_SUB_PRIORITY));
 
    //Enable the GMAC to transmit and receive data
-   GMAC_REGS->GMAC_NCR |= GMAC_NCR_TXEN_Msk | GMAC_NCR_RXEN_Msk;
+   GMAC->NCR.reg |= GMAC_NCR_TXEN | GMAC_NCR_RXEN;
 
    //Accept any packets from the upper layer
    osSetEvent(&interface->nicTxEvent);
@@ -219,158 +213,139 @@ error_t same54EthInit(NetInterface *interface)
 }
 
 
+//SAME54-Xplained-Pro or SAME54-Curiosity-Ultra evaluation board?
+#if defined(USE_SAME54_XPLAINED_PRO) || defined(USE_SAME54_CURIOSITY_ULTRA)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void same54EthInitGpio(NetInterface *interface)
+void same54EthInitGpio(NetInterface *interface)
 {
 //SAME54-Xplained-Pro evaluation board?
 #if defined(USE_SAME54_XPLAINED_PRO)
-   uint32_t temp;
-
    //Enable PORT bus clock (CLK_PORT_APB)
-   MCLK_REGS->MCLK_APBBMASK |= MCLK_APBBMASK_PORT_Msk;
+   MCLK->APBBMASK.bit.PORT_ = 1;
 
    //Configure GRX1 (PA12)
-   PORT_REGS->GROUP[0].PORT_PINCFG[12] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[0].PORT_PMUX[6] & ~PORT_PMUX_PMUXE_Msk;
-   PORT_REGS->GROUP[0].PORT_PMUX[6] = temp | PORT_PMUX_PMUXE(MUX_PA12L_GMAC_GRX1);
+   PORT->Group[0].PINCFG[12].bit.PMUXEN = 1;
+   PORT->Group[0].PMUX[6].bit.PMUXE = MUX_PA12L_GMAC_GRX1;
 
    //Configure GRX0 (PA13)
-   PORT_REGS->GROUP[0].PORT_PINCFG[13] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[0].PORT_PMUX[6] & ~PORT_PMUX_PMUXO_Msk;
-   PORT_REGS->GROUP[0].PORT_PMUX[6] = temp | PORT_PMUX_PMUXO(MUX_PA13L_GMAC_GRX0);
+   PORT->Group[0].PINCFG[13].bit.PMUXEN = 1;
+   PORT->Group[0].PMUX[6].bit.PMUXO = MUX_PA13L_GMAC_GRX0;
 
    //Configure GTXCK (PA14)
-   PORT_REGS->GROUP[0].PORT_PINCFG[14] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[0].PORT_PMUX[7] & ~PORT_PMUX_PMUXE_Msk;
-   PORT_REGS->GROUP[0].PORT_PMUX[7] = temp | PORT_PMUX_PMUXE(MUX_PA14L_GMAC_GTXCK);
+   PORT->Group[0].PINCFG[14].bit.PMUXEN = 1;
+   PORT->Group[0].PMUX[7].bit.PMUXE = MUX_PA14L_GMAC_GTXCK;
 
    //Configure GRXER (PA15)
-   PORT_REGS->GROUP[0].PORT_PINCFG[15] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[0].PORT_PMUX[7] & ~PORT_PMUX_PMUXO_Msk;
-   PORT_REGS->GROUP[0].PORT_PMUX[7] = temp | PORT_PMUX_PMUXO(MUX_PA15L_GMAC_GRXER);
+   PORT->Group[0].PINCFG[15].bit.PMUXEN = 1;
+   PORT->Group[0].PMUX[7].bit.PMUXO = MUX_PA15L_GMAC_GRXER;
 
    //Configure GTXEN (PA17)
-   PORT_REGS->GROUP[0].PORT_PINCFG[17] |= PORT_PINCFG_DRVSTR_Msk;
-   PORT_REGS->GROUP[0].PORT_PINCFG[17] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[0].PORT_PMUX[8] & ~PORT_PMUX_PMUXO_Msk;
-   PORT_REGS->GROUP[0].PORT_PMUX[8] = temp | PORT_PMUX_PMUXO(MUX_PA17L_GMAC_GTXEN);
+   PORT->Group[0].PINCFG[17].bit.DRVSTR = 1;
+   PORT->Group[0].PINCFG[17].bit.PMUXEN = 1;
+   PORT->Group[0].PMUX[8].bit.PMUXO = MUX_PA17L_GMAC_GTXEN;
 
    //Configure GTX0 (PA18)
-   PORT_REGS->GROUP[0].PORT_PINCFG[18] |= PORT_PINCFG_DRVSTR_Msk;
-   PORT_REGS->GROUP[0].PORT_PINCFG[18] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[0].PORT_PMUX[9] & ~PORT_PMUX_PMUXE_Msk;
-   PORT_REGS->GROUP[0].PORT_PMUX[9] = temp | PORT_PMUX_PMUXE(MUX_PA18L_GMAC_GTX0);
+   PORT->Group[0].PINCFG[18].bit.DRVSTR = 1;
+   PORT->Group[0].PINCFG[18].bit.PMUXEN = 1;
+   PORT->Group[0].PMUX[9].bit.PMUXE = MUX_PA18L_GMAC_GTX0;
 
    //Configure GTX1 (PA19)
-   PORT_REGS->GROUP[0].PORT_PINCFG[19] |= PORT_PINCFG_DRVSTR_Msk;
-   PORT_REGS->GROUP[0].PORT_PINCFG[19] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[0].PORT_PMUX[9] & ~PORT_PMUX_PMUXO_Msk;
-   PORT_REGS->GROUP[0].PORT_PMUX[9] = temp | PORT_PMUX_PMUXO(MUX_PA19L_GMAC_GTX1);
+   PORT->Group[0].PINCFG[19].bit.DRVSTR = 1;
+   PORT->Group[0].PINCFG[19].bit.PMUXEN = 1;
+   PORT->Group[0].PMUX[9].bit.PMUXO = MUX_PA19L_GMAC_GTX1;
 
    //Configure GMDC (PC11)
-   PORT_REGS->GROUP[2].PORT_PINCFG[11] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[2].PORT_PMUX[5] & ~PORT_PMUX_PMUXO_Msk;
-   PORT_REGS->GROUP[2].PORT_PMUX[5] = temp | PORT_PMUX_PMUXO(MUX_PC11L_GMAC_GMDC);
+   PORT->Group[2].PINCFG[11].bit.PMUXEN = 1;
+   PORT->Group[2].PMUX[5].bit.PMUXO = MUX_PC11L_GMAC_GMDC;
 
    //Configure GMDIO (PC12)
-   PORT_REGS->GROUP[2].PORT_PINCFG[12] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[2].PORT_PMUX[6] & ~PORT_PMUX_PMUXE_Msk;
-   PORT_REGS->GROUP[2].PORT_PMUX[6] = temp | PORT_PMUX_PMUXE(MUX_PC12L_GMAC_GMDIO);
+   PORT->Group[2].PINCFG[12].bit.PMUXEN = 1;
+   PORT->Group[2].PMUX[6].bit.PMUXE = MUX_PC12L_GMAC_GMDIO;
 
    //Configure GRXDV (PC20)
-   PORT_REGS->GROUP[2].PORT_PINCFG[20] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[2].PORT_PMUX[10] & ~PORT_PMUX_PMUXE_Msk;
-   PORT_REGS->GROUP[2].PORT_PMUX[10] = temp | PORT_PMUX_PMUXE(MUX_PC20L_GMAC_GRXDV);
+   PORT->Group[2].PINCFG[20].bit.PMUXEN = 1;
+   PORT->Group[2].PMUX[10].bit.PMUXE = MUX_PC20L_GMAC_GRXDV;
 
    //Select RMII operation mode
-   GMAC_REGS->GMAC_UR &= ~GMAC_UR_MII_Msk;
+   GMAC->UR.bit.MII = 0;
 
    //Configure PHY_RESET (PC21) as an output
-   PORT_REGS->GROUP[2].PORT_DIRSET = PORT_PC21;
+   PORT->Group[2].DIRSET.reg = PORT_PC21;
 
    //Reset PHY transceiver
-   PORT_REGS->GROUP[2].PORT_OUTCLR = PORT_PC21;
+   PORT->Group[2].OUTCLR.reg = PORT_PC21;
    sleep(10);
-   PORT_REGS->GROUP[2].PORT_OUTSET = PORT_PC21;
+   PORT->Group[2].OUTSET.reg = PORT_PC21;
    sleep(10);
 
 //SAME54-Curiosity-Ultra evaluation board?
 #elif defined(USE_SAME54_CURIOSITY_ULTRA)
-   uint32_t temp;
-
    //Enable PORT bus clock (CLK_PORT_APB)
-   MCLK_REGS->MCLK_APBBMASK |= MCLK_APBBMASK_PORT_Msk;
+   MCLK->APBBMASK.bit.PORT_ = 1;
 
    //Configure GRX1 (PA12)
-   PORT_REGS->GROUP[0].PORT_PINCFG[12] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[0].PORT_PMUX[6] & ~PORT_PMUX_PMUXE_Msk;
-   PORT_REGS->GROUP[0].PORT_PMUX[6] = temp | PORT_PMUX_PMUXE(MUX_PA12L_GMAC_GRX1);
+   PORT->Group[0].PINCFG[12].bit.PMUXEN = 1;
+   PORT->Group[0].PMUX[6].bit.PMUXE = MUX_PA12L_GMAC_GRX1;
 
    //Configure GRX0 (PA13)
-   PORT_REGS->GROUP[0].PORT_PINCFG[13] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[0].PORT_PMUX[6] & ~PORT_PMUX_PMUXO_Msk;
-   PORT_REGS->GROUP[0].PORT_PMUX[6] = temp | PORT_PMUX_PMUXO(MUX_PA13L_GMAC_GRX0);
+   PORT->Group[0].PINCFG[13].bit.PMUXEN = 1;
+   PORT->Group[0].PMUX[6].bit.PMUXO = MUX_PA13L_GMAC_GRX0;
 
    //Configure GTXCK (PA14)
-   PORT_REGS->GROUP[0].PORT_PINCFG[14] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[0].PORT_PMUX[7] & ~PORT_PMUX_PMUXE_Msk;
-   PORT_REGS->GROUP[0].PORT_PMUX[7] = temp | PORT_PMUX_PMUXE(MUX_PA14L_GMAC_GTXCK);
+   PORT->Group[0].PINCFG[14].bit.PMUXEN = 1;
+   PORT->Group[0].PMUX[7].bit.PMUXE = MUX_PA14L_GMAC_GTXCK;
 
    //Configure GRXER (PA15)
-   PORT_REGS->GROUP[0].PORT_PINCFG[15] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[0].PORT_PMUX[7] & ~PORT_PMUX_PMUXO_Msk;
-   PORT_REGS->GROUP[0].PORT_PMUX[7] = temp | PORT_PMUX_PMUXO(MUX_PA15L_GMAC_GRXER);
+   PORT->Group[0].PINCFG[15].bit.PMUXEN = 1;
+   PORT->Group[0].PMUX[7].bit.PMUXO = MUX_PA15L_GMAC_GRXER;
 
    //Configure GTXEN (PA17)
-   PORT_REGS->GROUP[0].PORT_PINCFG[17] |= PORT_PINCFG_DRVSTR_Msk;
-   PORT_REGS->GROUP[0].PORT_PINCFG[17] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[0].PORT_PMUX[8] & ~PORT_PMUX_PMUXO_Msk;
-   PORT_REGS->GROUP[0].PORT_PMUX[8] = temp | PORT_PMUX_PMUXO(MUX_PA17L_GMAC_GTXEN);
+   PORT->Group[0].PINCFG[17].bit.DRVSTR = 1;
+   PORT->Group[0].PINCFG[17].bit.PMUXEN = 1;
+   PORT->Group[0].PMUX[8].bit.PMUXO = MUX_PA17L_GMAC_GTXEN;
 
    //Configure GTX0 (PA18)
-   PORT_REGS->GROUP[0].PORT_PINCFG[18] |= PORT_PINCFG_DRVSTR_Msk;
-   PORT_REGS->GROUP[0].PORT_PINCFG[18] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[0].PORT_PMUX[9] & ~PORT_PMUX_PMUXE_Msk;
-   PORT_REGS->GROUP[0].PORT_PMUX[9] = temp | PORT_PMUX_PMUXE(MUX_PA18L_GMAC_GTX0);
+   PORT->Group[0].PINCFG[18].bit.DRVSTR = 1;
+   PORT->Group[0].PINCFG[18].bit.PMUXEN = 1;
+   PORT->Group[0].PMUX[9].bit.PMUXE = MUX_PA18L_GMAC_GTX0;
 
    //Configure GTX1 (PA19)
-   PORT_REGS->GROUP[0].PORT_PINCFG[19] |= PORT_PINCFG_DRVSTR_Msk;
-   PORT_REGS->GROUP[0].PORT_PINCFG[19] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[0].PORT_PMUX[9] & ~PORT_PMUX_PMUXO_Msk;
-   PORT_REGS->GROUP[0].PORT_PMUX[9] = temp | PORT_PMUX_PMUXO(MUX_PA19L_GMAC_GTX1);
+   PORT->Group[0].PINCFG[19].bit.DRVSTR = 1;
+   PORT->Group[0].PINCFG[19].bit.PMUXEN = 1;
+   PORT->Group[0].PMUX[9].bit.PMUXO = MUX_PA19L_GMAC_GTX1;
 
    //Configure GRXDV (PC20)
-   PORT_REGS->GROUP[2].PORT_PINCFG[20] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[2].PORT_PMUX[10] & ~PORT_PMUX_PMUXE_Msk;
-   PORT_REGS->GROUP[2].PORT_PMUX[10] = temp | PORT_PMUX_PMUXE(MUX_PC20L_GMAC_GRXDV);
+   PORT->Group[2].PINCFG[20].bit.PMUXEN = 1;
+   PORT->Group[2].PMUX[10].bit.PMUXE = MUX_PC20L_GMAC_GRXDV;
 
    //Configure GMDC (PC22)
-   PORT_REGS->GROUP[2].PORT_PINCFG[22] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[2].PORT_PMUX[11] & ~PORT_PMUX_PMUXE_Msk;
-   PORT_REGS->GROUP[2].PORT_PMUX[11] = temp | PORT_PMUX_PMUXE(MUX_PC22L_GMAC_GMDC);
+   PORT->Group[2].PINCFG[22].bit.PMUXEN = 1;
+   PORT->Group[2].PMUX[11].bit.PMUXE = MUX_PC22L_GMAC_GMDC;
 
    //Configure GMDIO (PC23)
-   PORT_REGS->GROUP[2].PORT_PINCFG[23] |= PORT_PINCFG_PMUXEN_Msk;
-   temp = PORT_REGS->GROUP[2].PORT_PMUX[11] & ~PORT_PMUX_PMUXO_Msk;
-   PORT_REGS->GROUP[2].PORT_PMUX[11] = temp | PORT_PMUX_PMUXO(MUX_PC23L_GMAC_GMDIO);
+   PORT->Group[2].PINCFG[23].bit.PMUXEN = 1;
+   PORT->Group[2].PMUX[11].bit.PMUXO = MUX_PC23L_GMAC_GMDIO;
 
    //Select RMII operation mode
-   GMAC_REGS->GMAC_UR &= ~GMAC_UR_MII_Msk;
+   GMAC->UR.bit.MII = 0;
 
    //Configure PHY_RESET (PC18) as an output
-   PORT_REGS->GROUP[2].PORT_DIRSET = PORT_PC18;
+   PORT->Group[2].DIRSET.reg = PORT_PC18;
 
    //Reset PHY transceiver
-   PORT_REGS->GROUP[2].PORT_OUTCLR = PORT_PC18;
+   PORT->Group[2].OUTCLR.reg = PORT_PC18;
    sleep(10);
-   PORT_REGS->GROUP[2].PORT_OUTSET = PORT_PC18;
+   PORT->Group[2].OUTSET.reg = PORT_PC18;
    sleep(10);
 #endif
 }
+
+#endif
 
 
 /**
@@ -416,9 +391,9 @@ void same54EthInitBufferDesc(NetInterface *interface)
    rxBufferIndex = 0;
 
    //Start location of the TX descriptor list
-   GMAC_REGS->GMAC_TBQB = (uint32_t) txBufferDesc;
+   GMAC->TBQB.reg = (uint32_t) txBufferDesc;
    //Start location of the RX descriptor list
-   GMAC_REGS->GMAC_RBQB = (uint32_t) rxBufferDesc;
+   GMAC->RBQB.reg = (uint32_t) rxBufferDesc;
 }
 
 
@@ -524,20 +499,18 @@ void GMAC_Handler(void)
    //This flag will be set if a higher priority task must be woken
    flag = FALSE;
 
-   //Each time the software reads GMAC_ISR, it has to check the contents
-   //of GMAC_TSR, GMAC_RSR and GMAC_NSR
-   isr = GMAC_REGS->GMAC_ISR;
-   tsr = GMAC_REGS->GMAC_TSR;
-   rsr = GMAC_REGS->GMAC_RSR;
-   (void) isr;
+   //Each time the software reads GMAC_ISR, it has to check the
+   //contents of GMAC_TSR, GMAC_RSR and GMAC_NSR
+   isr = GMAC->ISR.reg;
+   tsr = GMAC->TSR.reg;
+   rsr = GMAC->RSR.reg;
 
    //Packet transmitted?
-   if((tsr & (GMAC_TSR_HRESP_Msk | GMAC_TSR_UND_Msk |
-      GMAC_TSR_TXCOMP_Msk | GMAC_TSR_TFC_Msk | GMAC_TSR_TXGO_Msk |
-      GMAC_TSR_RLE_Msk | GMAC_TSR_COL_Msk | GMAC_TSR_UBR_Msk)) != 0)
+   if((tsr & (GMAC_TSR_HRESP | GMAC_TSR_UND | GMAC_TSR_TXCOMP | GMAC_TSR_TFC |
+      GMAC_TSR_TXGO | GMAC_TSR_RLE | GMAC_TSR_COL | GMAC_TSR_UBR)) != 0)
    {
       //Only clear TSR flags that are currently set
-      GMAC_REGS->GMAC_TSR = tsr;
+      GMAC->TSR.reg = tsr;
 
       //Check whether the TX buffer is available for writing
       if((txBufferDesc[txBufferIndex].status & GMAC_TX_USED) != 0)
@@ -548,8 +521,7 @@ void GMAC_Handler(void)
    }
 
    //Packet received?
-   if((rsr & (GMAC_RSR_HNO_Msk | GMAC_RSR_RXOVR_Msk | GMAC_RSR_REC_Msk |
-      GMAC_RSR_BNA_Msk)) != 0)
+   if((rsr & (GMAC_RSR_HNO | GMAC_RSR_RXOVR | GMAC_RSR_REC | GMAC_RSR_BNA)) != 0)
    {
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -573,14 +545,13 @@ void same54EthEventHandler(NetInterface *interface)
    uint32_t rsr;
 
    //Read receive status
-   rsr = GMAC_REGS->GMAC_RSR;
+   rsr = GMAC->RSR.reg;
 
    //Packet received?
-   if((rsr & (GMAC_RSR_HNO_Msk | GMAC_RSR_RXOVR_Msk | GMAC_RSR_REC_Msk |
-      GMAC_RSR_BNA_Msk)) != 0)
+   if((rsr & (GMAC_RSR_HNO | GMAC_RSR_RXOVR | GMAC_RSR_REC | GMAC_RSR_BNA)) != 0)
    {
       //Only clear RSR flags that are currently set
-      GMAC_REGS->GMAC_RSR = rsr;
+      GMAC->RSR.reg = rsr;
 
       //Process all pending packets
       do
@@ -654,7 +625,7 @@ error_t same54EthSendPacket(NetInterface *interface,
    __DSB();
 
    //Set the TSTART bit to initiate transmission
-   GMAC_REGS->GMAC_NCR |= GMAC_NCR_TSTART_Msk;
+   GMAC->NCR.reg |= GMAC_NCR_TSTART;
 
    //Check whether the next buffer is available for writing
    if((txBufferDesc[txBufferIndex].status & GMAC_TX_USED) != 0)
@@ -676,7 +647,7 @@ error_t same54EthSendPacket(NetInterface *interface,
 
 error_t same54EthReceivePacket(NetInterface *interface)
 {
-   static uint32_t temp[ETH_MAX_FRAME_SIZE / 4];
+   static uint8_t temp[ETH_MAX_FRAME_SIZE];
    error_t error;
    uint_t i;
    uint_t j;
@@ -686,8 +657,7 @@ error_t same54EthReceivePacket(NetInterface *interface)
    size_t size;
    size_t length;
 
-   //Initialize variables
-   size = 0;
+   //Initialize SOF and EOF indices
    sofIndex = UINT_MAX;
    eofIndex = UINT_MAX;
 
@@ -757,7 +727,7 @@ error_t same54EthReceivePacket(NetInterface *interface)
          //Calculate the number of bytes to read at a time
          n = MIN(size, SAME54_ETH_RX_BUFFER_SIZE);
          //Copy data from receive buffer
-         osMemcpy((uint8_t *) temp + length, rxBuffer[rxBufferIndex], n);
+         osMemcpy(temp + length, rxBuffer[rxBufferIndex], n);
          //Update byte counters
          length += n;
          size -= n;
@@ -785,7 +755,7 @@ error_t same54EthReceivePacket(NetInterface *interface)
       ancillary = NET_DEFAULT_RX_ANCILLARY;
 
       //Pass the packet to the upper layer
-      nicProcessPacket(interface, (uint8_t *) temp, length, &ancillary);
+      nicProcessPacket(interface, temp, length, &ancillary);
       //Valid packet received
       error = NO_ERROR;
    }
@@ -820,8 +790,8 @@ error_t same54EthUpdateMacAddrFilter(NetInterface *interface)
    TRACE_DEBUG("Updating MAC filter...\r\n");
 
    //Set the MAC address of the station
-   GMAC_REGS->SA[0].GMAC_SAB = interface->macAddr.w[0] | (interface->macAddr.w[1] << 16);
-   GMAC_REGS->SA[0].GMAC_SAT = interface->macAddr.w[2];
+   GMAC->Sa[0].SAB.reg = interface->macAddr.w[0] | (interface->macAddr.w[1] << 16);
+   GMAC->Sa[0].SAT.reg = interface->macAddr.w[2];
 
    //The MAC supports 3 additional addresses for unicast perfect filtering
    unicastMacAddr[0] = MAC_UNSPECIFIED_ADDR;
@@ -878,48 +848,48 @@ error_t same54EthUpdateMacAddrFilter(NetInterface *interface)
    if(j >= 1)
    {
       //The address is activated when SAT register is written
-      GMAC_REGS->SA[1].GMAC_SAB = unicastMacAddr[0].w[0] | (unicastMacAddr[0].w[1] << 16);
-      GMAC_REGS->SA[1].GMAC_SAT = unicastMacAddr[0].w[2];
+      GMAC->Sa[1].SAB.reg = unicastMacAddr[0].w[0] | (unicastMacAddr[0].w[1] << 16);
+      GMAC->Sa[1].SAT.reg = unicastMacAddr[0].w[2];
    }
    else
    {
       //The address is deactivated when SAB register is written
-      GMAC_REGS->SA[1].GMAC_SAB = 0;
+      GMAC->Sa[1].SAB.reg = 0;
    }
 
    //Configure the second unicast address filter
    if(j >= 2)
    {
       //The address is activated when SAT register is written
-      GMAC_REGS->SA[2].GMAC_SAB = unicastMacAddr[1].w[0] | (unicastMacAddr[1].w[1] << 16);
-      GMAC_REGS->SA[2].GMAC_SAT = unicastMacAddr[1].w[2];
+      GMAC->Sa[2].SAB.reg = unicastMacAddr[1].w[0] | (unicastMacAddr[1].w[1] << 16);
+      GMAC->Sa[2].SAT.reg = unicastMacAddr[1].w[2];
    }
    else
    {
       //The address is deactivated when SAB register is written
-      GMAC_REGS->SA[2].GMAC_SAB = 0;
+      GMAC->Sa[2].SAB.reg = 0;
    }
 
    //Configure the third unicast address filter
    if(j >= 3)
    {
       //The address is activated when SAT register is written
-      GMAC_REGS->SA[3].GMAC_SAB = unicastMacAddr[2].w[0] | (unicastMacAddr[2].w[1] << 16);
-      GMAC_REGS->SA[3].GMAC_SAT = unicastMacAddr[2].w[2];
+      GMAC->Sa[3].SAB.reg = unicastMacAddr[2].w[0] | (unicastMacAddr[2].w[1] << 16);
+      GMAC->Sa[3].SAT.reg = unicastMacAddr[2].w[2];
    }
    else
    {
       //The address is deactivated when SAB register is written
-      GMAC_REGS->SA[3].GMAC_SAB = 0;
+      GMAC->Sa[3].SAB.reg = 0;
    }
 
    //Configure the multicast hash table
-   GMAC_REGS->GMAC_HRB = hashTable[0];
-   GMAC_REGS->GMAC_HRT = hashTable[1];
+   GMAC->HRB.reg = hashTable[0];
+   GMAC->HRT.reg = hashTable[1];
 
    //Debug message
-   TRACE_DEBUG("  HRB = %08" PRIX32 "\r\n", GMAC_REGS->GMAC_HRB);
-   TRACE_DEBUG("  HRT = %08" PRIX32 "\r\n", GMAC_REGS->GMAC_HRT);
+   TRACE_DEBUG("  HRB = %08" PRIX32 "\r\n", GMAC->HRB.reg);
+   TRACE_DEBUG("  HRT = %08" PRIX32 "\r\n", GMAC->HRT.reg);
 
    //Successful processing
    return NO_ERROR;
@@ -937,30 +907,30 @@ error_t same54EthUpdateMacConfig(NetInterface *interface)
    uint32_t config;
 
    //Read network configuration register
-   config = GMAC_REGS->GMAC_NCFGR;
+   config = GMAC->NCFGR.reg;
 
    //10BASE-T or 100BASE-TX operation mode?
    if(interface->linkSpeed == NIC_LINK_SPEED_100MBPS)
    {
-      config |= GMAC_NCFGR_SPD_Msk;
+      config |= GMAC_NCFGR_SPD;
    }
    else
    {
-      config &= ~GMAC_NCFGR_SPD_Msk;
+      config &= ~GMAC_NCFGR_SPD;
    }
 
    //Half-duplex or full-duplex mode?
    if(interface->duplexMode == NIC_FULL_DUPLEX_MODE)
    {
-      config |= GMAC_NCFGR_FD_Msk;
+      config |= GMAC_NCFGR_FD;
    }
    else
    {
-      config &= ~GMAC_NCFGR_FD_Msk;
+      config &= ~GMAC_NCFGR_FD;
    }
 
    //Write configuration value back to NCFGR register
-   GMAC_REGS->GMAC_NCFGR = config;
+   GMAC->NCFGR.reg = config;
 
    //Successful processing
    return NO_ERROR;
@@ -984,7 +954,7 @@ void same54EthWritePhyReg(uint8_t opcode, uint8_t phyAddr,
    if(opcode == SMI_OPCODE_WRITE)
    {
       //Set up a write operation
-      temp = GMAC_MAN_CLTTO_Msk | GMAC_MAN_OP(1) | GMAC_MAN_WTN(2);
+      temp = GMAC_MAN_CLTTO | GMAC_MAN_OP(1) | GMAC_MAN_WTN(2);
       //PHY address
       temp |= GMAC_MAN_PHYA(phyAddr);
       //Register address
@@ -993,9 +963,9 @@ void same54EthWritePhyReg(uint8_t opcode, uint8_t phyAddr,
       temp |= GMAC_MAN_DATA(data);
 
       //Start a write operation
-      GMAC_REGS->GMAC_MAN = temp;
+      GMAC->MAN.reg = temp;
       //Wait for the write to complete
-      while((GMAC_REGS->GMAC_NSR & GMAC_NSR_IDLE_Msk) == 0)
+      while((GMAC->NSR.reg & GMAC_NSR_IDLE) == 0)
       {
       }
    }
@@ -1024,21 +994,21 @@ uint16_t same54EthReadPhyReg(uint8_t opcode, uint8_t phyAddr,
    if(opcode == SMI_OPCODE_READ)
    {
       //Set up a read operation
-      temp = GMAC_MAN_CLTTO_Msk | GMAC_MAN_OP(2) | GMAC_MAN_WTN(2);
+      temp = GMAC_MAN_CLTTO | GMAC_MAN_OP(2) | GMAC_MAN_WTN(2);
       //PHY address
       temp |= GMAC_MAN_PHYA(phyAddr);
       //Register address
       temp |= GMAC_MAN_REGA(regAddr);
 
       //Start a read operation
-      GMAC_REGS->GMAC_MAN = temp;
+      GMAC->MAN.reg = temp;
       //Wait for the read to complete
-      while((GMAC_REGS->GMAC_NSR & GMAC_NSR_IDLE_Msk) == 0)
+      while((GMAC->NSR.reg & GMAC_NSR_IDLE) == 0)
       {
       }
 
       //Get register value
-      data = GMAC_REGS->GMAC_MAN & GMAC_MAN_DATA_Msk;
+      data = GMAC->MAN.reg & GMAC_MAN_DATA_Msk;
    }
    else
    {

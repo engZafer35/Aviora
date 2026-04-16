@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _DHCPV6_CLIENT_H
 #define _DHCPV6_CLIENT_H
 
 //Dependencies
-#include "dhcpv6/dhcpv6_common.h"
-#include "core/socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcpv6/dhcpv6_common.h"
 
 //DHCPv6 client support
 #ifndef DHCPV6_CLIENT_SUPPORT
@@ -217,11 +217,6 @@
    #error DHCPV6_CLIENT_REC_MAX_RC parameter is not valid
 #endif
 
-//Application specific context
-#ifndef DHCPV6_CLIENT_PRIVATE_CONTEXT
-   #define DHCPV6_CLIENT_PRIVATE_CONTEXT
-#endif
-
 //Forward declaration of Dhcpv6ClientContext structure
 struct _Dhcpv6ClientContext;
 #define Dhcpv6ClientContext struct _Dhcpv6ClientContext
@@ -357,7 +352,6 @@ struct _Dhcpv6ClientContext
    systime_t exchangeStartTime;                     ///<Time at which the client sent the first message
    systime_t leaseStartTime;                        ///<Lease start time
    Dhcpv6ClientIa ia;                               ///<Identity association
-   DHCPV6_CLIENT_PRIVATE_CONTEXT                    ///<Application specific context
 };
 
 

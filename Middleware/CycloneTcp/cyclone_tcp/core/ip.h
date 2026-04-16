@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,21 +25,21 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _IP_H
 #define _IP_H
 
 //Dependencies
-#include "ipv4/ipv4.h"
-#include "ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
 
-//Default value for DF flag
-#ifndef IP_DEFAULT_DF
-   #define IP_DEFAULT_DF FALSE
-#elif (IP_DEFAULT_DF != FALSE && IP_DEFAULT_DF != TRUE)
-   #error IP_DEFAULT_DF parameter is not valid
+//DiffServ support
+#ifndef IP_DIFF_SERV_SUPPORT
+   #define IP_DIFF_SERV_SUPPORT DISABLED
+#elif (IP_DIFF_SERV_SUPPORT != ENABLED && IP_DIFF_SERV_SUPPORT != DISABLED)
+   #error IP_DIFF_SERV_SUPPORT parameter is not valid
 #endif
 
 //C++ guard
@@ -86,7 +86,6 @@ typedef struct
 #if (IPV6_SUPPORT == ENABLED)
       Ipv6Addr ipv6Addr;
 #endif
-      uint8_t addr[4];
    };
 } IpAddr;
 
@@ -116,22 +115,15 @@ extern const IpAddr IP_ADDR_ANY;
 extern const IpAddr IP_ADDR_UNSPECIFIED;
 
 //IP related functions
-error_t ipSendDatagram(NetInterface *interface,
-   const IpPseudoHeader *pseudoHeader, NetBuffer *buffer, size_t offset,
-   NetTxAncillary *ancillary);
+error_t ipSendDatagram(NetInterface *interface, IpPseudoHeader *pseudoHeader,
+   NetBuffer *buffer, size_t offset, NetTxAncillary *ancillary);
 
-error_t ipSelectSourceAddr(NetInterface **interface, const IpAddr *destAddr,
-   IpAddr *srcAddr);
-
-bool_t ipIsUnspecifiedAddr(const IpAddr *ipAddr);
-bool_t ipIsLinkLocalAddr(const IpAddr *ipAddr);
-bool_t ipIsMulticastAddr(const IpAddr *ipAddr);
-bool_t ipIsBroadcastAddr(const IpAddr *ipAddr);
+error_t ipSelectSourceAddr(NetInterface **interface,
+   const IpAddr *destAddr, IpAddr *srcAddr);
 
 bool_t ipCompAddr(const IpAddr *ipAddr1, const IpAddr *ipAddr2);
-
-bool_t ipCompPrefix(const IpAddr *ipAddr1, const IpAddr *ipAddr2,
-   size_t length);
+bool_t ipIsUnspecifiedAddr(const IpAddr *ipAddr);
+bool_t ipIsMulticastAddr(const IpAddr *ipAddr);
 
 error_t ipJoinMulticastGroup(NetInterface *interface, const IpAddr *groupAddr);
 error_t ipLeaveMulticastGroup(NetInterface *interface, const IpAddr *groupAddr);

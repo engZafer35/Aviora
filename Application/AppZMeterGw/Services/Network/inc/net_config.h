@@ -160,10 +160,10 @@
 #define SOCKET_MAX_COUNT 4 //2  Zafer
 
 //LLMNR responder support
-#define LLMNR_RESPONDER_SUPPORT ENABLED
+#define LLMNR_RESPONDER_SUPPORT DISABLED
 
 //HTTP client support
-#define HTTP_CLIENT_SUPPORT     ENABLED
+#define HTTP_CLIENT_SUPPORT     DISABLED
 #define NET_RTOS_SUPPORT        ENABLED  //support multi threading structure
 #define BSD_SOCKET_SUPPORT      ENABLED
 #define NBNS_CLIENT_SUPPORT     DISABLED
@@ -171,6 +171,10 @@
 #define PPP_SUPPORT             ENABLED
 #define PING_SUPPORT            ENABLED
 #define DHCP_CLIENT_SUPPORT     DISABLED
+
+#define DNS_CLIENT_SUPPORT 0
+#define MDNS_CLIENT_SUPPORT 0
+
 
 /*
  * Use the following macro in linux OS, you can separate Cyclone bsd-func and linux bsd-func
@@ -201,15 +205,15 @@
 #define SELECT          c_select
 #define GETHOSTNAME     c_gethostname
 //#define GETHOSTBYNAME   c_gethostbyname
-#define gethostbyname   c_gethostbyname
-#define gethostbyname_r c_gethostbyname_r
+//#define gethostbyname   c_gethostbyname
+//#define gethostbyname_r c_gethostbyname_r
 #define getaddrinfo     c_getaddrinfo
 #define freeaddrinfo    c_freeaddrinfo
 #define getnameinfo     c_getnameinfo
 #define INET_ADDR       c_inet_addr
 #define inet_aton       c_inet_aton
 #define inet_ntoa       c_inet_ntoa
-#define inet_ntoa_r     c_inet_ntoa_r
+//#define inet_ntoa_r     c_inet_ntoa_r
 #define inet_pton       c_inet_pton
 #define inet_ntop       c_inet_ntop
 #define SOCKLEN_t       c_socklen_t

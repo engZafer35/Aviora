@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "drivers/phy/ip101_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/phy/ip101_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -86,9 +86,6 @@ error_t ip101Init(NetInterface *interface)
    //Dump PHY registers for debugging purpose
    ip101DumpPhyReg(interface);
 
-   //Perform custom configuration
-   ip101InitHook(interface);
-
    //Force the TCP/IP stack to poll the link state at startup
    interface->phyEvent = TRUE;
    //Notify the TCP/IP stack of the event
@@ -96,16 +93,6 @@ error_t ip101Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief IP101 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void ip101InitHook(NetInterface *interface)
-{
 }
 
 
@@ -186,25 +173,21 @@ void ip101EventHandler(NetInterface *interface)
          interface->linkSpeed = NIC_LINK_SPEED_10MBPS;
          interface->duplexMode = NIC_HALF_DUPLEX_MODE;
          break;
-
       //10BASE-T full-duplex
       case IP101_PHYMCSSR_OP_MODE_10M_FD:
          interface->linkSpeed = NIC_LINK_SPEED_10MBPS;
          interface->duplexMode = NIC_FULL_DUPLEX_MODE;
          break;
-
       //100BASE-TX half-duplex
       case IP101_PHYMCSSR_OP_MODE_100M_HD:
          interface->linkSpeed = NIC_LINK_SPEED_100MBPS;
          interface->duplexMode = NIC_HALF_DUPLEX_MODE;
          break;
-
       //100BASE-TX full-duplex
       case IP101_PHYMCSSR_OP_MODE_100M_FD:
          interface->linkSpeed = NIC_LINK_SPEED_100MBPS;
          interface->duplexMode = NIC_FULL_DUPLEX_MODE;
          break;
-
       //Unknown operation mode
       default:
          //Debug message
@@ -300,58 +283,4 @@ void ip101DumpPhyReg(NetInterface *interface)
 
    //Terminate with a line feed
    TRACE_DEBUG("\r\n");
-}
-
-
-/**
- * @brief Write MMD register
- * @param[in] interface Underlying network interface
- * @param[in] devAddr Device address
- * @param[in] regAddr Register address
- * @param[in] data MMD register value
- **/
-
-void ip101WriteMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr, uint16_t data)
-{
-   //Select register operation
-   ip101WritePhyReg(interface, IP101_MMDACR,
-      IP101_MMDACR_FUNC_ADDR | (devAddr & IP101_MMDACR_DEVAD));
-
-   //Write MMD register address
-   ip101WritePhyReg(interface, IP101_MMDAADR, regAddr);
-
-   //Select data operation
-   ip101WritePhyReg(interface, IP101_MMDACR,
-      IP101_MMDACR_FUNC_DATA_NO_POST_INC | (devAddr & IP101_MMDACR_DEVAD));
-
-   //Write the content of the MMD register
-   ip101WritePhyReg(interface, IP101_MMDAADR, data);
-}
-
-
-/**
- * @brief Read MMD register
- * @param[in] interface Underlying network interface
- * @param[in] devAddr Device address
- * @param[in] regAddr Register address
- * @return MMD register value
- **/
-
-uint16_t ip101ReadMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr)
-{
-   //Select register operation
-   ip101WritePhyReg(interface, IP101_MMDACR,
-      IP101_MMDACR_FUNC_ADDR | (devAddr & IP101_MMDACR_DEVAD));
-
-   //Write MMD register address
-   ip101WritePhyReg(interface, IP101_MMDAADR, regAddr);
-
-   //Select data operation
-   ip101WritePhyReg(interface, IP101_MMDACR,
-      IP101_MMDACR_FUNC_DATA_NO_POST_INC | (devAddr & IP101_MMDACR_DEVAD));
-
-   //Read the content of the MMD register
-   return ip101ReadPhyReg(interface, IP101_MMDAADR);
 }

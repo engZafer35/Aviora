@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,9 +34,9 @@
 //Dependencies
 #include <limits.h>
 #include "at91sam9263.h"
-#include "core/net.h"
-#include "drivers/mac/sam9263_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/sam9263_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -180,25 +180,19 @@ error_t sam9263EthInit(NetInterface *interface)
    sam9263EthInitBufferDesc(interface);
 
    //Clear transmit status register
-   AT91C_BASE_EMAC->EMAC_TSR = AT91C_EMAC_UND | AT91C_EMAC_COMP |
-      AT91C_EMAC_BEX | AT91C_EMAC_TGO | AT91C_EMAC_RLES | AT91C_EMAC_COL |
-      AT91C_EMAC_UBR;
-
+   AT91C_BASE_EMAC->EMAC_TSR = AT91C_EMAC_UND | AT91C_EMAC_COMP | AT91C_EMAC_BEX |
+      AT91C_EMAC_TGO | AT91C_EMAC_RLES | AT91C_EMAC_COL | AT91C_EMAC_UBR;
    //Clear receive status register
-   AT91C_BASE_EMAC->EMAC_RSR = AT91C_EMAC_OVR | AT91C_EMAC_REC |
-      AT91C_EMAC_BNA;
+   AT91C_BASE_EMAC->EMAC_RSR = AT91C_EMAC_OVR | AT91C_EMAC_REC | AT91C_EMAC_BNA;
 
    //First disable all EMAC interrupts
    AT91C_BASE_EMAC->EMAC_IDR = 0xFFFFFFFF;
-
    //Only the desired ones are enabled
-   AT91C_BASE_EMAC->EMAC_IER = AT91C_EMAC_ROVR | AT91C_EMAC_TCOMP |
-      AT91C_EMAC_TXERR | AT91C_EMAC_RLEX | AT91C_EMAC_TUNDR |
-      AT91C_EMAC_RXUBR | AT91C_EMAC_RCOMP;
+   AT91C_BASE_EMAC->EMAC_IER = AT91C_EMAC_ROVR | AT91C_EMAC_TCOMP | AT91C_EMAC_TXERR |
+      AT91C_EMAC_RLEX | AT91C_EMAC_TUNDR | AT91C_EMAC_RXUBR | AT91C_EMAC_RCOMP;
 
-   //Read EMAC_ISR register to clear any pending interrupt
+   //Read EMAC ISR register to clear any pending interrupt
    status = AT91C_BASE_EMAC->EMAC_ISR;
-   (void) status;
 
    //Configure interrupt controller
    AT91C_BASE_AIC->AIC_SMR[AT91C_ID_EMAC] = AT91C_AIC_SRCTYPE_INT_HIGH_LEVEL | AT91C_AIC_PRIOR_LOWEST;
@@ -218,15 +212,16 @@ error_t sam9263EthInit(NetInterface *interface)
 }
 
 
+//SAM9263-EK evaluation board?
+#if defined(USE_SAM9263_EK)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void sam9263EthInitGpio(NetInterface *interface)
+void sam9263EthInitGpio(NetInterface *interface)
 {
-//SAM9263-EK evaluation board?
-#if defined(USE_SAM9263_EK)
    //Enable PIO peripheral clocks
    AT91C_BASE_PMC->PMC_PCER = (1 << AT91C_ID_PIOA) | (1 << AT91C_ID_PIOCDE);
 
@@ -245,8 +240,9 @@ __weak_func void sam9263EthInitGpio(NetInterface *interface)
 
    //Select RMII operation mode and enable transceiver clock
    AT91C_BASE_EMAC->EMAC_USRIO = AT91C_EMAC_CLKEN | AT91C_EMAC_RMII;
-#endif
 }
+
+#endif
 
 
 /**
@@ -400,12 +396,11 @@ void sam9263EthIrqHandler(void)
    //This flag will be set if a higher priority task must be woken
    flag = FALSE;
 
-   //Each time the software reads EMAC_ISR, it has to check the contents
-   //of EMAC_TSR, EMAC_RSR and EMAC_NSR
+   //Each time the software reads EMAC_ISR, it has to check the
+   //contents of EMAC_TSR, EMAC_RSR and EMAC_NSR
    isr = AT91C_BASE_EMAC->EMAC_ISR;
    tsr = AT91C_BASE_EMAC->EMAC_TSR;
    rsr = AT91C_BASE_EMAC->EMAC_RSR;
-   (void) isr;
 
    //Packet transmitted?
    if((tsr & (AT91C_EMAC_UND | AT91C_EMAC_COMP | AT91C_EMAC_BEX |
@@ -549,7 +544,7 @@ error_t sam9263EthSendPacket(NetInterface *interface,
 
 error_t sam9263EthReceivePacket(NetInterface *interface)
 {
-   static uint32_t temp[ETH_MAX_FRAME_SIZE / 4];
+   static uint8_t temp[ETH_MAX_FRAME_SIZE];
    error_t error;
    uint_t i;
    uint_t j;
@@ -559,8 +554,7 @@ error_t sam9263EthReceivePacket(NetInterface *interface)
    size_t size;
    size_t length;
 
-   //Initialize variables
-   size = 0;
+   //Initialize SOF and EOF indices
    sofIndex = UINT_MAX;
    eofIndex = UINT_MAX;
 
@@ -630,7 +624,7 @@ error_t sam9263EthReceivePacket(NetInterface *interface)
          //Calculate the number of bytes to read at a time
          n = MIN(size, SAM9263_ETH_RX_BUFFER_SIZE);
          //Copy data from receive buffer
-         osMemcpy((uint8_t *) temp + length, rxBuffer[rxBufferIndex], n);
+         osMemcpy(temp + length, rxBuffer[rxBufferIndex], n);
          //Update byte counters
          length += n;
          size -= n;
@@ -658,7 +652,7 @@ error_t sam9263EthReceivePacket(NetInterface *interface)
       ancillary = NET_DEFAULT_RX_ANCILLARY;
 
       //Pass the packet to the upper layer
-      nicProcessPacket(interface, (uint8_t *) temp, length, &ancillary);
+      nicProcessPacket(interface, temp, length, &ancillary);
       //Valid packet received
       error = NO_ERROR;
    }

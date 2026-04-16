@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,28 +25,28 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL SNMP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "ipv4/ipv4.h"
-#include "ipv4/ipv4_misc.h"
-#include "ipv4/arp_cache.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_misc.h"
-#include "ipv6/ndp_cache.h"
-#include "ipv6/ndp_router_adv.h"
-#include "mibs/mib_common.h"
-#include "mibs/ip_mib_module.h"
-#include "mibs/ip_mib_impl.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/arp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_cache.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_router_adv.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/ip_mib_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/ip_mib_impl.h"
 #include "core/crypto.h"
 #include "encoding/asn1.h"
 #include "encoding/oid.h"
-#include "debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IP_MIB_SUPPORT == ENABLED)
@@ -461,7 +461,7 @@ error_t ipMibGetIpSystemStatsEntry(const MibObject *object, const uint8_t *oid,
    //IPv6 version?
    if(version == INET_VERSION_IPV6)
    {
-      //Point to the IPv6 statistics table entry
+      //Point to the IPV6 statistics table entry
       entry = &ipMibBase.ipv6SystemStats;
    }
    else

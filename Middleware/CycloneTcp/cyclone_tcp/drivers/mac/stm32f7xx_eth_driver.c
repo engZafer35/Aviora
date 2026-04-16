@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,9 +34,9 @@
 //Dependencies
 #include "stm32f7xx.h"
 #include "stm32f7xx_hal.h"
-#include "core/net.h"
-#include "drivers/mac/stm32f7xx_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/stm32f7xx_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -183,8 +183,8 @@ error_t stm32f7xxEthInit(NetInterface *interface)
    ETH->DMAOMR = ETH_DMAOMR_RSF | ETH_DMAOMR_TSF;
 
    //Configure DMA bus mode
-   ETH->DMABMR = ETH_DMABMR_AAB | ETH_DMABMR_USP | ETH_DMABMR_RDP_32Beat |
-      ETH_DMABMR_RTPR_1_1 | ETH_DMABMR_PBL_32Beat | ETH_DMABMR_EDE;
+   ETH->DMABMR = ETH_DMABMR_AAB | ETH_DMABMR_USP | ETH_DMABMR_RDP_1Beat |
+      ETH_DMABMR_RTPR_1_1 | ETH_DMABMR_PBL_1Beat | ETH_DMABMR_EDE;
 
    //Initialize DMA descriptor lists
    stm32f7xxEthInitDmaDesc(interface);
@@ -222,17 +222,23 @@ error_t stm32f7xxEthInit(NetInterface *interface)
 }
 
 
+//STM32756G-EVAL, STM32F769I-EVAL, STM32F746G-Discovery, STM32F7508-DK,
+//STM32F769I-Discovery, Nucleo-F746ZG or Nucleo-F767ZI evaluation board?
+#if defined(USE_STM32756G_EVAL) || defined(USE_STM32F769I_EVAL) || \
+   defined(USE_STM32746G_DISCO) || defined(USE_STM32F7508_DISCO) || \
+   defined(USE_STM32F769I_DISCO) || defined(USE_STM32F7XX_NUCLEO_144)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void stm32f7xxEthInitGpio(NetInterface *interface)
+void stm32f7xxEthInitGpio(NetInterface *interface)
 {
-//STM32756G-EVAL or STM32F769I-EVAL evaluation board?
-#if defined(USE_STM32756G_EVAL) || defined(USE_STM32F769I_EVAL)
    GPIO_InitTypeDef GPIO_InitStructure;
 
+//STM32756G-EVAL or STM32F769I-EVAL evaluation board?
+#if defined(USE_STM32756G_EVAL) || defined(USE_STM32F769I_EVAL)
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -319,8 +325,6 @@ __weak_func void stm32f7xxEthInitGpio(NetInterface *interface)
 
 //STM32F746G-Discovery or STM32F7508-Discovery evaluation board?
 #elif defined(USE_STM32746G_DISCO) || defined(USE_STM32F7508_DISCO)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -353,8 +357,6 @@ __weak_func void stm32f7xxEthInitGpio(NetInterface *interface)
 
 //STM32F769I-Discovery evaluation board?
 #elif defined(USE_STM32F769I_DISCO)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -391,8 +393,6 @@ __weak_func void stm32f7xxEthInitGpio(NetInterface *interface)
 
 //Nucleo-F746ZG or Nucleo-F767ZI evaluation board?
 #elif defined(USE_STM32F7XX_NUCLEO_144)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -428,6 +428,8 @@ __weak_func void stm32f7xxEthInitGpio(NetInterface *interface)
    HAL_GPIO_Init(GPIOG, &GPIO_InitStructure);
 #endif
 }
+
+#endif
 
 
 /**
@@ -615,8 +617,8 @@ void ETH_IRQHandler(void)
    //Packet received?
    if((status & ETH_DMASR_RS) != 0)
    {
-      //Clear RS interrupt flag
-      ETH->DMASR = ETH_DMASR_RS;
+      //Disable RIE interrupt
+      ETH->DMAIER &= ~ETH_DMAIER_RIE;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -641,14 +643,24 @@ void stm32f7xxEthEventHandler(NetInterface *interface)
 {
    error_t error;
 
-   //Process all pending packets
-   do
+   //Packet received?
+   if((ETH->DMASR & ETH_DMASR_RS) != 0)
    {
-      //Read incoming packet
-      error = stm32f7xxEthReceivePacket(interface);
+      //Clear interrupt flag
+      ETH->DMASR = ETH_DMASR_RS;
 
-      //No more data in the receive buffer?
-   } while(error != ERROR_BUFFER_EMPTY);
+      //Process all pending packets
+      do
+      {
+         //Read incoming packet
+         error = stm32f7xxEthReceivePacket(interface);
+
+         //No more data in the receive buffer?
+      } while(error != ERROR_BUFFER_EMPTY);
+   }
+
+   //Re-enable DMA interrupts
+   ETH->DMAIER = ETH_DMAIER_NISE | ETH_DMAIER_RIE | ETH_DMAIER_TIE;
 }
 
 
@@ -665,7 +677,7 @@ void stm32f7xxEthEventHandler(NetInterface *interface)
 error_t stm32f7xxEthSendPacket(NetInterface *interface,
    const NetBuffer *buffer, size_t offset, NetTxAncillary *ancillary)
 {
-   static uint32_t temp[STM32F7XX_ETH_TX_BUFFER_SIZE / 4];
+   static uint8_t temp[STM32F7XX_ETH_TX_BUFFER_SIZE];
    size_t length;
 
    //Retrieve the length of the packet
@@ -728,7 +740,7 @@ error_t stm32f7xxEthSendPacket(NetInterface *interface,
 
 error_t stm32f7xxEthReceivePacket(NetInterface *interface)
 {
-   static uint32_t temp[STM32F7XX_ETH_RX_BUFFER_SIZE / 4];
+   static uint8_t temp[STM32F7XX_ETH_RX_BUFFER_SIZE];
    error_t error;
    size_t n;
    NetRxAncillary ancillary;
@@ -755,7 +767,7 @@ error_t stm32f7xxEthReceivePacket(NetInterface *interface)
             ancillary = NET_DEFAULT_RX_ANCILLARY;
 
             //Pass the packet to the upper layer
-            nicProcessPacket(interface, (uint8_t *) temp, n, &ancillary);
+            nicProcessPacket(interface, temp, n, &ancillary);
 
             //Valid packet received
             error = NO_ERROR;
@@ -989,11 +1001,11 @@ error_t stm32f7xxEthUpdateMacConfig(NetInterface *interface)
 void stm32f7xxEthWritePhyReg(uint8_t opcode, uint8_t phyAddr,
    uint8_t regAddr, uint16_t data)
 {
-   uint32_t temp;
-
    //Valid opcode?
    if(opcode == SMI_OPCODE_WRITE)
    {
+      uint32_t temp;
+
       //Take care not to alter MDC clock configuration
       temp = ETH->MACMIIAR & ETH_MACMIIAR_CR;
       //Set up a write operation

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,9 +34,9 @@
 //Dependencies
 #include <p32xxxx.h>
 #include <sys/kmem.h>
-#include "core/net.h"
-#include "drivers/mac/pic32mz_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/pic32mz_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -222,15 +222,23 @@ error_t pic32mzEthInit(NetInterface *interface)
 }
 
 
+//PIC32MZ EC Starter Kit, PIC32MZ EF Starter Kit, PIC32MZ DA Starter Kit,
+//PIC32MZ EF Curiosity, PIC32MZ EF Curiosity 2.0, PIC32MZ DA Curiosity or
+//IoT Ethernet Kit?
+#if defined(USE_PIC32MZ_EC_STARTER_KIT) || defined(USE_PIC32MZ_EF_STARTER_KIT) || \
+   defined(USE_PIC32MZ_DA_STARTER_KIT) || defined(USE_PIC32MZ_EF_CURIOSITY) || \
+   defined(USE_PIC32MZ_EF_CURIOSITY_2) || defined(USE_PIC32MZ_DA_CURIOSITY) || \
+   defined(USE_IOT_ETHERNET_KIT)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void pic32mzEthInitGpio(NetInterface *interface)
+void pic32mzEthInitGpio(NetInterface *interface)
 {
-//PIC32MZ EC Starter Kit?
-#if defined(USE_PIC32MZ_EC_STARTER_KIT)
+//PIC32MZ EC Starter Kit or PIC32MZ EF Starter Kit?
+#if defined(USE_PIC32MZ_EC_STARTER_KIT) || defined(USE_PIC32MZ_EF_STARTER_KIT)
    //Disable analog pad on ETXD0 (AN35/RJ8)
    ANSELJCLR = _ANSELJ_ANSJ8_MASK;
    //Disable analog pad on ETXD1 (AN36/RJ9)
@@ -241,28 +249,6 @@ __weak_func void pic32mzEthInitGpio(NetInterface *interface)
    ANSELHCLR = _ANSELH_ANSH4_MASK;
    //Disable analog pad on ERXD1 (AN41/RH5)
    ANSELHCLR = _ANSELH_ANSH5_MASK;
-
-//PIC32MZ EF Starter Kit?
-#elif defined(USE_PIC32MZ_EF_STARTER_KIT)
-   //Disable analog pad on ETXD0 (AN35/RJ8)
-   ANSELJCLR = _ANSELJ_ANSJ8_MASK;
-   //Disable analog pad on ETXD1 (AN36/RJ9)
-   ANSELJCLR = _ANSELJ_ANSJ9_MASK;
-   //Disable analog pad on EREFCLK (AN37/RJ11)
-   ANSELJCLR = _ANSELJ_ANSJ11_MASK;
-   //Disable analog pad on ERXERR (AN40/RH4)
-   ANSELHCLR = _ANSELH_ANSH4_MASK;
-   //Disable analog pad on ERXD1 (AN41/RH5)
-   ANSELHCLR = _ANSELH_ANSH5_MASK;
-
-   //Configure PHY_RST (RH11)
-   TRISHCLR = _TRISH_TRISH11_MASK;
-
-   //Reset PHY transceiver (hard reset)
-   LATHCLR = _LATH_LATH11_MASK;
-   sleep(10);
-   LATHSET = _LATH_LATH11_MASK;
-   sleep(10);
 
 //PIC32MZ DA Starter Kit?
 #elif defined(USE_PIC32MZ_DA_STARTER_KIT)
@@ -287,17 +273,6 @@ __weak_func void pic32mzEthInitGpio(NetInterface *interface)
    ANSELGCLR = _ANSELG_ANSG8_MASK;
    //Disable analog pad on EREFCLK (AN11/RG9)
    ANSELGCLR = _ANSELG_ANSG9_MASK;
-
-   //Configure PHY_RST (AN23/RG15)
-   TRISGCLR = _TRISG_TRISG15_MASK;
-   //Disable analog pad
-   ANSELGCLR = _ANSELG_ANSG15_MASK;
-
-   //Reset PHY transceiver (hard reset)
-   LATGCLR = _LATG_LATG15_MASK;
-   sleep(10);
-   LATGSET = _LATG_LATG15_MASK;
-   sleep(10);
 
 //PIC32MZ EF Curiosity 2.0?
 #elif defined(USE_PIC32MZ_EF_CURIOSITY_2)
@@ -335,19 +310,10 @@ __weak_func void pic32mzEthInitGpio(NetInterface *interface)
    ANSELECLR = _ANSELE_ANSE6_MASK;
    //Disable analog pad on ETXD1 (AN15/RE7)
    ANSELECLR = _ANSELE_ANSE7_MASK;
-
-   //Configure PHY_RST (AN9/RB14)
-   TRISBCLR = _TRISB_TRISB14_MASK;
-   //Disable analog pad
-   ANSELBCLR = _ANSELB_ANSB14_MASK;
-
-   //Reset PHY transceiver (hard reset)
-   LATBCLR = _LATB_LATB14_MASK;
-   sleep(10);
-   LATBSET = _LATB_LATB14_MASK;
-   sleep(10);
 #endif
 }
+
+#endif
 
 
 /**
@@ -646,7 +612,7 @@ error_t pic32mzEthSendPacket(NetInterface *interface,
 
 error_t pic32mzEthReceivePacket(NetInterface *interface)
 {
-   static uint32_t temp[PIC32MZ_ETH_RX_BUFFER_SIZE / 4];
+   static uint8_t temp[PIC32MZ_ETH_RX_BUFFER_SIZE];
    error_t error;
    size_t n;
    NetRxAncillary ancillary;
@@ -673,7 +639,7 @@ error_t pic32mzEthReceivePacket(NetInterface *interface)
             ancillary = NET_DEFAULT_RX_ANCILLARY;
 
             //Pass the packet to the upper layer
-            nicProcessPacket(interface, (uint8_t *) temp, n, &ancillary);
+            nicProcessPacket(interface, temp, n, &ancillary);
 
             //Valid packet received
             error = NO_ERROR;

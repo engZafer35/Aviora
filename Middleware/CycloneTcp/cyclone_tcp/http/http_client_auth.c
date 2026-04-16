@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -40,17 +40,17 @@
  * - RFC 7617: The Basic HTTP Authentication Scheme
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL HTTP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "http/http_client.h"
-#include "http/http_client_auth.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/http/http_client_auth.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (HTTP_CLIENT_SUPPORT == ENABLED && HTTP_CLIENT_AUTH_SUPPORT == ENABLED)
@@ -396,13 +396,9 @@ error_t httpClientParseWwwAuthenticateField(HttpClientContext *context,
                      //the previous request from the client was rejected because
                      //the nonce value was stale
                      if(httpCompareParamValue(&param, "true"))
-                     {
                         authHeader.stale = TRUE;
-                     }
                      else
-                     {
                         authHeader.stale = FALSE;
-                     }
                   }
 #endif
                   //Unknown parameter?

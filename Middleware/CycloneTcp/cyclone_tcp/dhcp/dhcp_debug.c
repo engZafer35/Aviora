@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,22 +25,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL DHCP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "dhcp/dhcp_debug.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV4_SUPPORT == ENABLED && DHCP_TRACE_LEVEL >= TRACE_LEVEL_DEBUG)
 
 //DHCP message opcodes
-static const char_t *const opcodeLabel[] =
+static const char_t *opcodeLabel[] =
 {
    "",            //0
    "BOOTREQUEST", //1
@@ -48,7 +48,7 @@ static const char_t *const opcodeLabel[] =
 };
 
 //DHCP message types
-static const char_t *const messageLabel[] =
+static const char_t *messageLabel[] =
 {
    "",             //0
    "DHCPDISCOVER", //1
@@ -62,7 +62,7 @@ static const char_t *const messageLabel[] =
 };
 
 //DHCP options
-static const char_t *const optionLabel[] =
+static const char_t *optionLabel[] =
 {
    "Pad",                          //0
    "Subnet Mask",                  //1
@@ -203,11 +203,9 @@ error_t dhcpDumpMessage(const DhcpMessage *message, size_t length)
       //Pad option detected?
       if(option->code == DHCP_OPT_PAD)
          continue;
-
       //End option detected?
       if(option->code == DHCP_OPT_END)
          break;
-
       //Check option length
       if((i + 1) >= length || (i + 1 + option->length) >= length)
       {
@@ -221,15 +219,9 @@ error_t dhcpDumpMessage(const DhcpMessage *message, size_t length)
 
       //Display the name of the current option
       if(option->code < arraysize(optionLabel))
-      {
-         TRACE_DEBUG("  %s option (%" PRIu8 " bytes)\r\n",
-            optionLabel[option->code], option->length);
-      }
+         TRACE_DEBUG("  %s option (%" PRIu8 " bytes)\r\n", optionLabel[option->code], option->length);
       else
-      {
-         TRACE_DEBUG("  Option %" PRIu8 " (%" PRIu8 " bytes)\r\n",
-            option->code, option->length);
-      }
+         TRACE_DEBUG("  Option %" PRIu8 " (%" PRIu8 " bytes)\r\n", option->code, option->length);
 
       //Check option code
       switch(option->code)
@@ -238,12 +230,10 @@ error_t dhcpDumpMessage(const DhcpMessage *message, size_t length)
       case DHCP_OPT_DHCP_MESSAGE_TYPE:
          error = dhcpDumpMessageType(option);
          break;
-
       //Parameter Request List option
       case DHCP_OPT_PARAM_REQUEST_LIST:
          error = dhcpDumpParamRequestList(option);
          break;
-
       //Boolean value?
       case DHCP_OPT_IP_FORWARDING:
       case DHCP_OPT_NON_LOCAL_SOURCE_ROUTING:
@@ -256,7 +246,6 @@ error_t dhcpDumpMessage(const DhcpMessage *message, size_t length)
       case DHCP_OPT_TCP_KEEPALIVE_GARBAGE:
          error = dhcpDumpBoolean(option);
          break;
-
       //8-bit unsigned integer?
       case DHCP_OPT_DEFAULT_IP_TTL:
       case DHCP_OPT_TCP_DEFAULT_TTL:
@@ -264,7 +253,6 @@ error_t dhcpDumpMessage(const DhcpMessage *message, size_t length)
       case DHCP_OPT_OPTION_OVERLOAD:
          error = dhcpDumpInt8(option);
          break;
-
       //16-bit unsigned integer?
       case DHCP_OPT_BOOT_FILE_SIZE:
       case DHCP_OPT_MAX_DATAGRAM_REASSEMBLY_SIZE:
@@ -272,7 +260,6 @@ error_t dhcpDumpMessage(const DhcpMessage *message, size_t length)
       case DHCP_OPT_MAX_DHCP_MESSAGE_SIZE:
          error = dhcpDumpInt16(option);
          break;
-
       //32-bit unsigned integer?
       case DHCP_OPT_PATH_MTU_AGING_TIMEOUT:
       case DHCP_OPT_ARP_CACHE_TIMEOUT:
@@ -282,7 +269,6 @@ error_t dhcpDumpMessage(const DhcpMessage *message, size_t length)
       case DHCP_OPT_REBINDING_TIME_VALUE:
          error = dhcpDumpInt32(option);
          break;
-
       //Character strings?
       case DHCP_OPT_HOST_NAME:
       case DHCP_OPT_MERIT_DUMP_FILE:
@@ -296,7 +282,6 @@ error_t dhcpDumpMessage(const DhcpMessage *message, size_t length)
       case DHCP_OPT_BOOTFILE_NAME:
          error = dhcpDumpString(option);
          break;
-
       //IPv4 address?
       case DHCP_OPT_SUBNET_MASK:
       case DHCP_OPT_SWAP_SERVER:
@@ -306,7 +291,6 @@ error_t dhcpDumpMessage(const DhcpMessage *message, size_t length)
       case DHCP_OPT_SERVER_ID:
          error = dhcpDumpIpv4Addr(option);
          break;
-
       //List of IPv4 addresses?
       case DHCP_OPT_ROUTER:
       case DHCP_OPT_TIME_SERVER:
@@ -335,7 +319,6 @@ error_t dhcpDumpMessage(const DhcpMessage *message, size_t length)
       case DHCP_OPT_STDA_SERVER:
          error = dhcpDumpIpv4AddrList(option);
          break;
-
       //Raw data?
       default:
          error = dhcpDumpRawData(option);
@@ -515,13 +498,9 @@ error_t dhcpDumpString(const DhcpOption *option)
 
    //Append prefix
    TRACE_DEBUG("    ");
-
    //Dump option contents
    for(i = 0; i < option->length; i++)
-   {
       TRACE_DEBUG("%c", option->value[i]);
-   }
-
    //Add a line feed
    TRACE_DEBUG("\r\n");
 

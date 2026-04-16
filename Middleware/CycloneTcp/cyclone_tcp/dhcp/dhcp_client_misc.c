@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,22 +25,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL DHCP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "dhcp/dhcp_client.h"
-#include "dhcp/dhcp_client_fsm.h"
-#include "dhcp/dhcp_client_misc.h"
-#include "dhcp/dhcp_common.h"
-#include "dhcp/dhcp_debug.h"
-#include "mdns/mdns_responder.h"
-#include "date_time.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_client_fsm.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_client_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_responder.h"
+#include "../../../CycloneTcp/common/date_time.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV4_SUPPORT == ENABLED && DHCP_CLIENT_SUPPORT == ENABLED)
@@ -64,8 +64,8 @@ const uint8_t dhcpOptionList[] =
 /**
  * @brief DHCP client timer handler
  *
- * This routine must be periodically called by the TCP/IP stack to manage
- * DHCP client operation
+ * This routine must be periodically called by the TCP/IP stack to
+ * manage DHCP client operation
  *
  * @param[in] context Pointer to the DHCP client context
  **/
@@ -118,12 +118,6 @@ void dhcpClientTick(DhcpClientContext *context)
       case DHCP_STATE_PROBING:
          //The client probes the newly received address
          dhcpClientStateProbing(context);
-         break;
-
-      //ANNOUNCING state?
-      case DHCP_STATE_ANNOUNCING:
-         //The client announces its new IP address
-         dhcpClientStateAnnouncing(context);
          break;
 
       //BOUND state?
@@ -600,119 +594,6 @@ error_t dhcpClientSendDecline(DhcpClientContext *context)
 
 
 /**
- * @brief Send DHCPRELEASE message
- * @param[in] context Pointer to the DHCP client context
- * @return Error code
- **/
-
-error_t dhcpClientSendRelease(DhcpClientContext *context)
-{
-   uint_t i;
-   error_t error;
-   size_t offset;
-   size_t length;
-   NetBuffer *buffer;
-   NetInterface *interface;
-   NetInterface *logicalInterface;
-   DhcpMessage *message;
-   IpAddr srcIpAddr;
-   IpAddr destIpAddr;
-   NetTxAncillary ancillary;
-
-   //DHCP message type
-   const uint8_t type = DHCP_MSG_TYPE_RELEASE;
-
-   //Point to the underlying network interface
-   interface = context->settings.interface;
-   //Point to the logical interface
-   logicalInterface = nicGetLogicalInterface(interface);
-
-   //Index of the IP address in the list of addresses assigned to the interface
-   i = context->settings.ipAddrIndex;
-
-   //Allocate a memory buffer to hold the DHCP message
-   buffer = udpAllocBuffer(DHCP_MAX_MSG_SIZE, &offset);
-   //Failed to allocate buffer?
-   if(buffer == NULL)
-      return ERROR_OUT_OF_MEMORY;
-
-   //Point to the beginning of the DHCP message
-   message = netBufferAt(buffer, offset);
-   //Clear memory buffer contents
-   osMemset(message, 0, DHCP_MAX_MSG_SIZE);
-
-   //Format DHCP message
-   message->op = DHCP_OPCODE_BOOTREQUEST;
-   message->htype = DHCP_HARDWARE_TYPE_ETH;
-   message->hlen = sizeof(MacAddr);
-   message->xid = htonl(context->transactionId);
-   message->secs = 0;
-   message->flags = 0;
-   message->ciaddr = interface->ipv4Context.addrList[i].addr;
-   message->chaddr = logicalInterface->macAddr;
-
-   //Write magic cookie before setting any option
-   message->magicCookie = HTONL(DHCP_MAGIC_COOKIE);
-   //Properly terminate the options field
-   message->options[0] = DHCP_OPT_END;
-
-   //Total length of the DHCP message
-   length = sizeof(DhcpMessage) + sizeof(uint8_t);
-
-   //DHCP Message Type option
-   dhcpAddOption(message, &length, DHCP_OPT_DHCP_MESSAGE_TYPE,
-      &type, sizeof(type));
-
-   //Server Identifier option
-   dhcpAddOption(message, &length, DHCP_OPT_SERVER_ID,
-      &context->serverIpAddr, sizeof(Ipv4Addr));
-
-   //Any registered callback?
-   if(context->settings.addOptionsCallback != NULL)
-   {
-      //Invoke user callback function
-      context->settings.addOptionsCallback(context, message, &length,
-         DHCP_MSG_TYPE_RELEASE);
-   }
-
-   //The minimum length of BOOTP frames is 300 octets (refer to RFC 951,
-   //section 3)
-   length = MAX(length, DHCP_MIN_MSG_SIZE);
-
-   //Adjust the length of the multi-part buffer
-   netBufferSetLength(buffer, offset + length);
-
-   //Set source IP address
-   srcIpAddr.length = sizeof(Ipv4Addr);
-   srcIpAddr.ipv4Addr = interface->ipv4Context.addrList[i].addr;
-
-   //The client unicasts DHCPRELEASE messages to the server (refer to RFC 2131,
-   //section 4.4.4)
-   destIpAddr.length = sizeof(Ipv4Addr);
-   destIpAddr.ipv4Addr = context->serverIpAddr;
-
-   //Debug message
-   TRACE_DEBUG("\r\n%s: Sending DHCP message (%" PRIuSIZE " bytes)...\r\n",
-      formatSystemTime(osGetSystemTime(), NULL), length);
-
-   //Dump the contents of the message for debugging purpose
-   dhcpDumpMessage(message, length);
-
-   //Additional options can be passed to the stack along with the packet
-   ancillary = NET_DEFAULT_TX_ANCILLARY;
-
-   //Broadcast DHCP message
-   error = udpSendBuffer(interface, &srcIpAddr, DHCP_CLIENT_PORT, &destIpAddr,
-      DHCP_SERVER_PORT, buffer, offset, &ancillary);
-
-   //Free previously allocated memory
-   netBufferFree(buffer);
-   //Return status code
-   return error;
-}
-
-
-/**
  * @brief Process incoming DHCP message
  * @param[in] interface Underlying network interface
  * @param[in] pseudoHeader UDP pseudo header
@@ -815,7 +696,6 @@ void dhcpClientProcessMessage(NetInterface *interface,
 void dhcpClientParseOffer(DhcpClientContext *context,
    const DhcpMessage *message, size_t length)
 {
-   error_t error;
    DhcpOption *serverIdOption;
    NetInterface *interface;
    NetInterface *logicalInterface;
@@ -853,11 +733,8 @@ void dhcpClientParseOffer(DhcpClientContext *context,
    if(context->settings.parseOptionsCallback != NULL)
    {
       //Invoke user callback function
-      error = context->settings.parseOptionsCallback(context, message, length,
+      context->settings.parseOptionsCallback(context, message, length,
          DHCP_MSG_TYPE_OFFER);
-      //Check status code
-      if(error)
-         return;
    }
 
    //Record the IP address of the DHCP server
@@ -880,7 +757,6 @@ void dhcpClientParseOffer(DhcpClientContext *context,
 void dhcpClientParseAck(DhcpClientContext *context,
    const DhcpMessage *message, size_t length)
 {
-   error_t error;
    uint_t i;
    uint_t j;
    uint_t n;
@@ -960,17 +836,6 @@ void dhcpClientParseAck(DhcpClientContext *context,
    if(option == NULL || option->length != 4)
       return;
 
-   //Any registered callback?
-   if(context->settings.parseOptionsCallback != NULL)
-   {
-      //Invoke user callback function
-      error = context->settings.parseOptionsCallback(context, message, length,
-         DHCP_MSG_TYPE_ACK);
-      //Check status code
-      if(error)
-         return;
-   }
-
    //Record the lease time
    context->leaseTime = LOAD32BE(option->value);
 
@@ -1019,7 +884,7 @@ void dhcpClientParseAck(DhcpClientContext *context,
    //Retrieve Subnet Mask option
    option = dhcpGetOption(message, length, DHCP_OPT_SUBNET_MASK);
 
-   //Option found?
+   //The specified option has been found?
    if(option != NULL && option->length == sizeof(Ipv4Addr))
    {
       //Save subnet mask
@@ -1030,7 +895,7 @@ void dhcpClientParseAck(DhcpClientContext *context,
    //Retrieve Router option
    option = dhcpGetOption(message, length, DHCP_OPT_ROUTER);
 
-   //Option found?
+   //The specified option has been found?
    if(option != NULL && !(option->length % sizeof(Ipv4Addr)))
    {
       //Save default gateway
@@ -1047,7 +912,7 @@ void dhcpClientParseAck(DhcpClientContext *context,
       //Retrieve DNS Server option
       option = dhcpGetOption(message, length, DHCP_OPT_DNS_SERVER);
 
-      //Option found?
+      //The specified option has been found?
       if(option != NULL && !(option->length % sizeof(Ipv4Addr)))
       {
          //Get the number of addresses provided in the response
@@ -1066,7 +931,7 @@ void dhcpClientParseAck(DhcpClientContext *context,
    //Retrieve MTU option
    option = dhcpGetOption(message, length, DHCP_OPT_INTERFACE_MTU);
 
-   //Option found?
+   //The specified option has been found?
    if(option != NULL && option->length == 2)
    {
       //This option specifies the MTU to use on this interface
@@ -1078,6 +943,14 @@ void dhcpClientParseAck(DhcpClientContext *context,
          //Set the MTU to be used on the interface
          interface->ipv4Context.linkMtu = n;
       }
+   }
+
+   //Any registered callback?
+   if(context->settings.parseOptionsCallback != NULL)
+   {
+      //Invoke user callback function
+      context->settings.parseOptionsCallback(context, message, length,
+         DHCP_MSG_TYPE_ACK);
    }
 
    //Record the IP address of the DHCP server
@@ -1128,7 +1001,6 @@ void dhcpClientParseAck(DhcpClientContext *context,
 void dhcpClientParseNak(DhcpClientContext *context,
    const DhcpMessage *message, size_t length)
 {
-   error_t error;
    DhcpOption *serverIdOption;
    NetInterface *interface;
    NetInterface *logicalInterface;
@@ -1176,11 +1048,8 @@ void dhcpClientParseNak(DhcpClientContext *context,
    if(context->settings.parseOptionsCallback != NULL)
    {
       //Invoke user callback function
-      error = context->settings.parseOptionsCallback(context, message, length,
+      context->settings.parseOptionsCallback(context, message, length,
          DHCP_MSG_TYPE_NAK);
-      //Check status code
-      if(error)
-         return;
    }
 
    //The host address is no longer appropriate for the link
@@ -1239,8 +1108,8 @@ void dhcpClientCheckTimeout(DhcpClientContext *context)
 /**
  * @brief Compute the appropriate secs field
  *
- * Compute the number of seconds elapsed since the client began address
- * acquisition or renewal process
+ * Compute the number of seconds elapsed since the client began
+ * address acquisition or renewal process
  *
  * @param[in] context Pointer to the DHCP client context
  * @return The elapsed time expressed in seconds
@@ -1282,7 +1151,7 @@ void dhcpClientChangeState(DhcpClientContext *context,
    if(newState <= DHCP_STATE_REBINDING)
    {
       //DHCP FSM states
-      static const char_t *const stateLabel[] =
+      static const char_t *stateLabel[] =
       {
          "INIT",
          "SELECTING",
@@ -1290,7 +1159,6 @@ void dhcpClientChangeState(DhcpClientContext *context,
          "INIT-REBOOT",
          "REBOOTING",
          "PROBING",
-         "ANNOUNCING",
          "BOUND",
          "RENEWING",
          "REBINDING"

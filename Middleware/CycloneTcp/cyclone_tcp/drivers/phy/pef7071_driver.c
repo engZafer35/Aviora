@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "drivers/phy/pef7071_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/phy/pef7071_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -83,9 +83,6 @@ error_t pef7071Init(NetInterface *interface)
    {
    }
 
-   //Dump PHY registers for debugging purpose
-   pef7071DumpPhyReg(interface);
-
    //Select RMII mode
    pef7071WritePhyReg(interface, PEF7071_MIICTRL, PEF7071_MIICTRL_RXCOFF |
       PEF7071_MIICTRL_MODE_RMII);
@@ -97,8 +94,8 @@ error_t pef7071Init(NetInterface *interface)
    pef7071WritePhyReg(interface, PEF7071_CTRL, PEF7071_CTRL_ANEN |
       PEF7071_CTRL_ANRS);
 
-   //Perform custom configuration
-   pef7071InitHook(interface);
+   //Dump PHY registers for debugging purpose
+   pef7071DumpPhyReg(interface);
 
    //Force the TCP/IP stack to poll the link state at startup
    interface->phyEvent = TRUE;
@@ -107,16 +104,6 @@ error_t pef7071Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief PEF7071 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void pef7071InitHook(NetInterface *interface)
-{
 }
 
 
@@ -312,58 +299,4 @@ void pef7071DumpPhyReg(NetInterface *interface)
 
    //Terminate with a line feed
    TRACE_DEBUG("\r\n");
-}
-
-
-/**
- * @brief Write MMD register
- * @param[in] interface Underlying network interface
- * @param[in] devAddr Device address
- * @param[in] regAddr Register address
- * @param[in] data MMD register value
- **/
-
-void pef7071WriteMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr, uint16_t data)
-{
-   //Select register operation
-   pef7071WritePhyReg(interface, PEF7071_MMDCTRL,
-      PEF7071_MMDCTRL_ACTYPE_ADDR | (devAddr & PEF7071_MMDCTRL_DEVAD));
-
-   //Write MMD register address
-   pef7071WritePhyReg(interface, PEF7071_MMDDATA, regAddr);
-
-   //Select data operation
-   pef7071WritePhyReg(interface, PEF7071_MMDCTRL,
-      PEF7071_MMDCTRL_ACTYPE_DATA | (devAddr & PEF7071_MMDCTRL_DEVAD));
-
-   //Write the content of the MMD register
-   pef7071WritePhyReg(interface, PEF7071_MMDDATA, data);
-}
-
-
-/**
- * @brief Read MMD register
- * @param[in] interface Underlying network interface
- * @param[in] devAddr Device address
- * @param[in] regAddr Register address
- * @return MMD register value
- **/
-
-uint16_t pef7071ReadMmdReg(NetInterface *interface, uint8_t devAddr,
-   uint16_t regAddr)
-{
-   //Select register operation
-   pef7071WritePhyReg(interface, PEF7071_MMDCTRL,
-      PEF7071_MMDCTRL_ACTYPE_ADDR | (devAddr & PEF7071_MMDCTRL_DEVAD));
-
-   //Write MMD register address
-   pef7071WritePhyReg(interface, PEF7071_MMDDATA, regAddr);
-
-   //Select data operation
-   pef7071WritePhyReg(interface, PEF7071_MMDCTRL,
-      PEF7071_MMDCTRL_ACTYPE_DATA | (devAddr & PEF7071_MMDCTRL_DEVAD));
-
-   //Read the content of the MMD register
-   return pef7071ReadPhyReg(interface, PEF7071_MMDDATA);
 }

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,16 +33,15 @@
 
 //Dependencies
 #include <stdio.h>
-#include "core/net.h"
-#include "ppp/ppp.h"
-#include "ppp/ppp_hdlc.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ppp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ppp/ppp_hdlc.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (PPP_SUPPORT == ENABLED)
 
-static gs_isPPPTxBusy;
-static gs_isPPPRxBusy;
+
 /**
  * @brief PPP HDLC driver
  **/
@@ -163,11 +162,11 @@ void pppHdlcDriverEventHandler(NetInterface *interface)
          pppHdlcDriverReceivePacket(interface);
 
          //Enter critical section
-//         __disable_irq(); zafer
+         __disable_irq();
          //Decrement frame counter
          context->rxFrameCount--;
          //Exit critical section
-//         __enable_irq(); zafer
+         __enable_irq();
       }
    }
 }
@@ -193,8 +192,6 @@ error_t pppHdlcDriverSendPacket(NetInterface *interface,
    uint16_t protocol;
    uint32_t accm;
    PppContext *context;
-
-   gs_isPPPTxBusy = 1;
 
    //Point to the PPP context
    context = interface->pppContext;
@@ -281,9 +278,6 @@ error_t pppHdlcDriverSendPacket(NetInterface *interface,
    {
       //The transmitter can accept another packet
       osSetEvent(&interface->nicTxEvent);
-
-      gs_isPPPTxBusy = 0;
-      //Zafer burası da tx ready
    }
 
    //Data successfully written
@@ -366,18 +360,11 @@ error_t pppHdlcDriverReceivePacket(NetInterface *interface)
       TRACE_DEBUG("PPP frame received (%" PRIuSIZE " bytes)...\r\n", n);
       TRACE_DEBUG_ARRAY("  ", context->frame, n);
 
-      gs_isPPPRxBusy = 1;
-      //zafer burası olabilir
-
-
-
       //Additional options can be passed to the stack along with the packet
       ancillary = NET_DEFAULT_RX_ANCILLARY;
 
       //Pass the packet to the upper layer
       nicProcessPacket(interface, context->frame, n, &ancillary);
-
-      gs_isPPPRxBusy = 0;
    }
 
    //Successful read operation
@@ -415,9 +402,7 @@ error_t pppHdlcDriverSendAtCommand(NetInterface *interface, const char_t *data)
 
    //Send AT command
    for(i = 0; data[i] != '\0' && i < 3006; i++)
-   {
       pppHdlcDriverWriteTxQueue(context, data[i]);
-   }
 
    //Start transferring data
    interface->uartDriver->startTx();
@@ -483,12 +468,12 @@ error_t pppHdlcDriverReceiveAtCommand(NetInterface *interface, char_t *data,
          }
          else if(i >= 5 && !osMemcmp(data + i - 5, "CLIENT", 6))
          {
-            //Special processing for null-modem connections
+            //Special processing of null-modem connections
             valid = TRUE;
          }
          else if(i >= 5 && !osMemcmp(data + i - 5, "SERVER", 6))
          {
-            //Special processing for null-modem connections
+            //Special processing of null-modem connections
             valid = TRUE;
          }
          else
@@ -516,11 +501,11 @@ error_t pppHdlcDriverReceiveAtCommand(NetInterface *interface, char_t *data,
       context->rxReadIndex = (context->rxReadIndex + i) % PPP_RX_BUFFER_SIZE;
 
       //Enter critical section
-//      __disable_irq();  zafer
+      __disable_irq();
       //Update the length of the RX buffer
       context->rxBufferLen -= i;
       //Exit critical section
-//      __enable_irq(); zafer
+      __enable_irq();
 
       //Return status code
       return (i < size) ? NO_ERROR : ERROR_BUFFER_OVERFLOW;
@@ -542,7 +527,7 @@ error_t pppHdlcDriverReceiveAtCommand(NetInterface *interface, char_t *data,
 error_t pppHdlcDriverPurgeTxBuffer(PppContext *context)
 {
    //Enter critical section
-//   __disable_irq(); zafer
+   __disable_irq();
 
    //Purge TX buffer
    context->txBufferLen = 0;
@@ -550,7 +535,7 @@ error_t pppHdlcDriverPurgeTxBuffer(PppContext *context)
    context->txReadIndex = 0;
 
    //Exit critical section
-//   __enable_irq(); zafer
+   __enable_irq();
 
    //Successful operation
    return NO_ERROR;
@@ -566,7 +551,7 @@ error_t pppHdlcDriverPurgeTxBuffer(PppContext *context)
 error_t pppHdlcDriverPurgeRxBuffer(PppContext *context)
 {
    //Enter critical section
-//   __disable_irq();  zafer
+   __disable_irq();
 
    //Purge RX buffer
    context->rxBufferLen = 0;
@@ -575,7 +560,7 @@ error_t pppHdlcDriverPurgeRxBuffer(PppContext *context)
    context->rxFrameCount = 0;
 
    //Exit critical section
-//   __enable_irq();  zafer
+   __enable_irq();
 
    //Successful operation
    return NO_ERROR;
@@ -598,11 +583,11 @@ void pppHdlcDriverWriteTxQueue(PppContext *context, uint8_t c)
       context->txWriteIndex = 0;
 
    //Enter critical section
-//   __disable_irq(); zafer
+   __disable_irq();
    //Update the length of the queue
    context->txBufferLen++;
    //Exit critical section
-//   __enable_irq(); zafer
+   __enable_irq();
 }
 
 
@@ -624,11 +609,11 @@ uint8_t pppHdlcDriverReadRxQueue(PppContext *context)
       context->rxReadIndex = 0;
 
    //Enter critical section
-//   __disable_irq();  zafer
+   __disable_irq();
    //Update the length of the queue
    context->rxBufferLen--;
    //Exit critical section
-//   __enable_irq(); zafer
+   __enable_irq();
 
    //Return the character that has been read
    return c;
@@ -668,11 +653,7 @@ bool_t pppHdlcDriverReadTxQueue(NetInterface *interface, int_t *c)
       //Check whether the TX is available for writing
       if(context->txBufferLen == (PPP_TX_BUFFER_SIZE - 3006))
       {
-#if defined(__linux__)
-          osSetEvent(&interface->nicTxEvent);
-#else
          flag = osSetEventFromIsr(&interface->nicTxEvent);
-#endif
       }
    }
    else
@@ -725,21 +706,12 @@ bool_t pppHdlcDriverWriteRxQueue(NetInterface *interface, uint8_t c)
          //A complete HDLC frame has been received
          interface->nicEvent = TRUE;
          //Notify the TCP/IP stack of the event
-#if defined(__linux__)
-         osSetEvent(&netEvent);
-#else
-         flag = osSetEventFromIsr(&netEvent); //todo zafer bunu normal event setlemeye çevir
-#endif
+         flag = osSetEventFromIsr(&netEvent);
       }
    }
 
    //The return value tells whether a context switch is required
    return flag;
-}
-
-bool_t isPPPWatingRxTxData(void)
-{
-    return gs_isPPPRxBusy | gs_isPPPTxBusy; //return True if rx or tx is busy
 }
 
 #endif

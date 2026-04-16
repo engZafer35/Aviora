@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -32,9 +32,9 @@
 //Dependencies
 #include <stdio.h>
 #include <stdlib.h>
-#include "os_port.h"
-#include "os_port_sys_bios.h"
-#include "debug.h"
+#include "../../CycloneTcp/common/os_port.h"
+#include "../../CycloneTcp/common/os_port_sys_bios.h"
+#include "../../CycloneTcp/common/debug.h"
 
 //Variables
 static bool_t running = FALSE;
@@ -65,47 +65,49 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a task
- * @param[in] name NULL-terminated string identifying the task
+ * @brief Create a new task
+ * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] arg Argument passed to the task function
- * @param[in] params Task parameters
- * @return Task identifier referencing the newly created task
+ * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] stackSize The initial size of the stack, in words
+ * @param[in] priority The priority at which the task should run
+ * @return If the function succeeds, the return value is a pointer to the
+ *   new task. If the function fails, the return value is NULL
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
-   const OsTaskParameters *params)
+OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
+   void *param, size_t stackSize, int_t priority)
 {
    Error_Block eb;
    Task_Params taskParams;
-   Task_Handle handle;
+   Task_Handle task;
 
    //Initialize error block
    Error_init(&eb);
 
    //Set parameters
    Task_Params_init(&taskParams);
-   taskParams.arg0 = (UArg) arg;
-   taskParams.stackSize = params->stackSize * sizeof(uint32_t);
-   taskParams.priority = params->priority;
+   taskParams.arg0 = (UArg) param;
+   taskParams.stackSize = stackSize * sizeof(uint_t);
+   taskParams.priority = priority;
 
    //Create a new task
-   handle = Task_create((Task_FuncPtr) taskCode, &taskParams, &eb);
+   task = Task_create((Task_FuncPtr) taskCode, &taskParams, &eb);
 
-   //Return the handle referencing the newly created task
-   return (OsTaskId) handle;
+   //Return a pointer to the newly created task
+   return task;
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] taskId Task identifier referencing the task to be deleted
+ * @param[in] task Pointer to the task to be deleted
  **/
 
-void osDeleteTask(OsTaskId taskId)
+void osDeleteTask(OsTask *task)
 {
    //Delete the specified task
-   Task_delete(&taskId);
+   Task_delete(&task);
 }
 
 
@@ -176,13 +178,9 @@ bool_t osCreateEvent(OsEvent *event)
 
    //Check whether the returned handle is valid
    if(event->handle != NULL)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -238,8 +236,7 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
 {
    Bool ret;
 
-   //Wait until the specified event is in the signaled state or the timeout
-   //interval elapses
+   //Wait until the specified event is in the signaled state
    if(timeout == 0)
    {
       //Non-blocking call
@@ -303,13 +300,9 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
    //Check whether the returned handle is valid
    if(semaphore->handle != NULL)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -395,13 +388,9 @@ bool_t osCreateMutex(OsMutex *mutex)
 
    //Check whether the returned handle is valid
    if(mutex->handle != NULL)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -469,7 +458,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-__weak_func void *osAllocMem(size_t size)
+void *osAllocMem(size_t size)
 {
    void *p;
 
@@ -481,8 +470,7 @@ __weak_func void *osAllocMem(size_t size)
    osResumeAllTasks();
 
    //Debug message
-   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n",
-      size, (uintptr_t) p);
+   TRACE_DEBUG("Allocating %" PRIuSIZE " bytes at 0x%08" PRIXPTR "\r\n", size, (uintptr_t) p);
 
    //Return a pointer to the newly allocated memory block
    return p;
@@ -494,7 +482,7 @@ __weak_func void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-__weak_func void osFreeMem(void *p)
+void osFreeMem(void *p)
 {
    //Make sure the pointer is valid
    if(p != NULL)

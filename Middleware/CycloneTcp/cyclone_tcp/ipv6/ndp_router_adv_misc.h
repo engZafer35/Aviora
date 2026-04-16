@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _NDP_ROUTER_ADV_MISC_H
 #define _NDP_ROUTER_ADV_MISC_H
 
 //Dependencies
-#include "core/net.h"
-#include "ipv6/ndp_router_adv.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_router_adv.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -47,9 +47,8 @@ extern systime_t ndpRouterAdvTickCounter;
 void ndpRouterAdvTick(NdpRouterAdvContext *context);
 void ndpRouterAdvLinkChangeEvent(NdpRouterAdvContext *context);
 
-void ndpProcessRouterSol(NetInterface *interface,
-   const Ipv6PseudoHeader *pseudoHeader, const NetBuffer *buffer,
-   size_t offset, uint8_t hopLimit);
+void ndpProcessRouterSol(NetInterface *interface, Ipv6PseudoHeader *pseudoHeader,
+   const NetBuffer *buffer, size_t offset, uint8_t hopLimit);
 
 error_t ndpSendRouterAdv(NdpRouterAdvContext *context, uint16_t routerLifetime);
 

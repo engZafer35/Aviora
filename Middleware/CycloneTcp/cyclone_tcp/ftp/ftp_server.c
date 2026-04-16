@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -34,19 +34,19 @@
  * - RFC 2428: FTP Extensions for IPv6 and NATs
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL FTP_TRACE_LEVEL
 
 //Dependencies
-#include "ftp/ftp_server.h"
-#include "ftp/ftp_server_control.h"
-#include "ftp/ftp_server_data.h"
-#include "ftp/ftp_server_misc.h"
-#include "path.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_server.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_server_control.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_server_data.h"
+#include "../../../CycloneTcp/cyclone_tcp/ftp/ftp_server_misc.h"
+#include "../../../CycloneTcp/common/path.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (FTP_SERVER_SUPPORT == ENABLED)
@@ -59,11 +59,6 @@
 
 void ftpServerGetDefaultSettings(FtpServerSettings *settings)
 {
-   //Default task parameters
-   settings->task = OS_TASK_DEFAULT_PARAMS;
-   settings->task.stackSize = FTP_SERVER_STACK_SIZE;
-   settings->task.priority = FTP_SERVER_PRIORITY;
-
    //The FTP server is not bound to any interface
    settings->interface = NULL;
 
@@ -150,10 +145,6 @@ error_t ftpServerInit(FtpServerContext *context,
    //Clear the FTP server context
    osMemset(context, 0, sizeof(FtpServerContext));
 
-   //Initialize task parameters
-   context->taskParams = settings->task;
-   context->taskId = OS_INVALID_TASK_ID;
-
    //Save user settings
    context->settings = *settings;
    //Client connections
@@ -210,6 +201,7 @@ error_t ftpServerInit(FtpServerContext *context,
 error_t ftpServerStart(FtpServerContext *context)
 {
    error_t error;
+   OsTask *task;
 
    //Make sure the FTP server context is valid
    if(context == NULL)
@@ -279,12 +271,11 @@ error_t ftpServerStart(FtpServerContext *context)
       context->stop = FALSE;
       context->running = TRUE;
 
-      //Create a task
-      context->taskId = osCreateTask("FTP Server", (OsTaskCode) ftpServerTask,
-         context, &context->taskParams);
-
+      //Create the FTP server task
+      task = osCreateTask("FTP Server", (OsTaskCode) ftpServerTask, context,
+         FTP_SERVER_STACK_SIZE, FTP_SERVER_PRIORITY);
       //Failed to create task?
-      if(context->taskId == OS_INVALID_TASK_ID)
+      if(task == OS_INVALID_HANDLE)
       {
          //Report an error
          error = ERROR_OUT_OF_RESOURCES;
@@ -463,18 +454,15 @@ void ftpServerTask(FtpServerContext *context)
       time = osGetSystemTime();
 
       //Check status code
-      if(error == NO_ERROR || error == ERROR_TIMEOUT ||
-         error == ERROR_WAIT_CANCELED)
+      if(error == NO_ERROR || error == ERROR_TIMEOUT)
       {
          //Stop request?
          if(context->stop)
          {
             //Stop FTP server operation
             context->running = FALSE;
-            //Task epilogue
-            osExitTask();
             //Kill ourselves
-            osDeleteTask(OS_SELF_TASK_ID);
+            osDeleteTask(NULL);
          }
 
          //Event-driven processing

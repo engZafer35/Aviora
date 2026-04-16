@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,15 +23,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _RESOURCE_MANAGER_H
 #define _RESOURCE_MANAGER_H
 
 //Dependencies
-#include "compiler_port.h"
-#include "error.h"
+#include "../../CycloneTcp/common/compiler_port.h"
+#include "../../CycloneTcp/common/error.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -50,10 +50,8 @@ typedef enum
 } ResType;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -62,44 +60,42 @@ typedef enum
  * @brief Resource entry
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    char_t type;
    uint32_t dataStart;
    uint32_t dataLength;
    uint8_t nameLength;
    char_t name[];
-} ResEntry;
+} __end_packed ResEntry;
 
 
 /**
  * @brief Root entry
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    char_t type;
    uint32_t dataStart;
    uint32_t dataLength;
    uint8_t nameLength;
-} ResRootEntry;
+} __end_packed ResRootEntry;
 
 
 /**
  * @brief Resource header
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint32_t totalSize;
    ResRootEntry rootEntry;
-} ResHeader;
+} __end_packed ResHeader;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
 

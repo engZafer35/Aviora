@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -31,40 +31,33 @@
  * networks. Refer to RFC 791 for complete details
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL IPV4_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "core/ethernet.h"
-#include "core/ip.h"
-#include "core/udp.h"
-#include "core/tcp_fsm.h"
-#include "core/raw_socket.h"
-#include "ipv4/arp_cache.h"
-#include "ipv4/ipv4.h"
-#include "ipv4/ipv4_misc.h"
-#include "ipv4/ipv4_routing.h"
-#include "ipv4/icmp.h"
-#include "ipv4/auto_ip_misc.h"
-#include "igmp/igmp_host.h"
-#include "dhcp/dhcp_client_misc.h"
-#include "mdns/mdns_responder.h"
-#include "mibs/mib2_module.h"
-#include "mibs/ip_mib_module.h"
-#include "debug.h"
-
-//IPsec supported?
-#if (IPV4_IPSEC_SUPPORT == ENABLED)
-   #include "ipsec/ipsec.h"
-   #include "ipsec/ipsec_inbound.h"
-   #include "ipsec/ipsec_outbound.h"
-   #include "ah/ah.h"
-   #include "esp/esp.h"
-#endif
+#include <string.h>
+#include <ctype.h>
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ethernet.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/ip.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/udp.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/tcp_fsm.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/raw_socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/arp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_routing.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/icmp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/auto_ip_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/igmp/igmp_host.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_client_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_responder.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib2_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/ip_mib_module.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV4_SUPPORT == ENABLED)
@@ -93,10 +86,8 @@ error_t ipv4Init(NetInterface *interface)
    //Initialize interface specific variables
    context->linkMtu = physicalInterface->nicDriver->mtu;
    context->isRouter = FALSE;
-   context->defaultTtl = IPV4_DEFAULT_TTL;
 
-   //ICMP Echo Request messages are allowed by default
-   context->enableEchoReq = TRUE;
+   //Broadcast ICMP Echo Request messages are allowed by default
    context->enableBroadcastEchoReq = TRUE;
 
    //Identification field is primarily used to identify
@@ -114,31 +105,6 @@ error_t ipv4Init(NetInterface *interface)
 #endif
 
    //Successful initialization
-   return NO_ERROR;
-}
-
-
-/**
- * @brief Set default TTL value for outgoing IPv4 packets
- * @param[in] interface Underlying network interface
- * @param[in] ttl Default time-to-live value
- * @return Error code
- **/
-
-error_t ipv4SetDefaultTtl(NetInterface *interface, uint8_t ttl)
-{
-   //Check parameters
-   if(interface == NULL || ttl == 0)
-      return ERROR_INVALID_PARAMETER;
-
-   //Get exclusive access
-   osAcquireMutex(&netMutex);
-   //Set default time-to-live value
-   interface->ipv4Context.defaultTtl = ttl;
-   //Release exclusive access
-   osReleaseMutex(&netMutex);
-
-   //Successful processing
    return NO_ERROR;
 }
 
@@ -608,7 +574,7 @@ void ipv4ProcessPacket(NetInterface *interface, Ipv4Header *packet,
    error = NO_ERROR;
 
    //Total number of input datagrams received, including those received in error
-   MIB2_IP_INC_COUNTER32(ipInReceives, 1);
+   MIB2_INC_COUNTER32(ipGroup.ipInReceives, 1);
    IP_MIB_INC_COUNTER32(ipv4SystemStats.ipSystemStatsInReceives, 1);
    IP_MIB_INC_COUNTER64(ipv4SystemStats.ipSystemStatsHCInReceives, 1);
    IP_MIB_INC_COUNTER32(ipv4IfStatsTable[interface->index].ipIfStatsInReceives, 1);
@@ -792,7 +758,7 @@ void ipv4ProcessPacket(NetInterface *interface, Ipv4Header *packet,
          buffer.chunk[0].length = (uint16_t) length;
 
          //Pass the IPv4 datagram to the higher protocol layer
-         ipv4ProcessDatagram(interface, (NetBuffer *) &buffer, 0, ancillary);
+         ipv4ProcessDatagram(interface, (NetBuffer *) &buffer, ancillary);
       }
 
       //End of exception handling block
@@ -811,24 +777,24 @@ void ipv4ProcessPacket(NetInterface *interface, Ipv4Header *packet,
  * @brief Incoming IPv4 datagram processing
  * @param[in] interface Underlying network interface
  * @param[in] buffer Multi-part buffer that holds the incoming IPv4 datagram
- * @param[in] offset Offset from the beginning of the buffer
  * @param[in] ancillary Additional options passed to the stack along with
  *   the packet
  **/
 
 void ipv4ProcessDatagram(NetInterface *interface, const NetBuffer *buffer,
-   size_t offset, NetRxAncillary *ancillary)
+   NetRxAncillary *ancillary)
 {
    error_t error;
+   size_t offset;
    size_t length;
    Ipv4Header *header;
    IpPseudoHeader pseudoHeader;
 
    //Retrieve the length of the IPv4 datagram
-   length = netBufferGetLength(buffer) - offset;
+   length = netBufferGetLength(buffer);
 
    //Point to the IPv4 header
-   header = netBufferAt(buffer, offset);
+   header = netBufferAt(buffer, 0);
    //Sanity check
    if(header == NULL)
       return;
@@ -839,7 +805,7 @@ void ipv4ProcessDatagram(NetInterface *interface, const NetBuffer *buffer,
    ipv4DumpHeader(header);
 
    //Get the offset to the payload
-   offset += header->headerLength * 4;
+   offset = header->headerLength * 4;
    //Compute the length of the payload
    length -= header->headerLength * 4;
 
@@ -853,22 +819,9 @@ void ipv4ProcessDatagram(NetInterface *interface, const NetBuffer *buffer,
 
    //Save TTL value
    ancillary->ttl = header->timeToLive;
-   //Save ToS value
-   ancillary->tos = header->typeOfService;
 
 #if defined(IPV4_DATAGRAM_FORWARD_HOOK)
    IPV4_DATAGRAM_FORWARD_HOOK(interface, &pseudoHeader, buffer, offset);
-#endif
-
-   //Initialize status code
-   error = NO_ERROR;
-
-#if (IPV4_IPSEC_SUPPORT == ENABLED)
-   //Process inbound IP traffic (unprotected-to-protected)
-   error = ipsecProcessInboundIpv4Packet(interface, header, buffer, offset);
-   //Any error to report?
-   if(error)
-      return;
 #endif
 
    //Check the protocol field
@@ -885,6 +838,8 @@ void ipv4ProcessDatagram(NetInterface *interface, const NetBuffer *buffer,
          ancillary);
 #endif
 
+      //No error to report
+      error = NO_ERROR;
       //Continue processing
       break;
 
@@ -902,6 +857,8 @@ void ipv4ProcessDatagram(NetInterface *interface, const NetBuffer *buffer,
          ancillary);
 #endif
 
+      //No error to report
+      error = NO_ERROR;
       //Continue processing
       break;
 #endif
@@ -911,6 +868,8 @@ void ipv4ProcessDatagram(NetInterface *interface, const NetBuffer *buffer,
    case IPV4_PROTOCOL_TCP:
       //Process incoming TCP segment
       tcpProcessSegment(interface, &pseudoHeader, buffer, offset, ancillary);
+      //No error to report
+      error = NO_ERROR;
       //Continue processing
       break;
 #endif
@@ -920,26 +879,6 @@ void ipv4ProcessDatagram(NetInterface *interface, const NetBuffer *buffer,
    case IPV4_PROTOCOL_UDP:
       //Process incoming UDP datagram
       error = udpProcessDatagram(interface, &pseudoHeader, buffer, offset,
-         ancillary);
-      //Continue processing
-      break;
-#endif
-
-#if (IPV4_IPSEC_SUPPORT == ENABLED && AH_SUPPORT == ENABLED)
-   //AH header?
-   case IPV4_PROTOCOL_AH:
-      //Process AH header
-      error = ipv4ProcessAhHeader(interface, header, buffer, offset,
-         ancillary);
-      //Continue processing
-      break;
-#endif
-
-#if (IPV4_IPSEC_SUPPORT == ENABLED && ESP_SUPPORT == ENABLED)
-   //ESP header?
-   case IPV4_PROTOCOL_ESP:
-      //Process ESP header
-      error = ipv4ProcessEspHeader(interface, header, buffer, offset,
          ancillary);
       //Continue processing
       break;
@@ -973,7 +912,7 @@ void ipv4ProcessDatagram(NetInterface *interface, const NetBuffer *buffer,
    {
       //Total number of input datagrams successfully delivered to IP
       //user-protocols
-      MIB2_IP_INC_COUNTER32(ipInDelivers, 1);
+      MIB2_INC_COUNTER32(ipGroup.ipInDelivers, 1);
       IP_MIB_INC_COUNTER32(ipv4SystemStats.ipSystemStatsInDelivers, 1);
       IP_MIB_INC_COUNTER64(ipv4SystemStats.ipSystemStatsHCInDelivers, 1);
       IP_MIB_INC_COUNTER32(ipv4IfStatsTable[interface->index].ipIfStatsInDelivers, 1);
@@ -1001,73 +940,49 @@ void ipv4ProcessDatagram(NetInterface *interface, const NetBuffer *buffer,
  * @return Error code
  **/
 
-error_t ipv4SendDatagram(NetInterface *interface,
-   const Ipv4PseudoHeader *pseudoHeader, NetBuffer *buffer, size_t offset,
-   NetTxAncillary *ancillary)
+error_t ipv4SendDatagram(NetInterface *interface, Ipv4PseudoHeader *pseudoHeader,
+   NetBuffer *buffer, size_t offset, NetTxAncillary *ancillary)
 {
    error_t error;
-   uint16_t id;
-#if (IPV4_IPSEC_SUPPORT == DISABLED)
    size_t length;
-#endif
+   uint16_t id;
 
    //Total number of IP datagrams which local IP user-protocols supplied to IP
    //in requests for transmission
-   MIB2_IP_INC_COUNTER32(ipOutRequests, 1);
+   MIB2_INC_COUNTER32(ipGroup.ipOutRequests, 1);
    IP_MIB_INC_COUNTER32(ipv4SystemStats.ipSystemStatsOutRequests, 1);
    IP_MIB_INC_COUNTER64(ipv4SystemStats.ipSystemStatsHCOutRequests, 1);
    IP_MIB_INC_COUNTER32(ipv4IfStatsTable[interface->index].ipIfStatsOutRequests, 1);
    IP_MIB_INC_COUNTER64(ipv4IfStatsTable[interface->index].ipIfStatsHCOutRequests, 1);
 
+   //Retrieve the length of payload
+   length = netBufferGetLength(buffer) - offset;
+
    //Identification field is primarily used to identify fragments of an
    //original IP datagram
    id = interface->ipv4Context.identification++;
 
-#if (IPV4_IPSEC_SUPPORT == ENABLED)
-   //Process outbound IP traffic (protected-to-unprotected)
-   error = ipsecProcessOutboundIpv4Packet(interface, pseudoHeader, id, buffer,
-      offset, ancillary);
-
-   //Check status code
-   if(error == ERROR_IN_PROGRESS)
-   {
-      //The establishment of the SA pair is in progress
-      error = NO_ERROR;
-   }
-#else
-   //Retrieve the length of payload
-   length = netBufferGetLength(buffer) - offset;
-
-   //Check the length of the payload
+   //If the payload length is smaller than the network interface MTU then no
+   //fragmentation is needed
    if((length + sizeof(Ipv4Header)) <= interface->ipv4Context.linkMtu)
    {
-      //If the payload length is smaller than the network interface MTU
-      //then no fragmentation is needed
-      error = ipv4SendPacket(interface, pseudoHeader, id, 0, buffer,
-         offset, ancillary);
+      //Send data as is
+      error = ipv4SendPacket(interface, pseudoHeader, id, 0, buffer, offset,
+         ancillary);
    }
+   //If the payload length exceeds the network interface MTU then the device
+   //must fragment the data
    else
    {
 #if (IPV4_FRAG_SUPPORT == ENABLED)
-      //An IP datagram can be marked "don't fragment". Any IP datagram so
-      //marked is not to be fragmented under any circumstances (refer to
-      //RFC791, section 2.3)
-      if(!ancillary->dontFrag)
-      {
-         //If the payload length exceeds the network interface MTU then the
-         //device must fragment the data
-         error = ipv4FragmentDatagram(interface, pseudoHeader, id, buffer,
-            offset, ancillary);
-      }
-      else
+      //Fragment IP datagram into smaller packets
+      error = ipv4FragmentDatagram(interface, pseudoHeader, id, buffer, offset,
+         ancillary);
+#else
+      //Fragmentation is not supported
+      error = ERROR_MESSAGE_TOO_LONG;
 #endif
-      {
-         //If IP datagram cannot be delivered to its destination without
-         //fragmenting it, it is to be discarded instead
-         error = ERROR_MESSAGE_TOO_LONG;
-      }
    }
-#endif
 
    //Return status code
    return error;
@@ -1087,9 +1002,9 @@ error_t ipv4SendDatagram(NetInterface *interface,
  * @return Error code
  **/
 
-error_t ipv4SendPacket(NetInterface *interface,
-   const Ipv4PseudoHeader *pseudoHeader, uint16_t fragId, size_t fragOffset,
-   NetBuffer *buffer, size_t offset, NetTxAncillary *ancillary)
+error_t ipv4SendPacket(NetInterface *interface, Ipv4PseudoHeader *pseudoHeader,
+   uint16_t fragId, size_t fragOffset, NetBuffer *buffer, size_t offset,
+   NetTxAncillary *ancillary)
 {
    error_t error;
    size_t length;
@@ -1108,7 +1023,7 @@ error_t ipv4SendPacket(NetInterface *interface,
          return error;
    }
 
-   //Sanity check
+   //Is there enough space for the IPv4 header?
    if(offset < sizeof(Ipv4Header))
       return ERROR_INVALID_PARAMETER;
 
@@ -1123,7 +1038,7 @@ error_t ipv4SendPacket(NetInterface *interface,
    //Format IPv4 header
    packet->version = IPV4_VERSION;
    packet->headerLength = 5;
-   packet->typeOfService = ancillary->tos;
+   packet->typeOfService = 0;
    packet->totalLength = htons(length);
    packet->identification = htons(fragId);
    packet->fragmentOffset = htons(fragOffset);
@@ -1141,20 +1056,17 @@ error_t ipv4SendPacket(NetInterface *interface,
       packet->headerLength = 6;
    }
 
-   //An IP datagram can be marked "don't fragment"
-   if(ancillary->dontFrag)
-   {
-      //Any IP datagram so marked is not to be fragmented under any
-      //circumstances (refer to RFC791, section 2.3)
-      packet->fragmentOffset |= HTONS(IPV4_FLAG_DF); 
-   }
-
    //Check whether the TTL value is zero
    if(packet->timeToLive == 0)
    {
-      //Use default time-to-live value
-      packet->timeToLive = interface->ipv4Context.defaultTtl;
+      //Use default Time-To-Live value
+      packet->timeToLive = IPV4_DEFAULT_TTL;
    }
+
+#if (IP_DIFF_SERV_SUPPORT == ENABLED)
+   //Set DSCP field
+   packet->typeOfService = (ancillary->dscp << 2) & 0xFC;
+#endif
 
    //Calculate IP header checksum
    packet->headerChecksum = ipCalcChecksumEx(buffer, offset,
@@ -1267,7 +1179,7 @@ error_t ipv4SendPacket(NetInterface *interface,
             {
                //Number of IP datagrams discarded because no route could be found
                //to transmit them to their destination
-               MIB2_IP_INC_COUNTER32(ipOutNoRoutes, 1);
+               MIB2_INC_COUNTER32(ipGroup.ipOutNoRoutes, 1);
                IP_MIB_INC_COUNTER32(ipv4SystemStats.ipSystemStatsOutNoRoutes, 1);
             }
          }
@@ -1324,23 +1236,7 @@ error_t ipv4SendPacket(NetInterface *interface,
       }
       else
 #endif
-      //IPv4 interface?
-      if(interface->nicDriver != NULL &&
-         interface->nicDriver->type == NIC_TYPE_IPV4)
-      {
-         //Update IP statistics
-         ipv4UpdateOutStats(interface, pseudoHeader->destAddr, length);
-
-         //Debug message
-         TRACE_INFO("Sending IPv4 packet (%" PRIuSIZE " bytes)...\r\n", length);
-         //Dump IP header contents for debugging purpose
-         ipv4DumpHeader(packet);
-
-         //Send the packet over the specified link
-         error = nicSendPacket(interface, buffer, offset, ancillary);
-      }
       //Unknown interface type?
-      else
       {
          //Report an error
          error = ERROR_INVALID_INTERFACE;
@@ -1558,9 +1454,7 @@ error_t ipv4StringToAddr(const char_t *str, Ipv4Addr *ipAddr)
       {
          //First digit to be decoded?
          if(value < 0)
-         {
             value = 0;
-         }
 
          //Update the value of the current byte
          value = (value * 10) + (*str - '0');

@@ -1,12 +1,12 @@
 /**
  * @file lan8770_driver.c
- * @brief LAN8770 100Base-T1 Ethernet PHY driver
+ * @brief LAN8770 Ethernet PHY driver
  *
  * @section License
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,16 +25,16 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NIC_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "drivers/phy/lan8770_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/phy/lan8770_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 
 /**
@@ -91,16 +91,13 @@ error_t lan8770Init(NetInterface *interface)
 
    //Reset PHY transceiver
    lan8770WritePhyReg(interface, LAN8770_BASIC_CONTROL,
-      LAN8770_BASIC_CONTROL_SW_RESET);
+      LAN8770_BASIC_CONTROL_RESET);
 
    //Wait for the reset to complete
    while(lan8770ReadPhyReg(interface, LAN8770_BASIC_CONTROL) &
-      LAN8770_BASIC_CONTROL_SW_RESET)
+      LAN8770_BASIC_CONTROL_RESET)
    {
    }
-
-   //Dump PHY registers for debugging purpose
-   lan8770DumpPhyReg(interface);
 
    //Set TX amplitude
    temp = lan8770ReadExtReg(interface, LAN8770_AFE_PORT_CFG1);
@@ -133,8 +130,8 @@ error_t lan8770Init(NetInterface *interface)
    temp |= LAN8770_POWER_DOWN_CONTROL_HARD_INIT_SEQ_EN;
    lan8770WritePhyReg(interface, LAN8770_POWER_DOWN_CONTROL, temp);
 
-   //Perform custom configuration
-   lan8770InitHook(interface);
+   //Dump PHY registers for debugging purpose
+   lan8770DumpPhyReg(interface);
 
    //Force the TCP/IP stack to poll the link state at startup
    interface->phyEvent = TRUE;
@@ -143,16 +140,6 @@ error_t lan8770Init(NetInterface *interface)
 
    //Successful initialization
    return NO_ERROR;
-}
-
-
-/**
- * @brief LAN8770 custom configuration
- * @param[in] interface Underlying network interface
- **/
-
-__weak_func void lan8770InitHook(NetInterface *interface)
-{
 }
 
 
@@ -239,11 +226,9 @@ void lan8770EventHandler(NetInterface *interface)
    //Link is up?
    if((value & LAN8770_BASIC_STATUS_LINK_STATUS) != 0)
    {
-      //The PHY is only able to operate in 100 Mbps mode
+      //Adjust MAC configuration parameters for proper operation
       interface->linkSpeed = NIC_LINK_SPEED_100MBPS;
       interface->duplexMode = NIC_FULL_DUPLEX_MODE;
-
-      //Adjust MAC configuration parameters for proper operation
       interface->nicDriver->updateMacConfig(interface);
 
       //Update link state
@@ -335,11 +320,11 @@ void lan8770DumpPhyReg(NetInterface *interface)
 
 
 /**
- * @brief Write extended register
+ * @brief Write external register
  * @param[in] interface Underlying network interface
  * @param[in] bank Register bank
  * @param[in] addr Register address
- * @param[in] data Extended register value
+ * @param[in] data External register value
  **/
 
 void lan8770WriteExtReg(NetInterface *interface, uint8_t bank,
@@ -363,11 +348,11 @@ void lan8770WriteExtReg(NetInterface *interface, uint8_t bank,
 
 
 /**
- * @brief Read extended register
+ * @brief Read external register
  * @param[in] interface Underlying network interface
  * @param[in] bank Register bank
  * @param[in] addr Register address
- * @return Extended register value
+ * @return External register value
  **/
 
 uint16_t lan8770ReadExtReg(NetInterface *interface, uint8_t bank,

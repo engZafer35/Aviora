@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,17 +25,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _COAP_CLIENT_H
 #define _COAP_CLIENT_H
 
 //Dependencies
-#include "core/net.h"
-#include "coap/coap_common.h"
-#include "coap/coap_message.h"
-#include "coap/coap_option.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_message.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_option.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //CoAP client support
 #ifndef COAP_CLIENT_SUPPORT
@@ -128,11 +128,6 @@
    #error COAP_CLIENT_DEFAULT_TOKEN_LEN parameter is not valid
 #endif
 
-//Application specific context
-#ifndef COAP_CLIENT_PRIVATE_CONTEXT
-   #define COAP_CLIENT_PRIVATE_CONTEXT
-#endif
-
 //DTLS supported?
 #if (COAP_CLIENT_DTLS_SUPPORT == ENABLED)
    #include "core/crypto.h"
@@ -148,7 +143,7 @@ struct _CoapClientRequest;
 #define CoapClientRequest struct _CoapClientRequest
 
 //Dependencies
-#include "coap_client_request.h"
+#include "../../../CycloneTcp/cyclone_tcp/coap/coap_client_request.h"
 
 //C++ guard
 #ifdef __cplusplus
@@ -204,7 +199,6 @@ struct _CoapClientContext
    size_t tokenLen;                               ///<Token length
    CoapClientRequest request[COAP_CLIENT_NSTART]; ///<Outstanding CoAP requests
    CoapMessage response;                          ///<CoAP response message
-   COAP_CLIENT_PRIVATE_CONTEXT                    ///<Application specific context
 };
 
 

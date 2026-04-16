@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,19 +25,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NBNS_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "netbios/nbns_client.h"
-#include "netbios/nbns_responder.h"
-#include "netbios/nbns_common.h"
-#include "dns/dns_debug.h"
-#include "debug.h"
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/netbios/nbns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/netbios/nbns_responder.h"
+#include "../../../CycloneTcp/cyclone_tcp/netbios/nbns_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (NBNS_CLIENT_SUPPORT == ENABLED || NBNS_RESPONDER_SUPPORT == ENABLED)
@@ -116,7 +119,7 @@ void nbnsProcessMessage(NetInterface *interface,
 
    //NBNS messages received with non-zero response codes must be silently
    //ignored
-   if(message->rcode != DNS_RCODE_NOERROR)
+   if(message->rcode != DNS_RCODE_NO_ERROR)
       return;
 
    //NBNS query received?

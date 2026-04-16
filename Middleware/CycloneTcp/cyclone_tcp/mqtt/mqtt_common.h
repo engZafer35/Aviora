@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _MQTT_COMMON_H
 #define _MQTT_COMMON_H
 
 //Dependencies
-#include "core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
 
 //MQTT port number
 #define MQTT_PORT 1883
@@ -157,10 +157,8 @@ typedef enum
 } MqttConnectRetCode;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma pack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(push, 1)
 #endif
 
@@ -169,7 +167,7 @@ typedef enum
  * @brief Fixed header
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
 #if defined(_CPU_BIG_ENDIAN) && !defined(__ICCRX__)
    uint8_t type : 4;   //0
@@ -183,24 +181,22 @@ typedef __packed_struct
    uint8_t type : 4;
 #endif
    uint8_t length[];   //1
-} MqttPacketHeader;
+} __end_packed MqttPacketHeader;
 
 
 /**
  * @brief UTF-8 encoded string
  **/
 
-typedef __packed_struct
+typedef __start_packed struct
 {
    uint16_t length; //0-1
    uint8_t data[];  //2
-} MqttString;
+} __end_packed MqttString;
 
 
-//CC-RX, CodeWarrior or Win32 compiler?
-#if defined(__CCRX__)
-   #pragma unpack
-#elif defined(__CWCC__) || defined(_WIN32)
+//CodeWarrior or Win32 compiler?
+#if defined(__CWCC__) || defined(_WIN32)
    #pragma pack(pop)
 #endif
 

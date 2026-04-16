@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _KSZ8051_DRIVER_H
 #define _KSZ8051_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //PHY address
 #ifndef KSZ8051_PHY_ADDR
@@ -236,7 +236,6 @@ extern const PhyDriver ksz8051PhyDriver;
 
 //KSZ8051 related functions
 error_t ksz8051Init(NetInterface *interface);
-void ksz8051InitHook(NetInterface *interface);
 
 void ksz8051Tick(NetInterface *interface);
 

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,9 +33,9 @@
 
 //Dependencies
 #include "lpc177x_8x.h"
-#include "core/net.h"
-#include "drivers/mac/lpc178x_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/lpc178x_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -223,15 +223,16 @@ error_t lpc178xEthInit(NetInterface *interface)
 }
 
 
+//LPC1788-32 Developer's Kit?
+#if defined(USE_LPC1788_32_DEV_KIT)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void lpc178xEthInitGpio(NetInterface *interface)
+void lpc178xEthInitGpio(NetInterface *interface)
 {
-//LPC1788-32 Developer's Kit?
-#if defined(USE_LPC1788_32_DEV_KIT)
    //Power up GPIO
    LPC_SC->PCONP |= PCONP_PCGPIO;
 
@@ -255,8 +256,9 @@ __weak_func void lpc178xEthInitGpio(NetInterface *interface)
    LPC_IOCON->P1_16 = IOCON_MODE_PULL_UP | IOCON_FUNC_1;
    //Configure P1.17 (ENET_MDIO)
    LPC_IOCON->P1_17 = IOCON_MODE_PULL_UP | IOCON_FUNC_1;
-#endif
 }
+
+#endif
 
 
 /**

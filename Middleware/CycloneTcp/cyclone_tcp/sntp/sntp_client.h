@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _SNTP_CLIENT_H
 #define _SNTP_CLIENT_H
 
 //Dependencies
-#include "core/net.h"
-#include "sntp/ntp_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/sntp/ntp_common.h"
 
 //SNTP client support
 #ifndef SNTP_CLIENT_SUPPORT
@@ -61,11 +61,6 @@
    #define SNTP_CLIENT_MAX_RETRANSMIT_TIMEOUT 15000
 #elif (SNTP_CLIENT_MAX_RETRANSMIT_TIMEOUT < 1000)
    #error SNTP_CLIENT_MAX_RETRANSMIT_TIMEOUT parameter is not valid
-#endif
-
-//Application specific context
-#ifndef SNTP_CLIENT_PRIVATE_CONTEXT
-   #define SNTP_CLIENT_PRIVATE_CONTEXT
 #endif
 
 //C++ guard
@@ -105,7 +100,6 @@ typedef struct
    uint8_t message[NTP_MAX_MSG_SIZE]; ///<Buffer that holds the NTP request/response
    size_t messageLen;                 ///<Length of the NTP message, in bytes
    uint32_t kissCode;                 ///<Kiss code
-   SNTP_CLIENT_PRIVATE_CONTEXT        ///<Application specific context
 } SntpClientContext;
 
 

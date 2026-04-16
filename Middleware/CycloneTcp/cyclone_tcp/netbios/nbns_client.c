@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,19 +25,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NBNS_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "ipv4/ipv4_misc.h"
-#include "netbios/nbns_client.h"
-#include "netbios/nbns_common.h"
-#include "dns/dns_debug.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/netbios/nbns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/netbios/nbns_common.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_debug.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (NBNS_CLIENT_SUPPORT == ENABLED && IPV4_SUPPORT == ENABLED)
@@ -66,11 +66,10 @@ error_t nbnsResolve(NetInterface *interface, const char_t *name, IpAddr *ipAddr)
    osAcquireMutex(&netMutex);
 
    //Search the DNS cache for the specified host name
-   entry = dnsFindEntry(interface, name, HOST_TYPE_IPV4,
-      HOST_NAME_RESOLVER_NBNS);
+   entry = dnsFindEntry(interface, name, HOST_TYPE_IPV4, HOST_NAME_RESOLVER_NBNS);
 
    //Check whether a matching entry has been found
-   if(entry != NULL)
+   if(entry)
    {
       //Host name already resolved?
       if(entry->state == DNS_STATE_RESOLVED ||
@@ -83,7 +82,7 @@ error_t nbnsResolve(NetInterface *interface, const char_t *name, IpAddr *ipAddr)
       }
       else
       {
-         //Host name resolution is in progress
+         //Host name resolution is in progress...
          error = ERROR_IN_PROGRESS;
       }
    }
@@ -140,11 +139,10 @@ error_t nbnsResolve(NetInterface *interface, const char_t *name, IpAddr *ipAddr)
       osAcquireMutex(&netMutex);
 
       //Search the DNS cache for the specified host name
-      entry = dnsFindEntry(interface, name, HOST_TYPE_IPV4,
-         HOST_NAME_RESOLVER_NBNS);
+      entry = dnsFindEntry(interface, name, HOST_TYPE_IPV4, HOST_NAME_RESOLVER_NBNS);
 
       //Check whether a matching entry has been found
-      if(entry != NULL)
+      if(entry)
       {
          //Host name successfully resolved?
          if(entry->state == DNS_STATE_RESOLVED)
@@ -222,7 +220,7 @@ error_t nbnsSendQuery(DnsCacheEntry *entry)
    message->ra = 0;
    message->z = 0;
    message->b = 1;
-   message->rcode = DNS_RCODE_NOERROR;
+   message->rcode = DNS_RCODE_NO_ERROR;
 
    //The NBNS query contains one question
    message->qdcount = HTONS(1);

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,19 +25,21 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL IPV4_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "ipv4/ipv4.h"
-#include "ipv4/ipv4_misc.h"
-#include "mibs/mib2_module.h"
-#include "mibs/ip_mib_module.h"
-#include "debug.h"
+#include <string.h>
+#include <ctype.h>
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv4/ipv4_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/mib2_module.h"
+#include "../../../CycloneTcp/cyclone_tcp/mibs/ip_mib_module.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV4_SUPPORT == ENABLED)
@@ -433,14 +435,10 @@ error_t ipv4SelectDefaultGateway(NetInterface *interface, Ipv4Addr srcAddr,
 bool_t ipv4IsOnLink(NetInterface *interface, Ipv4Addr ipAddr)
 {
    uint_t i;
-   bool_t flag;
    Ipv4AddrEntry *entry;
 
-   //Initialize flag
-   flag = FALSE;
-
    //Loop through the list of IPv4 addresses assigned to the interface
-   for(i = 0; i < IPV4_ADDR_LIST_SIZE && !flag; i++)
+   for(i = 0; i < IPV4_ADDR_LIST_SIZE; i++)
    {
       //Point to the current entry
       entry = &interface->ipv4Context.addrList[i];
@@ -451,13 +449,14 @@ bool_t ipv4IsOnLink(NetInterface *interface, Ipv4Addr ipAddr)
          //Check whether the specified IPv4 address belongs to the same subnet
          if(ipv4IsOnSubnet(entry, ipAddr))
          {
-            flag = TRUE;
+            //The specified IPv4 address is on-link
+            return TRUE;
          }
       }
    }
 
-   //Return TRUE if the specified IPv4 address is on-link
-   return flag;
+   //The specified IPv4 address is off-link
+   return FALSE;
 }
 
 
@@ -471,47 +470,39 @@ bool_t ipv4IsOnLink(NetInterface *interface, Ipv4Addr ipAddr)
 bool_t ipv4IsBroadcastAddr(NetInterface *interface, Ipv4Addr ipAddr)
 {
    uint_t i;
-   bool_t flag;
    Ipv4AddrEntry *entry;
-
-   //Initialize flag
-   flag = FALSE;
 
    //Check whether the specified IPv4 address is the broadcast address
    if(ipAddr == IPV4_BROADCAST_ADDR)
-   {
-      flag = TRUE;
-   }
-   else
-   {
-      //Loop through the list of IPv4 addresses assigned to the interface
-      for(i = 0; i < IPV4_ADDR_LIST_SIZE && !flag; i++)
-      {
-         //Point to the current entry
-         entry = &interface->ipv4Context.addrList[i];
+      return TRUE;
 
-         //Valid entry?
-         if(entry->state != IPV4_ADDR_STATE_INVALID)
+   //Loop through the list of IPv4 addresses assigned to the interface
+   for(i = 0; i < IPV4_ADDR_LIST_SIZE; i++)
+   {
+      //Point to the current entry
+      entry = &interface->ipv4Context.addrList[i];
+
+      //Valid entry?
+      if(entry->state != IPV4_ADDR_STATE_INVALID)
+      {
+         //Check whether the specified IPv4 address belongs to the same subnet
+         if(ipv4IsOnSubnet(entry, ipAddr))
          {
-            //Check whether the specified IPv4 address belongs to the same subnet
-            if(ipv4IsOnSubnet(entry, ipAddr))
+            //Make sure the subnet mask is not 255.255.255.255
+            if(entry->subnetMask != IPV4_BROADCAST_ADDR)
             {
-               //Make sure the subnet mask is not 255.255.255.255
-               if(entry->subnetMask != IPV4_BROADCAST_ADDR)
+               //Directed broadcast address?
+               if((ipAddr | entry->subnetMask) == IPV4_BROADCAST_ADDR)
                {
-                  //Directed broadcast address?
-                  if((ipAddr | entry->subnetMask) == IPV4_BROADCAST_ADDR)
-                  {
-                     flag = TRUE;
-                  }
+                  return TRUE;
                }
             }
          }
       }
    }
 
-   //Return TRUE if the specified IPv4 address is a broadcast address
-   return flag;
+   //The specified IPv4 address is not a broadcast address
+   return FALSE;
 }
 
 
@@ -525,14 +516,10 @@ bool_t ipv4IsBroadcastAddr(NetInterface *interface, Ipv4Addr ipAddr)
 bool_t ipv4IsTentativeAddr(NetInterface *interface, Ipv4Addr ipAddr)
 {
    uint_t i;
-   bool_t flag;
    Ipv4AddrEntry *entry;
 
-   //Initialize flag
-   flag = FALSE;
-
    //Loop through the list of IPv4 addresses assigned to the interface
-   for(i = 0; i < IPV4_ADDR_LIST_SIZE && !flag; i++)
+   for(i = 0; i < IPV4_ADDR_LIST_SIZE; i++)
    {
       //Point to the current entry
       entry = &interface->ipv4Context.addrList[i];
@@ -544,13 +531,14 @@ bool_t ipv4IsTentativeAddr(NetInterface *interface, Ipv4Addr ipAddr)
          //address assigned to the interface
          if(entry->addr == ipAddr)
          {
-            flag = TRUE;
+            //The specified IPv4 address is a tentative address
+            return TRUE;
          }
       }
    }
 
-   //Return TRUE if the specified IPv4 address is a tentative address
-   return flag;
+   //The specified IPv4 address is not a tentative address
+   return FALSE;
 }
 
 
@@ -607,44 +595,6 @@ bool_t ipv4IsLocalHostAddr(Ipv4Addr ipAddr)
 
    //Return TRUE if the specified address matches any address assigned to the host
    return flag;
-}
-
-
-/**
- * @brief Compare IPv4 address prefixes
- * @param[in] ipAddr1 First IPv4 address
- * @param[in] ipAddr2 Second IPv4 address
- * @param[in] length Prefix length
- * @return TRUE if the prefixes match each other, else FALSE
- **/
-
-bool_t ipv4CompPrefix(Ipv4Addr ipAddr1, Ipv4Addr ipAddr2, size_t length)
-{
-   uint32_t mask;
-
-   //Check prefix length
-   if(length == 0)
-   {
-      return TRUE;
-   }
-   else if(length < 32)
-   {
-      //Calculate the mask to be applied
-      mask = ((1 << length) - 1) << (32 - length);
-      //Convert the mask to network byte order
-      mask = htonl(mask);
-   }
-   else if(length == 32)
-   {
-      mask = IPV4_ADDR(255, 255, 255, 255);
-   }
-   else
-   {
-      return FALSE;
-   }
-
-   //Compare address prefixes
-   return ((ipAddr1 & mask) == (ipAddr2 & mask));
 }
 
 
@@ -833,8 +783,7 @@ bool_t ipv4TrapIgmpPacket(Ipv4Header *header)
 void ipv4UpdateInStats(NetInterface *interface, Ipv4Addr destIpAddr,
    size_t length)
 {
-   //Check whether the destination address is a unicast, broadcast or multicast
-   //address
+   //Check whether the destination address is a unicast, broadcast or multicast address
    if(ipv4IsBroadcastAddr(interface, destIpAddr))
    {
       //Number of IP broadcast datagrams transmitted
@@ -857,10 +806,6 @@ void ipv4UpdateInStats(NetInterface *interface, Ipv4Addr destIpAddr,
       IP_MIB_INC_COUNTER32(ipv4IfStatsTable[interface->index].ipIfStatsInMcastOctets, length);
       IP_MIB_INC_COUNTER64(ipv4IfStatsTable[interface->index].ipIfStatsHCInMcastOctets, length);
    }
-   else
-   {
-      //The destination address is a unicast address
-   }
 }
 
 
@@ -874,8 +819,7 @@ void ipv4UpdateInStats(NetInterface *interface, Ipv4Addr destIpAddr,
 void ipv4UpdateOutStats(NetInterface *interface, Ipv4Addr destIpAddr,
    size_t length)
 {
-   //Check whether the destination address is a unicast, broadcast or multicast
-   //address
+   //Check whether the destination address is a unicast, broadcast or multicast address
    if(ipv4IsBroadcastAddr(interface, destIpAddr))
    {
       //Number of IP broadcast datagrams transmitted
@@ -897,10 +841,6 @@ void ipv4UpdateOutStats(NetInterface *interface, Ipv4Addr destIpAddr,
       IP_MIB_INC_COUNTER64(ipv4SystemStats.ipSystemStatsHCOutMcastOctets, length);
       IP_MIB_INC_COUNTER32(ipv4IfStatsTable[interface->index].ipIfStatsOutMcastOctets, length);
       IP_MIB_INC_COUNTER64(ipv4IfStatsTable[interface->index].ipIfStatsHCOutMcastOctets, length);
-   }
-   else
-   {
-      //The destination address is a unicast address
    }
 
    //Total number of IP datagrams that this entity supplied to the lower
@@ -932,34 +872,30 @@ void ipv4UpdateErrorStats(NetInterface *interface, error_t error)
    {
    case ERROR_INVALID_HEADER:
       //Number of input datagrams discarded due to errors in their IP headers
-      MIB2_IP_INC_COUNTER32(ipInHdrErrors, 1);
+      MIB2_INC_COUNTER32(ipGroup.ipInHdrErrors, 1);
       IP_MIB_INC_COUNTER32(ipv4SystemStats.ipSystemStatsInHdrErrors, 1);
       IP_MIB_INC_COUNTER32(ipv4IfStatsTable[interface->index].ipIfStatsInHdrErrors, 1);
       break;
-
    case ERROR_INVALID_ADDRESS:
       //Number of input datagrams discarded because the destination IP address
       //was not a valid address
-      MIB2_IP_INC_COUNTER32(ipInAddrErrors, 1);
+      MIB2_INC_COUNTER32(ipGroup.ipInAddrErrors, 1);
       IP_MIB_INC_COUNTER32(ipv4SystemStats.ipSystemStatsInAddrErrors, 1);
       IP_MIB_INC_COUNTER32(ipv4IfStatsTable[interface->index].ipIfStatsInAddrErrors, 1);
       break;
-
    case ERROR_PROTOCOL_UNREACHABLE:
       //Number of locally-addressed datagrams received successfully but discarded
       //because of an unknown or unsupported protocol
-      MIB2_IP_INC_COUNTER32(ipInUnknownProtos, 1);
+      MIB2_INC_COUNTER32(ipGroup.ipInUnknownProtos, 1);
       IP_MIB_INC_COUNTER32(ipv4SystemStats.ipSystemStatsInUnknownProtos, 1);
       IP_MIB_INC_COUNTER32(ipv4IfStatsTable[interface->index].ipIfStatsInUnknownProtos, 1);
       break;
-
    case ERROR_INVALID_LENGTH:
       //Number of input IP datagrams discarded because the datagram frame
       //didn't carry enough data
       IP_MIB_INC_COUNTER32(ipv4SystemStats.ipSystemStatsInTruncatedPkts, 1);
       IP_MIB_INC_COUNTER32(ipv4IfStatsTable[interface->index].ipIfStatsInTruncatedPkts, 1);
       break;
-
    default:
       //Just for sanity
       break;

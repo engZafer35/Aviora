@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,19 +25,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL DHCP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "dhcp/dhcp_client.h"
-#include "dhcp/dhcp_client_fsm.h"
-#include "dhcp/dhcp_client_misc.h"
-#include "mdns/mdns_responder.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_client_fsm.h"
+#include "../../../CycloneTcp/cyclone_tcp/dhcp/dhcp_client_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_responder.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV4_SUPPORT == ENABLED && DHCP_CLIENT_SUPPORT == ENABLED)
@@ -69,7 +69,7 @@ void dhcpClientStateInit(DhcpClientContext *context)
       {
          //The client should wait for a random time to desynchronize
          //the use of DHCP at startup
-         delay = netGenerateRandRange(0, DHCP_CLIENT_INIT_DELAY);
+         delay = netGetRandRange(0, DHCP_CLIENT_INIT_DELAY);
 
          //Record the time at which the client started the address
          //acquisition process
@@ -106,9 +106,9 @@ void dhcpClientStateSelecting(DhcpClientContext *context)
       //Check retransmission counter
       if(context->retransmitCount == 0)
       {
-         //The client generates and records a random transaction identifier
-         //(refer to RFC 2131, section 4.4.1)
-         context->transactionId = netGenerateRand();
+         //A transaction identifier is used by the client to
+         //match incoming DHCP messages with pending requests
+         context->transactionId = netGetRand();
 
          //Send a DHCPDISCOVER message
          dhcpClientSendDiscover(context);
@@ -126,9 +126,7 @@ void dhcpClientStateSelecting(DhcpClientContext *context)
 
          //Limit the timeout value to a maximum of 64 seconds
          if(context->retransmitTimeout > DHCP_CLIENT_DISCOVER_MAX_RT)
-         {
             context->retransmitTimeout = DHCP_CLIENT_DISCOVER_MAX_RT;
-         }
       }
 
       //Save the time at which the message was sent
@@ -136,9 +134,8 @@ void dhcpClientStateSelecting(DhcpClientContext *context)
 
       //The timeout value should be randomized by the value of a uniform
       //number chosen from the range -1 to +1
-      context->timeout = netGenerateRandRange(
-         context->retransmitTimeout - DHCP_CLIENT_RAND_FACTOR,
-         context->retransmitTimeout + DHCP_CLIENT_RAND_FACTOR);
+      context->timeout = context->retransmitTimeout +
+         netGetRandRange(-DHCP_CLIENT_RAND_FACTOR, DHCP_CLIENT_RAND_FACTOR);
 
       //Increment retransmission counter
       context->retransmitCount++;
@@ -152,8 +149,8 @@ void dhcpClientStateSelecting(DhcpClientContext *context)
 /**
  * @brief REQUESTING state
  *
- * The client is waiting to hear back from the server to which it sent its
- * request
+ * The client is waiting to hear back from the server
+ * to which it sent its request
  *
  * @param[in] context Pointer to the DHCP client context
  **/
@@ -171,8 +168,11 @@ void dhcpClientStateRequesting(DhcpClientContext *context)
       //Check retransmission counter
       if(context->retransmitCount == 0)
       {
-         //The DHCPREQUEST message contains the same transaction identifier as
-         //the DHCPOFFER message (refer to RFC 2131, section 4.4.1)
+         //A transaction identifier is used by the client to
+         //match incoming DHCP messages with pending requests
+         context->transactionId = netGetRand();
+
+         //Send a DHCPREQUEST message
          dhcpClientSendRequest(context);
 
          //Initial timeout value
@@ -183,9 +183,8 @@ void dhcpClientStateRequesting(DhcpClientContext *context)
 
          //The timeout value should be randomized by the value of a uniform
          //number chosen from the range -1 to +1
-         context->timeout = netGenerateRandRange(
-            context->retransmitTimeout - DHCP_CLIENT_RAND_FACTOR,
-            context->retransmitTimeout + DHCP_CLIENT_RAND_FACTOR);
+         context->timeout = context->retransmitTimeout +
+            netGetRandRange(-DHCP_CLIENT_RAND_FACTOR, DHCP_CLIENT_RAND_FACTOR);
 
          //Increment retransmission counter
          context->retransmitCount++;
@@ -200,18 +199,15 @@ void dhcpClientStateRequesting(DhcpClientContext *context)
 
          //Limit the timeout value to a maximum of 64 seconds
          if(context->retransmitTimeout > DHCP_CLIENT_REQUEST_MAX_RT)
-         {
             context->retransmitTimeout = DHCP_CLIENT_REQUEST_MAX_RT;
-         }
 
          //Save the time at which the message was sent
          context->timestamp = time;
 
          //The timeout value should be randomized by the value of a uniform
          //number chosen from the range -1 to +1
-         context->timeout = netGenerateRandRange(
-            context->retransmitTimeout - DHCP_CLIENT_RAND_FACTOR,
-            context->retransmitTimeout + DHCP_CLIENT_RAND_FACTOR);
+         context->timeout = context->retransmitTimeout +
+            netGetRandRange(-DHCP_CLIENT_RAND_FACTOR, DHCP_CLIENT_RAND_FACTOR);
 
          //Increment retransmission counter
          context->retransmitCount++;
@@ -232,8 +228,8 @@ void dhcpClientStateRequesting(DhcpClientContext *context)
 /**
  * @brief INIT-REBOOT state
  *
- * When a client that already has a valid lease starts up after a power-down
- * or reboot, it starts here instead of the INIT state
+ * When a client that already has a valid lease starts up after a
+ * power-down or reboot, it starts here instead of the INIT state
  *
  * @param[in] context Pointer to the DHCP client context
  **/
@@ -254,7 +250,7 @@ void dhcpClientStateInitReboot(DhcpClientContext *context)
       {
          //The client should wait for a random time to desynchronize
          //the use of DHCP at startup
-         delay = netGenerateRandRange(0, DHCP_CLIENT_INIT_DELAY);
+         delay = netGetRandRange(0, DHCP_CLIENT_INIT_DELAY);
 
          //Record the time at which the client started the address
          //acquisition process
@@ -272,8 +268,8 @@ void dhcpClientStateInitReboot(DhcpClientContext *context)
 /**
  * @brief REBOOTING state
  *
- * A client that has rebooted with an assigned address is waiting for a
- * confirming reply from a server
+ * A client that has rebooted with an assigned address is
+ * waiting for a confirming reply from a server
  *
  * @param[in] context Pointer to the DHCP client context
  **/
@@ -291,9 +287,9 @@ void dhcpClientStateRebooting(DhcpClientContext *context)
       //Check retransmission counter
       if(context->retransmitCount == 0)
       {
-         //The client generates and records a random transaction identifier
-         //(refer to RFC 2131, section 4.4.2)
-         context->transactionId = netGenerateRand();
+         //A transaction identifier is used by the client to
+         //match incoming DHCP messages with pending requests
+         context->transactionId = netGetRand();
 
          //Send a DHCPREQUEST message
          dhcpClientSendRequest(context);
@@ -306,9 +302,8 @@ void dhcpClientStateRebooting(DhcpClientContext *context)
 
          //The timeout value should be randomized by the value of a uniform
          //number chosen from the range -1 to +1
-         context->timeout = netGenerateRandRange(
-            context->retransmitTimeout - DHCP_CLIENT_RAND_FACTOR,
-            context->retransmitTimeout + DHCP_CLIENT_RAND_FACTOR);
+         context->timeout = context->retransmitTimeout +
+            netGetRandRange(-DHCP_CLIENT_RAND_FACTOR, DHCP_CLIENT_RAND_FACTOR);
 
          //Increment retransmission counter
          context->retransmitCount++;
@@ -323,18 +318,15 @@ void dhcpClientStateRebooting(DhcpClientContext *context)
 
          //Limit the timeout value to a maximum of 64 seconds
          if(context->retransmitTimeout > DHCP_CLIENT_REQUEST_MAX_RT)
-         {
             context->retransmitTimeout = DHCP_CLIENT_REQUEST_MAX_RT;
-         }
 
          //Save the time at which the message was sent
          context->timestamp = time;
 
          //The timeout value should be randomized by the value of a uniform
          //number chosen from the range -1 to +1
-         context->timeout = netGenerateRandRange(
-            context->retransmitTimeout - DHCP_CLIENT_RAND_FACTOR,
-            context->retransmitTimeout + DHCP_CLIENT_RAND_FACTOR);
+         context->timeout = context->retransmitTimeout +
+            netGetRandRange(-DHCP_CLIENT_RAND_FACTOR, DHCP_CLIENT_RAND_FACTOR);
 
          //Increment retransmission counter
          context->retransmitCount++;
@@ -380,9 +372,6 @@ void dhcpClientStateProbing(DhcpClientContext *context)
       //The address is already in use?
       if(interface->ipv4Context.addrList[i].conflict)
       {
-         //Select a new transaction identifier
-         context->transactionId = netGenerateRand();
-
          //If the client detects that the address is already in use, the
          //client must send a DHCPDECLINE message to the server and
          //restarts the configuration process
@@ -412,58 +401,6 @@ void dhcpClientStateProbing(DhcpClientContext *context)
          //The use of the IPv4 address is now unrestricted
          interface->ipv4Context.addrList[i].state = IPV4_ADDR_STATE_VALID;
 
-         //The client transitions to the ANNOUNCING state
-         dhcpClientChangeState(context, DHCP_STATE_ANNOUNCING, 0);
-      }
-   }
-}
-
-
-/**
- * @brief ANNOUNCING state
- *
- * The client announces its new IP address
- *
- * @param[in] context Pointer to the DHCP client context
- **/
-
-void dhcpClientStateAnnouncing(DhcpClientContext *context)
-{
-   uint_t i;
-   systime_t time;
-   NetInterface *interface;
-
-   //Point to the underlying network interface
-   interface = context->settings.interface;
-   //Index of the IP address in the list of addresses assigned to the interface
-   i = context->settings.ipAddrIndex;
-
-   //Get current time
-   time = osGetSystemTime();
-
-   //Check current time
-   if(timeCompare(time, context->timestamp + context->timeout) >= 0)
-   {
-      //Announcement is on-going?
-      if(context->retransmitCount < DHCP_CLIENT_ANNOUNCE_NUM)
-      {
-         //An ARP announcement is identical to an ARP probe, except that now
-         //the sender and target IP addresses are both set to the host's newly
-         //selected IPv4 address
-         arpSendRequest(interface, interface->ipv4Context.addrList[i].addr,
-            &MAC_BROADCAST_ADDR);
-
-         //Save the time at which the packet was sent
-         context->timestamp = time;
-         //Delay until repeated probe
-         context->timeout = DHCP_CLIENT_ANNOUNCE_INTERVAL;
-         //Increment retransmission counter
-         context->retransmitCount++;
-      }
-
-      //Announcing is complete?
-      if(context->retransmitCount >= DHCP_CLIENT_ANNOUNCE_NUM)
-      {
 #if (MDNS_RESPONDER_SUPPORT == ENABLED)
          //Restart mDNS probing process
          mdnsResponderStartProbing(interface->mdnsResponderContext);
@@ -494,8 +431,8 @@ void dhcpClientStateBound(DhcpClientContext *context)
    //Get current time
    time = osGetSystemTime();
 
-   //A client will never attempt to extend the lifetime of the address when
-   //T1 set to 0xFFFFFFFF
+   //A client will never attempt to extend the lifetime
+   //of the address when T1 set to 0xFFFFFFFF
    if(context->t1 != DHCP_INFINITE_TIME)
    {
       //Convert T1 to milliseconds
@@ -511,8 +448,7 @@ void dhcpClientStateBound(DhcpClientContext *context)
       //Check the time elapsed since the lease was obtained
       if(timeCompare(time, context->leaseStartTime + t1) >= 0)
       {
-         //Record the time at which the client started the address renewal
-         //process
+         //Record the time at which the client started the address renewal process
          context->configStartTime = time;
 
          //Enter the RENEWING state
@@ -525,9 +461,9 @@ void dhcpClientStateBound(DhcpClientContext *context)
 /**
  * @brief RENEWING state
  *
- * Client is trying to renew its lease. It regularly sends DHCPREQUEST
- * messages with the server that gave it its current lease specified, and
- * waits for a reply
+ * Client is trying to renew its lease. It regularly sends
+ * DHCPREQUEST messages with the server that gave it its current
+ * lease specified, and waits for a reply
  *
  * @param[in] context Pointer to the DHCP client context
  **/
@@ -559,9 +495,9 @@ void dhcpClientStateRenewing(DhcpClientContext *context)
          //First DHCPREQUEST message?
          if(context->retransmitCount == 0)
          {
-            //A transaction identifier is used by the client to match incoming
-            //DHCP messages with pending requests
-            context->transactionId = netGenerateRand();
+            //A transaction identifier is used by the client to
+            //match incoming DHCP messages with pending requests
+            context->transactionId = netGetRand();
          }
 
          //Send a DHCPREQUEST message
@@ -576,9 +512,7 @@ void dhcpClientStateRenewing(DhcpClientContext *context)
          //The client should wait one-half of the remaining time until T2, down to
          //a minimum of 60 seconds, before retransmitting the DHCPREQUEST message
          if(context->timeout > (2 * DHCP_CLIENT_REQUEST_MIN_DELAY))
-         {
             context->timeout /= 2;
-         }
 
          //Increment retransmission counter
          context->retransmitCount++;
@@ -596,8 +530,8 @@ void dhcpClientStateRenewing(DhcpClientContext *context)
  * @brief REBINDING state
  *
  * The client has failed to renew its lease with the server that originally
- * granted it, and now seeks a lease extension with any server that can hear
- * it. It periodically sends DHCPREQUEST messages with no server specified
+ * granted it, and now seeks a lease extension with any server that can
+ * hear it. It periodically sends DHCPREQUEST messages with no server specified
  * until it gets a reply or the lease ends
  *
  * @param[in] context Pointer to the DHCP client context
@@ -636,9 +570,9 @@ void dhcpClientStateRebinding(DhcpClientContext *context)
          //First DHCPREQUEST message?
          if(context->retransmitCount == 0)
          {
-            //A transaction identifier is used by the client to match incoming
-            //DHCP messages with pending requests
-            context->transactionId = netGenerateRand();
+            //A transaction identifier is used by the client to
+            //match incoming DHCP messages with pending requests
+            context->transactionId = netGetRand();
          }
 
          //Send a DHCPREQUEST message

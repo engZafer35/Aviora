@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,17 +23,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _FS_PORT_H
 #define _FS_PORT_H
 
 //Dependencies
+#include "../../CycloneTcp/common/date_time.h"
+#include "../../CycloneTcp/common/error.h"
+#include "../../CycloneTcp/common/os_port.h"
 #include "fs_port_config.h"
-#include "os_port.h"
-#include "date_time.h"
-#include "error.h"
 
 //Maximum filename length
 #ifndef FS_MAX_NAME_LEN
@@ -115,22 +115,19 @@ typedef struct
 
 //FatFs port?
 #if defined(USE_FATFS)
-   #include "fs_port_fatfs.h"
-//Keil RL-FlashFS port?
+   #include "../../CycloneTcp/common/fs_port_fatfs.h"
+//RL-FlashFS port?
 #elif defined(USE_RL_FS)
-   #include "fs_port_rl_fs.h"
+   #include "../../CycloneTcp/common/fs_port_rl_fs.h"
 //SPIFFS port?
 #elif defined(USE_SPIFFS)
    #include "fs_port_spiffs.h"
-//Segger emFile port?
-#elif defined(USE_EMFILE)
-   #include "fs_port_emfile.h"
 //Windows port?
 #elif defined(_WIN32)
-   #include "fs_port_posix.h"
+   #include "../../CycloneTcp/common/fs_port_posix.h"
 //POSIX port?
 #elif defined(__linux__) || defined(__FreeBSD__)
-   #include "fs_port_posix.h"
+   #include "../../CycloneTcp/common/fs_port_posix.h"
 //Custom port?
 #elif defined(USE_CUSTOM_FS)
    #include "fs_port_custom.h"

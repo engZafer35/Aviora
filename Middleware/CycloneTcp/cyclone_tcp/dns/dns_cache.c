@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,18 +33,17 @@
 
 //Dependencies
 #include <stdlib.h>
-#include "core/net.h"
-#include "dns/dns_cache.h"
-#include "dns/dns_client.h"
-#include "mdns/mdns_client.h"
-#include "netbios/nbns_client.h"
-#include "llmnr/llmnr_client.h"
-#include "core/udp.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_cache.h"
+#include "../../../CycloneTcp/cyclone_tcp/dns/dns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/netbios/nbns_client.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/udp.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (DNS_CLIENT_SUPPORT == ENABLED || MDNS_CLIENT_SUPPORT == ENABLED || \
-   NBNS_CLIENT_SUPPORT == ENABLED || LLMNR_CLIENT_SUPPORT == ENABLED)
+   NBNS_CLIENT_SUPPORT == ENABLED)
 
 //Tick counter to handle periodic operations
 systime_t dnsTickCounter;
@@ -88,9 +87,7 @@ void dnsFlushCache(NetInterface *interface)
       {
          //Delete DNS entries only for the given network interface
          if(entry->interface == interface)
-         {
             dnsDeleteEntry(entry);
-         }
       }
    }
 }
@@ -155,10 +152,9 @@ void dnsDeleteEntry(DnsCacheEntry *entry)
    //Make sure the specified entry is valid
    if(entry != NULL)
    {
-#if (DNS_CLIENT_SUPPORT == ENABLED || LLMNR_CLIENT_SUPPORT == ENABLED)
-      //DNS or LLMNR resolver?
-      if(entry->protocol == HOST_NAME_RESOLVER_DNS ||
-         entry->protocol == HOST_NAME_RESOLVER_LLMNR)
+#if (DNS_CLIENT_SUPPORT == ENABLED)
+      //DNS resolver?
+      if(entry->protocol == HOST_NAME_RESOLVER_DNS)
       {
          //Name resolution in progress?
          if(entry->state == DNS_STATE_IN_PROGRESS)
@@ -213,7 +209,7 @@ DnsCacheEntry *dnsFindEntry(NetInterface *interface,
          return entry;
    }
 
-   //No matching entry in the DNS cache
+   //No matching entry in the DNS cache...
    return NULL;
 }
 
@@ -278,15 +274,6 @@ void dnsTick(void)
                }
                else
 #endif
-#if (LLMNR_CLIENT_SUPPORT == ENABLED)
-               //LLMNR resolver?
-               if(entry->protocol == HOST_NAME_RESOLVER_LLMNR)
-               {
-                  //Retransmit LLMNR query
-                  error = llmnrSendQuery(entry);
-               }
-               else
-#endif
                //Unknown protocol?
                {
                   error = ERROR_FAILURE;
@@ -313,7 +300,27 @@ void dnsTick(void)
             else if(entry->protocol == HOST_NAME_RESOLVER_DNS)
             {
                //Select the next DNS server
-               dnsSelectNextServer(entry);
+               entry->dnsServerIndex++;
+               //Initialize retransmission counter
+               entry->retransmitCount = DNS_CLIENT_MAX_RETRIES;
+               //Send DNS query
+               error = dnsSendQuery(entry);
+
+               //DNS message successfully sent?
+               if(!error)
+               {
+                  //Save the time at which the query message was sent
+                  entry->timestamp = time;
+                  //Set timeout value
+                  entry->timeout = DNS_CLIENT_INIT_TIMEOUT;
+                  //Decrement retransmission counter
+                  entry->retransmitCount--;
+               }
+               else
+               {
+                  //The entry should be deleted since name resolution has failed
+                  dnsDeleteEntry(entry);
+               }
             }
 #endif
             else

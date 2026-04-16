@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,15 +25,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _ICECAST_CLIENT_H
 #define _ICECAST_CLIENT_H
 
 //Dependencies
-#include "core/net.h"
-#include "core/socket.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/socket.h"
 
 //Icecast client support
 #ifndef ICECAST_CLIENT_SUPPORT
@@ -101,7 +101,6 @@ extern "C" {
 
 typedef struct
 {
-   OsTaskParameters task;                          ///<Task parameters
    NetInterface *interface;                        ///<Underlying network interface
    char_t serverName[ICECAST_SERVER_NAME_MAX_LEN]; ///<Icecast server name
    uint16_t serverPort;                            ///<Icecast server port
@@ -120,8 +119,6 @@ typedef struct
    OsMutex mutex;                                     ///<Mutex protecting critical sections
    OsEvent writeEvent;                                ///<This event tells whether the buffer is writable
    OsEvent readEvent;                                 ///<This event tells whether the buffer is readable
-   OsTaskParameters taskParams;                       ///<Task parameters
-   OsTaskId taskId;                                   ///<Task identifier
    Socket *socket;                                    ///<Underlying socket
    size_t blockSize;                                  ///<Number of data bytes between subsequent metadata blocks
    uint8_t *streamBuffer;                             ///<Streaming buffer

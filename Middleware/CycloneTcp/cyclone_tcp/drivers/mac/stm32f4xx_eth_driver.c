@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -38,9 +38,9 @@
    #include "stm32f4xx_hal.h"
 #endif
 
-#include "core/net.h"
-#include "drivers/mac/stm32f4xx_eth_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/stm32f4xx_eth_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -193,8 +193,8 @@ error_t stm32f4xxEthInit(NetInterface *interface)
    ETH->DMAOMR = ETH_DMAOMR_RSF | ETH_DMAOMR_TSF;
 
    //Configure DMA bus mode
-   ETH->DMABMR = ETH_DMABMR_AAB | ETH_DMABMR_USP | ETH_DMABMR_RDP_32Beat |
-      ETH_DMABMR_RTPR_1_1 | ETH_DMABMR_PBL_32Beat | ETH_DMABMR_EDE;
+   ETH->DMABMR = ETH_DMABMR_AAB | ETH_DMABMR_USP | ETH_DMABMR_RDP_1Beat |
+      ETH_DMABMR_RTPR_1_1 | ETH_DMABMR_PBL_1Beat | ETH_DMABMR_EDE;
 
    //Initialize DMA descriptor lists
    stm32f4xxEthInitDmaDesc(interface);
@@ -232,17 +232,24 @@ error_t stm32f4xxEthInit(NetInterface *interface)
 }
 
 
+//STM3240G-EVAL, STM324x9I-EVAL, STM32469I-EVAL, STM32F4-Discovery,
+//Nucleo-F429ZI, MCBSTM32F400, STM32-E407 or STM32-P407 evaluation board?
+#if defined(USE_STM324xG_EVAL) || defined(USE_STM324x9I_EVAL) || \
+   defined(USE_STM32F469I_EVAL) || defined(USE_STM32F4_DISCO) || \
+   defined(USE_STM32F4XX_NUCLEO_144) || defined(USE_MCBSTM32F400) || \
+   defined(USE_STM32_E407) || defined(USE_STM32_P407)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void stm32f4xxEthInitGpio(NetInterface *interface)
+void stm32f4xxEthInitGpio(NetInterface *interface)
 {
-//STM3240G-EVAL evaluation board?
-#if defined(USE_STM324xG_EVAL)
    GPIO_InitTypeDef GPIO_InitStructure;
 
+//STM3240G-EVAL evaluation board?
+#if defined(USE_STM324xG_EVAL)
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -302,8 +309,6 @@ __weak_func void stm32f4xxEthInitGpio(NetInterface *interface)
 
 //STM324x9I-EVAL evaluation board?
 #elif defined(USE_STM324x9I_EVAL)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -370,8 +375,6 @@ __weak_func void stm32f4xxEthInitGpio(NetInterface *interface)
 
 //STM32469I-EVAL evaluation board?
 #elif defined(USE_STM32F469I_EVAL)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -438,8 +441,6 @@ __weak_func void stm32f4xxEthInitGpio(NetInterface *interface)
 
 //STM32F4-Discovery evaluation board?
 #elif defined(USE_STM32F4_DISCO)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -485,8 +486,6 @@ __weak_func void stm32f4xxEthInitGpio(NetInterface *interface)
 
 //Nucleo-F429ZI evaluation board?
 #elif defined(USE_STM32F4XX_NUCLEO_144)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -523,8 +522,6 @@ __weak_func void stm32f4xxEthInitGpio(NetInterface *interface)
 
 //MCBSTM32F400 evaluation board?
 #elif defined(USE_MCBSTM32F400)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -556,8 +553,6 @@ __weak_func void stm32f4xxEthInitGpio(NetInterface *interface)
 
 //STM32-E407 evaluation board?
 #elif defined(USE_STM32_E407)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -602,8 +597,6 @@ __weak_func void stm32f4xxEthInitGpio(NetInterface *interface)
 
 //STM32-P407 evaluation board?
 #elif defined(USE_STM32_P407)
-   GPIO_InitTypeDef GPIO_InitStructure;
-
    //Enable SYSCFG clock
    __HAL_RCC_SYSCFG_CLK_ENABLE();
 
@@ -639,6 +632,8 @@ __weak_func void stm32f4xxEthInitGpio(NetInterface *interface)
    HAL_GPIO_Init(GPIOG, &GPIO_InitStructure);
 #endif
 }
+
+#endif
 
 
 /**
@@ -826,8 +821,8 @@ void ETH_IRQHandler(void)
    //Packet received?
    if((status & ETH_DMASR_RS) != 0)
    {
-      //Clear RS interrupt flag
-      ETH->DMASR = ETH_DMASR_RS;
+      //Disable RIE interrupt
+      ETH->DMAIER &= ~ETH_DMAIER_RIE;
 
       //Set event flag
       nicDriverInterface->nicEvent = TRUE;
@@ -852,14 +847,24 @@ void stm32f4xxEthEventHandler(NetInterface *interface)
 {
    error_t error;
 
-   //Process all pending packets
-   do
+   //Packet received?
+   if((ETH->DMASR & ETH_DMASR_RS) != 0)
    {
-      //Read incoming packet
-      error = stm32f4xxEthReceivePacket(interface);
+      //Clear interrupt flag
+      ETH->DMASR = ETH_DMASR_RS;
 
-      //No more data in the receive buffer?
-   } while(error != ERROR_BUFFER_EMPTY);
+      //Process all pending packets
+      do
+      {
+         //Read incoming packet
+         error = stm32f4xxEthReceivePacket(interface);
+
+         //No more data in the receive buffer?
+      } while(error != ERROR_BUFFER_EMPTY);
+   }
+
+   //Re-enable DMA interrupts
+   ETH->DMAIER = ETH_DMAIER_NISE | ETH_DMAIER_RIE | ETH_DMAIER_TIE;
 }
 
 

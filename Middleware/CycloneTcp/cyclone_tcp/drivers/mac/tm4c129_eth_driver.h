@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,14 +25,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _TM4C129_ETH_DRIVER_H
 #define _TM4C129_ETH_DRIVER_H
 
 //Dependencies
-#include "core/nic.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/nic.h"
 
 //Number of TX buffers
 #ifndef TM4C129_ETH_TX_BUFFER_COUNT
@@ -74,11 +74,6 @@
    #define TM4C129_ETH_IRQ_PRIORITY 192
 #elif (TM4C129_ETH_IRQ_PRIORITY < 0)
    #error TM4C129_ETH_IRQ_PRIORITY parameter is not valid
-#endif
-
-//TM4C129 Flash registers
-#ifndef FLASH_CONF_R
-   #define FLASH_CONF_R HWREG(FLASH_CONF)
 #endif
 
 //TM4C129 Ethernet MAC registers

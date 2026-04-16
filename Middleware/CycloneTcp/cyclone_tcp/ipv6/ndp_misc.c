@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,21 +25,21 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
 #define TRACE_LEVEL NDP_TRACE_LEVEL
 
 //Dependencies
-#include "core/net.h"
-#include "ipv6/ipv6.h"
-#include "ipv6/ipv6_misc.h"
-#include "ipv6/ndp.h"
-#include "ipv6/ndp_cache.h"
-#include "ipv6/ndp_misc.h"
-#include "mdns/mdns_responder.h"
-#include "debug.h"
+#include "../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ipv6_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_cache.h"
+#include "../../../CycloneTcp/cyclone_tcp/ipv6/ndp_misc.h"
+#include "../../../CycloneTcp/cyclone_tcp/mdns/mdns_responder.h"
+#include "../../../CycloneTcp/common/debug.h"
 
 //Check TCP/IP stack configuration
 #if (IPV6_SUPPORT == ENABLED && NDP_SUPPORT == ENABLED)
@@ -132,9 +132,7 @@ void ndpUpdateAddrList(NetInterface *interface)
                   if(i == 0)
                   {
                      //Delay before transmitting the first solicitation
-                     entry->dadTimeout = netGenerateRandRange(0,
-                        NDP_MAX_RTR_SOLICITATION_DELAY);
-
+                     entry->dadTimeout = netGetRandRange(0, NDP_MAX_RTR_SOLICITATION_DELAY);
                      //Prepare to send the first Neighbor Solicitation message
                      entry->dadRetransmitCount = 1;
                   }
@@ -198,8 +196,12 @@ void ndpUpdateAddrList(NetInterface *interface)
                      entry->state = IPV6_ADDR_STATE_PREFERRED;
 
 #if (MDNS_RESPONDER_SUPPORT == ENABLED)
-                     //Restart mDNS probing process
-                     mdnsResponderStartProbing(interface->mdnsResponderContext);
+                     //Link-local address?
+                     if(i == 0)
+                     {
+                        //Restart mDNS probing process
+                        mdnsResponderStartProbing(interface->mdnsResponderContext);
+                     }
 #endif
                   }
                }
@@ -630,7 +632,7 @@ void ndpAddOption(void *message, size_t *messageLen, uint8_t type,
 
 
 /**
- * @brief Search a NDP message for a given option
+ * @brief Find a specified option in a NDP message
  * @param[in] options Pointer to the Options field
  * @param[in] length Length of the Options field
  * @param[in] type Type of the option to find
@@ -668,7 +670,7 @@ void *ndpGetOption(uint8_t *options, size_t length, uint8_t type)
       i += option->length * 8;
    }
 
-   //The specified option type was not found
+   //Specified option type not found
    return NULL;
 }
 

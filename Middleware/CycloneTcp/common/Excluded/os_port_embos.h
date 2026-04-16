@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 #ifndef _OS_PORT_EMBOS_H
@@ -32,10 +32,12 @@
 //Dependencies
 #include "rtos.h"
 
-//Invalid task identifier
-#define OS_INVALID_TASK_ID NULL
-//Self task identifier
-#define OS_SELF_TASK_ID NULL
+//Maximum number of tasks that can be dynamically created
+#ifndef OS_PORT_MAX_TASKS
+   #define OS_PORT_MAX_TASKS 16
+#elif (OS_PORT_MAX_TASKS < 1)
+   #error OS_PORT_MAX_TASKS parameter is not valid
+#endif
 
 //Task priority (normal)
 #ifndef OS_TASK_PRIORITY_NORMAL
@@ -57,15 +59,8 @@
    #define OS_SYSTICKS_TO_MS(n) (n)
 #endif
 
-//Retrieve 64-bit system time (not implemented)
-#ifndef osGetSystemTime64
-   #define osGetSystemTime64() osGetSystemTime()
-#endif
-
 //Task prologue
 #define osEnterTask()
-//Task epilogue
-#define osExitTask()
 //Interrupt service routine prologue
 #define osEnterIsr() OS_EnterNestableInterrupt()
 //Interrupt service routine epilogue
@@ -78,30 +73,10 @@ extern "C" {
 
 
 /**
- * @brief System time
+ * @brief Task object
  **/
 
-typedef uint32_t systime_t;
-
-
-/**
- * @brief Task identifier
- **/
-
-typedef OS_TASK *OsTaskId;
-
-
-/**
- * @brief Task parameters
- **/
-
-typedef struct
-{
-   OS_TASK *tcb;
-   uint32_t *stack;
-   size_t stackSize;
-   uint_t priority;
-} OsTaskParameters;
+typedef OS_TASK OsTask;
 
 
 /**
@@ -129,21 +104,21 @@ typedef OS_RSEMA OsMutex;
  * @brief Task routine
  **/
 
-typedef void (*OsTaskCode)(void *arg);
+typedef void (*OsTaskCode)(void *param);
 
-
-//Default task parameters
-extern const OsTaskParameters OS_TASK_DEFAULT_PARAMS;
 
 //Kernel management
 void osInitKernel(void);
 void osStartKernel(void);
 
 //Task management
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
-   const OsTaskParameters *params);
+bool_t osCreateStaticTask(OsTask *task, const char_t *name, OsTaskCode taskCode,
+   void *param, void *stack, size_t stackSize, int_t priority);
 
-void osDeleteTask(OsTaskId taskId);
+OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
+   void *param, size_t stackSize, int_t priority);
+
+void osDeleteTask(OsTask *task);
 void osDelayTask(systime_t delay);
 void osSwitchTask(void);
 void osSuspendAllTasks(void);

@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This file is part of CycloneTCP Open.
  *
@@ -25,7 +25,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -33,9 +33,9 @@
 
 //Dependencies
 #include "mb9bd10t.h"
-#include "core/net.h"
-#include "drivers/mac/fm3_eth2_driver.h"
-#include "debug.h"
+#include "../../../../CycloneTcp/cyclone_tcp/core/net.h"
+#include "../../../../CycloneTcp/cyclone_tcp/drivers/mac/fm3_eth2_driver.h"
+#include "../../../../CycloneTcp/common/debug.h"
 
 //Underlying network interface
 static NetInterface *nicDriverInterface;
@@ -202,10 +202,10 @@ error_t fm3Eth2Init(NetInterface *interface)
    FM3_ETHERNET_MAC1->BMR_f.AAL = 0;
    FM3_ETHERNET_MAC1->BMR_f._8XPBL = 0;
    FM3_ETHERNET_MAC1->BMR_f.USP = 1;
-   FM3_ETHERNET_MAC1->BMR_f.RPBL = 32;
+   FM3_ETHERNET_MAC1->BMR_f.RPBL = 1;
    FM3_ETHERNET_MAC1->BMR_f.FB = 0;
    FM3_ETHERNET_MAC1->BMR_f.PR = 0;
-   FM3_ETHERNET_MAC1->BMR_f.PBL = 32;
+   FM3_ETHERNET_MAC1->BMR_f.PBL = 1;
    FM3_ETHERNET_MAC1->BMR_f.ATDS = 1;
    FM3_ETHERNET_MAC1->BMR_f.DSL = 0;
    FM3_ETHERNET_MAC1->BMR_f.DA = 0;
@@ -253,15 +253,16 @@ error_t fm3Eth2Init(NetInterface *interface)
 }
 
 
+//SK-FM3-176PMC-ETH evaluation board?
+#if defined(USE_SK_FM3_176PMC_ETH)
+
 /**
  * @brief GPIO configuration
  * @param[in] interface Underlying network interface
  **/
 
-__weak_func void fm3Eth2InitGpio(NetInterface *interface)
+void fm3Eth2InitGpio(NetInterface *interface)
 {
-//SK-FM3-176PMC-ETH evaluation board?
-#if defined(USE_SK_FM3_176PMC_ETH)
    //Select RMII interface mode
    FM3_ETHERNET_CONTROL->ETH_MODE_f.IFMODE = 1;
 
@@ -301,8 +302,9 @@ __weak_func void fm3Eth2InitGpio(NetInterface *interface)
    sleep(10);
    FM3_GPIO->PDOR4_f.P4 = 1;
    sleep(10);
-#endif
 }
+
+#endif
 
 
 /**

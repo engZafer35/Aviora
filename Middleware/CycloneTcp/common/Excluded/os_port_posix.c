@@ -6,7 +6,7 @@
  *
  * SPDX-License-Identifier: GPL-2.0-or-later
  *
- * Copyright (C) 2010-2024 Oryx Embedded SARL. All rights reserved.
+ * Copyright (C) 2010-2021 Oryx Embedded SARL. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -23,7 +23,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  *
  * @author Oryx Embedded SARL (www.oryx-embedded.com)
- * @version 2.4.0
+ * @version 2.1.0
  **/
 
 //Switch to the appropriate trace level
@@ -34,19 +34,12 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include "os_port.h"
-#include "os_port_posix.h"
-#include "debug.h"
+#include "../../CycloneTcp/common/os_port.h"
+#include "../../CycloneTcp/common/os_port_posix.h"
+#include "../../CycloneTcp/common/debug.h"
 
 //Pthread start routine
 typedef void *(*PthreadTaskCode) (void *param);
-
-////Default task parameters
-//const OsTaskParameters OS_TASK_DEFAULT_PARAMS =
-//{
-//   0, //Size of the stack
-//   0  //Task priority
-//};
 
 
 /**
@@ -70,44 +63,42 @@ void osStartKernel(void)
 
 
 /**
- * @brief Create a task
- * @param[in] name NULL-terminated string identifying the task
+ * @brief Create a new task
+ * @param[in] name A name identifying the task
  * @param[in] taskCode Pointer to the task entry function
- * @param[in] arg Argument passed to the task function
- * @param[in] params Task parameters
- * @return Task identifier referencing the newly created task
+ * @param[in] param A pointer to a variable to be passed to the task
+ * @param[in] stackSize The initial size of the stack, in words
+ * @param[in] priority The priority at which the task should run
+ * @return If the function succeeds, the return value is a pointer to the
+ *   new task. If the function fails, the return value is NULL
  **/
 
-OsTaskId osCreateTask(const char_t *name, OsTaskCode taskCode, void *arg,
-   const OsTaskParameters *params)
+OsTask *osCreateTask(const char_t *name, OsTaskCode taskCode,
+   void *param, size_t stackSize, int_t priority)
 {
    int_t ret;
    pthread_t thread;
 
    //Create a new thread
-   ret = pthread_create(&thread, NULL, (PthreadTaskCode) taskCode, arg);
+   ret = pthread_create(&thread, NULL, (PthreadTaskCode) taskCode, param);
 
    //Return a pointer to the newly created thread
    if(ret == 0)
-   {
-      return (OsTaskId) thread;
-   }
+      return (OsTask *) thread;
    else
-   {
-      return OS_INVALID_TASK_ID;
-   }
+      return NULL;
 }
 
 
 /**
  * @brief Delete a task
- * @param[in] taskId Task identifier referencing the task to be deleted
+ * @param[in] task Pointer to the task to be deleted
  **/
 
-void osDeleteTask(OsTaskId taskId)
+void osDeleteTask(OsTask *task)
 {
    //Delete the calling thread?
-   if(taskId == OS_SELF_TASK_ID)
+   if(task == NULL)
    {
       //Kill ourselves
       pthread_exit(NULL);
@@ -173,13 +164,9 @@ bool_t osCreateEvent(OsEvent *event)
 
    //Check whether the semaphore was successfully created
    if(ret == 0)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -250,8 +237,8 @@ bool_t osWaitForEvent(OsEvent *event, systime_t timeout)
    int_t ret;
    struct timespec ts;
 
-   //Wait until the specified event is in the signaled state or the timeout
-   //interval elapses
+   //Wait until the specified event is in the signaled
+   //state or the timeout interval elapses
    if(timeout == 0)
    {
       //Non-blocking call
@@ -337,13 +324,9 @@ bool_t osCreateSemaphore(OsSemaphore *semaphore, uint_t count)
 
    //Check whether the semaphore was successfully created
    if(ret == 0)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -405,13 +388,9 @@ bool_t osWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout)
 
    //Check whether the specified semaphore is available
    if(ret == 0)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -443,13 +422,9 @@ bool_t osCreateMutex(OsMutex *mutex)
 
    //Check whether the mutex was successfully created
    if(ret == 0)
-   {
       return TRUE;
-   }
    else
-   {
       return FALSE;
-   }
 }
 
 
@@ -467,7 +442,7 @@ void osDeleteMutex(OsMutex *mutex)
 
 /**
  * @brief Acquire ownership of the specified mutex object
- * @param[in] mutex Pointer to the mutex object
+ * @param[in] mutex A handle to the mutex object
  **/
 
 void osAcquireMutex(OsMutex *mutex)
@@ -513,7 +488,7 @@ systime_t osGetSystemTime(void)
  *   there is insufficient memory available
  **/
 
-__weak_func void *osAllocMem(size_t size)
+void *osAllocMem(size_t size)
 {
    //Allocate a memory block
    return malloc(size);
@@ -525,7 +500,7 @@ __weak_func void *osAllocMem(size_t size)
  * @param[in] p Previously allocated memory block to be freed
  **/
 
-__weak_func void osFreeMem(void *p)
+void osFreeMem(void *p)
 {
    //Free memory block
    free(p);
