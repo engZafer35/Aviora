@@ -100,7 +100,7 @@
 //and hold in the reassembly queue simultaneously
 #define IPV4_MAX_FRAG_DATAGRAMS 4
 //Maximum datagram size the host will accept when reassembling fragments
-#define IPV4_MAX_FRAG_DATAGRAM_SIZE 8192
+#define IPV4_MAX_FRAG_DATAGRAM_SIZE 4096
 
 //Size of ARP cache
 #define ARP_CACHE_SIZE 8
@@ -135,12 +135,12 @@
 
 //TCP support
 #define TCP_SUPPORT ENABLED
-#define TCP_MAX_TX_BUFFER_SIZE 4096
-#define TCP_MAX_RX_BUFFER_SIZE 4096
+#define TCP_MAX_TX_BUFFER_SIZE 2048
+#define TCP_MAX_RX_BUFFER_SIZE 2048
 //Default buffer size for transmission
-#define TCP_DEFAULT_TX_BUFFER_SIZE (1024*2)
+#define TCP_DEFAULT_TX_BUFFER_SIZE (1024)
 //Default buffer size for reception
-#define TCP_DEFAULT_RX_BUFFER_SIZE (1024*2)
+#define TCP_DEFAULT_RX_BUFFER_SIZE (1024)
 //Default SYN queue size for listening sockets
 #define TCP_DEFAULT_SYN_QUEUE_SIZE 4//4 zafer
 //Maximum number of retransmissions
@@ -183,7 +183,7 @@
  * Wiht this way, we can use both linux-bsd and Cyclone-bsd together
  */
 //BSD socket related functions
-#define FD_SET_TYPE     c_fd_set
+#define FD_SET_TYPE     my_fd_set
 #define SOCKET          c_socket
 #define BIND            c_bind
 #define CONNECT         c_connect
@@ -204,9 +204,9 @@
 #define FCNTL           c_fcntl
 #define SHUTDOWN        c_shutdown
 #define CLOSESOCKET     c_closesocket
-#define SELECT          c_select
+#define SELECT          bsd_select
 #define GETHOSTNAME     c_gethostname
-//#define GETHOSTBYNAME   c_gethostbyname
+#define GETHOSTBYNAME   c_gethostbyname
 //#define gethostbyname   c_gethostbyname
 //#define gethostbyname_r c_gethostbyname_r
 #define getaddrinfo     c_getaddrinfo

@@ -279,7 +279,7 @@ static void startAppServices(void)
         APP_LOG_REC(g_sysLoggerID, "Network Service start Error");
         appDevMngHwRestart(); //system cannot continue to run without network service, so restart the system        
     }
-#if 0
+
     /* initialize display after time service */
     if (FAILURE == appDisplayInit())
     {
@@ -306,7 +306,7 @@ static void startAppServices(void)
         APP_LOG_REC(g_sysLoggerID, "Protocol init Error");
         appDevMngHwRestart(); //system cannot continue to run without network service, so restart the system  
     }
-
+#if 0
     ZOsTaskParameters tempParam;
     tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
     tempParam.stackSize = ZOS_MIN_STACK_SIZE*5;

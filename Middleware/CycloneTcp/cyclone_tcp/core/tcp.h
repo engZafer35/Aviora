@@ -66,28 +66,28 @@
 
 //Default buffer size for transmission
 #ifndef TCP_DEFAULT_TX_BUFFER_SIZE
-   #define TCP_DEFAULT_TX_BUFFER_SIZE 2860
+   #define TCP_DEFAULT_TX_BUFFER_SIZE 1024
 #elif (TCP_DEFAULT_TX_BUFFER_SIZE < 536)
    #error TCP_DEFAULT_TX_BUFFER_SIZE parameter is not valid
 #endif
 
 //Maximum acceptable size for the send buffer
 #ifndef TCP_MAX_TX_BUFFER_SIZE
-   #define TCP_MAX_TX_BUFFER_SIZE 22880
+   #define TCP_MAX_TX_BUFFER_SIZE 2048
 #elif (TCP_MAX_TX_BUFFER_SIZE < 536)
    #error TCP_MAX_TX_BUFFER_SIZE parameter is not valid
 #endif
 
 //Default buffer size for reception
 #ifndef TCP_DEFAULT_RX_BUFFER_SIZE
-   #define TCP_DEFAULT_RX_BUFFER_SIZE 2860
+   #define TCP_DEFAULT_RX_BUFFER_SIZE 1024
 #elif (TCP_DEFAULT_RX_BUFFER_SIZE < 536)
    #error TCP_DEFAULT_RX_BUFFER_SIZE parameter is not valid
 #endif
 
 //Maximum acceptable size for the receive buffer
 #ifndef TCP_MAX_RX_BUFFER_SIZE
-   #define TCP_MAX_RX_BUFFER_SIZE 22880
+   #define TCP_MAX_RX_BUFFER_SIZE 2048
 #elif (TCP_MAX_RX_BUFFER_SIZE < 536)
    #error TCP_MAX_RX_BUFFER_SIZE parameter is not valid
 #endif
@@ -101,7 +101,7 @@
 
 //Maximum SYN queue size for listening sockets
 #ifndef TCP_MAX_SYN_QUEUE_SIZE
-   #define TCP_MAX_SYN_QUEUE_SIZE 16
+   #define TCP_MAX_SYN_QUEUE_SIZE 4
 #elif (TCP_MAX_SYN_QUEUE_SIZE < 1)
    #error TCP_MAX_SYN_QUEUE_SIZE parameter is not valid
 #endif
