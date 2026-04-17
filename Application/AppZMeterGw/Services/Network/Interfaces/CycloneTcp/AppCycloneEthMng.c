@@ -60,9 +60,7 @@ static void cycloneEthPeriodicInfoCb (NetInterface *interface, bool_t linkState)
     if (netInterface[ETH_INTERFACE_NUMBER].linkState)
     {
 
-        Ipv4Addr add = interface->ipv4Context.addrList[0].addr;
-
-        //zosEventGroupSet(gp_systemSetupEventGrp, NETWORK_SERVICE_READY_FLAG);
+        zosEventGroupSet(gp_systemSetupEventGrp, NETWORK_SERVICE_READY_FLAG);
     }
 
     //appDBusPublish(gs_cycloneEthDbusID, &dbPacket);

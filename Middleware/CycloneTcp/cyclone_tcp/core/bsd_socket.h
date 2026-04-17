@@ -199,7 +199,7 @@ extern "C" {
  * @brief Length type
  **/
 
-typedef int_t socklen_t;
+typedef int_t c_socklen_t;
 
 
 /**
@@ -286,6 +286,12 @@ typedef struct my_timeval
    int32_t tv_usec;
 } my_timeval;
 
+#define STRUCT_TIMEVAL my_timeval
+#ifndef STRUCT_TIMEVAL
+#define STRUCT_TIMEVA struct timeval
+#endif
+#include <time.h>
+
 
 /**
  * @brief Information about a given host
@@ -304,35 +310,35 @@ extern const in6_addr in6addr_any;
 extern const in6_addr in6addr_loopback;
 
 //BSD socket API
-int_t socket(int_t family, int_t type, int_t protocol);
-int_t bind(int_t s, const sockaddr *addr, socklen_t addrlen);
-int_t connect(int_t s, const sockaddr *addr, socklen_t addrlen);
-int_t listen(int_t s, int_t backlog);
-int_t accept(int_t s, sockaddr *addr, socklen_t *addrlen);
-int_t send(int_t s, const void *data, size_t length, int_t flags);
+int_t c_socket(int_t family, int_t type, int_t protocol);
+int_t c_bind(int_t s, const sockaddr *addr, c_socklen_t addrlen);
+int_t c_connect(int_t s, const sockaddr *addr, c_socklen_t addrlen);
+int_t c_listen(int_t s, int_t backlog);
+int_t c_accept(int_t s, sockaddr *addr, c_socklen_t *addrlen);
+int_t c_send(int_t s, const void *data, size_t length, int_t flags);
 
-int_t sendto(int_t s, const void *data, size_t length,
-   int_t flags, const sockaddr *addr, socklen_t addrlen);
+int_t c_sendto(int_t s, const void *data, size_t length,
+   int_t flags, const sockaddr *addr, c_socklen_t addrlen);
 
-int_t recv(int_t s, void *data, size_t size, int_t flags);
+int_t c_recv(int_t s, void *data, size_t size, int_t flags);
 
-int_t recvfrom(int_t s, void *data, size_t size,
-   int_t flags, sockaddr *addr, socklen_t *addrlen);
+int_t c_recvfrom(int_t s, void *data, size_t size,
+   int_t flags, sockaddr *addr, c_socklen_t *addrlen);
 
-int_t getsockname(int_t s, sockaddr *addr, socklen_t *addrlen);
-int_t getpeername(int_t s, sockaddr *addr, socklen_t *addrlen);
+int_t c_getsockname(int_t s, sockaddr *addr, c_socklen_t *addrlen);
+int_t c_getpeername(int_t s, sockaddr *addr, c_socklen_t *addrlen);
 
-int_t setsockopt(int_t s, int_t level, int_t optname,
-   const void *optval, socklen_t optlen);
+int_t c_setsockopt(int_t s, int_t level, int_t optname,
+   const void *optval, c_socklen_t optlen);
 
-int_t getsockopt(int_t s, int_t level, int_t optname,
-   void *optval, socklen_t *optlen);
+int_t c_getsockopt(int_t s, int_t level, int_t optname,
+   void *optval, c_socklen_t *optlen);
 
-int_t ioctlsocket(int_t s, uint32_t cmd, void *arg);
-int_t fcntl(int_t s, int_t cmd, void *arg);
+int_t c_ioctlsocket(int_t s, uint32_t cmd, void *arg);
+int_t c_fcntl(int_t s, int_t cmd, void *arg);
 
-int_t shutdown(int_t s, int_t how);
-int_t closesocket(int_t s);
+int_t c_shutdown(int_t s, int_t how);
+int_t c_losesocket(int_t s);
 
 int_t bsd_select(int_t nfds, my_fd_set *readfds, my_fd_set *wmy_fd_sets,
    my_fd_set *exceptfds, const my_timeval *timeout);
@@ -342,19 +348,19 @@ void selectFdSet(my_fd_set *fds, int_t s);
 void selectFdClr(my_fd_set *fds, int_t s);
 int_t selectFdIsSet(my_fd_set *fds, int_t s);
 
-hostent *gethostbyname(const char_t *name);
+hostent *c_gethostbyname(const char_t *name);
 
-hostent *gethostbyname_r(const char_t *name, hostent *result, char_t *buf,
+hostent *c_gethostbyname_r(const char_t *name, hostent *result, char_t *buf,
    size_t buflen, int_t *h_errnop);
 
-in_addr_t inet_addr(const char_t *cp);
+in_addr_t c_inet_addr(const char_t *cp);
 
-int_t inet_aton(const char_t *cp, in_addr *inp);
-const char_t *inet_ntoa(in_addr in);
-const char_t *inet_ntoa_r(in_addr in, char_t *buf, socklen_t buflen);
+int_t c_inet_aton(const char_t *cp, in_addr *inp);
+const char_t *c_inet_ntoa(in_addr in);
+const char_t *c_inet_ntoa_r(in_addr in, char_t *buf, c_socklen_t buflen);
 
 int_t inet_pton(int_t af, const char_t *src, void *dst);
-const char_t *inet_ntop(int_t af, const void *src, char_t *dst, socklen_t size);
+const char_t *c_inet_ntop(int_t af, const void *src, char_t *dst, c_socklen_t size);
 
 //C++ guard
 #ifdef __cplusplus
