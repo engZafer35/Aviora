@@ -306,10 +306,10 @@ static void startAppServices(void)
         APP_LOG_REC(g_sysLoggerID, "Protocol init Error");
         appDevMngHwRestart(); //system cannot continue to run without network service, so restart the system  
     }
-#if 0
+
     ZOsTaskParameters tempParam;
     tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
-    tempParam.stackSize = ZOS_MIN_STACK_SIZE*5;
+    tempParam.stackSize = ZOS_MIN_STACK_SIZE*2;
 
     gs_zmgTaskID = appTskMngCreate("ZMG_TASK", zmgTask, NULL, &tempParam);
     if (OS_INVALID_TASK_ID == gs_zmgTaskID)
@@ -318,7 +318,7 @@ static void startAppServices(void)
         APP_LOG_REC(g_sysLoggerID, "ZMG init Error");
         //retVal = FAILURE; //system can continue to run without zmgTask(system event handler), so we don't return failure here
     }
-#endif
+
     while(1)
     {
         middIOCtrlToggleLed(EN_OUT_POWER_LED);
