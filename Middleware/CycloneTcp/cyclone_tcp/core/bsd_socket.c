@@ -2270,7 +2270,7 @@ const char_t *c_inet_ntoa(in_addr in)
    static char_t buf[16];
 
    //The string returned by the function resides in static memory area
-   return inet_ntoa_r(in, buf, sizeof(buf));
+   return c_inet_ntoa_r(in, buf, sizeof(buf));
 }
 
 

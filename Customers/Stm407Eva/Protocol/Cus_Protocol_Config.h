@@ -29,7 +29,7 @@
 #define APP_ORION_TLV_PROTOCOL_STOP_FUNC()               appProtocolOrionTLVStop()
 #define APP_ORION_TLV_PROTOCOL_PUT_INCOMING_FUNC(channel, data, dataLength) appProtocolOrionTLVPutIncomingMessage(channel, data, dataLength)
 
-#define ORION_TLV_DEFAULT_SERVER_IP       "192.168.1.103"
+#define ORION_TLV_DEFAULT_SERVER_IP       "192.168.1.101"
 #define ORION_TLV_DEFAULT_PUSH_PORT       (8723)
 #define ORION_TLV_DEFAULT_DEVICE_IP       "192.168.1.35"
 #define ORION_TLV_DEFAULT_PULL_PORT       (2622)
