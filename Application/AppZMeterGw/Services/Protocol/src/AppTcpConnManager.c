@@ -216,8 +216,8 @@ static int connectPushSocket(void)
 static void tcpConnectionThread(void *arg)
 {
     (void)arg;
-    fd_set readfds;
-    fd_set writefds;
+    FD_SET_TYPE readfds;
+    FD_SET_TYPE writefds;
     int max_sd;
     int activity;
     static char ls_tmpRcvbuff[1024];
@@ -274,50 +274,50 @@ static void tcpConnectionThread(void *arg)
         /******************************* Pull Socket *****************************/
         if (gs_connInfo.pullSockID >= 0)
         {
-            FD_SET_TYPE fdSet;
-            S32 g_TcpClientFd = -1;
-            struct sockaddr_in clientAddr;
-            SOCKLEN_t clientLen = sizeof(clientAddr);
-            U8 cliVoice[160];
-                while(1)
-                {
-                    FD_ZERO(&fdSet);
-                    FD_SET(gs_connInfo.pullSockID, &fdSet);
-
-                    timeout.tv_sec  = 1;
-                    timeout.tv_usec = 10000;
-
-                    // TCP server wait for connection
-                    SELECT(FD_SETSIZE, &fdSet, NULL, NULL, &timeout);
-
-                    if(FD_ISSET(gs_connInfo.pullSockID, &fdSet))
-                    {
-                        g_TcpClientFd = ACCEPT(gs_connInfo.pullSockID,
-                                               (struct sockaddr*)&clientAddr,
-                                               &clientLen);
-
-                        if(g_TcpClientFd >= 0)
-                        {
-
-
-                            int recvLen = RECV(g_TcpClientFd,
-                                                cliVoice,
-                                                sizeof(cliVoice),
-                                                0);
-
-                            if(recvLen > 0)
-                            {
-                                for (int i = 0; i < recvLen ; i++)
-                                 printf("%c", cliVoice[i]);
-                                printf("\r\n");
-
-                            }
-
-                            CLOSESOCKET(g_TcpClientFd);
-                            g_TcpClientFd = -1;
-                        }
-                    }
-                }
+//            FD_SET_TYPE fdSet;
+//            S32 g_TcpClientFd = -1;
+//            struct sockaddr_in clientAddr;
+//            SOCKLEN_t clientLen = sizeof(clientAddr);
+//            U8 cliVoice[160];
+//                while(1)
+//                {
+//                    FD_ZERO(&fdSet);
+//                    FD_SET(gs_connInfo.pullSockID, &fdSet);
+//
+//                    timeout.tv_sec  = 1;
+//                    timeout.tv_usec = 10000;
+//
+//                    // TCP server wait for connection
+//                    SELECT(FD_SETSIZE, &fdSet, NULL, NULL, &timeout);
+//
+//                    if(FD_ISSET(gs_connInfo.pullSockID, &fdSet))
+//                    {
+//                        g_TcpClientFd = ACCEPT(gs_connInfo.pullSockID,
+//                                               (struct sockaddr*)&clientAddr,
+//                                               &clientLen);
+//
+//                        if(g_TcpClientFd >= 0)
+//                        {
+//
+//
+//                            int recvLen = RECV(g_TcpClientFd,
+//                                                cliVoice,
+//                                                sizeof(cliVoice),
+//                                                0);
+//
+//                            if(recvLen > 0)
+//                            {
+//                                for (int i = 0; i < recvLen ; i++)
+//                                 printf("%c", cliVoice[i]);
+//                                printf("\r\n");
+//
+//                            }
+//
+//                            CLOSESOCKET(g_TcpClientFd);
+//                            g_TcpClientFd = -1;
+//                        }
+//                    }
+//                }
 
 
 

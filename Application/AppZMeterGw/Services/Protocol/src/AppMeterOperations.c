@@ -595,7 +595,7 @@ static S32 enqueueMeterJob(const MeterJobMsg_t *job)
 
 static void meterOpsWorkerTask(void *arg)
 {
-    if (-1 == zosEventGroupWait(gp_systemSetupEventGrp, PROTOCOL_WAIT_DEPENDENCY_FLAGS | 0XFF, INFINITE_DELAY, ZOS_EVENT_WAIT_ALL))
+    if (-1 == zosEventGroupWait(gp_systemSetupEventGrp, PROTOCOL_WAIT_DEPENDENCY_FLAGS, INFINITE_DELAY, ZOS_EVENT_WAIT_ALL))
     {
         DEBUG_ERROR("->[E] Display Task: Wait for zosEventGroupWait failed");
         APP_LOG_REC(g_sysLoggerID, "Display Task: Wait for zosEventGroupWait failed");

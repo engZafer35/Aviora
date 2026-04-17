@@ -1539,8 +1539,8 @@ char_t *ipv4AddrToString(Ipv4Addr ipAddr, char_t *str)
    //Cast the address to byte array
    p = (uint8_t *) &ipAddr;
    //Format IPv4 address
-   osSprintf(str, "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8 "", p[0], p[1], p[2], p[3]);
-
+  // osSprintf(str, "%" PRIu8 ".%" PRIu8 ".%" PRIu8 ".%" PRIu8 "", p[0], p[1], p[2], p[3]);
+   osSprintf(str, "%u.%u.%u.%u", (unsigned int)p[0], (unsigned int)p[1], (unsigned int)p[2], (unsigned int)p[3]);
    //Return a pointer to the formatted string
    return str;
 }
