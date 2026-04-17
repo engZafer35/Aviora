@@ -58,7 +58,7 @@
 #define MLD_TRACE_LEVEL          2
 #define NDP_TRACE_LEVEL          2
 #define UDP_TRACE_LEVEL          2
-#define TCP_TRACE_LEVEL          2
+#define TCP_TRACE_LEVEL          4
 #define SOCKET_TRACE_LEVEL       2
 #define RAW_SOCKET_TRACE_LEVEL   2
 #define BSD_SOCKET_TRACE_LEVEL   2
@@ -108,7 +108,7 @@
 #define ARP_MAX_PENDING_PACKETS 2
 
 //IGMP host support
-#define IGMP_HOST_SUPPORT DISABLE//ENABLED
+#define IGMP_HOST_SUPPORT DISABLED//ENABLED
 
 //IPv6 support
 #define IPV6_SUPPORT DISABLE
@@ -116,7 +116,7 @@
 #define IPV6_MULTICAST_FILTER_SIZE 8
 
 //IPv6 fragmentation support
-#define IPV6_FRAG_SUPPORT ENABLED
+#define IPV6_FRAG_SUPPORT DISABLED
 //Maximum number of fragmented packets the host will accept
 //and hold in the reassembly queue simultaneously
 #define IPV6_MAX_FRAG_DATAGRAMS 4
@@ -135,10 +135,12 @@
 
 //TCP support
 #define TCP_SUPPORT ENABLED
+#define TCP_MAX_TX_BUFFER_SIZE 4096
+#define TCP_MAX_RX_BUFFER_SIZE 4096
 //Default buffer size for transmission
-#define TCP_DEFAULT_TX_BUFFER_SIZE (5430*2)
+#define TCP_DEFAULT_TX_BUFFER_SIZE (1024*2)
 //Default buffer size for reception
-#define TCP_DEFAULT_RX_BUFFER_SIZE (5430*2)
+#define TCP_DEFAULT_RX_BUFFER_SIZE (1024*2)
 //Default SYN queue size for listening sockets
 #define TCP_DEFAULT_SYN_QUEUE_SIZE 4//4 zafer
 //Maximum number of retransmissions
@@ -181,7 +183,7 @@
  * Wiht this way, we can use both linux-bsd and Cyclone-bsd together
  */
 //BSD socket related functions
-
+#define FD_SET_TYPE     c_fd_set
 #define SOCKET          c_socket
 #define BIND            c_bind
 #define CONNECT         c_connect
@@ -229,7 +231,7 @@
 #include <sys/select.h>
 #include <netdb.h>
 #include <sys/socket.h>
-
+#define FD_SET_TYPE      fd_set
 #define SOCKET           socket
 #define BIND             bind
 #define CONNECT          connect
