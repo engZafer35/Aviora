@@ -166,7 +166,7 @@ struct _NetInterface;
 
 //Stack size required to run the TCP/IP task
 #ifndef NET_TASK_STACK_SIZE
-   #define NET_TASK_STACK_SIZE 650
+   #define NET_TASK_STACK_SIZE (2*1024)
 #elif (NET_TASK_STACK_SIZE < 1)
    #error NET_TASK_STACK_SIZE parameter is not valid
 #endif

@@ -41,7 +41,7 @@
 #include <stdlib.h>
 
 /****************************** MACRO DEFINITIONS *****************************/
-#define ORION_TASK_STACK_SIZE    (4096U)
+#define ORION_TASK_STACK_SIZE    (128)
 #define ORION_TASK_NAME          "OrionTLV"
 
 #define MAX_PENDING_JOBS        (4)

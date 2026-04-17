@@ -106,7 +106,7 @@ int_t socketTranslateErrorCode(error_t error)
  *   On failure, SOCKET_ERROR is returned
  **/
 
-int_t socket(int_t family, int_t type, int_t protocol)
+int_t c_socket(int_t family, int_t type, int_t protocol)
 {
    Socket *sock;
 
@@ -148,7 +148,7 @@ int_t socket(int_t family, int_t type, int_t protocol)
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t bind(int_t s, const sockaddr *addr, socklen_t addrlen)
+int_t c_bind(int_t s, const sockaddr *addr, c_socklen_t addrlen)
 {
    error_t error;
    uint16_t port;
@@ -165,7 +165,7 @@ int_t bind(int_t s, const sockaddr *addr, socklen_t addrlen)
    sock = &socketTable[s];
 
    //Check the length of the address
-   if(addrlen < (socklen_t) sizeof(sockaddr))
+   if(addrlen < (c_socklen_t) sizeof(sockaddr))
    {
       //Report an error
       sock->errnoCode = EINVAL;
@@ -174,7 +174,7 @@ int_t bind(int_t s, const sockaddr *addr, socklen_t addrlen)
 
 #if (IPV4_SUPPORT == ENABLED)
    //IPv4 address?
-   if(addr->sa_family == AF_INET && addrlen >= (socklen_t) sizeof(sockaddr_in))
+   if(addr->sa_family == AF_INET && addrlen >= (c_socklen_t) sizeof(sockaddr_in))
    {
       //Point to the IPv4 address information
       sockaddr_in *sa = (sockaddr_in *) addr;
@@ -197,7 +197,7 @@ int_t bind(int_t s, const sockaddr *addr, socklen_t addrlen)
 #endif
 #if (IPV6_SUPPORT == ENABLED)
    //IPv6 address?
-   if(addr->sa_family == AF_INET6 && addrlen >= (socklen_t) sizeof(sockaddr_in6))
+   if(addr->sa_family == AF_INET6 && addrlen >= (c_socklen_t) sizeof(sockaddr_in6))
    {
       //Point to the IPv6 address information
       sockaddr_in6 *sa = (sockaddr_in6 *) addr;
@@ -249,7 +249,7 @@ int_t bind(int_t s, const sockaddr *addr, socklen_t addrlen)
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t connect(int_t s, const sockaddr *addr, socklen_t addrlen)
+int_t c_connect(int_t s, const sockaddr *addr, c_socklen_t addrlen)
 {
    error_t error;
    uint16_t port;
@@ -266,7 +266,7 @@ int_t connect(int_t s, const sockaddr *addr, socklen_t addrlen)
    sock = &socketTable[s];
 
    //Check the length of the address
-   if(addrlen < (socklen_t) sizeof(sockaddr))
+   if(addrlen < (c_socklen_t) sizeof(sockaddr))
    {
       sock->errnoCode = EINVAL;
       return SOCKET_ERROR;
@@ -274,7 +274,7 @@ int_t connect(int_t s, const sockaddr *addr, socklen_t addrlen)
 
 #if (IPV4_SUPPORT == ENABLED)
    //IPv4 address?
-   if(addr->sa_family == AF_INET && addrlen >= (socklen_t) sizeof(sockaddr_in))
+   if(addr->sa_family == AF_INET && addrlen >= (c_socklen_t) sizeof(sockaddr_in))
    {
       //Point to the IPv4 address information
       sockaddr_in *sa = (sockaddr_in *) addr;
@@ -297,7 +297,7 @@ int_t connect(int_t s, const sockaddr *addr, socklen_t addrlen)
 #endif
 #if (IPV6_SUPPORT == ENABLED)
    //IPv6 address?
-   if(addr->sa_family == AF_INET6 && addrlen >= (socklen_t) sizeof(sockaddr_in6))
+   if(addr->sa_family == AF_INET6 && addrlen >= (c_socklen_t) sizeof(sockaddr_in6))
    {
       //Point to the IPv6 address information
       sockaddr_in6 *sa = (sockaddr_in6 *) addr;
@@ -351,7 +351,7 @@ int_t connect(int_t s, const sockaddr *addr, socklen_t addrlen)
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t listen(int_t s, int_t backlog)
+int_t c_listen(int_t s, int_t backlog)
 {
    error_t error;
    Socket *sock;
@@ -389,7 +389,7 @@ int_t listen(int_t s, int_t backlog)
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t accept(int_t s, sockaddr *addr, socklen_t *addrlen)
+int_t c_accept(int_t s, sockaddr *addr, c_socklen_t *addrlen)
 {
    uint16_t port;
    IpAddr ipAddr;
@@ -421,7 +421,7 @@ int_t accept(int_t s, sockaddr *addr, socklen_t *addrlen)
    {
 #if (IPV4_SUPPORT == ENABLED)
       //IPv4 address?
-      if(ipAddr.length == sizeof(Ipv4Addr) && *addrlen >= (socklen_t) sizeof(sockaddr_in))
+      if(ipAddr.length == sizeof(Ipv4Addr) && *addrlen >= (c_socklen_t) sizeof(sockaddr_in))
       {
          //Point to the IPv4 address information
          sockaddr_in *sa = (sockaddr_in *) addr;
@@ -439,7 +439,7 @@ int_t accept(int_t s, sockaddr *addr, socklen_t *addrlen)
 #endif
 #if (IPV6_SUPPORT == ENABLED)
       //IPv6 address?
-      if(ipAddr.length == sizeof(Ipv6Addr) && *addrlen >= (socklen_t) sizeof(sockaddr_in6))
+      if(ipAddr.length == sizeof(Ipv6Addr) && *addrlen >= (c_socklen_t) sizeof(sockaddr_in6))
       {
          //Point to the IPv6 address information
          sockaddr_in6 *sa = (sockaddr_in6 *) addr;
@@ -481,7 +481,7 @@ int_t accept(int_t s, sockaddr *addr, socklen_t *addrlen)
  *   length parameter. Otherwise, a value of SOCKET_ERROR is returned
  **/
 
-int_t send(int_t s, const void *data, size_t length, int_t flags)
+int_t c_send(int_t s, const void *data, size_t length, int_t flags)
 {
    error_t error;
    size_t written;
@@ -540,8 +540,8 @@ int_t send(int_t s, const void *data, size_t length, int_t flags)
  *   length parameter. Otherwise, a value of SOCKET_ERROR is returned
  **/
 
-int_t sendto(int_t s, const void *data, size_t length,
-   int_t flags, const sockaddr *addr, socklen_t addrlen)
+int_t c_sendto(int_t s, const void *data, size_t length,
+   int_t flags, const sockaddr *addr, c_socklen_t addrlen)
 {
    error_t error;
    size_t written;
@@ -559,7 +559,7 @@ int_t sendto(int_t s, const void *data, size_t length,
    sock = &socketTable[s];
 
    //Check the length of the address
-   if(addrlen < (socklen_t) sizeof(sockaddr))
+   if(addrlen < (c_socklen_t) sizeof(sockaddr))
    {
       //Report an error
       sock->errnoCode = EINVAL;
@@ -568,7 +568,7 @@ int_t sendto(int_t s, const void *data, size_t length,
 
 #if (IPV4_SUPPORT == ENABLED)
    //IPv4 address?
-   if(addr->sa_family == AF_INET && addrlen >= (socklen_t) sizeof(sockaddr_in))
+   if(addr->sa_family == AF_INET && addrlen >= (c_socklen_t) sizeof(sockaddr_in))
    {
       //Point to the IPv4 address information
       sockaddr_in *sa = (sockaddr_in *) addr;
@@ -583,7 +583,7 @@ int_t sendto(int_t s, const void *data, size_t length,
 #endif
 #if (IPV6_SUPPORT == ENABLED)
    //IPv6 address?
-   if(addr->sa_family == AF_INET6 && addrlen >= (socklen_t) sizeof(sockaddr_in6))
+   if(addr->sa_family == AF_INET6 && addrlen >= (c_socklen_t) sizeof(sockaddr_in6))
    {
       //Point to the IPv6 address information
       sockaddr_in6 *sa = (sockaddr_in6 *) addr;
@@ -645,7 +645,7 @@ int_t sendto(int_t s, const void *data, size_t length,
  *   Otherwise, a value of SOCKET_ERROR is returned
  **/
 
-int_t recv(int_t s, void *data, size_t size, int_t flags)
+int_t c_recv(int_t s, void *data, size_t size, int_t flags)
 {
    error_t error;
    size_t received;
@@ -694,8 +694,8 @@ int_t recv(int_t s, void *data, size_t size, int_t flags)
  *   zero. Otherwise, a value of SOCKET_ERROR is returned
  **/
 
-int_t recvfrom(int_t s, void *data, size_t size,
-   int_t flags, sockaddr *addr, socklen_t *addrlen)
+int_t c_recvfrom(int_t s, void *data, size_t size,
+   int_t flags, sockaddr *addr, c_socklen_t *addrlen)
 {
    error_t error;
    size_t received;
@@ -733,7 +733,7 @@ int_t recvfrom(int_t s, void *data, size_t size,
    {
 #if (IPV4_SUPPORT == ENABLED)
       //IPv4 address?
-      if(ipAddr.length == sizeof(Ipv4Addr) && *addrlen >= (socklen_t) sizeof(sockaddr_in))
+      if(ipAddr.length == sizeof(Ipv4Addr) && *addrlen >= (c_socklen_t) sizeof(sockaddr_in))
       {
          //Point to the IPv4 address information
          sockaddr_in *sa = (sockaddr_in *) addr;
@@ -751,7 +751,7 @@ int_t recvfrom(int_t s, void *data, size_t size,
 #endif
 #if (IPV6_SUPPORT == ENABLED)
       //IPv6 address?
-      if(ipAddr.length == sizeof(Ipv6Addr) && *addrlen >= (socklen_t) sizeof(sockaddr_in6))
+      if(ipAddr.length == sizeof(Ipv6Addr) && *addrlen >= (c_socklen_t) sizeof(sockaddr_in6))
       {
          //Point to the IPv6 address information
          sockaddr_in6 *sa = (sockaddr_in6 *) addr;
@@ -789,7 +789,7 @@ int_t recvfrom(int_t s, void *data, size_t size,
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t getsockname(int_t s, sockaddr *addr, socklen_t *addrlen)
+int_t c_getsockname(int_t s, sockaddr *addr, c_socklen_t *addrlen)
 {
    int_t ret;
    Socket *sock;
@@ -811,7 +811,7 @@ int_t getsockname(int_t s, sockaddr *addr, socklen_t *addrlen)
    {
 #if (IPV4_SUPPORT == ENABLED)
       //IPv4 address?
-      if(sock->localIpAddr.length == sizeof(Ipv4Addr) && *addrlen >= (socklen_t) sizeof(sockaddr_in))
+      if(sock->localIpAddr.length == sizeof(Ipv4Addr) && *addrlen >= (c_socklen_t) sizeof(sockaddr_in))
       {
          //Point to the IPv4 address information
          sockaddr_in *sa = (sockaddr_in *) addr;
@@ -832,7 +832,7 @@ int_t getsockname(int_t s, sockaddr *addr, socklen_t *addrlen)
 #endif
 #if (IPV6_SUPPORT == ENABLED)
       //IPv6 address?
-      if(sock->localIpAddr.length == sizeof(Ipv6Addr) && *addrlen >= (socklen_t) sizeof(sockaddr_in6))
+      if(sock->localIpAddr.length == sizeof(Ipv6Addr) && *addrlen >= (c_socklen_t) sizeof(sockaddr_in6))
       {
          //Point to the IPv6 address information
          sockaddr_in6 *sa = (sockaddr_in6 *) addr;
@@ -881,7 +881,7 @@ int_t getsockname(int_t s, sockaddr *addr, socklen_t *addrlen)
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t getpeername(int_t s, sockaddr *addr, socklen_t *addrlen)
+int_t c_getpeername(int_t s, sockaddr *addr, c_socklen_t *addrlen)
 {
    int_t ret;
    Socket *sock;
@@ -903,7 +903,7 @@ int_t getpeername(int_t s, sockaddr *addr, socklen_t *addrlen)
    {
 #if (IPV4_SUPPORT == ENABLED)
       //IPv4 address?
-      if(sock->remoteIpAddr.length == sizeof(Ipv4Addr) && *addrlen >= (socklen_t) sizeof(sockaddr_in))
+      if(sock->remoteIpAddr.length == sizeof(Ipv4Addr) && *addrlen >= (c_socklen_t) sizeof(sockaddr_in))
       {
          //Point to the IPv4 address information
          sockaddr_in *sa = (sockaddr_in *) addr;
@@ -924,7 +924,7 @@ int_t getpeername(int_t s, sockaddr *addr, socklen_t *addrlen)
 #endif
 #if (IPV6_SUPPORT == ENABLED)
       //IPv6 address?
-      if(sock->remoteIpAddr.length == sizeof(Ipv6Addr) && *addrlen >= (socklen_t) sizeof(sockaddr_in6))
+      if(sock->remoteIpAddr.length == sizeof(Ipv6Addr) && *addrlen >= (c_socklen_t) sizeof(sockaddr_in6))
       {
          //Point to the IPv6 address information
          sockaddr_in6 *sa = (sockaddr_in6 *) addr;
@@ -975,8 +975,8 @@ int_t getpeername(int_t s, sockaddr *addr, socklen_t *addrlen)
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t setsockopt(int_t s, int_t level, int_t optname,
-   const void *optval, socklen_t optlen)
+int_t c_setsockopt(int_t s, int_t level, int_t optname,
+   const void *optval, c_socklen_t optlen)
 {
    int_t ret;
    int_t *val;
@@ -1012,7 +1012,7 @@ int_t setsockopt(int_t s, int_t level, int_t optname,
          else if(optname == SO_SNDTIMEO || optname == SO_RCVTIMEO)
          {
             //Check the length of the option
-            if(optlen >= (socklen_t) sizeof(my_timeval))
+            if(optlen >= (c_socklen_t) sizeof(my_timeval))
             {
                //Cast the option value to the relevant type
                t = (my_timeval *) optval;
@@ -1042,7 +1042,7 @@ int_t setsockopt(int_t s, int_t level, int_t optname,
          else if(optname == SO_SNDBUF)
          {
             //Check the length of the option
-            if(optlen >= (socklen_t) sizeof(int_t))
+            if(optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1061,7 +1061,7 @@ int_t setsockopt(int_t s, int_t level, int_t optname,
          else if(optname == SO_RCVBUF)
          {
             //Check the length of the option
-            if(optlen >= (socklen_t) sizeof(int_t))
+            if(optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1082,7 +1082,7 @@ int_t setsockopt(int_t s, int_t level, int_t optname,
          else if(optname == SO_KEEPALIVE)
          {
             //Check the length of the option
-            if(optlen >= (socklen_t) sizeof(int_t))
+            if(optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1113,7 +1113,7 @@ int_t setsockopt(int_t s, int_t level, int_t optname,
          if(optname == IP_TTL)
          {
             //Check the length of the option
-            if(optlen >= (socklen_t) sizeof(int_t))
+            if(optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1132,7 +1132,7 @@ int_t setsockopt(int_t s, int_t level, int_t optname,
          else if(optname == IP_MULTICAST_TTL)
          {
             //Check the length of the option
-            if(optlen >= (socklen_t) sizeof(int_t))
+            if(optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1152,7 +1152,7 @@ int_t setsockopt(int_t s, int_t level, int_t optname,
          else if(optname == IP_TOS)
          {
             //Check the length of the option
-            if(optlen >= (socklen_t) sizeof(int_t))
+            if(optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1183,7 +1183,7 @@ int_t setsockopt(int_t s, int_t level, int_t optname,
          if(optname == TCP_KEEPIDLE)
          {
             //Check the length of the option
-            if(optlen >= (socklen_t) sizeof(int_t))
+            if(optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1202,7 +1202,7 @@ int_t setsockopt(int_t s, int_t level, int_t optname,
          else if(optname == TCP_KEEPINTVL)
          {
             //Check the length of the option
-            if(optlen >= (socklen_t) sizeof(int_t))
+            if(optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1221,7 +1221,7 @@ int_t setsockopt(int_t s, int_t level, int_t optname,
          else if(optname == TCP_KEEPCNT)
          {
             //Check the length of the option
-            if(optlen >= (socklen_t) sizeof(int_t))
+            if(optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1275,8 +1275,8 @@ int_t setsockopt(int_t s, int_t level, int_t optname,
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t getsockopt(int_t s, int_t level, int_t optname,
-   void *optval, socklen_t *optlen)
+int_t c_getsockopt(int_t s, int_t level, int_t optname,
+   void *optval, c_socklen_t *optlen)
 {
    int_t ret;
    int_t *val;
@@ -1305,7 +1305,7 @@ int_t getsockopt(int_t s, int_t level, int_t optname,
          if(optname == SO_SNDTIMEO || optname == SO_RCVTIMEO)
          {
             //Check the length of the option
-            if(*optlen >= (socklen_t) sizeof(my_timeval))
+            if(*optlen >= (c_socklen_t) sizeof(my_timeval))
             {
                //Cast the option value to the relevant type
                t = (my_timeval *) optval;
@@ -1338,7 +1338,7 @@ int_t getsockopt(int_t s, int_t level, int_t optname,
          else if(optname == SO_SNDBUF)
          {
             //Check the length of the option
-            if(*optlen >= (socklen_t) sizeof(int_t))
+            if(*optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1359,7 +1359,7 @@ int_t getsockopt(int_t s, int_t level, int_t optname,
          else if(optname == SO_RCVBUF)
          {
             //Check the length of the option
-            if(*optlen >= (socklen_t) sizeof(int_t))
+            if(*optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1382,7 +1382,7 @@ int_t getsockopt(int_t s, int_t level, int_t optname,
          else if(optname == SO_KEEPALIVE)
          {
             //Check the length of the option
-            if(*optlen >= (socklen_t) sizeof(my_timeval))
+            if(*optlen >= (c_socklen_t) sizeof(my_timeval))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1402,7 +1402,7 @@ int_t getsockopt(int_t s, int_t level, int_t optname,
          else if(optname == SO_ERROR)
          {
             //Check the length of the option
-            if(*optlen >= (socklen_t) sizeof(int_t))
+            if(*optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1437,7 +1437,7 @@ int_t getsockopt(int_t s, int_t level, int_t optname,
          if(optname == IP_TTL)
          {
             //Check the length of the option
-            if(*optlen >= (socklen_t) sizeof(int_t))
+            if(*optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1459,7 +1459,7 @@ int_t getsockopt(int_t s, int_t level, int_t optname,
          else if(optname == IP_MULTICAST_TTL)
          {
             //Check the length of the option
-            if(*optlen >= (socklen_t) sizeof(int_t))
+            if(*optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1482,7 +1482,7 @@ int_t getsockopt(int_t s, int_t level, int_t optname,
          else if(optname == IP_TOS)
          {
             //Check the length of the option
-            if(*optlen >= (socklen_t) sizeof(int_t))
+            if(*optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1516,7 +1516,7 @@ int_t getsockopt(int_t s, int_t level, int_t optname,
          if(optname == TCP_KEEPIDLE)
          {
             //Check the length of the option
-            if(*optlen >= (socklen_t) sizeof(int_t))
+            if(*optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1535,7 +1535,7 @@ int_t getsockopt(int_t s, int_t level, int_t optname,
          else if(optname == TCP_KEEPINTVL)
          {
             //Check the length of the option
-            if(*optlen >= (socklen_t) sizeof(int_t))
+            if(*optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1554,7 +1554,7 @@ int_t getsockopt(int_t s, int_t level, int_t optname,
          else if(optname == TCP_KEEPCNT)
          {
             //Check the length of the option
-            if(*optlen >= (socklen_t) sizeof(int_t))
+            if(*optlen >= (c_socklen_t) sizeof(int_t))
             {
                //Cast the option value to the relevant type
                val = (int_t *) optval;
@@ -1609,7 +1609,7 @@ int_t getsockopt(int_t s, int_t level, int_t optname,
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t ioctlsocket(int_t s, uint32_t cmd, void *arg)
+int_t c_ioctlsocket(int_t s, uint32_t cmd, void *arg)
 {
    int_t ret;
    int_t *val;
@@ -1686,7 +1686,7 @@ int_t ioctlsocket(int_t s, uint32_t cmd, void *arg)
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t fcntl(int_t s, int_t cmd, void *arg)
+int_t c_fcntl(int_t s, int_t cmd, void *arg)
 {
    int_t ret;
    int_t *flags;
@@ -1761,7 +1761,7 @@ int_t fcntl(int_t s, int_t cmd, void *arg)
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t shutdown(int_t s, int_t how)
+int_t c_shutdown(int_t s, int_t how)
 {
    error_t error;
    Socket *sock;
@@ -1797,7 +1797,7 @@ int_t shutdown(int_t s, int_t how)
  *   Otherwise, it returns SOCKET_ERROR
  **/
 
-int_t closesocket(int_t s)
+int_t c_closesocket(int_t s)
 {
    Socket *sock;
 
@@ -2125,7 +2125,7 @@ hostent *gethostbyname(const char_t *name)
  * @return Pointer to the hostent structure or a NULL if an error occurs
  **/
 
-hostent *gethostbyname_r(const char_t *name, hostent *result, char_t *buf,
+hostent *c_gethostbyname_r(const char_t *name, hostent *result, char_t *buf,
    size_t buflen, int_t *h_errnop)
 {
    error_t error;
@@ -2196,7 +2196,7 @@ hostent *gethostbyname_r(const char_t *name, hostent *result, char_t *buf,
  * @return Binary data in network byte order
  **/
 
-in_addr_t inet_addr(const char_t *cp)
+in_addr_t c_inet_addr(const char_t *cp)
 {
 #if (IPV4_SUPPORT == ENABLED)
    error_t error;
@@ -2230,7 +2230,7 @@ in_addr_t inet_addr(const char_t *cp)
  * @return The function returns non-zero if the address is valid, zero if not
  **/
 
-int_t inet_aton(const char_t *cp, in_addr *inp)
+int_t c_inet_aton(const char_t *cp, in_addr *inp)
 {
 #if (IPV4_SUPPORT == ENABLED)
    error_t error;
@@ -2265,7 +2265,7 @@ int_t inet_aton(const char_t *cp, in_addr *inp)
  * @return Pointer to the formatted string
  **/
 
-const char_t *inet_ntoa(in_addr in)
+const char_t *c_inet_ntoa(in_addr in)
 {
    static char_t buf[16];
 
@@ -2282,7 +2282,7 @@ const char_t *inet_ntoa(in_addr in)
  * @return Pointer to the formatted string
  **/
 
-const char_t *inet_ntoa_r(in_addr in, char_t *buf, socklen_t buflen)
+const char_t *c_inet_ntoa_r(in_addr in, char_t *buf, c_socklen_t buflen)
 {
    //Properly terminate the string
    buf[0] = '\0';
@@ -2382,7 +2382,7 @@ int_t inet_pton(int_t af, const char_t *src, void *dst)
  *   NULL is returned if there was an error
  **/
 
-const char_t *inet_ntop(int_t af, const void *src, char_t *dst, socklen_t size)
+const char_t *c_inet_ntop(int_t af, const void *src, char_t *dst, c_socklen_t size)
 {
 #if (IPV4_SUPPORT == ENABLED)
    //IPv4 address?
