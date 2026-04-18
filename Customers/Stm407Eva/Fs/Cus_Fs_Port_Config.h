@@ -34,7 +34,8 @@
    #include "fs_port_littlefs.h"
 //FlashFS port?
 #elif defined(USE_FLASHFS)
-   #include "fs_port_flashFS.h"
+//#include "fs_port_flashFS.h"
+#include "fs_flash_new_stm.h"
 //FlashLink port?
 #elif defined(USE_FLASHLINK)
    #include "fs_port_flashLink.h"
@@ -66,24 +67,22 @@
 #define STORAGE_DRV_FUNC_ERASE   internalStm32f407FlashErase
 #define STORAGE_DRV_FUNC_SYNC    internalStm32f407FlashSync
 
-#define FS_HARDWARE_INIT(error_out) \                   
-                    do { \                        
-                        FlashFsOps ops = { \
-                            .read = STORAGE_DRV_FUNC_READ, \
-                            .prog = STORAGE_DRV_FUNC_PROG, \
-                            .erase = STORAGE_DRV_FUNC_ERASE, \
-                            .sync = STORAGE_DRV_FUNC_SYNC \
-                        }; \
-                        FlashFsGeom cfg = { \
-                            .baseAddr = FLASHFS_BASE_ADDR, \
-                            .totalSize = FLASHFS_TOTAL_SIZE, \
-                            .eraseBlockSize = FLASHFS_ERASE_BLOCK_SIZE, \
-                            .progMinSize = FLASHFS_PROG_MIN_SIZE \
-                        }; \
-                        error_out = flashFsConfigure(&ops, &cfg); \
-                        if(NO_ERROR == error_out) \
-                        { \
-                            error_out = flashFsFormat(); \ 
-                        }\
-                    } while (0)
+#define FS_HARDWARE_INIT(error_out) \                       
+    FlashNewStmGeom geom = {\
+        .ops = {\
+            .read  = internalStm32f407FlashRead,\
+            .prog  = internalStm32f407FlashProg,\
+            .erase = internalStm32f407FlashErase,\
+            .sync  = internalStm32f407FlashSync,\
+        },\
+        .cfgBase    = FSNEW_DEFAULT_CFG_BASE,\
+        .cfgSize    = FSNEW_DEFAULT_CFG_SIZE,\
+        .logBase    = FSNEW_DEFAULT_LOG_BASE,\
+        .logSize    = FSNEW_DEFAULT_LOG_SIZE,\
+        .dataBase   = FSNEW_DEFAULT_DATA_BASE,\
+        .dataSize   = FSNEW_DEFAULT_DATA_SIZE,\
+        .sectorSize = FSNEW_DEFAULT_SECTOR_SZ,\
+        .progMin    = FSNEW_DEFAULT_PROG_MIN,\
+    };\
+    error_out = flashNewStmConfigure(&geom);
 #endif /* __CUS_FS_PORT_CONFIG_H__ */

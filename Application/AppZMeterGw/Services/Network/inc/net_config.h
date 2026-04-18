@@ -202,6 +202,7 @@
 #define GETSOCKOPT      c_getsockopt
 #define IOCTLSOCKET     c_ioctlsocket
 #define FCNTL           c_fcntl
+#define FCNTL_COM       c_fcntl_compat_linux //added for linux compatibility, since fcntl in linux has different signature than cyclone's
 #define SHUTDOWN        c_shutdown
 #define CLOSESOCKET     c_closesocket
 #define SELECT          bsd_select
