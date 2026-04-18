@@ -365,7 +365,7 @@ class OrionTLVTestServer:
         # ── device info ──
         self.device_serial = tk.StringVar(value="12345678")
         self.device_flag = "AVI"
-        self.pull_ip = tk.StringVar(value="127.0.0.1")
+        self.pull_ip = tk.StringVar(value="192.168.1.35")
         self.pull_port_var = tk.StringVar(value="2622")
         self.device_identified = False
 

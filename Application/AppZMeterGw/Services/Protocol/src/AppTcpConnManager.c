@@ -170,8 +170,8 @@ static int connectPushSocket(void)
         return RET_FAILURE;
     }
 
-    flags = FCNTL(gs_connInfo.pushSockID, F_GETFL, 0);
-    if ((flags < 0) || (FCNTL(gs_connInfo.pushSockID, F_SETFL, flags | O_NONBLOCK) < 0))
+    flags = FCNTL_COM(gs_connInfo.pushSockID, F_GETFL, flags);
+    if ((flags < 0) || (FCNTL_COM(gs_connInfo.pushSockID, F_SETFL, flags | O_NONBLOCK) < 0))
     {
         CLOSESOCKET(gs_connInfo.pushSockID);
         gs_connInfo.pushSockID = -1;
@@ -338,8 +338,8 @@ static void tcpConnectionThread(void *arg)
                     max_sd = gs_connInfo.clientSocList[i];
             }
 
-            timeout.tv_sec  = 10;
-            timeout.tv_usec = 10000;
+            timeout.tv_sec  = 0;
+            timeout.tv_usec = 200000;
             activity = SELECT(max_sd + 1, &readfds, NULL, NULL, &timeout);
 
             if (activity > 0)
@@ -450,7 +450,7 @@ static void tcpConnectionThread(void *arg)
                     if (GETSOCKOPT(gs_connInfo.pushSockID, SOL_SOCKET, SO_ERROR, &error, &len) == 0)
                     {
                         gs_connInfo.pushSockConnecting = 0;
-                        if (error == 0)
+                        if (error == 0 || (EWOULDBLOCK == error))
                         {
                             DEBUG_DEBUG("->[D] Push socket connected successfully");
                             int fl = FCNTL(gs_connInfo.pushSockID, F_GETFL, 0);

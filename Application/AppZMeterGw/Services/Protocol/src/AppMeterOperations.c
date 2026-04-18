@@ -236,6 +236,8 @@ static BOOL meterListContainsSerial(const char serialKey[16])
     if (f == NULL)
         return FALSE;
 
+    U32 snLeng = strlen(serialKey);
+
     for (;;)
     {
         size_t got = 0;
@@ -246,7 +248,7 @@ static BOOL meterListContainsSerial(const char serialKey[16])
         size_t nRows = got / METER_LIST_ROW_SZ;
         for (size_t m = 0; m < nRows; m++)
         {
-            if (memcmp(buf + m * METER_LIST_ROW_SZ, serialKey, METER_LIST_ROW_SZ) == 0)
+            if (memcmp(buf + m * METER_LIST_ROW_SZ, serialKey, snLeng) == 0)
             {
                 fsCloseFile(f);
                 return TRUE;
@@ -703,6 +705,15 @@ RETURN_STATUS appMeterOperationsStart(MeterCommInterface_t *meterComm)
 
 /* ---- Meter registration ---- */
 
+void initMeterTest(void)
+{
+    zosCreateMutex(&s_meterRegMux);
+    zosCreateMutex(&s_directiveMux);
+    zosCreateMutex(&s_taskMux);
+
+    meterListRefreshCount();
+    directiveIndexLoad();
+}
 RETURN_STATUS appMeterOperationsAddMeter(MeterData_t *meterData)
 {
     char path[MAX_PATH_LEN];
@@ -719,7 +730,7 @@ RETURN_STATUS appMeterOperationsAddMeter(MeterData_t *meterData)
     if (meterListContainsSerial(row.serialNumber))
     {
         unlockMeterReg();
-        return SUCCESS;
+        return FAILURE;
     }
 
     snprintf(path, sizeof(path), "%s%.16s", METER_REG_DIR, meterData->serialNumber);
