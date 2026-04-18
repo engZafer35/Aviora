@@ -564,7 +564,7 @@ int zosMsgQueueReceive(OsQueue queue, char *msg, size_t msgLeng, unsigned int ti
         pdMS_TO_TICKS(timeOutSec)
     );
 
-    return (ret == pdPASS) ? QUEUE_SUCCESS : QUEUE_FAILURE;
+    return (ret == pdPASS) ? TRUE : QUEUE_FAILURE;
 }
 
 int zosMsgQueueClose(OsQueue queue)

@@ -237,8 +237,9 @@ static void zmgTask(void * pvParameters)
             }
         }
 
+        middIOCtrlToggleLed(EN_OUT_POWER_LED);
         appTskMngImOK(gs_zmgTaskID);
-        zosDelayTask(1000);
+//        zosDelayTask(1000);
     }
 }
 
@@ -319,12 +320,17 @@ static void startAppServices(void)
         //retVal = FAILURE; //system can continue to run without zmgTask(system event handler), so we don't return failure here
     }
 
+    zosDeleteTask(NULL);
+}
+
+
+static void fsDemo(void *arg)
+{
     while(1)
     {
-        middIOCtrlToggleLed(EN_OUT_POWER_LED);
-        zosDelayTask(500); //wait for a while to let all services start
+        fs_flash_new_stm_demo();
+        zosDelayTask(1000);
     }
-    zosDeleteTask(NULL);
 }
 
 static RETURN_STATUS initSwUnit(void)
@@ -347,6 +353,18 @@ static RETURN_STATUS initSwUnit(void)
             DEBUG_ERROR("->[E] appGlobalVarInit init Error");
             return FAILURE;
         }
+
+
+//        ZOsTaskParameters tempParam;
+//        tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
+//        tempParam.stackSize = ZOS_MIN_STACK_SIZE*5;
+//
+//        zosCreateTask("fsDemo", fsDemo, NULL, &tempParam);
+//
+//        zosInitKernel();
+//        zosStartKernel();
+//
+//        fs_flash_new_stm_demo();
 
         /* init storage hardware and file system */
         error_t error = ERROR_FAILURE;

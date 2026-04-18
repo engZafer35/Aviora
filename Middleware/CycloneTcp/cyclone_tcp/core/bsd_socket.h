@@ -336,6 +336,7 @@ int_t c_getsockopt(int_t s, int_t level, int_t optname,
 
 int_t c_ioctlsocket(int_t s, uint32_t cmd, void *arg);
 int_t c_fcntl(int_t s, int_t cmd, void *arg);
+int_t c_fcntl_compat_linux(int_t s, int_t cmd, int_t arg);
 
 int_t c_shutdown(int_t s, int_t how);
 int_t c_losesocket(int_t s);

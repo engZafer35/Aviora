@@ -1752,6 +1752,30 @@ int_t c_fcntl(int_t s, int_t cmd, void *arg)
    return ret;
 }
 
+int_t c_fcntl_compat_linux(int_t s, int_t cmd, int_t arg)
+{
+    int_t ret;
+    int_t tmp;
+
+    switch(cmd)
+    {
+    case F_GETFL:
+        ret = c_fcntl(s, cmd, &tmp);
+        if(ret == SOCKET_ERROR)
+            return -1;
+        return tmp;
+
+    case F_SETFL:
+        tmp = arg;
+        ret = c_fcntl(s, cmd, &tmp);
+        if(ret == SOCKET_ERROR)
+            return -1;
+        return 0;
+
+    default:
+        return -1;
+    }
+}
 
 /**
  * @brief The shutdown function disables sends or receives on a socket
