@@ -237,13 +237,11 @@ typedef struct
 
 static FsNewCtx g_ctx;
 
-/* ─── Kilit makroları (hepsi aynı mutex'i kullanır) ───────────────────── */
-#define CFG_LOCK()    zosAcquireMutex(&g_ctx.flashMux)
-#define CFG_UNLOCK()  zosReleaseMutex(&g_ctx.flashMux)
-#define LOG_LOCK()    zosAcquireMutex(&g_ctx.flashMux)
-#define LOG_UNLOCK()  zosReleaseMutex(&g_ctx.flashMux)
-#define DAT_LOCK()    zosAcquireMutex(&g_ctx.flashMux)
-#define DAT_UNLOCK()  zosReleaseMutex(&g_ctx.flashMux)
+/* ─── Kilit makroları ──────────────────────────────────────────────────── */
+/* STM32F407 tek bir flash controller'a sahip; tüm bölge erişimleri tek
+ * mutex ile serileştirilir. Bölge bazlı ayrım gereksiz karmaşıklık yaratır. */
+#define FS_LOCK()     zosAcquireMutex(&g_ctx.flashMux)
+#define FS_UNLOCK()   zosReleaseMutex(&g_ctx.flashMux)
 
 /* =========================================================================
  * CRC32  (yarı-tablolu, küçük MCU'ya uygun)
@@ -716,9 +714,9 @@ cleanup:
 error_t flashNewStmCompactConfig(void)
 {
     error_t err;
-    CFG_LOCK();
+    FS_LOCK();
     err = compactConfig_impl();
-    CFG_UNLOCK();
+    FS_UNLOCK();
     return err;
 }
 
@@ -989,9 +987,9 @@ error_t flashNewStmWriteConfig(const char *path,
                                 const void *data, uint32_t size)
 {
     error_t err;
-    CFG_LOCK();
+    FS_LOCK();
     err = writeConfig_impl(path, data, size);
-    CFG_UNLOCK();
+    FS_UNLOCK();
     return err;
 }
 
@@ -1003,12 +1001,12 @@ error_t flashNewStmReadConfig(const char *path,
     if (!PATH_VALID(path))               return ERROR_INVALID_PARAMETER;
     if (buf == NULL || outSize == NULL)  return ERROR_INVALID_PARAMETER;
 
-    CFG_LOCK();
+    FS_LOCK();
 
     int32_t slot = cfgIdxFind(path);
     if (slot < 0)
     {
-        CFG_UNLOCK();
+        FS_UNLOCK();
         return ERROR_FILE_NOT_FOUND;
     }
 
@@ -1022,27 +1020,27 @@ error_t flashNewStmReadConfig(const char *path,
     if (err == NO_ERROR)
         *outSize = readLen;
 
-    CFG_UNLOCK();
+    FS_UNLOCK();
     return err;
 }
 
 error_t flashNewStmDeleteConfig(const char *path)
 {
     error_t err;
-    CFG_LOCK();
+    FS_LOCK();
     err = deleteConfig_impl(path);
-    CFG_UNLOCK();
+    FS_UNLOCK();
     return err;
 }
 
 error_t flashNewStmCfgFreeSpace(uint32_t *freeBytes)
 {
     if (!g_ctx.mounted || freeBytes == NULL) return ERROR_INVALID_PARAMETER;
-    CFG_LOCK();
+    FS_LOCK();
     *freeBytes = (g_ctx.cfg.writeOff < g_ctx.cfg.size)
                   ? (g_ctx.cfg.size - g_ctx.cfg.writeOff)
                   : 0u;
-    CFG_UNLOCK();
+    FS_UNLOCK();
     return NO_ERROR;
 }
 
@@ -1051,7 +1049,7 @@ error_t flashNewStmCfgFreeSpace(uint32_t *freeBytes)
  * ====================================================================== */
 
 /*
- * writeLog_impl — kilitsiz LOG kayıt yazıcı (LOG_LOCK dışarıda tutulmalı).
+ * writeLog_impl — kilitsiz LOG kayıt yazıcı (FS_LOCK çağıran tarafından tutulmalı).
  *
  *   path    : NULL veya "" → anonim kayıt (pathLen=0)
  *   pathLen : path string uzunluğu (path NULL ise 0 geç)
@@ -1122,9 +1120,9 @@ error_t flashNewStmWriteLog(const char *text, uint32_t len)
     if (!g_ctx.mounted)            return ERROR_NOT_READY;
     if (text == NULL || len == 0u) return ERROR_INVALID_PARAMETER;
 
-    LOG_LOCK();
+    FS_LOCK();
     error_t err = writeLog_impl(NULL, 0u, text, len);
-    LOG_UNLOCK();
+    FS_UNLOCK();
     return err;
 }
 
@@ -1135,7 +1133,7 @@ error_t flashNewStmIterateLogs(
 {
     if (!g_ctx.mounted || cb == NULL) return ERROR_INVALID_PARAMETER;
 
-    LOG_LOCK();
+    FS_LOCK();
 
     uint32_t off = sizeof(RegHdr);
 
@@ -1178,17 +1176,17 @@ error_t flashNewStmIterateLogs(
         off += lh.totSize;
     }
 
-    LOG_UNLOCK();
+    FS_UNLOCK();
     return NO_ERROR;
 }
 
 error_t flashNewStmClearLogs(void)
 {
     if (!g_ctx.mounted) return ERROR_NOT_READY;
-    LOG_LOCK();
+    FS_LOCK();
     error_t err = eraseAndReinitRegion(&g_ctx.log, REG_MAGIC_LOG);
     if (err == NO_ERROR) g_ctx.log.seqNext = 1u;
-    LOG_UNLOCK();
+    FS_UNLOCK();
     return err;
 }
 
@@ -1197,7 +1195,7 @@ error_t flashNewStmClearLogs(void)
  * ====================================================================== */
 
 /*
- * writeData_impl — kilitsiz DATA kayıt yazıcı (DAT_LOCK dışarıda tutulmalı).
+ * writeData_impl — kilitsiz DATA kayıt yazıcı (FS_LOCK çağıran tarafından tutulmalı).
  *
  *   type      : kayıt tipi (FSNEW_DATA_SENSOR vb.); path'li kayıtlarda 0u
  *   path      : NULL veya "" → pathLen=0 (tip bazlı kayıt)
@@ -1281,9 +1279,9 @@ error_t flashNewStmWriteData(uint32_t type,
     if (!g_ctx.mounted)             return ERROR_NOT_READY;
     if (data == NULL || size == 0u) return ERROR_INVALID_PARAMETER;
 
-    DAT_LOCK();
+    FS_LOCK();
     error_t err = writeData_impl(type, NULL, 0u, data, size, timestamp);
-    DAT_UNLOCK();
+    FS_UNLOCK();
     return err;
 }
 
@@ -1295,7 +1293,7 @@ error_t flashNewStmIterateData(
 {
     if (!g_ctx.mounted || cb == NULL) return ERROR_INVALID_PARAMETER;
 
-    DAT_LOCK();
+    FS_LOCK();
 
     uint32_t off = sizeof(RegHdr);
     uint8_t  buf[128];
@@ -1373,17 +1371,17 @@ error_t flashNewStmIterateData(
         off += dh.totSize;
     }
 
-    DAT_UNLOCK();
+    FS_UNLOCK();
     return NO_ERROR;
 }
 
 error_t flashNewStmClearData(void)
 {
     if (!g_ctx.mounted) return ERROR_NOT_READY;
-    DAT_LOCK();
+    FS_LOCK();
     error_t err = eraseAndReinitRegion(&g_ctx.data, REG_MAGIC_DATA);
     if (err == NO_ERROR) g_ctx.data.seqNext = 1u;
-    DAT_UNLOCK();
+    FS_UNLOCK();
     return err;
     return NO_ERROR;
 }
@@ -1400,24 +1398,24 @@ error_t flashNewStmGetFreeSpace(uint32_t *cfgFree,
 
     if (cfgFree != NULL)
     {
-        CFG_LOCK();
+        FS_LOCK();
         *cfgFree  = (g_ctx.cfg.writeOff < g_ctx.cfg.size)
                      ? g_ctx.cfg.size  - g_ctx.cfg.writeOff : 0u;
-        CFG_UNLOCK();
+        FS_UNLOCK();
     }
     if (logFree != NULL)
     {
-        LOG_LOCK();
+        FS_LOCK();
         *logFree  = (g_ctx.log.writeOff < g_ctx.log.size)
                      ? g_ctx.log.size  - g_ctx.log.writeOff : 0u;
-        LOG_UNLOCK();
+        FS_UNLOCK();
     }
     if (dataFree != NULL)
     {
-        DAT_LOCK();
+        FS_LOCK();
         *dataFree = (g_ctx.data.writeOff < g_ctx.data.size)
                      ? g_ctx.data.size - g_ctx.data.writeOff : 0u;
-        DAT_UNLOCK();
+        FS_UNLOCK();
     }
 
     return NO_ERROR;
@@ -1485,7 +1483,7 @@ bool_t fsFileExists(const char_t *path)
     if (isDataPath(path))
     {
         uint32_t plen = (uint32_t)osStrlen(path);
-        DAT_LOCK();
+        FS_LOCK();
         uint32_t off   = sizeof(RegHdr);
         bool_t   found = FALSE;
         while (off + sizeof(DatRecHdr) <= g_ctx.data.size && !found)
@@ -1509,15 +1507,15 @@ bool_t fsFileExists(const char_t *path)
             }
             off += dh.totSize;
         }
-        DAT_UNLOCK();
+        FS_UNLOCK();
         return found;
     }
 
     if (isLogPath(path)) return FALSE;  /* LOG: path bazlı varlık kontrolü yok */
 
-    CFG_LOCK();
+    FS_LOCK();
     bool_t found = (cfgIdxFind(path) >= 0) ? TRUE : FALSE;
-    CFG_UNLOCK();
+    FS_UNLOCK();
     return found;
 }
 
@@ -1526,11 +1524,11 @@ error_t fsGetFileSize(const char_t *path, uint32_t *size)
     if (path == NULL || size == NULL || !g_ctx.mounted)
         return ERROR_INVALID_PARAMETER;
 
-    CFG_LOCK();
+    FS_LOCK();
     int32_t slot = cfgIdxFind(path);
-    if (slot < 0) { CFG_UNLOCK(); return ERROR_FILE_NOT_FOUND; }
+    if (slot < 0) { FS_UNLOCK(); return ERROR_FILE_NOT_FOUND; }
     *size = g_ctx.cfgIdx[slot].dataSize;
-    CFG_UNLOCK();
+    FS_UNLOCK();
     return NO_ERROR;
 }
 
@@ -1549,13 +1547,13 @@ error_t fsGetFileStat(const char_t *path, FsFileStat *fileStat)
         return NO_ERROR;
     }
 
-    CFG_LOCK();
+    FS_LOCK();
     int32_t slot = cfgIdxFind(path);
-    if (slot < 0) { CFG_UNLOCK(); return ERROR_FILE_NOT_FOUND; }
+    if (slot < 0) { FS_UNLOCK(); return ERROR_FILE_NOT_FOUND; }
 
     fileStat->attributes = 0u;
     fileStat->size       = g_ctx.cfgIdx[slot].dataSize;
-    CFG_UNLOCK();
+    FS_UNLOCK();
 
     setUnknownDateTime(&fileStat->modified);
     return NO_ERROR;
@@ -1569,11 +1567,11 @@ error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
     if (!PATH_VALID(oldPath) || !PATH_VALID(newPath))
         return ERROR_INVALID_PARAMETER;
 
-    CFG_LOCK();
+    FS_LOCK();
 
     int32_t oldSlot = cfgIdxFind(oldPath);
-    if (oldSlot < 0) { CFG_UNLOCK(); return ERROR_FILE_NOT_FOUND; }
-    if (cfgIdxFind(newPath) >= 0) { CFG_UNLOCK(); return ERROR_ALREADY_EXISTS; }
+    if (oldSlot < 0) { FS_UNLOCK(); return ERROR_FILE_NOT_FOUND; }
+    if (cfgIdxFind(newPath) >= 0) { FS_UNLOCK(); return ERROR_ALREADY_EXISTS; }
 
     CfgIdx  *idx  = &g_ctx.cfgIdx[oldSlot];
     uint32_t sz   = idx->dataSize;
@@ -1583,11 +1581,11 @@ error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
     if (sz > 0u)
     {
         buf = (uint8_t *)osAllocMem(sz);
-        if (buf == NULL) { CFG_UNLOCK(); return ERROR_OUT_OF_MEMORY; }
+        if (buf == NULL) { FS_UNLOCK(); return ERROR_OUT_OF_MEMORY; }
         if (flRead(g_ctx.cfg.base + idx->dataOff, buf, sz) != NO_ERROR)
         {
             osFreeMem(buf);
-            CFG_UNLOCK();
+            FS_UNLOCK();
             return ERROR_READ_FAILED;
         }
     }
@@ -1597,7 +1595,7 @@ error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
         err = deleteConfig_impl(oldPath);
 
     if (buf != NULL) osFreeMem(buf);
-    CFG_UNLOCK();
+    FS_UNLOCK();
     return err;
 }
 
@@ -1608,7 +1606,7 @@ error_t fsDeleteFile(const char_t *path)
     /* DATA bölgesi: path eşleşen kayıtların flags alanını geçersiz yap */
     if (isDataPath(path))
     {
-        DAT_LOCK();
+        FS_LOCK();
         uint32_t off     = sizeof(RegHdr);
         uint32_t plen    = (uint32_t)osStrlen(path);
         bool_t   deleted = FALSE;
@@ -1644,7 +1642,7 @@ error_t fsDeleteFile(const char_t *path)
             off += dh.totSize;
         }
 
-        DAT_UNLOCK();
+        FS_UNLOCK();
         return deleted ? NO_ERROR : ERROR_FILE_NOT_FOUND;
     }
 
@@ -1654,9 +1652,9 @@ error_t fsDeleteFile(const char_t *path)
 
     /* CONFIG bölgesi */
     error_t err;
-    CFG_LOCK();
+    FS_LOCK();
     err = deleteConfig_impl(path);
-    CFG_UNLOCK();
+    FS_UNLOCK();
     return err;
 }
 
@@ -1672,12 +1670,12 @@ FsFile *fsOpenFile(const char_t *path, uint_t mode)
     else                       ftype = FH_CONFIG;
 
     /* CONFIG için kilidi al (handle tablosu + cfgIdx erişimi) */
-    if (ftype == FH_CONFIG) CFG_LOCK();
+    if (ftype == FH_CONFIG) FS_LOCK();
 
     FsHandle *h = findFreeHandle();
     if (h == NULL)
     {
-        if (ftype == FH_CONFIG) CFG_UNLOCK();
+        if (ftype == FH_CONFIG) FS_UNLOCK();
         return NULL;
     }
 
@@ -1693,7 +1691,7 @@ FsFile *fsOpenFile(const char_t *path, uint_t mode)
         int32_t slot = cfgIdxFind(path);
         if (slot < 0 && (mode & (uint_t)FS_FILE_MODE_CREATE) == 0u)
         {
-            CFG_UNLOCK();
+            FS_UNLOCK();
             return NULL;
         }
         if (slot >= 0)
@@ -1716,14 +1714,14 @@ FsFile *fsOpenFile(const char_t *path, uint_t mode)
                 h->wAlloc = existSz + 256u;
                 if (h->wBuf == NULL)
                 {
-                    CFG_UNLOCK();
+                    FS_UNLOCK();
                     return NULL;
                 }
                 if (flRead(g_ctx.cfg.base + g_ctx.cfgIdx[slot].dataOff,
                            h->wBuf, existSz) != NO_ERROR)
                 {
                     osFreeMem(h->wBuf);
-                    CFG_UNLOCK();
+                    FS_UNLOCK();
                     return NULL;
                 }
                 h->wLen = existSz;
@@ -1742,7 +1740,7 @@ FsFile *fsOpenFile(const char_t *path, uint_t mode)
     }
 
     h->inUse = TRUE;
-    if (ftype == FH_CONFIG) CFG_UNLOCK();
+    if (ftype == FH_CONFIG) FS_UNLOCK();
     return (FsFile *)h;
 }
 
@@ -1756,19 +1754,19 @@ error_t fsSeekFile(FsFile *file, int_t offset, uint_t origin)
     h = (FsHandle *)file;
     if (h->ftype != FH_CONFIG) return ERROR_NOT_IMPLEMENTED;
 
-    CFG_LOCK();
+    FS_LOCK();
 
     /* ── Yazma modu: FS_SEEK_END + offset=0 → no-op (tampon zaten sonda) */
     if (h->writeMode)
     {
         error_t ret = (origin == (uint_t)FS_SEEK_END && offset == 0)
                        ? NO_ERROR : ERROR_NOT_IMPLEMENTED;
-        CFG_UNLOCK();
+        FS_UNLOCK();
         return ret;
     }
 
     /* ── Okuma modu ──────────────────────────────────────────────────── */
-    if (!h->readMode) { CFG_UNLOCK(); return ERROR_NOT_IMPLEMENTED; }
+    if (!h->readMode) { FS_UNLOCK(); return ERROR_NOT_IMPLEMENTED; }
 
     if (origin == (uint_t)FS_SEEK_CUR)
         base = (int32_t)h->rPos;
@@ -1780,12 +1778,12 @@ error_t fsSeekFile(FsFile *file, int_t offset, uint_t origin)
     newPos = base + offset;
     if (newPos < 0 || (uint32_t)newPos > h->rSize)
     {
-        CFG_UNLOCK();
+        FS_UNLOCK();
         return ERROR_INVALID_PARAMETER;
     }
 
     h->rPos = (uint32_t)newPos;
-    CFG_UNLOCK();
+    FS_UNLOCK();
     return NO_ERROR;
 }
 
@@ -1805,10 +1803,10 @@ error_t fsWriteFile(FsFile *file, void *data, size_t length)
          * Bu sayede aynı path ile fsOpenFile(READ) yapıldığında tüm kayıtlar
          * bulunup birleştirilebilir (fsReadFile desteği). */
         uint32_t plen = (uint32_t)osStrlen(h->path);
-        LOG_LOCK();
+        FS_LOCK();
         error_t err = writeLog_impl(h->path, plen, (const char *)data,
                                     (uint32_t)length);
-        LOG_UNLOCK();
+        FS_UNLOCK();
         return err;
     }
 
@@ -1818,19 +1816,19 @@ error_t fsWriteFile(FsFile *file, void *data, size_t length)
          * type=0, ts=0 ile işaretlenir; flashNewStmIterateData bu kayıtları atlar.
          * fsOpenFile(READ) ile aynı path'e sahip tüm kayıtlar toplanıp okunur. */
         uint32_t plen = (uint32_t)osStrlen(h->path);
-        DAT_LOCK();
+        FS_LOCK();
         error_t err = writeData_impl(0u, h->path, plen,
                                      data, (uint32_t)length, 0u);
-        DAT_UNLOCK();
+        FS_UNLOCK();
         return err;
     }
 
     /* CONFIG: tampona ekle (handle'a ait bellek, kilit gerekli) */
-    CFG_LOCK();
+    FS_LOCK();
 
     if (h->wLen + (uint32_t)length > FSNEW_CFG_MAX_PAYLOAD)
     {
-        CFG_UNLOCK();
+        FS_UNLOCK();
         return ERROR_OUT_OF_RESOURCES;
     }
 
@@ -1838,7 +1836,7 @@ error_t fsWriteFile(FsFile *file, void *data, size_t length)
     {
         uint32_t newAlloc = h->wAlloc + (uint32_t)length + 256u;
         uint8_t *newBuf   = (uint8_t *)osAllocMem(newAlloc);
-        if (newBuf == NULL) { CFG_UNLOCK(); return ERROR_OUT_OF_MEMORY; }
+        if (newBuf == NULL) { FS_UNLOCK(); return ERROR_OUT_OF_MEMORY; }
 
         if (h->wBuf != NULL && h->wLen > 0u)
             osMemcpy(newBuf, h->wBuf, h->wLen);
@@ -1852,7 +1850,7 @@ error_t fsWriteFile(FsFile *file, void *data, size_t length)
     osMemcpy(h->wBuf + h->wLen, data, length);
     h->wLen += (uint32_t)length;
 
-    CFG_UNLOCK();
+    FS_UNLOCK();
     return NO_ERROR;
 }
 
@@ -1877,7 +1875,7 @@ error_t fsReadFile(FsFile *file, void *data, size_t size, size_t *length)
      *   4. Eşleşen kayıt kalmadıysa ERROR_END_OF_FILE döner              */
     if (h->ftype == FH_LOG || h->ftype == FH_DATA)
     {
-        LOG_LOCK();   /* tek mutex (flashMux) hem LOG hem DATA'yı korur */
+        FS_LOCK();   /* tek mutex (flashMux) hem LOG hem DATA'yı korur */
         *length = 0u;
 
         uint8_t *dst     = (uint8_t *)data;
@@ -1976,7 +1974,7 @@ error_t fsReadFile(FsFile *file, void *data, size_t size, size_t *length)
         }
 
         *length = (size_t)filled;
-        LOG_UNLOCK();
+        FS_UNLOCK();
 
         if (filled == 0u && err == NO_ERROR)
             return ERROR_END_OF_FILE;
@@ -1984,10 +1982,10 @@ error_t fsReadFile(FsFile *file, void *data, size_t size, size_t *length)
     }
 
     /* ── CONFIG: doğrudan flash'tan oku ─────────────────────────────── */
-    CFG_LOCK();
+    FS_LOCK();
 
     *length = 0u;
-    if (h->rPos >= h->rSize) { CFG_UNLOCK(); return ERROR_END_OF_FILE; }
+    if (h->rPos >= h->rSize) { FS_UNLOCK(); return ERROR_END_OF_FILE; }
 
     remain = h->rSize - h->rPos;
     n      = (remain < (uint32_t)size) ? remain : (uint32_t)size;
@@ -1999,7 +1997,7 @@ error_t fsReadFile(FsFile *file, void *data, size_t size, size_t *length)
         *length  = (size_t)n;
     }
 
-    CFG_UNLOCK();
+    FS_UNLOCK();
     return err;
 }
 
@@ -2012,7 +2010,7 @@ void fsCloseFile(FsFile *file)
 
     if (h->ftype == FH_CONFIG)
     {
-        CFG_LOCK();
+        FS_LOCK();
 
         /* CONFIG yazma modunda: tamponu flash'a kaydet (_impl — kilit zaten açık) */
         if (h->writeMode && h->wLen > 0u)
@@ -2025,21 +2023,21 @@ void fsCloseFile(FsFile *file)
         }
 
         osMemset(h, 0, sizeof(FsHandle));
-        CFG_UNLOCK();
+        FS_UNLOCK();
     }
     else
     {
         /* LOG / DATA:
          *   - Okuma: heap ayrılmadı (lazy scan), temizlenecek bir şey yok.
          *   - Yazma: wBuf CONFIG için kullanılır, LOG/DATA için NULL'dur. */
-        LOG_LOCK();
+        FS_LOCK();
         if (h->wBuf != NULL)
         {
             osFreeMem(h->wBuf);
             h->wBuf = NULL;
         }
         osMemset(h, 0, sizeof(FsHandle));
-        LOG_UNLOCK();
+        FS_UNLOCK();
     }
 }
 
@@ -2052,7 +2050,7 @@ bool_t fsDirExists(const char_t *path)
     if (!g_ctx.mounted || path == NULL) return FALSE;
     if (osStrcmp(path, "/") == 0 || osStrcmp(path, "") == 0) return TRUE;
 
-    CFG_LOCK();
+    FS_LOCK();
     bool_t found = FALSE;
     for (i = 0u; i < FSNEW_CFG_INDEX_SIZE; i++)
     {
@@ -2063,7 +2061,7 @@ bool_t fsDirExists(const char_t *path)
             break;
         }
     }
-    CFG_UNLOCK();
+    FS_UNLOCK();
     return found;
 }
 
@@ -2117,7 +2115,7 @@ error_t fsReadDir(FsDir *dir, FsDirEntry *dirEntry)
     d = (DirHandle *)dir;
     osMemset(dirEntry, 0, sizeof(FsDirEntry));
 
-    CFG_LOCK();
+    FS_LOCK();
 
     for (i = d->cursor; i < FSNEW_CFG_INDEX_SIZE; i++)
     {
@@ -2132,12 +2130,12 @@ error_t fsReadDir(FsDir *dir, FsDirEntry *dirEntry)
             setUnknownDateTime(&dirEntry->modified);
             strSafeCopy(dirEntry->name, g_ctx.cfgIdx[i].path, FS_MAX_NAME_LEN);
             d->cursor = i + 1u;
-            CFG_UNLOCK();
+            FS_UNLOCK();
             return NO_ERROR;
         }
     }
 
-    CFG_UNLOCK();
+    FS_UNLOCK();
     return ERROR_END_OF_STREAM;
 }
 
