@@ -108,16 +108,24 @@ typedef struct
     uint32_t reserved;
 } CfgRecHdr;  /* 32 byte */
 
-/* LOG girişi başlığı */
+/* LOG girişi başlığı
+ * Flash düzeni: [LogRecHdr 20B] [path align4(pathLen)] [veri align4(dataSize)]
+ * pathLen == 0 → anonim giriş (doğrudan flashNewStmWriteLog çağrısı)
+ * pathLen  > 0 → path'li giriş (fsOpenFile+fsWriteFile üzerinden) */
 typedef struct
 {
     uint32_t magic;
     uint32_t seq;
-    uint32_t textSize;
-    uint32_t totSize;
-} LogRecHdr;  /* 16 byte */
+    uint32_t dataSize;   /* veri yük boyutu (eski adı: textSize) */
+    uint32_t totSize;    /* başlık + align4(pathLen) + align4(dataSize) */
+    uint32_t pathLen;    /* 0 = anonim, >0 = path string uzunluğu */
+} LogRecHdr;  /* 20 byte */
 
-/* DATA girişi başlığı */
+/* DATA girişi başlığı
+ * Flash düzeni: [DatRecHdr 36B] [path align4(pathLen)] [veri align4(dataSize)]
+ * pathLen == 0 → tip bazlı ölçüm kaydı (flashNewStmWriteData)
+ * pathLen  > 0 → path'li dosya kaydı  (fsOpenFile+fsWriteFile)
+ * flashNewStmIterateData yalnızca pathLen==0 kayıtları iter eder. */
 typedef struct
 {
     uint32_t magic;
@@ -128,7 +136,9 @@ typedef struct
     uint32_t flags;
     uint32_t ts;
     uint32_t totSize;
-} DatRecHdr;  /* 32 byte */
+    uint32_t pathLen;    /* 0 = tip bazlı kayıt, >0 = path string uzunluğu */
+    uint32_t reserved;   /* hizalama dolgusu */
+} DatRecHdr;  /* 40 byte */
 
 /* =========================================================================
  * RAM durumu
@@ -171,9 +181,13 @@ typedef struct
     uint32_t wAlloc;
     uint32_t wLen;
 
-    /* Okuma modu: flash konumu (CONFIG için) */
-    uint32_t rAbsBase;  /* veri yükünün mutlak flash adresi */
-    uint32_t rSize;     /* toplam veri byte sayısı */
+    /* Okuma modu: flash konumu (CONFIG) */
+    uint32_t rAbsBase;  /* veri yükünün mutlak flash adresi (CONFIG) */
+
+    /* Okuma modu: RAM tamponu (LOG — path eşleşen tüm kayıtlar birleştirilerek) */
+    uint8_t *rBuf;      /* NULL = flash'tan oku (CONFIG), !NULL = RAM'den oku (LOG) */
+
+    uint32_t rSize;     /* toplam okunabilir byte sayısı */
     uint32_t rPos;      /* mevcut okuma konumu */
 } FsHandle;
 
@@ -1023,20 +1037,29 @@ error_t flashNewStmCfgFreeSpace(uint32_t *freeBytes)
  * LOG bölgesi — yüksek seviyeli işlevler
  * ====================================================================== */
 
-error_t flashNewStmWriteLog(const char *text, uint32_t len)
+/*
+ * writeLog_impl — kilitsiz LOG kayıt yazıcı (LOG_LOCK dışarıda tutulmalı).
+ *
+ *   path    : NULL veya "" → anonim kayıt (pathLen=0)
+ *   pathLen : path string uzunluğu (path NULL ise 0 geç)
+ *   data    : yazılacak veri
+ *   dataLen : veri boyutu
+ *
+ * Flash düzeni:
+ *   [LogRecHdr 20B] [path align4(pathLen)] [veri align4(dataLen)]
+ */
+static error_t writeLog_impl(const char *path, uint32_t pathLen,
+                              const char *data,  uint32_t dataLen)
 {
-    if (!g_ctx.mounted)            return ERROR_NOT_READY;
-    if (text == NULL || len == 0u) return ERROR_INVALID_PARAMETER;
+    uint32_t totSize = (uint32_t)sizeof(LogRecHdr)
+                     + align4(pathLen)
+                     + align4(dataLen);
 
-    LOG_LOCK();
-
-    uint32_t totSize = (uint32_t)sizeof(LogRecHdr) + align4(len);
-
-    /* Bölgede yer yoksa tüm bölgeyi sil (en eski kayıtlar silinir) */
+    /* Yer yoksa bölgeyi sil */
     if (g_ctx.log.writeOff + totSize > g_ctx.log.size)
     {
         error_t err = eraseAndReinitRegion(&g_ctx.log, REG_MAGIC_LOG);
-        if (err != NO_ERROR) { LOG_UNLOCK(); return err; }
+        if (err != NO_ERROR) return err;
         g_ctx.log.seqNext = 1u;
     }
 
@@ -1046,30 +1069,48 @@ error_t flashNewStmWriteLog(const char *text, uint32_t len)
 
     osMemset(&lh, 0xFF, sizeof(lh));
     lh.seq      = g_ctx.log.seqNext++;
-    lh.textSize = len;
+    lh.dataSize = dataLen;
     lh.totSize  = totSize;
+    lh.pathLen  = pathLen;
 
-    /* Başlığı magic hariç yaz */
+    /* 1. Başlığı magic hariç yaz */
     {
-        uint32_t tmp[4];
+        uint32_t tmp[5];
         osMemcpy(tmp, &lh, sizeof(lh));
         tmp[0] = 0xFFFFFFFFu;
         err = flProgStruct(base, tmp, sizeof(lh));
-        if (err != NO_ERROR) { LOG_UNLOCK(); return err; }
+        if (err != NO_ERROR) return err;
     }
 
-    /* Metin yaz */
-    err = flProgPad4(base + (uint32_t)sizeof(LogRecHdr), text, len);
-    if (err != NO_ERROR) { LOG_UNLOCK(); return err; }
+    /* 2. Path yaz (varsa) */
+    if (pathLen > 0u && path != NULL)
+    {
+        err = flProgPad4(base + (uint32_t)sizeof(LogRecHdr), path, pathLen);
+        if (err != NO_ERROR) return err;
+    }
 
-    /* magic yaz */
+    /* 3. Veri yaz */
+    err = flProgPad4(base + (uint32_t)sizeof(LogRecHdr) + align4(pathLen),
+                     data, dataLen);
+    if (err != NO_ERROR) return err;
+
+    /* 4. Magic yaz (en son — güç kesintisi güvenliği) */
     uint32_t magic = LOG_REC_MAGIC;
     err = flProgStruct(base, &magic, sizeof(magic));
-    if (err != NO_ERROR) { LOG_UNLOCK(); return err; }
+    if (err != NO_ERROR) return err;
 
     g_ctx.log.writeOff += totSize;
-    err = flSync();
+    return flSync();
+}
 
+/* Genel API: anonim log yazma (AppLogRecorder iterator akışı için) */
+error_t flashNewStmWriteLog(const char *text, uint32_t len)
+{
+    if (!g_ctx.mounted)            return ERROR_NOT_READY;
+    if (text == NULL || len == 0u) return ERROR_INVALID_PARAMETER;
+
+    LOG_LOCK();
+    error_t err = writeLog_impl(NULL, 0u, text, len);
     LOG_UNLOCK();
     return err;
 }
@@ -1099,21 +1140,24 @@ error_t flashNewStmIterateLogs(
 
         if (lh.seq >= startSeq)
         {
-            /* Metni stack tampona oku (en fazla 256 byte'lık parçalar) */
-            uint32_t remaining = lh.textSize;
-            uint32_t textOff   = off + (uint32_t)sizeof(LogRecHdr);
+            /* Veriyi stack tampona oku (en fazla 256 byte'lık parçalar).
+             * Path'li kayıtlarda veri, path'in hizalanmış boyutu kadar
+             * ileride başlar. Anonim kayıtlarda (pathLen=0) hemen başlar. */
+            uint32_t remaining = lh.dataSize;
+            uint32_t dataOff   = off + (uint32_t)sizeof(LogRecHdr)
+                                     + align4(lh.pathLen);
             char_t   chunk[256];
 
             while (remaining > 0u)
             {
                 uint32_t n = (remaining > sizeof(chunk))
                               ? (uint32_t)sizeof(chunk) : remaining;
-                if (flRead(g_ctx.log.base + textOff, chunk, n) != NO_ERROR)
+                if (flRead(g_ctx.log.base + dataOff, chunk, n) != NO_ERROR)
                     break;
                 /* Callback mutex tutulurken çağrılıyor — callback içinde
                  * flashNewStmWriteLog çağırmak deadlock oluşturur! */
                 cb(lh.seq, chunk, n, ctx);
-                textOff   += n;
+                dataOff   += n;
                 remaining -= n;
             }
         }
@@ -1139,6 +1183,84 @@ error_t flashNewStmClearLogs(void)
  * DATA bölgesi — yüksek seviyeli işlevler
  * ====================================================================== */
 
+/*
+ * writeData_impl — kilitsiz DATA kayıt yazıcı (DAT_LOCK dışarıda tutulmalı).
+ *
+ *   type      : kayıt tipi (FSNEW_DATA_SENSOR vb.); path'li kayıtlarda 0u
+ *   path      : NULL veya "" → pathLen=0 (tip bazlı kayıt)
+ *   pathLen   : path string uzunluğu
+ *   data      : yazılacak veri
+ *   dataSize  : veri boyutu
+ *   timestamp : Unix zaman damgası (tip bazlı için); path'li kayıtlarda 0u
+ *
+ * Flash düzeni:
+ *   [DatRecHdr 40B] [path align4(pathLen)] [veri align4(dataSize)]
+ */
+static error_t writeData_impl(uint32_t type,
+                               const char *path,  uint32_t pathLen,
+                               const void *data,  uint32_t dataSize,
+                               uint32_t timestamp)
+{
+    uint32_t totSize = (uint32_t)sizeof(DatRecHdr)
+                     + align4(pathLen)
+                     + align4(dataSize);
+
+    /* Yer yoksa bölgeyi sil */
+    if (g_ctx.data.writeOff + totSize > g_ctx.data.size)
+    {
+        error_t err = eraseAndReinitRegion(&g_ctx.data, REG_MAGIC_DATA);
+        if (err != NO_ERROR) return err;
+        g_ctx.data.seqNext = 1u;
+    }
+
+    uint32_t  base = g_ctx.data.base + g_ctx.data.writeOff;
+    DatRecHdr dh;
+    error_t   err;
+
+    uint32_t crc = crc32Buf((const uint8_t *)data, dataSize);
+
+    osMemset(&dh, 0xFF, sizeof(dh));
+    dh.type     = type;
+    dh.seq      = g_ctx.data.seqNext++;
+    dh.dataSize = dataSize;
+    dh.crc32    = crc;
+    dh.flags    = FLAGS_VALID;
+    dh.ts       = timestamp;
+    dh.totSize  = totSize;
+    dh.pathLen  = pathLen;
+    dh.reserved = 0u;
+
+    /* 1. Başlığı magic hariç yaz */
+    {
+        uint32_t tmp[10];
+        osMemcpy(tmp, &dh, sizeof(dh));
+        tmp[0] = 0xFFFFFFFFu;
+        err = flProgStruct(base, tmp, sizeof(dh));
+        if (err != NO_ERROR) return err;
+    }
+
+    /* 2. Path yaz (varsa) */
+    if (pathLen > 0u && path != NULL)
+    {
+        err = flProgPad4(base + (uint32_t)sizeof(DatRecHdr), path, pathLen);
+        if (err != NO_ERROR) return err;
+    }
+
+    /* 3. Veri yaz */
+    err = flProgPad4(base + (uint32_t)sizeof(DatRecHdr) + align4(pathLen),
+                     data, dataSize);
+    if (err != NO_ERROR) return err;
+
+    /* 4. Magic yaz (en son — güç kesintisi güvenliği) */
+    uint32_t magic = DAT_REC_MAGIC;
+    err = flProgStruct(base, &magic, sizeof(magic));
+    if (err != NO_ERROR) return err;
+
+    g_ctx.data.writeOff += totSize;
+    return flSync();
+}
+
+/* Genel API: tiplendirilmiş binary ölçüm kaydı (pathLen=0) */
 error_t flashNewStmWriteData(uint32_t type,
                               const void *data, uint32_t size,
                               uint32_t timestamp)
@@ -1147,53 +1269,7 @@ error_t flashNewStmWriteData(uint32_t type,
     if (data == NULL || size == 0u) return ERROR_INVALID_PARAMETER;
 
     DAT_LOCK();
-
-    uint32_t totSize = (uint32_t)sizeof(DatRecHdr) + align4(size);
-
-    /* Yer yoksa bölgeyi sil */
-    if (g_ctx.data.writeOff + totSize > g_ctx.data.size)
-    {
-        error_t err = eraseAndReinitRegion(&g_ctx.data, REG_MAGIC_DATA);
-        if (err != NO_ERROR) { DAT_UNLOCK(); return err; }
-        g_ctx.data.seqNext = 1u;
-    }
-
-    uint32_t  base = g_ctx.data.base + g_ctx.data.writeOff;
-    DatRecHdr dh;
-    error_t   err;
-
-    uint32_t crc = crc32Buf((const uint8_t *)data, size);
-
-    osMemset(&dh, 0xFF, sizeof(dh));
-    dh.type     = type;
-    dh.seq      = g_ctx.data.seqNext++;
-    dh.dataSize = size;
-    dh.crc32    = crc;
-    dh.flags    = FLAGS_VALID;
-    dh.ts       = timestamp;
-    dh.totSize  = totSize;
-
-    /* magic hariç başlık yaz */
-    {
-        uint32_t tmp[8];
-        osMemcpy(tmp, &dh, sizeof(dh));
-        tmp[0] = 0xFFFFFFFFu;
-        err = flProgStruct(base, tmp, sizeof(dh));
-        if (err != NO_ERROR) { DAT_UNLOCK(); return err; }
-    }
-
-    /* Veri yaz */
-    err = flProgPad4(base + (uint32_t)sizeof(DatRecHdr), data, size);
-    if (err != NO_ERROR) { DAT_UNLOCK(); return err; }
-
-    /* magic yaz */
-    uint32_t magic = DAT_REC_MAGIC;
-    err = flProgStruct(base, &magic, sizeof(magic));
-    if (err != NO_ERROR) { DAT_UNLOCK(); return err; }
-
-    g_ctx.data.writeOff += totSize;
-    err = flSync();
-
+    error_t err = writeData_impl(type, NULL, 0u, data, size, timestamp);
     DAT_UNLOCK();
     return err;
 }
@@ -1228,8 +1304,17 @@ error_t flashNewStmIterateData(
             continue;
         }
 
+        /* Path'li kayıtlar (pathLen>0) fsReadFile üzerinden erişilir;
+         * tip bazlı iterator bu kayıtları atlar. */
+        if (dh.pathLen > 0u)
+        {
+            off += dh.totSize;
+            continue;
+        }
+
         if (dh.seq >= startSeq && (type == 0u || dh.type == type))
         {
+            /* pathLen==0 olduğundan veri hemen DatRecHdr'ın arkasında başlar */
             uint32_t payloadOff  = off + (uint32_t)sizeof(DatRecHdr);
             uint32_t remaining   = dh.dataSize;
 
@@ -1333,18 +1418,26 @@ static bool_t isLogPath(const char_t *path)
 {
     /* Hem "/log/..." hem de "log/..." (başta slash olmayan) biçimlerini kabul et.
      * AppLogRecorder.c "log/ServiceName/date-hhmmss.log" şeklinde yol oluşturur.
-     * meter/meterDataOut/ da log bölgesine yönlendirilir — append-only, geçici. */
-    return (osStrncmp(path, "/log/",           5) == 0 ||
-            osStrncmp(path, "/logs/",          6) == 0 ||
-            osStrncmp(path, "log/",            4) == 0 ||
-            osStrncmp(path, "logs/",           5) == 0 ||
-            osStrncmp(path, "meter/meterDataOut/", 19) == 0) ? TRUE : FALSE;
+     * meter/meterDataOut/ CONFIG bölgesine yönlendirilir: bu dosyalar yazıldıktan
+     * sonra fsReadFile ile okunması gerekir (sendFilePacketised). LOG bölgesinin
+     * LogRecHdr'ında path alanı olmadığından kayıtlar path'e göre bulunamaz ve
+     * fsReadFile zaten LOG tipini desteklemez; CONFIG bu pattern'i tam karşılar. */
+    return (osStrncmp(path, "/log/",  5) == 0 ||
+            osStrncmp(path, "/logs/", 6) == 0 ||
+            osStrncmp(path, "log/",   4) == 0 ||
+            osStrncmp(path, "logs/",  5) == 0) ? TRUE : FALSE;
 }
 
 static bool_t isDataPath(const char_t *path)
 {
-    return (osStrncmp(path, "/data/", 6) == 0 ||
-            osStrncmp(path, "data/",  5) == 0) ? TRUE : FALSE;
+    /* "data/" ve "/data/" yolları: tiplendirilmiş binary ölçüm kayıtları.
+     * "meter/meterDataOut/": sayaç okuma transkripsiyon dosyaları.
+     * Her iki grup da DATA bölgesine yönlendirilir; yalnızca pathLen alanı
+     * farklıdır (ölçümler=0, dosyalar>0). fsReadFile ve flashNewStmIterateData
+     * bu ayrımı otomatik olarak değerlendirir. */
+    return (osStrncmp(path, "/data/",             6)  == 0 ||
+            osStrncmp(path, "data/",              5)  == 0 ||
+            osStrncmp(path, "meter/meterDataOut/", 19) == 0) ? TRUE : FALSE;
 }
 
 static FsHandle *findFreeHandle(void)
@@ -1374,7 +1467,41 @@ static void setUnknownDateTime(DateTime *dt)
 bool_t fsFileExists(const char_t *path)
 {
     if (path == NULL || !g_ctx.mounted) return FALSE;
-    if (isLogPath(path) || isDataPath(path)) return FALSE;
+
+    /* DATA bölgesi: path'li kayıt var mı tara */
+    if (isDataPath(path))
+    {
+        uint32_t plen = (uint32_t)osStrlen(path);
+        DAT_LOCK();
+        uint32_t off   = sizeof(RegHdr);
+        bool_t   found = FALSE;
+        while (off + sizeof(DatRecHdr) <= g_ctx.data.size && !found)
+        {
+            DatRecHdr dh;
+            if (flRead(g_ctx.data.base + off, &dh, sizeof(dh)) != NO_ERROR) break;
+            if (dh.magic == ERASED_U32) break;
+            if (dh.magic != DAT_REC_MAGIC ||
+                dh.totSize < sizeof(dh) ||
+                off + dh.totSize > g_ctx.data.size) break;
+            if (dh.pathLen == plen && dh.pathLen > 0u && dh.flags == FLAGS_VALID)
+            {
+                char_t recPath[FSNEW_PATH_MAX + 1u];
+                if (flRead(g_ctx.data.base + off + sizeof(DatRecHdr),
+                           recPath, plen) == NO_ERROR)
+                {
+                    recPath[plen] = '\0';
+                    if (osStrncmp(recPath, path, FSNEW_PATH_MAX) == 0)
+                        found = TRUE;
+                }
+            }
+            off += dh.totSize;
+        }
+        DAT_UNLOCK();
+        return found;
+    }
+
+    if (isLogPath(path)) return FALSE;  /* LOG: path bazlı varlık kontrolü yok */
+
     CFG_LOCK();
     bool_t found = (cfgIdxFind(path) >= 0) ? TRUE : FALSE;
     CFG_UNLOCK();
@@ -1464,6 +1591,55 @@ error_t fsRenameFile(const char_t *oldPath, const char_t *newPath)
 error_t fsDeleteFile(const char_t *path)
 {
     if (path == NULL) return ERROR_INVALID_PARAMETER;
+
+    /* DATA bölgesi: path eşleşen kayıtların flags alanını geçersiz yap */
+    if (isDataPath(path))
+    {
+        DAT_LOCK();
+        uint32_t off     = sizeof(RegHdr);
+        uint32_t plen    = (uint32_t)osStrlen(path);
+        bool_t   deleted = FALSE;
+
+        while (off + sizeof(DatRecHdr) <= g_ctx.data.size)
+        {
+            DatRecHdr dh;
+            if (flRead(g_ctx.data.base + off, &dh, sizeof(dh)) != NO_ERROR) break;
+            if (dh.magic == ERASED_U32) break;
+            if (dh.magic != DAT_REC_MAGIC ||
+                dh.totSize < sizeof(dh) ||
+                off + dh.totSize > g_ctx.data.size) break;
+
+            if (dh.pathLen == plen && dh.pathLen > 0u &&
+                dh.flags == FLAGS_VALID)
+            {
+                char_t recPath[FSNEW_PATH_MAX + 1u];
+                if (flRead(g_ctx.data.base + off + sizeof(DatRecHdr),
+                           recPath, plen) == NO_ERROR)
+                {
+                    recPath[plen] = '\0';
+                    if (osStrncmp(recPath, path, FSNEW_PATH_MAX) == 0)
+                    {
+                        /* flags alanını geçersiz yap (sector erase gerektirmez) */
+                        uint32_t flagsOff = off + offsetof(DatRecHdr, flags);
+                        uint32_t inv = 0x00000000u;
+                        (void)flProgStruct(g_ctx.data.base + flagsOff,
+                                           &inv, sizeof(inv));
+                        deleted = TRUE;
+                    }
+                }
+            }
+            off += dh.totSize;
+        }
+
+        DAT_UNLOCK();
+        return deleted ? NO_ERROR : ERROR_FILE_NOT_FOUND;
+    }
+
+    /* LOG bölgesi: silme desteklenmiyor (append-only circular) */
+    if (isLogPath(path))
+        return ERROR_INVALID_TYPE;
+
+    /* CONFIG bölgesi */
     error_t err;
     CFG_LOCK();
     err = deleteConfig_impl(path);
@@ -1542,6 +1718,174 @@ FsFile *fsOpenFile(const char_t *path, uint_t mode)
         }
     }
 
+    /* ── LOG okuma: path eşleşen tüm kayıtları RAM tampona topla ─────── */
+    if (h->readMode && ftype == FH_LOG)
+    {
+        LOG_LOCK();
+
+        /* 1. Geçiş: toplam veri boyutunu hesapla */
+        uint32_t off      = sizeof(RegHdr);
+        uint32_t totalSz  = 0u;
+
+        while (off + sizeof(LogRecHdr) <= g_ctx.log.size)
+        {
+            LogRecHdr lh;
+            if (flRead(g_ctx.log.base + off, &lh, sizeof(lh)) != NO_ERROR) break;
+            if (lh.magic == ERASED_U32) break;
+            if (lh.magic != LOG_REC_MAGIC ||
+                lh.totSize < sizeof(lh) ||
+                off + lh.totSize > g_ctx.log.size) break;
+
+            if (lh.pathLen > 0u && lh.pathLen <= FSNEW_PATH_MAX)
+            {
+                char_t recPath[FSNEW_PATH_MAX + 1u];
+                uint32_t plen = lh.pathLen;
+                if (flRead(g_ctx.log.base + off + sizeof(LogRecHdr),
+                           recPath, plen) == NO_ERROR)
+                {
+                    recPath[plen] = '\0';
+                    if (osStrncmp(recPath, path, FSNEW_PATH_MAX) == 0)
+                        totalSz += lh.dataSize;
+                }
+            }
+            off += lh.totSize;
+        }
+
+        if (totalSz > 0u)
+        {
+            h->rBuf = (uint8_t *)osAllocMem(totalSz);
+            if (h->rBuf == NULL)
+            {
+                LOG_UNLOCK();
+                osMemset(h, 0, sizeof(FsHandle));
+                return NULL;
+            }
+
+            /* 2. Geçiş: veriyi tampona kopyala */
+            off = sizeof(RegHdr);
+            uint32_t bufOff = 0u;
+
+            while (off + sizeof(LogRecHdr) <= g_ctx.log.size && bufOff < totalSz)
+            {
+                LogRecHdr lh;
+                if (flRead(g_ctx.log.base + off, &lh, sizeof(lh)) != NO_ERROR) break;
+                if (lh.magic == ERASED_U32) break;
+                if (lh.magic != LOG_REC_MAGIC ||
+                    lh.totSize < sizeof(lh) ||
+                    off + lh.totSize > g_ctx.log.size) break;
+
+                if (lh.pathLen > 0u && lh.pathLen <= FSNEW_PATH_MAX)
+                {
+                    char_t recPath[FSNEW_PATH_MAX + 1u];
+                    uint32_t plen = lh.pathLen;
+                    if (flRead(g_ctx.log.base + off + sizeof(LogRecHdr),
+                               recPath, plen) == NO_ERROR)
+                    {
+                        recPath[plen] = '\0';
+                        if (osStrncmp(recPath, path, FSNEW_PATH_MAX) == 0)
+                        {
+                            uint32_t dataOff = off + sizeof(LogRecHdr) + align4(plen);
+                            (void)flRead(g_ctx.log.base + dataOff,
+                                         h->rBuf + bufOff, lh.dataSize);
+                            bufOff += lh.dataSize;
+                        }
+                    }
+                }
+                off += lh.totSize;
+            }
+
+            h->rSize = bufOff;
+        }
+
+        h->rPos = 0u;
+        LOG_UNLOCK();
+    }
+
+    /* ── DATA okuma: path eşleşen tüm kayıtları RAM tampona topla ────── */
+    if (h->readMode && ftype == FH_DATA)
+    {
+        DAT_LOCK();
+
+        /* 1. Geçiş: toplam veri boyutunu hesapla */
+        uint32_t off     = sizeof(RegHdr);
+        uint32_t totalSz = 0u;
+
+        while (off + sizeof(DatRecHdr) <= g_ctx.data.size)
+        {
+            DatRecHdr dh;
+            if (flRead(g_ctx.data.base + off, &dh, sizeof(dh)) != NO_ERROR) break;
+            if (dh.magic == ERASED_U32) break;
+            if (dh.magic != DAT_REC_MAGIC ||
+                dh.totSize < sizeof(dh) ||
+                off + dh.totSize > g_ctx.data.size) break;
+
+            if (dh.pathLen > 0u && dh.pathLen <= FSNEW_PATH_MAX &&
+                dh.flags == FLAGS_VALID)
+            {
+                char_t recPath[FSNEW_PATH_MAX + 1u];
+                uint32_t plen = dh.pathLen;
+                if (flRead(g_ctx.data.base + off + sizeof(DatRecHdr),
+                           recPath, plen) == NO_ERROR)
+                {
+                    recPath[plen] = '\0';
+                    if (osStrncmp(recPath, path, FSNEW_PATH_MAX) == 0)
+                        totalSz += dh.dataSize;
+                }
+            }
+            off += dh.totSize;
+        }
+
+        if (totalSz > 0u)
+        {
+            h->rBuf = (uint8_t *)osAllocMem(totalSz);
+            if (h->rBuf == NULL)
+            {
+                DAT_UNLOCK();
+                osMemset(h, 0, sizeof(FsHandle));
+                return NULL;
+            }
+
+            /* 2. Geçiş: veriyi tampona kopyala */
+            off = sizeof(RegHdr);
+            uint32_t bufOff = 0u;
+
+            while (off + sizeof(DatRecHdr) <= g_ctx.data.size && bufOff < totalSz)
+            {
+                DatRecHdr dh;
+                if (flRead(g_ctx.data.base + off, &dh, sizeof(dh)) != NO_ERROR) break;
+                if (dh.magic == ERASED_U32) break;
+                if (dh.magic != DAT_REC_MAGIC ||
+                    dh.totSize < sizeof(dh) ||
+                    off + dh.totSize > g_ctx.data.size) break;
+
+                if (dh.pathLen > 0u && dh.pathLen <= FSNEW_PATH_MAX &&
+                    dh.flags == FLAGS_VALID)
+                {
+                    char_t recPath[FSNEW_PATH_MAX + 1u];
+                    uint32_t plen = dh.pathLen;
+                    if (flRead(g_ctx.data.base + off + sizeof(DatRecHdr),
+                               recPath, plen) == NO_ERROR)
+                    {
+                        recPath[plen] = '\0';
+                        if (osStrncmp(recPath, path, FSNEW_PATH_MAX) == 0)
+                        {
+                            uint32_t dataOff = off + sizeof(DatRecHdr) + align4(plen);
+                            (void)flRead(g_ctx.data.base + dataOff,
+                                         h->rBuf + bufOff, dh.dataSize);
+                            bufOff += dh.dataSize;
+                        }
+                    }
+                }
+                off += dh.totSize;
+            }
+
+            h->rSize = bufOff;
+        }
+
+        h->rPos = 0u;
+        DAT_UNLOCK();
+    }
+
     h->inUse = TRUE;
     if (ftype == FH_CONFIG) CFG_UNLOCK();
     return (FsFile *)h;
@@ -1602,15 +1946,28 @@ error_t fsWriteFile(FsFile *file, void *data, size_t length)
 
     if (h->ftype == FH_LOG)
     {
-        /* flashNewStmWriteLog kendi LOG_LOCK'unu alır */
-        return flashNewStmWriteLog((const char *)data, (uint32_t)length);
+        /* Her fsWriteFile çağrısı path bilgisini de içeren bir LOG kaydı yazar.
+         * Bu sayede aynı path ile fsOpenFile(READ) yapıldığında tüm kayıtlar
+         * bulunup birleştirilebilir (fsReadFile desteği). */
+        uint32_t plen = (uint32_t)osStrlen(h->path);
+        LOG_LOCK();
+        error_t err = writeLog_impl(h->path, plen, (const char *)data,
+                                    (uint32_t)length);
+        LOG_UNLOCK();
+        return err;
     }
 
     if (h->ftype == FH_DATA)
     {
-        /* flashNewStmWriteData kendi DAT_LOCK'unu alır */
-        return flashNewStmWriteData(FSNEW_DATA_SENSOR, data,
-                                    (uint32_t)length, 0u);
+        /* Her fsWriteFile çağrısı path bilgisini de içeren bir DATA kaydı yazar.
+         * type=0, ts=0 ile işaretlenir; flashNewStmIterateData bu kayıtları atlar.
+         * fsOpenFile(READ) ile aynı path'e sahip tüm kayıtlar toplanıp okunur. */
+        uint32_t plen = (uint32_t)osStrlen(h->path);
+        DAT_LOCK();
+        error_t err = writeData_impl(0u, h->path, plen,
+                                     data, (uint32_t)length, 0u);
+        DAT_UNLOCK();
+        return err;
     }
 
     /* CONFIG: tampona ekle (handle'a ait bellek, kilit gerekli) */
@@ -1654,9 +2011,48 @@ error_t fsReadFile(FsFile *file, void *data, size_t size, size_t *length)
         return ERROR_INVALID_PARAMETER;
 
     h = (FsHandle *)file;
-    if (!h->readMode)          return ERROR_ACCESS_DENIED;
-    if (h->ftype != FH_CONFIG) return ERROR_NOT_IMPLEMENTED;
+    if (!h->readMode) return ERROR_ACCESS_DENIED;
 
+    /* ── LOG: fsOpenFile'da RAM tampona toplanan kayıtlar ──────────────── */
+    if (h->ftype == FH_LOG)
+    {
+        LOG_LOCK();
+        *length = 0u;
+        if (h->rBuf == NULL || h->rPos >= h->rSize)
+        {
+            LOG_UNLOCK();
+            return ERROR_END_OF_FILE;
+        }
+        remain = h->rSize - h->rPos;
+        n      = (remain < (uint32_t)size) ? remain : (uint32_t)size;
+        osMemcpy(data, h->rBuf + h->rPos, n);
+        h->rPos += n;
+        *length  = (size_t)n;
+        LOG_UNLOCK();
+        return NO_ERROR;
+    }
+
+    /* ── DATA: path'li dosya kayıtları rBuf üzerinden okunur ───────────
+     * (tip bazlı ölçüm kayıtları için flashNewStmIterateData kullanılmalı) */
+    if (h->ftype == FH_DATA)
+    {
+        DAT_LOCK();
+        *length = 0u;
+        if (h->rBuf == NULL || h->rPos >= h->rSize)
+        {
+            DAT_UNLOCK();
+            return ERROR_END_OF_FILE;
+        }
+        remain = h->rSize - h->rPos;
+        n      = (remain < (uint32_t)size) ? remain : (uint32_t)size;
+        osMemcpy(data, h->rBuf + h->rPos, n);
+        h->rPos += n;
+        *length  = (size_t)n;
+        DAT_UNLOCK();
+        return NO_ERROR;
+    }
+
+    /* ── CONFIG: doğrudan flash'tan oku ─────────────────────────────── */
     CFG_LOCK();
 
     *length = 0u;
@@ -1702,14 +2098,21 @@ void fsCloseFile(FsFile *file)
     }
     else
     {
-        /* LOG / DATA — handle üzerinde bölge kilidi gerekmez;
-         * yazma zaten o bölgenin write fonksiyonunda kilitlendi */
+        /* LOG / DATA — yazma her fsWriteFile'da kilitlenerek yapıldı;
+         * okuma tamponunu (rBuf) ve yazma tamponunu (wBuf) serbest bırak */
+        LOG_LOCK();
+        if (h->rBuf != NULL)
+        {
+            osFreeMem(h->rBuf);
+            h->rBuf = NULL;
+        }
         if (h->wBuf != NULL)
         {
             osFreeMem(h->wBuf);
             h->wBuf = NULL;
         }
         osMemset(h, 0, sizeof(FsHandle));
+        LOG_UNLOCK();
     }
 }
 
