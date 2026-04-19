@@ -10,9 +10,11 @@
  *   1. Sistem başlatma (bir kez yapılır)
  *   2. Sayaç (Meter) — ekleme, sorgulama, silme
  *   3. Direktif (Directive) — JSON ekleme, okuma, silme
- *   4. Log — yazma, okuma/iterasyon, temizleme
- *   5. Konfigürasyon (Config) — yazma, okuma, güncelleme, silme
- *   6. Sensor/Sayaç ölçüm verisi (Data) — yazma, okuma, temizleme
+ *   4. Log — fsWriteFile yazma, fsReadFile okuma, iterator, temizleme
+ *   5. Konfigürasyon (Config) — fsWriteFile/fsReadFile, güncelleme, silme
+ *   6. Sensor/Sayaç ölçüm verisi (Data):
+ *        6a-c: flashNewStmWriteData + flashNewStmIterateData (tip bazlı)
+ *        6d-f: fsWriteFile + fsReadFile + fsDeleteFile (path'li dosya)
  */
 
 #include "fs_flash_new_stm.h"
@@ -407,12 +409,15 @@ static error_t log_yaz(void)
 /* ── 4b. fsOpenFile / fsWriteFile yoluyla log yazma ──────────────────── */
 /*
  * AppLogRecorder bu yolu kullanır.
- * Yol "/log/" veya "log/" ile başladığında FS otomatik olarak
- * LOG bölgesine yönlendirir; her fsWriteFile çağrısı bir log girişi olur.
+ * "log/" ile başlayan yollar otomatik olarak LOG bölgesine yönlendirilir.
+ * Her fsWriteFile çağrısı, path bilgisini de içeren ayrı bir LOG kaydı yazar.
+ * fsCloseFile çağrısına gerek yoktur — her fsWriteFile doğrudan flash'a gider.
+ *
+ * Yazılan kayıtlar sonradan aynı path ile fsOpenFile(READ) + fsReadFile
+ * kullanılarak sırayla okunabilir.
  */
 static error_t log_yaz_dosya_api(void)
 {
-    /* Logger servisi şu yolu açar: "log/SysLogger/20260417-120001.log" */
     FsFile *f = fsOpenFile("log/SysLogger/20260417-120001.log",
                            FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE);
     if (f == NULL)
@@ -421,7 +426,7 @@ static error_t log_yaz_dosya_api(void)
         return ERROR_FAILURE;
     }
 
-    /* Her fsWriteFile çağrısı LOG bölgesine ayrı bir giriş yazar */
+    /* Her çağrı: [LogRecHdr | path | satır] şeklinde flash'a yazılır */
     const char *satir1 = "20260417 12:00:01 - Protokol servisi başladı\n";
     const char *satir2 = "20260417 12:00:02 - Bağlantı kuruldu: 192.168.1.100\n";
     const char *satir3 = "20260417 12:00:03 - İlk sayaç okuma görevi kuyruğa alındı\n";
@@ -431,33 +436,66 @@ static error_t log_yaz_dosya_api(void)
     (void)fsWriteFile(f, (void *)satir3, strlen(satir3));
 
     fsCloseFile(f);
-    printf("[OK] Log dosyası kapatıldı (3 giriş yazıldı)\n\r");
+    printf("[OK] Log dosyası yazıldı (3 kayıt, her biri path etiketli)\n\r");
     return NO_ERROR;
 }
 
-/* ── 4c. Log okuma / iterasyon ────────────────────────────────────────── */
+/* ── 4c. Log okuma — YOL 1: fsOpenFile + fsReadFile (belirli dosya) ──── */
+/*
+ * fsOpenFile(path, READ) sırasında LOG bölgesi taranır; bu path'e ait
+ * tüm kayıtlar birleştirilerek RAM tampona (rBuf) alınır.
+ * fsReadFile çağrıları bu tampondan chunk chunk okur.
+ * fsCloseFile tampon belleği serbest bırakır.
+ */
+static error_t log_oku_dosya_api(void)
+{
+    FsFile *f = fsOpenFile("log/SysLogger/20260417-120001.log",
+                           FS_FILE_MODE_READ);
+    if (f == NULL)
+    {
+        printf("[ERR] Log dosyası bulunamadı\n\r");
+        return ERROR_FILE_NOT_FOUND;
+    }
 
-/* Callback: her geçerli log girişi için çağrılır */
+    printf("[OK] Log içeriği:\n\r");
+    char    buf[128];
+    size_t  okunan = 0u;
+    error_t err;
+
+    while ((err = fsReadFile(f, buf, sizeof(buf) - 1u, &okunan)) == NO_ERROR
+           && okunan > 0u)
+    {
+        buf[okunan] = '\0';
+        printf("%s\n\r", buf);
+    }
+
+    fsCloseFile(f);
+    return (err == ERROR_END_OF_FILE || err == NO_ERROR) ? NO_ERROR : err;
+}
+
+/* ── 4d. Log okuma — YOL 2: flashNewStmIterateLogs (tüm bölge, seq filtreli) */
+/*
+ * Tüm LOG bölgesindeki kayıtları (hem path'li hem anonim) sırayla
+ * callback üzerinden iter eder. startSeq ile kesim noktası belirlenebilir.
+ * Belirli bir log dosyasını değil, tüm LOG bölgesini okumak için kullanılır.
+ */
 static void log_callback(uint32_t seq, const char *text,
                           uint32_t len, void *ctx)
 {
     (void)ctx;
-    /* text null-sonlandırıcı içermeyebilir; %.*s ile güvenli yazdır */
     printf("  [seq=%u] %.*s\n\r", (unsigned)seq, (int)len, text);
 }
 
 static error_t log_oku_hepsini(void)
 {
-    printf("[OK] Tüm loglar:\n\r");
-    CHECK(flashNewStmIterateLogs(0u,       /* startSeq=0 → hepsi */
-                                  log_callback,
-                                  NULL));
+    printf("[OK] Tüm LOG bölgesi (iterator):\n\r");
+    CHECK(flashNewStmIterateLogs(0u, log_callback, NULL));
     return NO_ERROR;
 }
 
 static error_t log_oku_belirli_seq(uint32_t basSeq)
 {
-    printf("[OK] seq >= %u olan loglar:\n\r", (unsigned)basSeq);
+    printf("[OK] seq >= %u olan kayıtlar:\n\r", (unsigned)basSeq);
     CHECK(flashNewStmIterateLogs(basSeq, log_callback, NULL));
     return NO_ERROR;
 }
@@ -721,10 +759,24 @@ static error_t conf_compact(void)
 /* =========================================================================
  * 6. SENSOR / SAYAÇ ÖLÇÜM VERİSİ (DATA bölgesi)
  *
- * Yüksek frekanslı, tiplendirilmiş ikili kayıtlar için.
+ * DATA bölgesi iki farklı kayıt türünü destekler:
+ *
+ *  A) Tiplendirilmiş binary ölçüm kaydı (pathLen=0)
+ *     → flashNewStmWriteData() ile yaz
+ *     → flashNewStmIterateData() ile oku (callback)
+ *     → Örnek: periyodik enerji ölçümleri
+ *
+ *  B) Path'li dosya kaydı (pathLen>0)
+ *     → fsOpenFile + fsWriteFile ile yaz (her çağrı bir DATA kaydı)
+ *     → fsOpenFile + fsReadFile ile oku (eşleşen kayıtlar rBuf'a toplanır)
+ *     → fsDeleteFile ile sil (flags geçersiz yapılır, sector erase yok)
+ *     → Örnek: meter/meterDataOut/<taskId>_readout.txt
+ *
+ *  flashNewStmIterateData() yalnızca tip bazlı kayıtları (pathLen=0) döner;
+ *  path'li dosya kayıtlarını atlar.
  * ====================================================================== */
 
-/* Uygulama özel veri yapısı */
+/* Uygulama özel veri yapısı (tip bazlı ölçüm) */
 typedef struct
 {
     char     serialNumber[16];
@@ -735,28 +787,28 @@ typedef struct
     uint32_t readTime;           /* Unix timestamp */
 } MeterReading_t;
 
-/* ── 6a. Ölçüm verisi kaydet ─────────────────────────────────────────── */
+/* ── 6a. Tiplendirilmiş ölçüm verisi yaz (flashNewStmWriteData) ──────── */
 static error_t data_yaz(void)
 {
     MeterReading_t okuma = {0};
     strncpy(okuma.serialNumber, "SN12345678", sizeof(okuma.serialNumber) - 1);
-    okuma.activeEnergy_kWh    = 12345.67f;
+    okuma.activeEnergy_kWh     = 12345.67f;
     okuma.reactiveEnergy_kVArh = 456.78f;
     okuma.voltage_V             = 230.5f;
     okuma.current_A             = 5.2f;
-    okuma.readTime              = 1745000000u; /* örnek Unix ts */
+    okuma.readTime              = 1745000000u;
 
-    CHECK(flashNewStmWriteData(FSNEW_DATA_METER,   /* tip */
-                                &okuma,             /* veri */
-                                sizeof(okuma),      /* boyut */
-                                okuma.readTime));   /* zaman damgası */
+    CHECK(flashNewStmWriteData(FSNEW_DATA_METER,
+                                &okuma,
+                                sizeof(okuma),
+                                okuma.readTime));
 
     printf("[OK] Ölçüm verisi yazıldı: %s → %.2f kWh\n\r",
            okuma.serialNumber, okuma.activeEnergy_kWh);
     return NO_ERROR;
 }
 
-/* ── 6b. Birden fazla ölçüm verisi kaydet ───────────────────────────── */
+/* ── 6b. Birden fazla tiplendirilmiş ölçüm kaydet ───────────────────── */
 static error_t data_coklu_yaz(void)
 {
     const char *sayaclar[] = {"SN00001", "SN00002", "SN00003"};
@@ -768,74 +820,150 @@ static error_t data_coklu_yaz(void)
         strncpy(okuma.serialNumber, sayaclar[i],
                 sizeof(okuma.serialNumber) - 1);
         okuma.activeEnergy_kWh = enerjiler[i];
-        okuma.voltage_V         = 231.0f;
-        okuma.current_A         = (float)(i + 1) * 2.5f;
-        okuma.readTime          = 1745000000u + (uint32_t)(i * 900u);
+        okuma.voltage_V        = 231.0f;
+        okuma.current_A        = (float)(i + 1) * 2.5f;
+        okuma.readTime         = 1745000000u + (uint32_t)(i * 900u);
 
         error_t err = flashNewStmWriteData(FSNEW_DATA_METER,
-                                            &okuma,
-                                            sizeof(okuma),
+                                            &okuma, sizeof(okuma),
                                             okuma.readTime);
         if (err != NO_ERROR)
-            printf("[ERR] Sayaç %s yazılamadı: %d\n\r", sayaclar[i], (int)err);
+            printf("[ERR] %s yazılamadı: %d\n\r", sayaclar[i], (int)err);
         else
-            printf("[OK] Sayaç yazıldı: %s\n\r", sayaclar[i]);
+            printf("[OK] Yazıldı: %s\n\r", sayaclar[i]);
     }
-
     return NO_ERROR;
 }
 
-/* ── 6c. Ölçüm verisi okuma / iterasyon ─────────────────────────────── */
-
+/* ── 6c. Tiplendirilmiş ölçüm oku — flashNewStmIterateData (callback) ── */
 static void data_callback(uint32_t seq, uint32_t ts, uint32_t type,
                            const void *data, uint32_t size, void *ctx)
 {
-    (void)ctx;
-    (void)type;
-
+    (void)ctx; (void)type;
     if (data == NULL || size < sizeof(MeterReading_t))
     {
-        printf("  [seq=%u, ts=%u] Veri büyük (ham boyut=%u)\n\r",
+        printf("  [seq=%u, ts=%u] ham boyut=%u\n\r",
                (unsigned)seq, (unsigned)ts, (unsigned)size);
         return;
     }
-
-    const MeterReading_t *okuma = (const MeterReading_t *)data;
+    const MeterReading_t *r = (const MeterReading_t *)data;
     printf("  [seq=%u, ts=%u] %s → %.2f kWh, %.1f V, %.2f A\n\r",
-           (unsigned)seq,
-           (unsigned)ts,
-           okuma->serialNumber,
-           okuma->activeEnergy_kWh,
-           okuma->voltage_V,
-           okuma->current_A);
+           (unsigned)seq, (unsigned)ts,
+           r->serialNumber, r->activeEnergy_kWh, r->voltage_V, r->current_A);
 }
 
-static error_t data_oku_hepsini(void)
+static error_t data_oku_iterator(void)
 {
-    printf("[OK] Tüm METER ölçümleri:\n\r");
-
-    CHECK(flashNewStmIterateData(
-        FSNEW_DATA_METER,   /* tip filtresi */
-        0u,                 /* startSeq=0 → hepsi */
-        data_callback,
-        NULL));
-
+    printf("[OK] Tüm METER ölçümleri (iterator):\n\r");
+    CHECK(flashNewStmIterateData(FSNEW_DATA_METER, 0u, data_callback, NULL));
     return NO_ERROR;
 }
 
 static error_t data_oku_son_N(uint32_t basSeq)
 {
     printf("[OK] seq >= %u olan ölçümler:\n\r", (unsigned)basSeq);
-    CHECK(flashNewStmIterateData(FSNEW_DATA_METER, basSeq,
-                                  data_callback, NULL));
+    CHECK(flashNewStmIterateData(FSNEW_DATA_METER, basSeq, data_callback, NULL));
     return NO_ERROR;
 }
 
-/* ── 6d. DATA bölgesini temizle ─────────────────────────────────────── */
+/* ── 6d. Path'li dosya yaz — fsOpenFile + fsWriteFile ───────────────── */
+/*
+ * meter/meterDataOut/ yolları DATA bölgesine yönlendirilir.
+ * Her fsWriteFile çağrısı path bilgisini de içeren ayrı bir DATA kaydı yazar.
+ * flashNewStmIterateData bu kayıtları görmez (pathLen>0 olanları atlar).
+ */
+static error_t data_yaz_dosya_api(void)
+{
+    const char *path = "meter/meterDataOut/1_readout.txt";
+
+    FsFile *f = fsOpenFile(path, FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE);
+    if (f == NULL)
+    {
+        printf("[ERR] %s açılamadı\n\r", path);
+        return ERROR_FAILURE;
+    }
+
+    /* IEC 62056-21 tipik readout satırları */
+    const char *satirlar[] = {
+        "/ISk5MT382-1000\r\n",
+        "0.0.1(SN12345678)\r\n",
+        "1.8.0(012345.678*kWh)\r\n",
+        "1.8.1(006789.123*kWh)\r\n",
+        "2.8.0(000456.789*kWh)\r\n",
+        "!\r\n",
+        NULL
+    };
+
+    for (int i = 0; satirlar[i] != NULL; i++)
+        (void)fsWriteFile(f, (void *)satirlar[i], strlen(satirlar[i]));
+
+    fsCloseFile(f);
+    printf("[OK] %s yazıldı (6 satır, her biri path etiketli DATA kaydı)\n\r",
+           path);
+    return NO_ERROR;
+}
+
+/* ── 6e. Path'li dosya oku — fsOpenFile + fsReadFile ────────────────── */
+/*
+ * fsOpenFile(READ) sırasında DATA bölgesi taranır; bu path'e ait
+ * tüm kayıtlar (pathLen>0) birleştirilerek RAM tampona (rBuf) alınır.
+ * fsReadFile çağrıları bu tampondan chunk chunk okur.
+ * fsCloseFile tampon belleği serbest bırakır.
+ */
+static error_t data_oku_dosya_api(void)
+{
+    const char *path = "meter/meterDataOut/1_readout.txt";
+
+    FsFile *f = fsOpenFile(path, FS_FILE_MODE_READ);
+    if (f == NULL)
+    {
+        printf("[ERR] %s bulunamadı\n\r", path);
+        return ERROR_FILE_NOT_FOUND;
+    }
+
+    printf("[OK] %s içeriği:\n\r", path);
+    char   buf[128];
+    size_t okunan = 0u;
+    error_t err;
+
+    while ((err = fsReadFile(f, buf, sizeof(buf) - 1u, &okunan)) == NO_ERROR
+           && okunan > 0u)
+    {
+        buf[okunan] = '\0';
+        printf("%s", buf);
+    }
+
+    fsCloseFile(f);
+    return (err == ERROR_END_OF_FILE || err == NO_ERROR) ? NO_ERROR : err;
+}
+
+/* ── 6f. Path'li dosya sil — fsDeleteFile ────────────────────────────── */
+/*
+ * flags alanı 0x00000000 yapılır — sector silme gerekmez.
+ * fsFileExists ile silindiği doğrulanabilir.
+ */
+static error_t data_sil_dosya(void)
+{
+    const char *path = "meter/meterDataOut/1_readout.txt";
+
+    error_t err = fsDeleteFile(path);
+    if (err != NO_ERROR)
+    {
+        printf("[ERR] Silme başarısız: %s → %d\n\r", path, (int)err);
+        return err;
+    }
+
+    printf("[OK] Silindi: %s\n\r", path);
+    printf("[OK] Varlık kontrolü: %s\n\r",
+           fsFileExists(path) ? "HÂLÂ VAR (hata!)" : "bulunamadı (beklenen)");
+    return NO_ERROR;
+}
+
+/* ── 6g. DATA bölgesini temizle ─────────────────────────────────────── */
 static error_t data_temizle(void)
 {
     CHECK(flashNewStmClearData());
-    printf("[OK] DATA bölgesi temizlendi\n\r");
+    printf("[OK] DATA bölgesi temizlendi (tüm kayıtlar silindi)\n\r");
     return NO_ERROR;
 }
 
@@ -912,22 +1040,38 @@ void fs_flash_new_stm_demo(void)
 
     /* ── LOG ── */
     printf("\n--- LOG İŞLEMLERİ ---\n\r");
+    /* Yazma: anonim (flashNewStmWriteLog) */
     log_yaz();
+    /* Yazma: path'li (fsOpenFile + fsWriteFile) */
     log_yaz_dosya_api();
     log_bos_alan();
+    /* Okuma 1: belirli dosyayı fsReadFile ile oku */
+    log_oku_dosya_api();
+    /* Okuma 2: tüm bölgeyi iterator ile tara */
     log_oku_hepsini();
-    log_oku_belirli_seq(3u);  /* yalnızca seq>=3 */
+    log_oku_belirli_seq(3u);
     log_temizle();
     log_oku_hepsini();        /* boş olmalı */
 
     /* ── DATA ── */
-    printf("\n--- ÖLÇÜM VERİSİ ---\n\r");
+    printf("\n--- ÖLÇÜM VERİSİ (tip bazlı) ---\n\r");
+    /* Yazma: flashNewStmWriteData (pathLen=0, iterator ile okunur) */
     data_yaz();
     data_coklu_yaz();
-    data_oku_hepsini();
+    /* Okuma: flashNewStmIterateData callback */
+    data_oku_iterator();
     data_oku_son_N(3u);
+
+    printf("\n--- ÖLÇÜM VERİSİ (path'li dosya) ---\n\r");
+    /* Yazma: fsOpenFile + fsWriteFile (pathLen>0, meterDataOut gibi) */
+    data_yaz_dosya_api();
+    /* Okuma: fsOpenFile + fsReadFile */
+    data_oku_dosya_api();
+    /* Silme: fsDeleteFile (flags geçersiz, sector erase yok) */
+    data_sil_dosya();
+
     data_temizle();
-    data_oku_hepsini();       /* boş olmalı */
+    data_oku_iterator();      /* boş olmalı */
 
     /* Compact (isteğe bağlı bakım) */
     printf("\n--- CONFIG COMPACT ---\n\r");

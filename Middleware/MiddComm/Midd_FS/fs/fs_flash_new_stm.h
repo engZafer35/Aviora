@@ -75,9 +75,14 @@ extern "C" {
 #  define FSNEW_PATH_MAX          64u
 #endif
 
-/** RAM'de tutulan config-dosyası indeks girişi sayısı */
+/**
+ * RAM'de tutulan config-dosyası indeks girişi sayısı.
+ * meter/meterDataOut/ dosyaları (readout/payload/meterID) artık CONFIG bölgesine
+ * kaydedildiğinden bu sayı yeterince büyük olmalıdır.
+ * Hesap: sayaç kayıtları + direktifler + sistem/protokol conf + meterDataOut dosyaları
+ */
 #ifndef FSNEW_CFG_INDEX_SIZE
-#  define FSNEW_CFG_INDEX_SIZE    24u
+#  define FSNEW_CFG_INDEX_SIZE    48u
 #endif
 
 /** Aynı anda açık tutulabilecek maksimum dosya tutacağı sayısı */
@@ -87,10 +92,13 @@ extern "C" {
 
 /**
  * Tek bir config kaydının maksimum payload boyutu (byte).
- * Bu değer fsCloseFile'da RAM'de tutulacak tamponu sınırlar.
+ * meter/meterDataOut/ readout/payload dosyaları CONFIG bölgesine yazıldığından
+ * IEC 62056-21 readout verisi sığacak kadar büyük olmalıdır.
+ * (Tipik readout ~4-8 KB; yük profili ~16-32 KB olabilir.)
+ * wBuf heap'ten dinamik olarak ayrılır — sadece dosya açıkken RAM'de tutulur.
  */
 #ifndef FSNEW_CFG_MAX_PAYLOAD
-#  define FSNEW_CFG_MAX_PAYLOAD   (8u * 1024u)
+#  define FSNEW_CFG_MAX_PAYLOAD   (32u * 1024u)
 #endif
 
 /* =========================================================================
