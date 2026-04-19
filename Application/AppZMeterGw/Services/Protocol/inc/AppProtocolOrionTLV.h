@@ -62,7 +62,7 @@
 #define ORION_MODEL                   "AVIO2622"
 
 #define ORION_PACKET_MAX_SIZE         (1024)
-#define ORION_DATA_CHUNK_SIZE         (700)
+#define ORION_DATA_CHUNK_SIZE         (950)
 
 #define ORION_ALIVE_INTERVAL_S        (300)     /* 5 min */
 #define ORION_REGISTER_RETRY_S        (30)      /* 30 s  */
