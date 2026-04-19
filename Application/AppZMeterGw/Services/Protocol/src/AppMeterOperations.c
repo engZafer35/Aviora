@@ -547,7 +547,7 @@ static ERR_CODE_T iecDoProfile(S32 taskId, const char *t0, const char *t1)
     if (sendAll((const U8 *)"/?!\r\n", 5U, IEC_LINE_TIMEOUT_MS) != 0)
         return EN_ERR_CODE_METER_COMM_LINE_ERROR;
 
-    char line[384];
+    char line[1024];
     ERR_CODE_T e = recvLine(line, sizeof(line), IEC_LINE_TIMEOUT_MS);
     if (e != EN_ERR_CODE_SUCCESS)
         return e;
@@ -565,8 +565,23 @@ static ERR_CODE_T iecDoProfile(S32 taskId, const char *t0, const char *t1)
     if (f == NULL)
         return EN_ERR_CODE_FAILURE;
 
+    S32 rr;
+    U32 got;
+    BOOL received = FALSE;
     for (;;)
     {
+        got = sizeof(line);
+        rr = s_meterIf.meterCommReceive(line, &got, IEC_BYTE_TIMEOUT_MS);
+        printf("Received bytes: %d - %d", (int)rr, (int)got);
+        if ((rr <= 0) || (got == 0))
+        {
+            fsCloseFile(f);
+            if (FALSE == received)
+                return EN_ERR_CODE_METER_COMM_LINE_ERROR;
+            else
+                return EN_ERR_CODE_SUCCESS;
+        }
+        /*
         e = recvLine(line, sizeof(line), IEC_LINE_TIMEOUT_MS * 6U);
         if (e != EN_ERR_CODE_SUCCESS)
         {
@@ -577,8 +592,10 @@ static ERR_CODE_T iecDoProfile(S32 taskId, const char *t0, const char *t1)
             continue;
         if (strcmp(line, "!") == 0)
             break;
-        fsWriteFile(f, line, strlen(line));
-        fsWriteFile(f, (void *)"\n", 1);
+            */
+        fsWriteFile(f, line, got);
+        received = TRUE;
+        //fsWriteFile(f, (void *)"\n", 1);
     }
     fsCloseFile(f);
     return EN_ERR_CODE_SUCCESS;
