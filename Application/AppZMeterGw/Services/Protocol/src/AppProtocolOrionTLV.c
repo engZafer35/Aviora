@@ -774,7 +774,10 @@ static RETURN_STATUS sendFilePacketised(const char *channel, uint8_t func,
 {
     FsFile *f = fsOpenFile((char *)filePath, FS_FILE_MODE_READ);
     if (f == NULL)
+    {
+        DEBUG_ERROR("->[E] %s file could not opened !!", filePath);
         return FAILURE;
+    }
 
     char bufA[ORION_DATA_CHUNK_SIZE + 1];
     char bufB[ORION_DATA_CHUNK_SIZE + 1];
@@ -784,6 +787,8 @@ static RETURN_STATUS sendFilePacketised(const char *channel, uint8_t func,
     (void)fsReadFile(f, cur, ORION_DATA_CHUNK_SIZE, &curLen);
     if (curLen == 0)
     {
+        DEBUG_ERROR("->[E] %s file could not read !!", filePath);
+
         fsCloseFile(f);
         return FAILURE;
     }
@@ -806,9 +811,11 @@ static RETURN_STATUS sendFilePacketised(const char *channel, uint8_t func,
         }
         if (SUCCESS != appTcpConnManagerSend(channel, (char *)gs_txBuf, (unsigned int)sz))
         {
+            DEBUG_ERROR("->[E] appTcpConnManagerSend returned failured");
             fsCloseFile(f);
             return FAILURE;
         }
+        zosDelayTask(300);
 
         if (!hasMore) break;
         char *tmp = cur; cur = nxt; nxt = tmp;
