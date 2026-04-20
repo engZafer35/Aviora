@@ -39,6 +39,12 @@
 - Remote diagnostics and telemetry systems
 <img width="1600" height="900" alt="image" src="https://github.com/user-attachments/assets/8fec2173-9fae-4520-b642-f8c7a3b24e69" />
 
+
+https://github.com/user-attachments/assets/bcd247fd-31d4-4b12-9f92-27a2888abf3a
+
+
+
+
 ---
 
 ## 🛠️ Getting Started
