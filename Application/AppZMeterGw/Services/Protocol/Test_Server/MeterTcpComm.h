@@ -14,7 +14,7 @@
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
 /******************************MACRO DEFINITIONS*******************************/
-#define METER_TCP_SERVER_IP   "192.168.1.102"
+#define METER_TCP_SERVER_IP   "192.168.1.101"
 #define METER_TCP_PORT        (5000)
 /*******************************TYPE DEFINITIONS ******************************/
 /************************* GLOBAL VARIBALE REFERENCES *************************/

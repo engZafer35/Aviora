@@ -572,7 +572,7 @@ static ERR_CODE_T iecDoProfile(S32 taskId, const char *t0, const char *t1)
     {
         got = sizeof(line);
         rr = s_meterIf.meterCommReceive(line, &got, IEC_BYTE_TIMEOUT_MS);
-        printf("Received bytes: %d - %d", (int)rr, (int)got);
+        DEBUG_INFO("->[I] Meter received bytes: %d - %d", (int)rr, (int)got);
         if ((rr <= 0) || (got == 0))
         {
             fsCloseFile(f);
