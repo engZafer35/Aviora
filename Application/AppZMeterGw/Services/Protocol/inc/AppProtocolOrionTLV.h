@@ -73,7 +73,7 @@
 #define ORION_SERVER_FILE             "orion_server.dat"
 
 #define ORION_SESSION_MAX             (8)
-#define ORION_SESSION_TIMEOUT         (10000)   /* 10 s  */
+#define ORION_SESSION_TIMEOUT         (60000)   /* 60 s  */
 
 
 /* ─── TAG Definitions ─────────────────────────────────────────────────────

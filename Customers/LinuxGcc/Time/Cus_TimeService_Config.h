@@ -7,7 +7,7 @@
 #ifndef __CUS_TIME_SERVICE_CONFIG_H__
 #define __CUS_TIME_SERVICE_CONFIG_H__
 
-/* generated on: 2026-04-09 00:51:41 */
+/* generated on: 2026-04-20 08:11:29 */
 
 #define APP_TIME_SERVICE_USE              (1)
 #define APP_TIME_SERVICE_USE_NTP          (0)

@@ -288,12 +288,15 @@ void uartStartTx(void)
 {
     pthread_cond_signal(&cond);
 }
-#endif
 
+#endif
 void uartDrvSendDma(int line, void *buff, int leng)
 {
-//    uart_writen(NULL, buff, leng);
-
+#ifdef __linux
+    uart_writen(NULL, buff, leng);
+#else
     uartTxDmaHalfCompleted();
+#endif
 }
+
 /******************************** End Of File *********************************/

@@ -16,6 +16,7 @@
 #include "AppLogRecorder.h"
 #include "AppGlobalVariables.h"
 
+#include "Midd_OSPort.h"
 #include "fs_port.h"
 
 #include <string.h>

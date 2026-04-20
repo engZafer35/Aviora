@@ -104,37 +104,6 @@ static void keyboardInput(void *arg)
 /***************************** PUBLIC FUNCTIONS  ******************************/
 int main (void)
 {
-    uint32_t resetFlags = RCC->CSR;
-    int retval = 0;
-
-    if (resetFlags & RCC_CSR_IWDGRSTF)
-    {
-        // Watchdog reset
-        retval = 1;
-    }
-
-    if (resetFlags & RCC_CSR_PORRSTF)
-    {
-        // Power-on reset
-        retval = 2;
-    }
-
-    if (resetFlags & RCC_CSR_SFTRSTF)
-    {
-        // Software reset
-        retval = 3;
-    }
-
-    if (resetFlags & RCC_CSR_PINRSTF)
-    {
-        // NRST pin reset
-        retval = 4;
-    }
-
-    RCC->CSR |= RCC_CSR_RMVF; // clear flags
-
-    printf("%d", retval);
-
     if (SUCCESS == appZMGwInit())
     {
         appZMGwStart(); //run baby run
@@ -145,14 +114,6 @@ int main (void)
         pthread_create(&thread, NULL, keyboardInput, NULL);
         while(1) sleep(1);
 #endif
-        while(1)
-        {
-            HAL_GPIO_TogglePin(POWER_LED_GPIO_Port, POWER_LED_Pin);
-            HAL_GPIO_TogglePin(NETWORK_STAT_LED_GPIO_Port, NETWORK_STAT_LED_Pin);
-            HAL_GPIO_TogglePin(LD4_GPIO_Port, LD4_Pin);
-            HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-            HAL_Delay(500);
-        }
     }
 
     return 0;

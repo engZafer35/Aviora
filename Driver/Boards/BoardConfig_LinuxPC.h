@@ -126,7 +126,7 @@ typedef enum _EN_INTERRUPT_LIST
 //    EN_SPI3_IRQ,
 //    EN_UART4_IRQ,
 //    EN_UART5_IRQ,
-//    EN_TIM6_DAC_IRQ,
+    EN_TIM6_DAC_IRQ,
     EN_TIM7_IRQ,
     EN_DMA2_Stream0_IRQ,
     EN_DMA2_Stream1_IRQ,
@@ -221,7 +221,7 @@ typedef void (*InterruptCallback)(_EN_INTERRUPT_LIST intList);
 #define _GPIO_USER_INPUT_IRQ_CHNL      EN_EXTI0_IRQ
 #define _GPIO_USER2_INPUT_IRQ_CHNL     EN_EXTI4_IRQ
 
-#define _CORE_EXT_IT_FUNCTION          void hwGpioExtInt(int p_args) // pin4 external interrupt
+#define _CORE_EXT_IT_FUNCTION          void hwGpioExtInt(int GPIO_Pin) // pin4 external interrupt
 
 /********************* BOARD I2C CONTROL ******************/
 #define _I2C_LINE_1
