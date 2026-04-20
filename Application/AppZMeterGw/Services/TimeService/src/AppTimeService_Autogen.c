@@ -1,38 +1,36 @@
 /******************************************************************************
 * #Author       : Auto-generated
-* #Date         : 13 Apr 2026 - 20:52:16
+* #Date         : 20 Apr 2026 - 08:11:29
 * #File Name    : AppTimeService_Autogen.c
 *******************************************************************************/
 /******************************************************************************
 * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY
-* Customer Name: Stm407Eva
+* Customer Name: LinuxGcc
 * Generated from customer time_config.json. Only used units are included.
 *******************************************************************************/
 
 #include "Project_Conf.h"
 #include "../../../Customers/TimeService_Config.h"
 
-#include "time_modules/TimeBackend_SoftTick.h"
 
 static RETURN_STATUS appTimeServiceAutogenInit(const char *ntpHost, U16 ntpPort)
 {
-    if (SUCCESS != appTimeSoftTickInit())
-    {
-        return FAILURE;
-    }
-
+    // linux local time is used
     return SUCCESS;
 }
 
 static U32 appTimeServiceAutogenGetEpochFromPreferredSource(void)
 {
-    return appTimeSoftTickGetEpoch();
+    return getCurrentUnixTime();
 }
 
 static RETURN_STATUS appTimeServiceAutogenUpdateRtcsFromEpoch(U32 epoch)
 {
     RETURN_STATUS retVal = SUCCESS;
-    retVal = appTimeSoftTickSetEpoch(epoch);
+    if (0 != linuxLocalTimeSvcSetEpoch(epoch))
+    {
+        retVal = FAILURE;
+    }
     return retVal;
 }
 

@@ -35,7 +35,7 @@
  * In order to use Cyclone lib, set USE_CYCLONE_LIB to ENABLE
  * Otherwise, Posix socket lib will be used.
  */
-#define USE_CYCLONE_LIB  1
+#define USE_CYCLONE_LIB  0
 
 #if USE_CYCLONE_LIB == 1
 
@@ -222,7 +222,7 @@
 #define SOCKLEN_t       c_socklen_t
 
 #else
-
+#define STRUCT_TIMEVAL struct timeval
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <string.h>
@@ -232,6 +232,7 @@
 #include <sys/select.h>
 #include <netdb.h>
 #include <sys/socket.h>
+#include <errno.h>
 #define FD_SET_TYPE      fd_set
 #define SOCKET           socket
 #define BIND             bind
@@ -249,7 +250,8 @@
 #define SETSOCKOPT       setsockopt
 #define GETSOCKOPT       getsockopt
 #define IOCTLSOCKET      ioctlsocket
-#define FCNTL            fcntl
+//#define FCNTL            fcntl //it is the same with the belong macro, don use this
+#define FCNTL_COM        fcntl
 #define SHUTDOWN         shutdown
 #define CLOSESOCKET      close
 #define SELECT           select

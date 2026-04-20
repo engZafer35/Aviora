@@ -92,6 +92,8 @@ static void linuxEthConnManagerTask(void* argument)
             case LINUX_ETH_CONN_STEP_ETH_UP:
             {     
                 gs_linuxEthInitStep = LINUX_ETH_CONN_STEP_COMPLETED;
+                zosEventGroupSet(gp_systemSetupEventGrp, NETWORK_SERVICE_READY_FLAG);
+
                 DEBUG_INFO("LINUX_ETH connection established successfully!");
                 APP_LOG_REC(g_sysLoggerID, "LINUX_ETH connection established successfully!");
                                 

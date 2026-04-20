@@ -12,8 +12,6 @@
 /********************************* INCLUDES ***********************************/
 #include "AppZMeterGw.h"
 
-#include <CycloneTcp/cyclone_tcp/core/net.h>
-
 #include "AppDeviceManager.h"
 #include "AppTimeService.h"
 #include "AppGlobalVariables.h"
@@ -323,15 +321,14 @@ static void startAppServices(void)
     zosDeleteTask(NULL);
 }
 
-
-static void fsDemo(void *arg)
-{
-    while(1)
-    {
-        fs_flash_new_stm_demo();
-        zosDelayTask(1000);
-    }
-}
+//static void fsDemo(void *arg)
+//{
+//    while(1)
+//    {
+//        fs_flash_new_stm_demo();
+//        zosDelayTask(1000);
+//    }
+//}
 
 static RETURN_STATUS initSwUnit(void)
 {
