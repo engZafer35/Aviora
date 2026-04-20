@@ -191,7 +191,7 @@ static int connectPushSocket(void)
         int connect_result = CONNECT(gs_connInfo.pushSockID, (const struct sockaddr *)&server_ipv4_address, sizeof(server_ipv4_address));
         if (connect_result < 0)
         {
-            DEBUG_DEBUG("->[D] Push socket connection initiated (non-blocking)...");
+            DEBUG_DEBUG("->[D] Push socket connection initiated for non-blocking");
             gs_connInfo.pushSockConnecting = 1;
             retVal = RET_SUCCESS;
         }
@@ -319,11 +319,6 @@ static void tcpConnectionThread(void *arg)
 //                    }
 //                }
 
-
-
-
-
-
             FD_ZERO(&readfds);
 
             FD_SET(gs_connInfo.pullSockID, &readfds);
@@ -371,7 +366,8 @@ static void tcpConnectionThread(void *arg)
 
                     if (MAX_PULL_CLIENT_NUMBER == i)
                     {
-                        DEBUG_DEBUG("->[D] Pull Socket, New client connection is rejected. Client List full");
+                        DEBUG_DEBUG("->[D] Pull Socket, New client connection is rejected. Client List full");                        
+                        APP_LOG_REC(g_sysLoggerID, "[E]AppTcpConnMngr: Pull Socket, New client connection is rejected. Client List full");
                         CLOSESOCKET(newSocket);
                         continue;
                     }
@@ -459,6 +455,7 @@ static void tcpConnectionThread(void *arg)
                         else
                         {
                             DEBUG_ERROR("->[E] Push socket connection failed: %d", error);
+                            APP_LOG_REC(g_sysLoggerID, "[E]AppTcpConnMngr: Push socket connection failed");
                             CLOSESOCKET(gs_connInfo.pushSockID);
                             gs_connInfo.pushSockID = -1;
                             pushSockCounter = 0;
@@ -530,8 +527,8 @@ int appTcpConnManagerStart(const char *serverIP, int serverPort, int pullPort, I
     }
     else
     {
-        DEBUG_INFO("TCP Connection task created !");
-        APP_LOG_REC(g_sysLoggerID, "TCP Connection task created !");
+        DEBUG_INFO("->[I] TCP Connection task created !");
+        APP_LOG_REC(g_sysLoggerID, "[I]AppTcpConnMngr: TCP Connection task created !");
     }
 
     return retVal;
@@ -548,8 +545,8 @@ int appTcpConnManagerStop(void)
 
     if (OS_INVALID_TASK_ID != gs_tcpTaskId)
     {
-        DEBUG_INFO("TCP Connection Stopped");
-        APP_LOG_REC(g_sysLoggerID, "TCP Connection Stopped");
+        DEBUG_INFO("->[I] TCP Connection Stopped");
+        APP_LOG_REC(g_sysLoggerID, "[E]AppTcpConnMngr: TCP Connection Stopped");
 
         appTskMngDelete(&gs_tcpTaskId);
         gs_tcpTaskId = OS_INVALID_TASK_ID;
@@ -605,7 +602,7 @@ int appTcpConnManagerRequestConnect(void)
 int appTcpConnManagerRequestDisconnect(void)
 {
     gs_taskList.taskKeepDisconnect = TRUE;
-    DEBUG_DEBUG("User requested to disconnect, push and pull sock will be closed");
+    DEBUG_DEBUG("->[D] User requested to disconnect, push and pull sock will be closed");
 
     return RET_SUCCESS;
 }
@@ -619,15 +616,15 @@ int appTcpConnManagerSend(const char *ch, const char *data, unsigned int dataLen
         if (FALSE == appTcpConnManagerIsConnectedPush())
         {
             gs_taskList.taskConnectPush = TRUE;
-            DEBUG_DEBUG("Push sock will be open and data will be sent");
+            DEBUG_WARNING("->[W] Push Socket not connected, Push send error");
         }
         else
         {
             retVal = RET_SUCCESS;
             if (SEND(gs_connInfo.pushSockID, data, dataLeng, 0) < 0)
             {
-                DEBUG_ERROR("Push sock data not sent !");
-                APP_LOG_REC(g_sysLoggerID, "Push sock data not sent !");
+                DEBUG_ERROR("->[E] Push sock data could not sent !");
+                APP_LOG_REC(g_sysLoggerID, "[E]AppTcpConnMngr: Push sock data could not sent !");
                 retVal = RET_FAILURE;
             }
         }
@@ -639,8 +636,8 @@ int appTcpConnManagerSend(const char *ch, const char *data, unsigned int dataLen
             retVal = RET_SUCCESS;
             if (SEND(gs_connInfo.clientSocList[0], data, dataLeng, 0) < 0)
             {
-                DEBUG_ERROR("Pull sock data not sent !");
-                APP_LOG_REC(g_sysLoggerID, "Pull sock data not sent !");
+                DEBUG_ERROR("->[E] Pull sock data not sent !");
+                APP_LOG_REC(g_sysLoggerID, "[E]AppTcpConnMngr: Pull sock data not sent !");
                 
                 retVal = RET_FAILURE;
             }

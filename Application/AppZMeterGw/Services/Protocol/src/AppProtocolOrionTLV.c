@@ -1370,9 +1370,23 @@ static void processAliveSession(OrionSession_t *session)
             else 
             {
                 DEBUG_DEBUG("->[D] OrionTLV: alive sent (trans %u)", session->transNumber);
+                session->timeCnt = 0;
+                session->step    = 2;
             }       
+            
+            break;
+        }
+        case 2:
+        {
+            if (session->rxReady) //wait for ACK/NACK
+            {
+                session->rxReady = FALSE;
+                session->rxLen   = 0;
+                
+                completeSession(session, SESSION_DONE, NULL);
+                sessionDelete(session);
+            }
 
-            sessionDelete(session);
             break;
         }
     }    
