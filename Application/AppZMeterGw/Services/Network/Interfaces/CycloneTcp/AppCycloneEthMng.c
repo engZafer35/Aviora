@@ -47,7 +47,7 @@ static void cycloneEthPeriodicInfoCb (NetInterface *interface, bool_t linkState)
 {
     DBUS_PACKET dbPacket;
     
-    DEBUG_INFO("Publishing Eth Data");
+    DEBUG_INFO("Publishing Eth Data %s - link state %d", interface->name, linkState);
 
     dbPacket.packetID   = 0;
     dbPacket.pri        = EN_PRIORITY_MED;
@@ -213,8 +213,8 @@ RETURN_STATUS appCycloneEthMngStart(void)
     }
 
     //return value of timer is not critical, so we do not check it
-    middEventTimerRegister(&gs_cycloneEthTimerId, cycloneEthPeriodicInfoCb, WAIT_1_MIN , TRUE);
-    middEventTimerStart(gs_cycloneEthTimerId);
+//    middEventTimerRegister(&gs_cycloneEthTimerId, cycloneEthPeriodicInfoCb, WAIT_1_MIN , TRUE);
+//    middEventTimerStart(gs_cycloneEthTimerId);
 
     if (SUCCESS == retVal)
     {
