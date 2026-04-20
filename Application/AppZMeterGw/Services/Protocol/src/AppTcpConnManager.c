@@ -449,8 +449,8 @@ static void tcpConnectionThread(void *arg)
                         if (error == 0 || (EWOULDBLOCK == error))
                         {
                             DEBUG_DEBUG("->[D] Push socket connected successfully");
-                            int fl = FCNTL(gs_connInfo.pushSockID, F_GETFL, 0);
-                            FCNTL(gs_connInfo.pushSockID, F_SETFL, fl & ~O_NONBLOCK);
+                            //int fl = FCNTL(gs_connInfo.pushSockID, F_GETFL, 0);
+                            //FCNTL(gs_connInfo.pushSockID, F_SETFL, fl & ~O_NONBLOCK);
                         }
                         else
                         {

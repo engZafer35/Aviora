@@ -114,7 +114,7 @@ typedef sem_t OsSemaphore;
  * @brief Mutex object
  **/
 
-typedef pthread_mutex_t OsMutex;
+typedef pthread_mutex_t ZOsMutex;
 
 /**
  * Task info
@@ -168,10 +168,10 @@ int zosWaitForSemaphore(OsSemaphore *semaphore, systime_t timeout);
 void zosReleaseSemaphore(OsSemaphore *semaphore);
 
 //Mutex management
-int zosCreateMutex(OsMutex *mutex);
-void zosDeleteMutex(OsMutex *mutex);
-void zosAcquireMutex(OsMutex *mutex);
-void zosReleaseMutex(OsMutex *mutex);
+int zosCreateMutex(ZOsMutex *mutex);
+void zosDeleteMutex(ZOsMutex *mutex);
+void zosAcquireMutex(ZOsMutex *mutex);
+void zosReleaseMutex(ZOsMutex *mutex);
 
 //System time
 systime_t osGetSystemTime(void);
@@ -266,7 +266,7 @@ void zosEventGroupDelete(ZOsEventGroup ev);
  * @param[in] flags Event flags to set
  * @return The function returns TRUE if the operation succeeded, FALSE on error
  */
-int zosEventGroupSet(ZOsEventGroup ev, uint32_t flags);
+int zosEventGroupSet(ZOsEventGroup ev, U32 flags);
 
 
 /**
@@ -275,7 +275,7 @@ int zosEventGroupSet(ZOsEventGroup ev, uint32_t flags);
  * @param[in] flags Event flags to clear
  * @return The function returns TRUE if the operation succeeded, FALSE on error
  */
-int zosEventGroupClear(ZOsEventGroup ev, uint32_t flags);
+int zosEventGroupClear(ZOsEventGroup ev, U32 flags);
 
 /**
  * @brief Wait for event flags
@@ -285,7 +285,7 @@ int zosEventGroupClear(ZOsEventGroup ev, uint32_t flags);
  * @param[in] options Wait options (OS_EVENT_WAIT_ALL, OS_EVENT_CLEAR)
  * @return The function returns the current value of the event flags if the specified flags were set, 0 on timeout, -1 on error
  */
-int zosEventGroupWait(ZOsEventGroup ev, uint32_t flags, uint32_t timeoutMs, uint32_t options);
+int zosEventGroupWait(ZOsEventGroup ev, U32 flags, U32 timeoutMs, U32 options);
 
 
 

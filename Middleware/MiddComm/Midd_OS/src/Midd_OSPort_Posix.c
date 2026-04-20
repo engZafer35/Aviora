@@ -68,7 +68,10 @@ void zosInitKernel(void)
 
 void zosStartKernel(void)
 {
-   //Not implemented
+    while("linux-tasks-running")
+    {
+        sleep(60);
+    }
 }
 
 
@@ -478,7 +481,7 @@ void zosReleaseSemaphore(OsSemaphore *semaphore)
  *   created. Otherwise, FALSE is returned
  **/
 
-int zosCreateMutex(OsMutex *mutex)
+int zosCreateMutex(ZOsMutex *mutex)
 {
    int ret;
 
@@ -502,7 +505,7 @@ int zosCreateMutex(OsMutex *mutex)
  * @param[in] mutex Pointer to the mutex object
  **/
 
-void zosDeleteMutex(OsMutex *mutex)
+void zosDeleteMutex(ZOsMutex *mutex)
 {
    //Properly dispose the mutex object
    pthread_mutex_destroy(mutex);
@@ -514,7 +517,7 @@ void zosDeleteMutex(OsMutex *mutex)
  * @param[in] mutex Pointer to the mutex object
  **/
 
-void zosAcquireMutex(OsMutex *mutex)
+void zosAcquireMutex(ZOsMutex *mutex)
 {
    //Obtain ownership of the mutex object
    pthread_mutex_lock(mutex);
@@ -526,7 +529,7 @@ void zosAcquireMutex(OsMutex *mutex)
  * @param[in] mutex Pointer to the mutex object
  **/
 
-void zosReleaseMutex(OsMutex *mutex)
+void zosReleaseMutex(ZOsMutex *mutex)
 {
    //Release ownership of the mutex object
    pthread_mutex_unlock(mutex);
@@ -648,7 +651,7 @@ typedef struct
 {
     pthread_mutex_t mutex;
     pthread_cond_t cond;
-    uint32_t flags;
+    U32 flags;
 } OsEventInternal;
 
 /* Create */
@@ -662,7 +665,7 @@ ZOsEventGroup zosEventGroupCreate(void)
     pthread_cond_init(&e->cond, NULL);
     e->flags = 0;
 
-    return (OsEventGroup)e;
+    return (ZOsEventGroup)e;
 }
 
 /* Delete */
@@ -678,7 +681,7 @@ void zosEventGroupDelete(ZOsEventGroup ev)
 }
 
 /* Set */
-int zosEventGroupSet(ZOsEventGroup ev, uint32_t flags)
+int zosEventGroupSet(ZOsEventGroup ev, U32 flags)
 {
     OsEventInternal *e = (OsEventInternal*)ev;
 
@@ -693,7 +696,7 @@ int zosEventGroupSet(ZOsEventGroup ev, uint32_t flags)
 }
 
 /* Clear */
-int zosEventGroupClear(ZOsEventGroup ev, uint32_t flags)
+int zosEventGroupClear(ZOsEventGroup ev, U32 flags)
 {
     OsEventInternal *e = (OsEventInternal*)ev;
 
@@ -707,17 +710,14 @@ int zosEventGroupClear(ZOsEventGroup ev, uint32_t flags)
 }
 
 /* Wait */
-int zosEventGroupWait(ZOsEventGroup ev,
-                uint32_t flags,
-                uint32_t timeoutMs,
-                uint32_t options)
+int zosEventGroupWait(ZOsEventGroup ev, U32 flags, U32 timeoutMs, U32 options)
 {
     OsEventInternal *e = (OsEventInternal*)ev;
 
     if (!e) return -1;
 
-    int waitAll = (options & OS_EVENT_WAIT_ALL);
-    int clear   = (options & OS_EVENT_CLEAR);
+    int waitAll = (options & ZOS_EVENT_WAIT_ALL);
+    int clear   = (options & ZOS_EVENT_CLEAR);
 
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
