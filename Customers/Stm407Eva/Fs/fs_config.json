@@ -4,8 +4,38 @@
     "releaseDate": "2026-04-13",
     "store": {
       "useStore": true,
-      "activeFsName": "flashfs",
+      "activeFsName": "flashMcuLDC",
       "fsLib": {
+          "flashMcuLDC": {
+          "use": true,
+          "name": "flashMcuLDC",
+          "flash": {
+            "type": "mcu_internal",
+            "chipName": "stm32f407",
+            "flashSectorSize": 16384,
+            "flashProgMinSize": 4,
+            "geometryLog": {
+              "baseAddr": "0x080C0000",
+              "size": 131072
+            },
+            "geometrySensorData": {
+              "baseAddr": "0x080E0000",
+              "size": 131072
+            },
+            "geometryConfig": {
+              "baseAddr": "0x080A0000",
+              "size": 131072
+            }
+          },
+          "flashHwFunc": {
+            "_comment": "User must implement these functions to read/prog/erase/sync",
+            "drvSrcPath": "McuCoreDrivers/inc/McuInternalFlashDrv_Stm32f407.h",
+            "readFunc": "internalStm32f407FlashRead",
+            "writeFunc": "internalStm32f407FlashProg",
+            "eraseFunc": "internalStm32f407FlashErase",
+            "syncFunc": "internalStm32f407FlashSync"
+          }            
+        },
         "flashlink": {
           "use": true,          
           "name": "flashlink",
@@ -31,7 +61,7 @@
           }        
         },
         "fatfs": {
-          "use": true,
+          "use": false,
           "name": "fatfs",
           "flash": {
             "type": "nor",
@@ -77,7 +107,7 @@
             }
           },
           "osHelper": {
-            "path": "Middleware/MiddComm/Midd_FS/fs/fs_littlefs_helper_func.h",
+            "path": "MiddComm/Midd_FS/fs/fs_littlefs_helper_func.h",
             "mutexCreate": "fsHelperMutexCreate",
             "mutexDelete": "fsHelperMutexDelete",
             "mutexLock": "fsHelperMutexLock",
@@ -105,7 +135,7 @@
             }
           },
           "flashHwFunc": {
-            "drvSrcPath": "Driver/McuCoreDrivers/inc/McuInternalFlashDrv_Stm32f407.h",
+            "drvSrcPath": "McuCoreDrivers/inc/McuInternalFlashDrv_Stm32f407.h",
             "readFunc": "internalStm32f407FlashRead",
             "writeFunc": "internalStm32f407FlashProg",
             "eraseFunc": "internalStm32f407FlashErase",

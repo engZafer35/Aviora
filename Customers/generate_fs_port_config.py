@@ -16,6 +16,7 @@ from pathlib import Path
 
 # Map fs name (from activeFsName) -> USE_ macro
 FS_NAME_TO_MACRO = {
+    "flashMcuLDC": "USE_MCUFLASH_LDC",
     "fatfs":       "USE_FATFS",
     "littlefs":    "USE_LITTLEFS",
     "flashfs":     "USE_FLASHFS",
@@ -30,7 +31,7 @@ def generate_cus_fs_port_config_h(cfg: dict, customer: str, script_name: str) ->
     release_date = cfg.get("releaseDate", "")
     store = cfg.get("store", {})
     use_store = store.get("useStore", False)
-    active_fs_name = store.get("activeFsName", "").strip().lower()
+    active_fs_name = store.get("activeFsName", "")
     print(f"\033[92mSELECTED FS NAME: {active_fs_name}\033[0m")
     fs_lib = store.get("fsLib", {})
     fs_config = fs_lib.get(active_fs_name) if active_fs_name else None    
@@ -74,12 +75,16 @@ def generate_cus_fs_port_config_h(cfg: dict, customer: str, script_name: str) ->
     else:
         use_macro = FS_NAME_TO_MACRO.get(active_fs_name, "USE_CUSTOM_FS")
         lines.append(f"#define {use_macro} 1")
+        lines.append(f"#define FS_NAME \"{active_fs_name}\"")
     lines.append("")
 
     # FS type selection block
     lines.append("/****************************** INCLUDE FS *******************************/")
     lines.append("//FatFs port?")
-    lines.append("#if defined(USE_FATFS)")
+    lines.append("#if defined(USE_MCUFLASH_LDC)")
+    lines.append("   #include \"fs_flash_new_stm.h\"")
+    lines.append("//FatFs port?")
+    lines.append("#elif defined(USE_FATFS)")
     lines.append("   #include \"fs_port_fatfs.h\"")
     lines.append("//littleFS port?")
     lines.append("#elif defined(USE_LITTLEFS)")
@@ -106,6 +111,8 @@ def generate_cus_fs_port_config_h(cfg: dict, customer: str, script_name: str) ->
     lines.append("")
 
     # MACRO DEFINITIONS - only when fs is valid and flashlink
+    if use_store and fs_config is not None and active_fs_name == "flashMcuLDC":
+        _append_flashMcuLDC_defines(lines, fs_config)    
     if use_store and fs_config is not None and active_fs_name == "flashlink":
         _append_flashlink_defines(lines, fs_config)
     elif use_store and fs_config is not None and active_fs_name == "fatfs":
@@ -127,6 +134,95 @@ def generate_cus_fs_port_config_h(cfg: dict, customer: str, script_name: str) ->
     lines.append("#endif /* __CUS_FS_PORT_CONFIG_H__ */")
     lines.append("")
     return "\n".join(lines)
+
+def _append_flashMcuLDC_defines(lines: list, fs: dict) -> None:
+    """Append FlashMcuLDC-specific defines from fs config."""
+
+    flash = fs.get("flash", {})
+    geometry_log = flash.get("geometryLog", {})
+    geometry_sensor_data = flash.get("geometrySensorData", {})
+    geometry_config = flash.get("geometryConfig", {})   
+
+    flshType = flash.get("type", "")
+    chipName = flash.get("chipName", "")
+    flashSectorSize = int(flash.get("flashSectorSize", 0))
+    flashProgMinSize = int(flash.get("flashProgMinSize", 0))
+
+    hw_func = fs.get("flashHwFunc", {})
+    drv_src_path = hw_func.get("drvSrcPath", "")
+    read_func = hw_func.get("readFunc", "NOT_FOUND_FUNC");
+    write_func = hw_func.get("writeFunc", "NOT_FOUND_FUNC");
+    erase_func = hw_func.get("eraseFunc", "NOT_FOUND_FUNC");
+    sync_func = hw_func.get("syncFunc", "NOT_FOUND_FUNC"); 
+
+    print(f"--------------------------------")
+    print(f"\033[96mflashType: \033[0m{flshType}")
+    print(f"\033[96mchipName: \033[0m{chipName}")
+    print(f"\033[96mflashSectorSize: \033[0m{flashSectorSize}")
+    print(f"\033[96mflashProgMinSize: \033[0m{flashProgMinSize}")
+    print(f"--------------------------------")
+
+    logBaseAddr = geometry_log.get("baseAddr", "0x00000000")
+    logSize = int(geometry_log.get("size", 0))
+    sensorDataBaseAddr = geometry_sensor_data.get("baseAddr", "0x00000000")
+    sensorDataSize = int(geometry_sensor_data.get("size", 0))
+    configBaseAddr = geometry_config.get("baseAddr", "0x00000000")
+    configSize = int(geometry_config.get("size", 0))
+
+    print(f"--------------------------------")
+    print(f"\033[96mLog Base Addr: \033[0m{logBaseAddr}")
+    print(f"\033[96mLog Size: \033[0m{logSize}")
+    print(f"\033[96mSensor Data Base Addr: \033[0m{sensorDataBaseAddr}")
+    print(f"\033[96mSensor Data Size: \033[0m{sensorDataSize}")
+    print(f"\033[96mConfig Base Addr: \033[0m{configBaseAddr}")
+    print(f"\033[96mConfig Size: \033[0m{configSize}")
+    print(f"--------------------------------")
+
+    lines.append("/****************************** HW DRIVER INCLUDE *******************************/")
+    lines.append(f"#include \"{drv_src_path}\"")
+    lines.append("")
+    lines.append("/****************************** MACRO DEFINITIONS *******************************/")   
+    lines.append(f"#define FS_NAME  \"{fs.get('name', '')}\"")
+    lines.append(f"#define FS_TYPE  \"{flash.get('type', '')}\"")
+    lines.append(f'#define CHIP_NAME  \"{flash.get("chipName", "")}\"')
+    lines.append("")
+    lines.append(f"#define FLASH_MCU_SECTOR_SIZE        ({flashSectorSize})")
+    lines.append(f"#define FLASH_MCU_PROG_MIN_SIZE      ({flashProgMinSize})")
+    lines.append("")
+    lines.append(f"#define FLASH_MCU_LOG_BASE_ADDR      ({logBaseAddr})")
+    lines.append(f"#define FLASH_MCU_LOG_REGION_SIZE    ({logSize})")
+    lines.append(f"#define FLASH_MCU_DATA_BASE_ADDR     ({sensorDataBaseAddr})")
+    lines.append(f"#define FLASH_MCU_DATA_REGION_SIZE   ({sensorDataSize})")
+    lines.append(f"#define FLASH_MCU_CONFIG_BASE_ADDR   ({configBaseAddr})")
+    lines.append(f"#define FLASH_MCU_CONFIG_REGION_SIZE ({configSize})")
+    lines.append("")
+    lines.append(f"#define STORAGE_DRV_FUNC_READ    {read_func}")
+    lines.append(f"#define STORAGE_DRV_FUNC_PROG    {write_func}")
+    lines.append(f"#define STORAGE_DRV_FUNC_ERASE   {erase_func}")
+    lines.append(f"#define STORAGE_DRV_FUNC_SYNC    {sync_func}")
+    lines.append("")    
+    lines.append(
+            """#define FS_HARDWARE_INIT(error_out)\\
+                        do {\\
+                            FlashNewStmGeom geom = {\\
+                                .ops = {\\
+                                    .read  = STORAGE_DRV_FUNC_READ,\\
+                                    .prog  = STORAGE_DRV_FUNC_PROG,\\
+                                    .erase = STORAGE_DRV_FUNC_ERASE,\\
+                                    .sync  = STORAGE_DRV_FUNC_SYNC,\\
+                                },\\
+                                .cfgBase    = FLASH_MCU_CONFIG_BASE_ADDR,\\
+                                .cfgSize    = FLASH_MCU_CONFIG_REGION_SIZE,\\
+                                .logBase    = FLASH_MCU_LOG_BASE_ADDR,\\
+                                .logSize    = FLASH_MCU_LOG_REGION_SIZE,\\
+                                .dataBase   = FLASH_MCU_DATA_BASE_ADDR,\\
+                                .dataSize   = FLASH_MCU_DATA_REGION_SIZE,\\
+                                .sectorSize = FLASH_MCU_SECTOR_SIZE,\\
+                                .progMin    = FLASH_MCU_PROG_MIN_SIZE,\\
+                            };\\
+                            error_out = flashNewStmConfigure(&geom);\\
+                        } while (0)"""
+        )
 
 
 def _append_flashlink_defines(lines: list, fs: dict) -> None:
@@ -189,25 +285,25 @@ def _append_flashlink_defines(lines: list, fs: dict) -> None:
     lines.append("")
 
     lines.append(
-        """#define FS_HARDWARE_INIT(error_out) \\                   
-                    do { \\                        
-                        FlashLinkOps ops = { \\
-                            .read = STORAGE_DRV_FUNC_READ, \\
-                            .prog = STORAGE_DRV_FUNC_PROG, \\
-                            .erase = STORAGE_DRV_FUNC_ERASE, \\
-                            .sync = STORAGE_DRV_FUNC_SYNC \\
-                        }; \\                        
-                        FlashLinkConfig cfg = { \\
-                            .baseAddr = FLASHLINK_BASE_ADDR, \\
-                            .regionSize = FLASHLINK_REGION_SIZE, \\
-                            .cellCount = FLASHLINK_CELL_COUNT, \\
-                            .eraseBlockSize = FLASHLINK_ERASE_BLOCK_SIZE \\
-                        }; \\                        
-                        error_out = flashLinkInit(&ops, &cfg); \\
-                        if(NO_ERROR == error_out) \\
-                        { \\
-                            error_out = flashLinkFormat(); \\ 
-                        }\\                                               
+        """#define FS_HARDWARE_INIT(error_out)\\
+                    do {\\
+                        FlashLinkOps ops = {\\
+                            .read = STORAGE_DRV_FUNC_READ,\\
+                            .prog = STORAGE_DRV_FUNC_PROG,\\
+                            .erase = STORAGE_DRV_FUNC_ERASE,\\
+                            .sync = STORAGE_DRV_FUNC_SYNC\\
+                        };\\
+                        FlashLinkConfig cfg = {\\
+                            .baseAddr = FLASHLINK_BASE_ADDR,\\
+                            .regionSize = FLASHLINK_REGION_SIZE,\\
+                            .cellCount = FLASHLINK_CELL_COUNT,\\
+                            .eraseBlockSize = FLASHLINK_ERASE_BLOCK_SIZE\\
+                        };\\
+                        error_out = flashLinkInit(&ops, &cfg);\\
+                        if(NO_ERROR == error_out)\\
+                        {\\
+                            error_out = flashLinkFormat();\\
+                        }\\              
                     } while (0)"""
     )
 
@@ -269,9 +365,9 @@ def _append_fatfs_defines(lines: list, fs: dict) -> None:
     lines.append(f"#define STORAGE_DRV_FUNC_SYNC    {sync_func}")
     lines.append("")
     lines.append(
-    """#define FS_HARDWARE_INIT(error_out) \\                   
-                do { \\                        
-                    error_out = NO_ERROR; \\                                          
+    """#define FS_HARDWARE_INIT(error_out)\\                   
+                do {\\                        
+                    error_out = NO_ERROR;\\                                          
                 } while (0)"""
     )
 
@@ -378,18 +474,18 @@ def _append_littlefs_defines(lines: list, fs: dict) -> None:
     lines.append(f"#include \"{os_helper_path}\"")
     lines.append("")
     lines.append(
-    """#define FS_HARDWARE_INIT(error_out) \\                   
-                do { \\
-                    error_out = ERROR_FAILURE;
-                    //initialize the storage driver                    
-                    if(0 == STORAGE_DRV_FUNC_INIT()) \\
-                    { \\
-                         //just create the mutex for littlefs, fsInit() function  \\
-                        if(TRUE == LITTLEFS_MUTEX_CREATE();) \\
-                        { \\
-                            error_out = NO_ERROR; \\
-                        } \\
-                    } \\                    
+    """#define FS_HARDWARE_INIT(error_out)\\                   
+                do {\\
+                    error_out = ERROR_FAILURE;\\
+                    //initialize the storage driver\\
+                    if(0 == STORAGE_DRV_FUNC_INIT())\\
+                    {\\
+                         //just create the mutex for littlefs, fsInit() function\\
+                        if(TRUE == LITTLEFS_MUTEX_CREATE();)\\
+                        {\\
+                            error_out = NO_ERROR;\\
+                        }\\
+                    }\\                    
                 } while (0)"""
     )
 
@@ -442,24 +538,24 @@ def _append_flashfs_defines(lines: list, fs: dict) -> None:
     lines.append("")
 
     lines.append(
-        """#define FS_HARDWARE_INIT(error_out) \\                   
-                    do { \\                        
-                        FlashFsOps ops = { \\
-                            .read = STORAGE_DRV_FUNC_READ, \\
-                            .prog = STORAGE_DRV_FUNC_PROG, \\
-                            .erase = STORAGE_DRV_FUNC_ERASE, \\
-                            .sync = STORAGE_DRV_FUNC_SYNC \\
-                        }; \\                        
-                        FlashFsGeom cfg = { \\
-                            .baseAddr = FLASHFS_BASE_ADDR, \\
-                            .totalSize = FLASHFS_TOTAL_SIZE, \\
-                            .eraseBlockSize = FLASHFS_ERASE_BLOCK_SIZE, \\
-                            .progMinSize = FLASHFS_PROG_MIN_SIZE \\
-                        }; \\                        
-                        error_out = flashFsConfigure(&ops, &cfg); \\
-                        if(NO_ERROR == error_out) \\
-                        { \\
-                            error_out = flashFsFormat(); \\ 
+        """#define FS_HARDWARE_INIT(error_out)\\                   
+                    do {\\                        
+                        FlashFsOps ops = {\\
+                            .read = STORAGE_DRV_FUNC_READ,\\
+                            .prog = STORAGE_DRV_FUNC_PROG,\\
+                            .erase = STORAGE_DRV_FUNC_ERASE,\\
+                            .sync = STORAGE_DRV_FUNC_SYNC\\
+                        };\\                        
+                        FlashFsGeom cfg = {\\
+                            .baseAddr = FLASHFS_BASE_ADDR,\\
+                            .totalSize = FLASHFS_TOTAL_SIZE,\\
+                            .eraseBlockSize = FLASHFS_ERASE_BLOCK_SIZE,\\
+                            .progMinSize = FLASHFS_PROG_MIN_SIZE\\
+                        };\\
+                        error_out = flashFsConfigure(&ops, &cfg);\\
+                        if(NO_ERROR == error_out)\\
+                        {\\
+                            error_out = flashFsFormat();\\
                         }\\
                     } while (0)"""
     )
@@ -478,9 +574,9 @@ def _append_pc_simulator_defines(lines: list, fs: dict) -> None:
     lines.append(f"#define PC_SIMULATOR_ROOT_PATH \"{root_path}\"")
     lines.append("")
     lines.append(
-    """#define FS_HARDWARE_INIT(error_out) \\                   
-                do { \\                        
-                    error_out = NO_ERROR; \\                                          
+    """#define FS_HARDWARE_INIT(error_out)\\
+                do {\\
+                    error_out = NO_ERROR;\\
                 } while (0)"""
     )
 

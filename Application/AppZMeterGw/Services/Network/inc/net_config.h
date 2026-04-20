@@ -35,7 +35,7 @@
  * In order to use Cyclone lib, set USE_CYCLONE_LIB to ENABLE
  * Otherwise, Posix socket lib will be used.
  */
-#define USE_CYCLONE_LIB  0
+#define USE_CYCLONE_LIB  1
 
 #if USE_CYCLONE_LIB == 1
 
