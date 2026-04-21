@@ -187,6 +187,9 @@ typedef void (*InterruptCallback)(_EN_INTERRUPT_LIST intList);
 
 #define _TOGGLE_JOB_STATUS_LED()        _GPIO_TOGGLE(LD4_GPIO_Port, LD4_Pin)
 
+#define _TOGGLE_GSM_CONN()               _GPIO_TOGGLE(NETWORK_STAT_LED_GPIO_Port, NETWORK_STAT_LED_Pin)
+#define _GSM_CONN_LED(x)                _WRITE_GPIO(NETWORK_STAT_LED_GPIO_Port, NETWORK_STAT_LED_Pin, x)
+
 #define _CORE_EXT_IT_FUNCTION     		void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 /********************* BOARD I2C CONTROL ******************/

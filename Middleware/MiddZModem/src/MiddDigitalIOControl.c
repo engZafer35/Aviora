@@ -133,7 +133,7 @@ RETURN_STATUS middIOWrite(EN_OUT_LIST out, BOOL stat)
 //        case EN_OUT_GSM_LED_4:        GSM_LEVEL_LED_4(stat);  break;
 //        case EN_OUT_GSM_LED_5:        GSM_LEVEL_LED_5(stat);  break;
 //
-//        case EN_OUT_GSM_CONN_LED:     GSM_CONN_LED(stat);         break;
+        case EN_OUT_GSM_CONN_LED:     GSM_CONN_LED(stat);         break;
 //        case EN_OUT_GSM_INTERNET_LED: GSM_INTERNET_LED(stat);     break;
 //
         default: retVal = FAILURE;
@@ -183,7 +183,7 @@ RETURN_STATUS middIOCtrlToggleLed(EN_OUT_LIST out)
 //        case EN_OUT_GSM_LED_4:      TOGGLE_GSM_LEVEL_LED_4();    break;
 //        case EN_OUT_GSM_LED_5:      TOGGLE_GSM_LEVEL_LED_5();    break;
 //
-//        case EN_OUT_GSM_CONN_LED:       TOGGLE_GSM_CONN();           break;
+        case EN_OUT_GSM_CONN_LED:       TOGGLE_GSM_CONN();           break;
 //        case EN_OUT_GSM_INTERNET_LED:   TOGGLE_GSM_INTERNET();       break;
 //
         default: retVal = FAILURE;
