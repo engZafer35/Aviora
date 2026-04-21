@@ -482,6 +482,8 @@ static ERR_CODE_T iecSaveMeterIdFile(S32 taskId, const char *line)
                : EN_ERR_CODE_FAILURE;
 }
 
+#include "MiddDigitalIOControl.h"
+
 /**
  * IEC 62056-21 readout flow (TCP meter sim):
  *  1. Send /?!\r\n  →  receive /identification\r\n  →  save as taskId_meterID.txt
@@ -495,7 +497,7 @@ static ERR_CODE_T iecDoReadout(S32 taskId)
     if (sendAll((const U8 *)"/?!\r\n", 5U, IEC_LINE_TIMEOUT_MS) != 0)
         return EN_ERR_CODE_METER_COMM_LINE_ERROR;
 
-    char line[384];
+    U8 line[384];
     ERR_CODE_T e = recvLine(line, sizeof(line), IEC_LINE_TIMEOUT_MS);
     if (e != EN_ERR_CODE_SUCCESS)
         return e;
@@ -513,22 +515,32 @@ static ERR_CODE_T iecDoReadout(S32 taskId)
     if (f == NULL)
         return EN_ERR_CODE_FAILURE;
 
+    S32 rr;
+    U32 got;
+    BOOL received = FALSE;
     for (;;)
     {
-        e = recvLine(line, sizeof(line), IEC_LINE_TIMEOUT_MS * 3U);
-        if (e != EN_ERR_CODE_SUCCESS)
+        got = sizeof(line);
+        rr = s_meterIf.meterCommReceive(line, &got, IEC_BYTE_TIMEOUT_MS);
+        DEBUG_INFO("->[I] Readout received bytes: %d - %d", (int)rr, (int)got);
+        if ((rr <= 0) || (got == 0))
         {
+            middIOWrite(EN_OUT_GSM_CONN_LED, FALSE);
             fsCloseFile(f);
-            return e;
+            if (FALSE == received)
+                return EN_ERR_CODE_METER_COMM_LINE_ERROR;
+            else
+                return EN_ERR_CODE_SUCCESS;
         }
-        if (line[0] == '\0')
-            continue;
-        if (line[0] == '!' && line[1] == '\0')
-            break;
-        fsWriteFile(f, line, strlen(line));
-        fsWriteFile(f, (void *)"\n", 1);
+
+        fsWriteFile(f, line, got);
+        received = TRUE;
+        middIOCtrlToggleLed(EN_OUT_GSM_CONN_LED);
     }
+
     fsCloseFile(f);
+    middIOWrite(EN_OUT_GSM_CONN_LED, FALSE);
+
     return EN_ERR_CODE_SUCCESS;
 }
 
@@ -548,7 +560,7 @@ static ERR_CODE_T iecDoProfile(S32 taskId, const char *t0, const char *t1)
     if (sendAll((const U8 *)"/?!\r\n", 5U, IEC_LINE_TIMEOUT_MS) != 0)
         return EN_ERR_CODE_METER_COMM_LINE_ERROR;
 
-    char line[1024];
+    U8 line[1024];
     ERR_CODE_T e = recvLine(line, sizeof(line), IEC_LINE_TIMEOUT_MS);
     if (e != EN_ERR_CODE_SUCCESS)
         return e;
@@ -573,32 +585,25 @@ static ERR_CODE_T iecDoProfile(S32 taskId, const char *t0, const char *t1)
     {
         got = sizeof(line);
         rr = s_meterIf.meterCommReceive(line, &got, IEC_BYTE_TIMEOUT_MS);
-        DEBUG_INFO("->[I] Meter received bytes: %d - %d", (int)rr, (int)got);
+        DEBUG_INFO("->[I] LoadProfile bytes: %d - %d", (int)rr, (int)got);
         if ((rr <= 0) || (got == 0))
         {
+            middIOWrite(EN_OUT_GSM_CONN_LED, FALSE);
             fsCloseFile(f);
             if (FALSE == received)
                 return EN_ERR_CODE_METER_COMM_LINE_ERROR;
             else
                 return EN_ERR_CODE_SUCCESS;
         }
-        /*
-        e = recvLine(line, sizeof(line), IEC_LINE_TIMEOUT_MS * 6U);
-        if (e != EN_ERR_CODE_SUCCESS)
-        {
-            fsCloseFile(f);
-            return e;
-        }
-        if (line[0] == '\0')
-            continue;
-        if (strcmp(line, "!") == 0)
-            break;
-            */
+
         fsWriteFile(f, line, got);
         received = TRUE;
-        //fsWriteFile(f, (void *)"\n", 1);
+        middIOCtrlToggleLed(EN_OUT_GSM_CONN_LED);
     }
+
     fsCloseFile(f);
+    middIOWrite(EN_OUT_GSM_CONN_LED, FALSE);
+
     return EN_ERR_CODE_SUCCESS;
 }
 
@@ -723,15 +728,6 @@ RETURN_STATUS appMeterOperationsStart(MeterCommInterface_t *meterComm)
 
 /* ---- Meter registration ---- */
 
-void initMeterTest(void)
-{
-    zosCreateMutex(&s_meterRegMux);
-    zosCreateMutex(&s_directiveMux);
-    zosCreateMutex(&s_taskMux);
-
-    meterListRefreshCount();
-    directiveIndexLoad();
-}
 RETURN_STATUS appMeterOperationsAddMeter(MeterData_t *meterData)
 {
     char path[MAX_PATH_LEN];
@@ -931,7 +927,11 @@ S32 appMeterOperationsAddReadoutTask(const char *request, Callback_t callback)
 
     MeterData_t tmp;
     if (SUCCESS != appMeterOperationsGetMeterData(serial, &tmp))
+    {
+        DEBUG_ERROR("->[E] %s meter could not found in the meter list", serial);
+        APP_LOG_REC(g_sysLoggerID, "AppMeterOpr: Readout Meter not found");
         return (S32)EN_ERR_CODE_METER_NOT_FOUND;
+    }
 
     S32 tid = taskSlotAlloc();
     if (tid < 0)
