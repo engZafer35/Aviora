@@ -147,7 +147,6 @@ void zosDelayTask(systime_t delay)
    vTaskDelay(OS_MS_TO_SYSTICKS(delay));
 }
 
-
 /**
  * @brief Yield control to the next task
  **/
@@ -653,8 +652,76 @@ int zosEventGroupWait(ZOsEventGroup ev, uint32_t flags, uint32_t timeoutMs, uint
 }
 
 
+static void zosTimerAdapter(TimerHandle_t xTimer)
+{
+   ZOsTimer *t = (ZOsTimer *) pvTimerGetTimerID(xTimer);
 
+   if(t && t->arg)
+   {
+      ZOsTimerCallback cb = (ZOsTimerCallback)t->arg;
+      cb(t);
+   }
+}
 
+bool_t zosCreateTimer(ZOsTimer *timer, const char *name,
+                      systime_t period, bool_t autoReload,
+                      ZOsTimerCallback callback, void *arg)
+{
+   if(timer == NULL || callback == NULL)
+      return FALSE;
+
+   timer->arg = (void *)callback;
+
+#if (configSUPPORT_STATIC_ALLOCATION == 1)
+   timer->handle = xTimerCreateStatic(
+      name,
+      period,
+      autoReload ? pdTRUE : pdFALSE,
+      (void *)timer,
+      zosTimerAdapter,
+      &timer->buffer
+   );
+#else
+   timer->handle = xTimerCreate(
+      name,
+      period,
+      autoReload ? pdTRUE : pdFALSE,
+      (void *)timer,
+      zosTimerAdapter
+   );
+#endif
+
+   return (timer->handle != NULL) ? TRUE : FALSE;
+}
+
+bool_t zosStartTimer(ZOsTimer *timer)
+{
+   return (xTimerStart(timer->handle, 0) == pdPASS);
+}
+
+bool_t zosStopTimer(ZOsTimer *timer)
+{
+   return (xTimerStop(timer->handle, 0) == pdPASS);
+}
+
+bool_t zosResetTimer(ZOsTimer *timer)
+{
+   return (xTimerReset(timer->handle, 0) == pdPASS);
+}
+
+bool_t zosChangeTimerPeriod(ZOsTimer *timer, systime_t newPeriod)
+{
+   return (xTimerChangePeriod(timer->handle, newPeriod, 0) == pdPASS);
+}
+
+void zosDeleteTimer(ZOsTimer *timer)
+{
+   if(timer && timer->handle)
+   {
+      xTimerDelete(timer->handle, 0);
+      timer->handle = NULL;
+   }
+}
 
 
 
