@@ -38,6 +38,7 @@
    #include "FreeRTOS.h"
    #include "task.h"
    #include "semphr.h"
+   #include "timers.h"
 #endif
 
 //Types
@@ -356,6 +357,43 @@ int zosEventGroupClear(ZOsEventGroup ev, uint32_t flags);
  * @return The function returns the current value of the event flags if the specified flags were set, 0 on timeout, -1 on error
  */
 int zosEventGroupWait(ZOsEventGroup ev, uint32_t flags, uint32_t timeoutMs, uint32_t options);
+
+/**
+ * @brief Timer identifier
+ **/
+typedef TimerHandle_t ZOsTimerId;
+
+#define TIMER_NAME(x)      x
+/**
+ * @brief Timer callback function
+ **/
+typedef void (*ZOsTimerCallback)(void *arg);
+
+/**
+ * @brief Timer object
+ **/
+typedef struct
+{
+   ZOsTimerId handle;
+   void *arg;
+#if (configSUPPORT_STATIC_ALLOCATION == 1)
+   StaticTimer_t buffer;
+#endif
+} ZOsTimer;
+
+
+bool_t zosCreateTimer(ZOsTimer *timer, const char *name,
+                      systime_t period, bool_t autoReload,
+                      ZOsTimerCallback callback, void *arg);
+
+void zosDeleteTimer(ZOsTimer *timer);
+
+bool_t zosStartTimer(ZOsTimer *timer);
+bool_t zosStopTimer(ZOsTimer *timer);
+bool_t zosResetTimer(ZOsTimer *timer);
+
+bool_t zosChangeTimerPeriod(ZOsTimer *timer, systime_t newPeriod);
+
 
 
 //C++ guard

@@ -6,10 +6,10 @@
 #ifndef __APP_TIME_SERVICE_CONFIG_H__
 #define __APP_TIME_SERVICE_CONFIG_H__
 
-/* generated on: 2026-04-20 08:11:29 */
-/* customer name: LinuxGcc */
+/* generated on: 2026-04-20 12:25:18 */
+/* customer name: Stm407Eva */
 
-#include "LinuxGcc/Time/Cus_TimeService_Config.h"
+#include "Stm407Eva/Time/Cus_TimeService_Config.h"
 
 
 #endif /* __APP_TIME_SERVICE_CONFIG_H__ */
