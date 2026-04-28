@@ -596,7 +596,7 @@ OsQueue zosMsgQueueCreate(const char *name, unsigned int queLeng, unsigned int i
     attr.mq_flags = O_RDWR | O_CREAT;
 
     sprintf(nameTemp, "/%s-%d", name, nameUniq++); //create unique name. So app level dont need to handle this case
-    return (OsQueue) mq_open(nameTemp, O_RDWR | O_CREAT | O_NONBLOCK, 0777, &attr);
+    return (OsQueue) mq_open(nameTemp, O_RDWR | O_CREAT, 0777, &attr);
 }
 
 int zosMsgQueueSend(OsQueue queue, const char * msg, size_t msgLeng,  unsigned int timeOut)
@@ -609,13 +609,13 @@ int zosMsgQueueReceive(OsQueue queue, char * msg, size_t msgLeng, unsigned int t
 {
     unsigned int prio;
 
-    return mq_receive(queue, msg, msgLeng, &prio);
+//    return mq_receive(queue, msg, msgLeng, &prio);
 
-    //struct timespec tm;
-    //tm.tv_sec  = 0;
-    //tm.tv_nsec = timeOutSec*1000000;
+    struct timespec tm;
+    clock_gettime(CLOCK_REALTIME, &tm);
 
-    //return mq_timedreceive(queue, msg, msgLeng, NULL, &tm);
+    tm.tv_sec += 1; //absolute time, wait until this time, get current time as a epoch and add 1 sec
+    return mq_timedreceive(queue, msg, msgLeng, NULL, &tm);
 }
 
 int zosMsgQueueClose(OsQueue queue)
