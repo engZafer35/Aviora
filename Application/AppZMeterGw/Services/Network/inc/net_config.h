@@ -35,7 +35,11 @@
  * In order to use Cyclone lib, set USE_CYCLONE_LIB to ENABLE
  * Otherwise, Posix socket lib will be used.
  */
+#ifdef __linux
+#define USE_CYCLONE_LIB  0
+#else
 #define USE_CYCLONE_LIB  1
+#endif
 
 #if USE_CYCLONE_LIB == 1
 
