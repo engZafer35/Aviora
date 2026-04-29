@@ -1,0 +1,10 @@
+#ignored auto generated files
+Application/AppZMeterGw/Services/TimeService/src/AppTimeService_Autogen.c
+
+#ignored auto-generated libs
+Application/AppZMeterGw/Services/Network/
+Application/AppZMeterGw/Services/Protocol/
+Customers/
+Middleware/CycloneTcp/
+Middleware/MiddComm/
+Middleware/MiddZModem/
