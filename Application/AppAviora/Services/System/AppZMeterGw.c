@@ -246,7 +246,7 @@ static void startAppServices(void)
     /* initialize time service, it doesn't have dependencies */
     if (FAILURE == appTimeServiceInit("us.pool.ntp.org", 123))
     {
-        DEBUG_ERROR("->[E] Time Service init Error");        
+        DEBUG_ERROR("[E]-> Time Service init Error");
 
         /* time service failure is critical, but system can continue to run with wrong time,
          * so we don't return failure here
@@ -261,20 +261,20 @@ static void startAppServices(void)
     
     if (FAILURE == appLogRecInit()) /** if log register returns FAILURE, system can continue to run. */
     {
-        DEBUG_ERROR("->[E] Log Recorder Init ERROR ");
+        DEBUG_ERROR("[E]-> Log Recorder Init ERROR ");
         //return FAILURE; //system can continue to run without log recorder, so we don't return failure here
     }
 
     if (FAILURE == appLogStartLoggers())
     {
-        DEBUG_ERROR("->[E] Log Reg for sysLogger ERROR ");
+        DEBUG_ERROR("[E]-> Log Reg for sysLogger ERROR ");
         //return FAILURE; //return FAILURE; //system can continue to run without log recorder, so we don't return failure here
     }
     zosDelayTask(1000); //wait for log service to be ready before starting other services
 
     if (FAILURE == appNetworkServiceStart())
     {
-        DEBUG_ERROR("->[E] AppNetworkService_Start ERROR ");
+        DEBUG_ERROR("[E]-> AppNetworkService_Start ERROR ");
         APP_LOG_REC(g_sysLoggerID, "Network Service start Error");
         appDevMngHwRestart(); //system cannot continue to run without network service, so restart the system        
     }
@@ -282,7 +282,7 @@ static void startAppServices(void)
     /* initialize display after time service */
     if (FAILURE == appDisplayInit())
     {
-        DEBUG_ERROR("->[E] Display init ERROR");
+        DEBUG_ERROR("[E]-> Display init ERROR");
         APP_LOG_REC(g_sysLoggerID, "Display init Error");
         //return FAILURE;  //system can continue to run without display service, so we don't return failure here
     }
@@ -293,7 +293,7 @@ static void startAppServices(void)
     APP_INIT_SENSORS(retVal);
     if (SUCCESS != retVal)
     {
-        DEBUG_ERROR("->[E] Sensor init ERROR !!");
+        DEBUG_ERROR("[E]-> Sensor init ERROR !!");
         APP_LOG_REC(g_sysLoggerID, "Sensor init Error");
         //return FAILURE; //system can continue to run without sensor, so we don't return failure here
     }
@@ -301,7 +301,7 @@ static void startAppServices(void)
     APP_INIT_PROTOCOLS(retVal, "123456789");
     if (SUCCESS != retVal)
     {
-        DEBUG_ERROR("->[E] Protocol init ERROR !!");
+        DEBUG_ERROR("[E]-> Protocol init ERROR !!");
         APP_LOG_REC(g_sysLoggerID, "Protocol init Error");
         appDevMngHwRestart(); //system cannot continue to run without network service, so restart the system  
     }
@@ -313,7 +313,7 @@ static void startAppServices(void)
     gs_zmgTaskID = appTskMngCreate("ZMG_TASK", zmgTask, NULL, &tempParam);
     if (OS_INVALID_TASK_ID == gs_zmgTaskID)
     {
-        DEBUG_ERROR("->[E] ZMG init ERROR !!");
+        DEBUG_ERROR("[E]-> ZMG init ERROR !!");
         APP_LOG_REC(g_sysLoggerID, "ZMG init Error");
         //retVal = FAILURE; //system can continue to run without zmgTask(system event handler), so we don't return failure here
     }
@@ -341,13 +341,13 @@ static RETURN_STATUS initSwUnit(void)
     {
         if (SUCCESS != middEventTimerInit())
         {
-            DEBUG_ERROR("->[E] middEventTimer init Error");
+            DEBUG_ERROR("[E]-> middEventTimer init Error");
             return FAILURE;
         }
 
         if (FAILURE == appGlobalVarInit())
         {
-            DEBUG_ERROR("->[E] appGlobalVarInit init Error");
+            DEBUG_ERROR("[E]-> appGlobalVarInit init Error");
             return FAILURE;
         }
 
@@ -368,30 +368,30 @@ static RETURN_STATUS initSwUnit(void)
         FS_HARDWARE_INIT(error);
         if(NO_ERROR != error)
         {
-            DEBUG_ERROR("->[E] FS Hardware Init Error");
+            DEBUG_ERROR("[E]-> FS Hardware Init Error");
             return FAILURE;
         }
         /* init file system */
         error = fsInit();
         if(NO_ERROR != error)
         {
-            DEBUG_ERROR("->[E] FS Init Error");
+            DEBUG_ERROR("[E]-> FS Init Error");
             return FAILURE;
         }
-        DEBUG_INFO("->[I] %s fs ready", FS_NAME);
+        DEBUG_INFO("[I]-> %s fs ready", FS_NAME);
 
         zosEventGroupSet(gp_systemSetupEventGrp, FILE_SYSTEM_READY_FLAG);
 
         /* initialize configurations after file system */
         if (FAILURE == appConfInit("***"))
         {
-            DEBUG_ERROR("->[E] Display init ERROR");
+            DEBUG_ERROR("[E]-> Display init ERROR");
             return FAILURE;
         }
 
         if (FAILURE == appDBusInit())
         {
-            DEBUG_ERROR("->[E] appDBusInit ERROR ");
+            DEBUG_ERROR("[E]-> appDBusInit ERROR ");
             APP_LOG_REC(g_sysLoggerID, "DBus init Error");
             return FAILURE;
         }
@@ -400,7 +400,7 @@ static RETURN_STATUS initSwUnit(void)
 
         if (FAILURE == appTskMngInit())
         {
-            DEBUG_ERROR("->[E] appTskMngInit init Error");
+            DEBUG_ERROR("[E]-> appTskMngInit init Error");
             return FAILURE;
         }
 
@@ -419,7 +419,7 @@ RETURN_STATUS appZMGwInit(void)
     gp_systemSetupEventGrp = zosEventGroupCreate();
     if (NULL == gp_systemSetupEventGrp)
     {
-        DEBUG_ERROR("->[E] System Setup Event Group Creation Failed");
+        DEBUG_ERROR("[E]-> System Setup Event Group Creation Failed");
         return FAILURE;
     }
     
