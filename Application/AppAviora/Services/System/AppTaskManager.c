@@ -52,14 +52,14 @@ static void timerCb(void)
 				OsTaskInfo tinfo;
 
 				zosGetTaskInfo(gs_treads[i].tid, &tinfo);
-				DEBUG_ERROR("->[I] TMNG:Taskid %d not alive, Device will be restarted",gs_treads[i].tid);
+				DEBUG_ERROR("[I]-> TMNG:Taskid %lu not alive, Device will be restarted",gs_treads[i].tid);
 
 #ifdef USE_FREERTOS
 				char tempBuff[256];
 				sprintf(tempBuff, "Dead Task: name: %s - CurrState: %d - Total RunTime: %d - Free stack %d ", tinfo.pcTaskName, tinfo.eCurrentState, \
 																											  tinfo.ulRunTimeCounter, tinfo.usStackHighWaterMark );
 				APP_LOG_REC(g_sysLoggerID, tempBuff);
-				DEBUG_ERROR("->[I] TMNG:Dead Task: name: %s - CurrState: %d - Total RunTime: %d - Free stack %d ", tinfo.pcTaskName, tinfo.eCurrentState, \
+				DEBUG_ERROR("[I]-> TMNG:Dead Task: name: %s - CurrState: %d - Total RunTime: %d - Free stack %d ", tinfo.pcTaskName, tinfo.eCurrentState, \
 																												   tinfo.ulRunTimeCounter, tinfo.usStackHighWaterMark) ;
 
 #else
@@ -104,7 +104,7 @@ OsTaskId appTskMngCreate(const char *name, OsTaskCode taskCode, void *arg, const
 
 	if (OS_INVALID_TASK_ID != tid)
 	{
-	    DEBUG_INFO("->[I] New task created %s - %lu", name, tid);
+	    DEBUG_INFO("[I]-> New task created %s - %lu", name, tid);
 		for (i = 0; i < MANAGE_MAX_TASK_NUMBER; i++)
 		{
 			//find empty place and save
