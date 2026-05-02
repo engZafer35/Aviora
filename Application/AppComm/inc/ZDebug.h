@@ -36,8 +36,8 @@
 
 //#if (ENABLE == SHOW_PAGE_DBG_MSG)
 ////DEBUG output redirection
-#define DEBUG_PRINTF(format, args...)   fprintf(stdout, "-> %s():%d: ", __FUNCTION__, __LINE__),\
-                                        fprintf(stdout, format , ##args),\
+#define DEBUG_PRINTF(format, args...)   fprintf(stdout, format , ##args),\
+                                        fprintf(stdout, "-> %s():%d: ", __FUNCTION__, __LINE__),\
                                         fprintf(stdout, "\r\n")
 //#else
 //#define DEBUG_PRINTF(format, args...)
