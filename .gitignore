@@ -8,3 +8,8 @@ Customers/
 Middleware/CycloneTcp/
 Middleware/MiddComm/
 Middleware/MiddZModem/
+
+#ignored build directories
+Project/build-cmake-stm32/
+Project/build-cmake-linux/
+Project/CMake/
