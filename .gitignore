@@ -8,8 +8,7 @@ Customers/
 Middleware/CycloneTcp/
 Middleware/MiddComm/
 Middleware/MiddZModem/
-
-#ignored build directories
-Project/build-cmake-stm32/
-Project/build-cmake-linux/
+Driever/Boards/
+#ignored build directories (CMake preset binaryDir = Project/build-cmake-<Customer>)
+Project/build-cmake-*/
 Project/CMake/
