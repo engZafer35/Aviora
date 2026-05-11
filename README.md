@@ -10,6 +10,9 @@
 
 **Aviora** is an intelligent, flexible, and secure IoT data collection device designed to gather data from local devices—such as utility meters, industrial sensors, and environmental monitors—and transmit it seamlessly to remote servers over GSM, Ethernet, Wi-Fi, or other communication methods.
 
+## Project Web Site:
+  - On the website, all units are explained in detail with flow diagrams, tables, example usage, and useful scripts.
+  - https://engzafer35.github.io/Aviora/
 ---
 
 ## 🚀 Features
