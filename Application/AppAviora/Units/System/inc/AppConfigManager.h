@@ -14,7 +14,7 @@
 /*********************************INCLUDES*************************************/
 #include "Project_Conf.h"
 /******************************MACRO DEFINITIONS*******************************/
-#define DEFAULT_CONF_PATH "confFile.cnf"
+
 /*******************************TYPE DEFINITIONS ******************************/
 typedef enum
 {
