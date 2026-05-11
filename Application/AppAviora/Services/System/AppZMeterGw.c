@@ -39,6 +39,7 @@ static S32 gs_zmgDbusID;
 static S32 gs_devMsgSN;
 static OsTaskId gs_zmgTaskID;
 ZOsEventGroup gp_systemSetupEventGrp; 
+const char * g_devSerial;
 
 union
 {
@@ -298,7 +299,7 @@ static void startAppServices(void)
         //return FAILURE; //system can continue to run without sensor, so we don't return failure here
     }
 
-    APP_INIT_PROTOCOLS(retVal, "123456789");
+    APP_INIT_PROTOCOLS(retVal, g_devSerial);
     if (SUCCESS != retVal)
     {
         DEBUG_ERROR("[E]-> Protocol init ERROR !!");
@@ -383,7 +384,7 @@ static RETURN_STATUS initSwUnit(void)
         zosEventGroupSet(gp_systemSetupEventGrp, FILE_SYSTEM_READY_FLAG);
 
         /* initialize configurations after file system */
-        if (FAILURE == appConfInit("***"))
+        if (FAILURE == appConfInit("sessionConf.json"))
         {
             DEBUG_ERROR("[E]-> Display init ERROR");
             return FAILURE;
