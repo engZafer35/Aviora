@@ -38,6 +38,7 @@
 extern U32 g_protocol;
 extern U32 g_meterHandlerList;
 extern ZOsEventGroup gp_systemSetupEventGrp; 
+extern const char * g_devSerial;
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
 RETURN_STATUS appGlobalVarInit(void);
 
