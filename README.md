@@ -52,5 +52,5 @@ https://github.com/user-attachments/assets/bcd247fd-31d4-4b12-9f92-27a2888abf3a
 
 1. **Clone the Repository**
 ```bash
-git clone https://github.com/yourusername/aviora.git
-cd aviora
+git clone https://github.com/engZafer35/Aviora.git
+cd Aviora
