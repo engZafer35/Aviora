@@ -108,7 +108,7 @@ OsTaskId appTskMngCreate(const char *name, OsTaskCode taskCode, void *arg, const
 		for (i = 0; i < MANAGE_MAX_TASK_NUMBER; i++)
 		{
 			//find empty place and save
-			if (OS_INVALID_TASK_ID != tid)
+			if (OS_INVALID_TASK_ID == gs_treads[i].tid)
 			{
 				gs_treads[i].tid     = tid;
 				gs_treads[i].isAlive = TRUE;
@@ -129,7 +129,7 @@ RETURN_STATUS appTskMngDelete(OsTaskId *tid)
     for (i = 0; i < MANAGE_MAX_TASK_NUMBER; i++)
     {
         //find relevant task and update it
-        if (gs_treads[i].tid == *tid)
+        if (gs_treads[i].tid == (*tid))
         {
             OsTaskId tempTaskId  = gs_treads[i].tid;
             gs_treads[i].tid     = OS_INVALID_TASK_ID;
