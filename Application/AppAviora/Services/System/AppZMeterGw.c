@@ -319,7 +319,7 @@ static void startAppServices(void)
         //retVal = FAILURE; //system can continue to run without zmgTask(system event handler), so we don't return failure here
     }
 
-    zosDeleteTask(NULL);
+    zosDeleteTask(OS_SELF_TASK_ID);
 }
 
 //static void fsDemo(void *arg)
