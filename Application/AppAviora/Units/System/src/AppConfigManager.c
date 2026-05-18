@@ -40,7 +40,6 @@ RETURN_STATUS appConfInit(const char *confPath)
     FsFile *f = fsOpenFile((char *)DEV_CONF_FILE, FS_FILE_MODE_READ);
     if (f != NULL)
     {
-        U8 val = 0; size_t got = 0;
         (void)fsReadFile(f, confJsonBuff, sizeof(confJsonBuff), &rleng);
         fsCloseFile(f);
 
