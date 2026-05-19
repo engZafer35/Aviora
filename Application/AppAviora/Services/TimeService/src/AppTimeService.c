@@ -48,7 +48,7 @@ static AppTimeServiceCtx gs_ts;
 
 static S32 tzOffsetSeconds(void)
 {
-    return (S32)APP_TIME_SERVICE_TZ_OFFSET_MINUTES * 60;
+    return (S32)APP_TIME_SERVICE_TZ_OFFSET_MINUTES * (60*60);
 }
 
 /* ---------- Minimal epoch<->calendar conversion helpers (UTC) ---------- */
