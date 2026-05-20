@@ -39,7 +39,6 @@ static S32 gs_zmgDbusID;
 static S32 gs_devMsgSN;
 static OsTaskId gs_zmgTaskID;
 ZOsEventGroup gp_systemSetupEventGrp; 
-const char * g_devSerial;
 
 union
 {
@@ -386,7 +385,7 @@ static RETURN_STATUS initSwUnit(void)
         /* initialize configurations after file system */
         if (FAILURE == appConfInit("sessionConf.json"))
         {
-            DEBUG_ERROR("[E]-> Display init ERROR");
+            DEBUG_ERROR("[E]-> Sytem Configuration init ERROR");
             return FAILURE;
         }
 
