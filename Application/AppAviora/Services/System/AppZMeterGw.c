@@ -152,7 +152,7 @@ static void zmgTask(void * pvParameters)
                 {
                     gs_devVar.AC = TRUE;
                     APP_LOG_REC(g_sysLoggerID, "ZMG: AC input ON");
-                    DEBUG_INFO("->[I] ZMG:AC input ON");
+                    DEBUG_INFO("[I]-> ZMG:AC input ON");
                     /*todo: set timer to wait for super cap. If it will not be available at end of this timer,
                     system can be started without super cap */
                 }
@@ -162,7 +162,7 @@ static void zmgTask(void * pvParameters)
 
                     gs_devVar.wMode = EN_WORKING_MODE_POWER_DOWN;
                     APP_LOG_REC(g_sysLoggerID, "ZMG: AC input OFF");
-                    DEBUG_INFO("->[I] ZMG:AC input OFF, POWER DOWN Mode");
+                    DEBUG_INFO("[I]-> ZMG:AC input OFF, POWER DOWN Mode");
 
                     dbPacket.packetID   = gs_devMsgSN++;
                     dbPacket.topic      = EN_DBUS_TOPIC_DEVICE;
@@ -182,7 +182,7 @@ static void zmgTask(void * pvParameters)
                 if (gs_devVar.AC)
                 {
                     APP_LOG_REC(g_sysLoggerID, "ZMG:SCap READY, main mode");
-                    DEBUG_INFO("->[I] ZMG:SCap READY, Main Mode");
+                    DEBUG_INFO("[I]-> ZMG:SCap READY, Main Mode");
 
                     gs_devVar.wMode = EN_WORKING_MODE_MAIN; /*Scap and AC input is ready now, device can switch main working mode */
 
@@ -253,7 +253,7 @@ static void startAppServices(void)
          */
         //return FAILURE; 
     }
-    DEBUG_INFO("->[I] Time Service initialized");
+    DEBUG_INFO("[I]-> Time Service initialized");
 
     //note: return value is not checked in the above timer service init block, still timeservice eventflag is set
     //      in future, timeservice return value could be checked 
@@ -408,7 +408,7 @@ static RETURN_STATUS initSwUnit(void)
         zosEventGroupSet(gp_systemSetupEventGrp, TASK_MANAGER_READY_FLAG);
     }
 
-    DEBUG_INFO("->[I] initSwUnits return %d", retVal);
+    DEBUG_INFO("[I]-> initSwUnits return %d", retVal);
     return retVal;
 }
 
