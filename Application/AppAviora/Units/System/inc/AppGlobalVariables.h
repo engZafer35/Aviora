@@ -35,9 +35,10 @@
 #define PROTOCOL_WAIT_DEPENDENCY_FLAGS  NETWORK_SERVICE_READY_FLAG//(LOGGER_SERVICE_READY_FLAG | FILE_SYSTEM_READY_FLAG | TASK_MANAGER_READY_FLAG | NETWORK_SERVICE_READY_FLAG | TIME_SERVICE_READY_FLAG)
 
 /************************* GLOBAL VARIBALE REFERENCES *************************/
-extern U32 g_protocol;
-extern U32 g_meterHandlerList;
+
 extern ZOsEventGroup gp_systemSetupEventGrp; 
+
+//device serial number
 extern const char * g_devSerial;
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
 RETURN_STATUS appGlobalVarInit(void);

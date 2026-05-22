@@ -17,8 +17,8 @@
 
 /********************************** VARIABLES *********************************/
 
-U32 g_protocol;
-U32 g_meterHandlerList;
+//device uniq serial number
+const char * g_devSerial;
 /***************************** STATIC FUNCTIONS  ******************************/
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
