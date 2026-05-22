@@ -63,7 +63,7 @@ RETURN_STATUS appConfInit(const char *confPath)
     else
     {
         DEBUG_WARNING("[W]-> %s does not exist, First starting !!", DEV_CONF_FILE);
-        strcpy(gs_devSerialStr, "ZDCA0C29F9CE6");
+        strcpy(gs_devSerialStr, "ZDD98004FA630");
         g_devSerial = gs_devSerialStr;
         DEBUG_WARNING("[W]-> Device Serial Number is default %s", g_devSerial);
         retVal = SUCCESS;
