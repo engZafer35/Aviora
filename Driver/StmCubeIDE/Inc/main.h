@@ -80,6 +80,9 @@ void SystemClock_Config(void);
 #define NETWORK_STAT_LED_Pin GPIO_PIN_15
 #define NETWORK_STAT_LED_GPIO_Port GPIOD
 
+#define ENC_RESET_Pin GPIO_PIN_4
+#define ENC_RESET_Port GPIOA
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
