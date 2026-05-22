@@ -55,7 +55,7 @@ RETURN_STATUS appConfInit(const char *confPath)
             DEBUG_ERROR("[E]-> Device Serial Number could not be found in device conf");
             strcpy(gs_devSerialStr, "ZD2622HMETAL666");
             g_devSerial = gs_devSerialStr;
-            DEBUG_ERROR("[E]-> Device Serial Number is default %s", g_devSerial);
+            DEBUG_WARNING("[W]-> Device Serial Number is default %s", g_devSerial);
 
             retVal = SUCCESS;
         }
@@ -63,6 +63,10 @@ RETURN_STATUS appConfInit(const char *confPath)
     else
     {
         DEBUG_WARNING("[W]-> %s does not exist, First starting !!", DEV_CONF_FILE);
+        strcpy(gs_devSerialStr, "ZDCA0C29F9CE6");
+        g_devSerial = gs_devSerialStr;
+        DEBUG_WARNING("[W]-> Device Serial Number is default %s", g_devSerial);
+        retVal = SUCCESS;
     }
 
 #ifdef __linux

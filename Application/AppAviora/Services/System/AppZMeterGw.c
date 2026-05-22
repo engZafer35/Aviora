@@ -39,7 +39,6 @@ static S32 gs_zmgDbusID;
 static S32 gs_devMsgSN;
 static OsTaskId gs_zmgTaskID;
 ZOsEventGroup gp_systemSetupEventGrp; 
-const char * g_devSerial;
 
 union
 {
@@ -271,7 +270,7 @@ static void startAppServices(void)
         DEBUG_ERROR("[E]-> Log Reg for sysLogger ERROR ");
         //return FAILURE; //return FAILURE; //system can continue to run without log recorder, so we don't return failure here
     }
-    zosDelayTask(1000); //wait for log service to be ready before starting other services
+    zosDelayTask(200); //wait for log service to be ready before starting other services
 
     if (FAILURE == appNetworkServiceStart())
     {
@@ -288,7 +287,8 @@ static void startAppServices(void)
         //return FAILURE;  //system can continue to run without display service, so we don't return failure here
     }
 
-    zosDelayTask(1000);
+    DEBUG_INFO("[I]-> Waiting for Network bring up");
+    zosDelayTask(3000);
 
     RETURN_STATUS retVal = FAILURE;
     APP_INIT_SENSORS(retVal);
@@ -386,7 +386,7 @@ static RETURN_STATUS initSwUnit(void)
         /* initialize configurations after file system */
         if (FAILURE == appConfInit("sessionConf.json"))
         {
-            DEBUG_ERROR("[E]-> Display init ERROR");
+            DEBUG_ERROR("[E]-> Sytem Configuration init ERROR");
             return FAILURE;
         }
 
