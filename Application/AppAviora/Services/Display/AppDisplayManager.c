@@ -46,7 +46,7 @@ static void displayTask(void * pvParameters)
 
     //someone may need to know display task is ready, so display ready flag is set here
     //zosEventGroupSet(gp_systemSetupEventGrp, DISPLAY_SERVICE_READY_FLAG);
-    DEBUG_INFO("->[I] Display Service Task started");
+    DEBUG_INFO("[I]-> Display Service Task started");
 
     while (1)
     {
@@ -76,7 +76,7 @@ RETURN_STATUS appDisplayInit(void)
     }
     else
     {
-        DEBUG_ERROR("->[E] Display Task could not be created");
+        DEBUG_ERROR("[E]-> Display Task could not be created");
         APP_LOG_REC(g_sysLoggerID, "Display: Task could not be created");
     }
 

@@ -38,7 +38,7 @@ static RETURN_STATUS initMcuCore(void)
 
 //    retVal |= middUSB();
 
-    DEBUG_INFO(" ->[I] initMcuCore return: %d", retVal);
+    DEBUG_INFO("[I]-> initMcuCore return: %d", retVal);
     return SUCCESS;
 }
 
@@ -48,14 +48,14 @@ static RETURN_STATUS initMcuCore(void)
 static RETURN_STATUS initDeviceDrivers(void)
 {
     RETURN_STATUS retVal = SUCCESS;
-    DEBUG_VERBOSE(" ->[I] Device Driver Starting");
+    DEBUG_VERBOSE("[I]-> Device Driver Starting");
 
     /*
      * if you need to init a device driver, handle in this func.
      * use macro to plug in/out device to project. check ProjectConf.h file
      */
 
-    DEBUG_INFO(" ->[I] Device Driver completed, result %d", retVal);
+    DEBUG_INFO("[I]-> Device Driver completed, result %d", retVal);
     return retVal;
 }
 /***************************** PUBLIC FUNCTIONS  ******************************/
