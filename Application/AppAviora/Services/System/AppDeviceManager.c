@@ -104,13 +104,21 @@ RETURN_STATUS appDevMngInitHwUnits(void)
         DEBUG_INFO("##--- > Board File: %s - Board Name: %s - Board Version: %s Board MCU: %s-%s", BOARD_FILE_NAME, BOARD_NAME, BOARD_VERSION, MCU_PART_NUM, MCU_CORE);
         DEBUG_INFO("##--- > SW Version %d.%d.%d \n\r", SW_VERSION_MAJOR, SW_VERSION_MINOR, SW_VERSION_BUGFX);
 
-        sleep(1000);
-        sleep(1000);
-        sleep(1000);
-        sleep(1000);
         retVal = initDeviceDrivers();
+#if __linux
+        sleep(1);
+#else
+        sleep(1000);
+        sleep(1000);
+        sleep(1000);
+        sleep(1000);
 
+#endif
         middIOWrite(EN_OUT_POWER_LED, ENABLE);
+    }
+    else
+    {
+        DEBUG_ERROR("[E]-> MCU Core could not be initialized FAILURE !!!! ");
     }
 
     return retVal;
