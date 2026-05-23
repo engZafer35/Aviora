@@ -423,16 +423,16 @@ RETURN_STATUS appZMGwInit(void)
 {
     RETURN_STATUS retVal;
 
+    retVal = appDevMngInitHwUnits();
+
+    middIOWrite(EN_OUT_POWER_LED, ENABLE);
+
     gp_systemSetupEventGrp = zosEventGroupCreate();
     if (NULL == gp_systemSetupEventGrp)
     {
         DEBUG_ERROR("[E]-> System Setup Event Group Creation Failed");
         return FAILURE;
     }
-    
-    retVal = appDevMngInitHwUnits();
-
-    middIOWrite(EN_OUT_POWER_LED, ENABLE);
 
     g_localEvents.events = FALSE; //clear all local events
 
