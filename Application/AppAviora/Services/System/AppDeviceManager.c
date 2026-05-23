@@ -38,10 +38,12 @@ static RETURN_STATUS initMcuCore(void)
     retVal |= middMcuRTCInit();
 
     DEBUG_INFO("\r\n\r\n");
+    DEBUG_INFO(CLOUDIOTLAB_NAME_BANNER);
     DEBUG_INFO(AVIORA_NAME_BANNER);
     DEBUG_INFO("******************* Aviora - Let Your Data Fly *******************\r\n");
     DEBUG_INFO("************** https://engzafer35.github.io/Aviora/ **************\r\n");
     DEBUG_INFO("************** https://github.com/engZafer35/Aviora **************\r\n");
+
     DEBUG_INFO("*************************** USER *********************************");
     DEBUG_INFO("User Name: %s", CUSTOMER_NAME);
     DEBUG_INFO("User Email: %s", CUSTOMER_EMAIL);
@@ -106,7 +108,7 @@ RETURN_STATUS appDevMngInitHwUnits(void)
 
         retVal = initDeviceDrivers();
 #if __linux
-        sleep(1);
+        sleep(2);
 #else
         sleep(1000);
         sleep(1000);
