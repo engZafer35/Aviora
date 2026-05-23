@@ -12,6 +12,7 @@
 /********************************* INCLUDES ***********************************/
 #include "AppConfigManager.h"
 #include "AppGlobalVariables.h"
+#include "Protocol_Config.h"
 #include "ZDJson.h"
 
 #include "fs_port.h"
@@ -63,9 +64,9 @@ RETURN_STATUS appConfInit(const char *confPath)
     else
     {
         DEBUG_WARNING("[W]-> %s does not exist, First starting !!", DEV_CONF_FILE);
-        strcpy(gs_devSerialStr, "ZDD98004FA630");
+        strcpy(gs_devSerialStr, DEVICE_SERIAL_NUMBER);
         g_devSerial = gs_devSerialStr;
-        DEBUG_WARNING("[W]-> Device Serial Number is default %s", g_devSerial);
+        DEBUG_WARNING("[W]-> Device Serial Number: %s", g_devSerial);
         retVal = SUCCESS;
     }
 

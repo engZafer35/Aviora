@@ -11,6 +11,7 @@
 #define SHOW_PAGE_DBG_MSG  (ENABLE)
 /********************************* INCLUDES ***********************************/
 #include "AppDeviceManager.h"
+#include "Protocol_Config.h"
 
 #include "MiddMCUCore.h"
 #include "MiddDigitalIOControl.h"
@@ -36,9 +37,16 @@ static RETURN_STATUS initMcuCore(void)
     retVal |= middMCUTimers();
     retVal |= middMcuRTCInit();
 
-//    retVal |= middUSB();
+    DEBUG_INFO("\r\n\r\n");
+    DEBUG_INFO(AVIORA_NAME_BANNER);
+    DEBUG_INFO("******************* Aviora - Let Your Data Fly *******************\r\n");
+    DEBUG_INFO("************** https://engzafer35.github.io/Aviora/ **************\r\n");
+    DEBUG_INFO("************** https://github.com/engZafer35/Aviora **************\r\n");
+    DEBUG_INFO("*************************** USER *********************************");
+    DEBUG_INFO("User Name: %s", CUSTOMER_NAME);
+    DEBUG_INFO("User Email: %s", CUSTOMER_EMAIL);
 
-    DEBUG_INFO("[I]-> initMcuCore return: %d", retVal);
+    DEBUG_INFO("\r\n[I]-> ************** initMcuCore return: %d **************\r\n", retVal);
     return SUCCESS;
 }
 
@@ -48,14 +56,14 @@ static RETURN_STATUS initMcuCore(void)
 static RETURN_STATUS initDeviceDrivers(void)
 {
     RETURN_STATUS retVal = SUCCESS;
-    DEBUG_VERBOSE("[I]-> Device Driver Starting");
+    DEBUG_VERBOSE("[I]-> Device Driver init Starting");
 
     /*
      * if you need to init a device driver, handle in this func.
      * use macro to plug in/out device to project. check ProjectConf.h file
      */
 
-    DEBUG_INFO("[I]-> Device Driver completed, result %d", retVal);
+    DEBUG_INFO("[I]-> Device Driver init completed, result %d", retVal);
     return retVal;
 }
 /***************************** PUBLIC FUNCTIONS  ******************************/
@@ -96,6 +104,10 @@ RETURN_STATUS appDevMngInitHwUnits(void)
         DEBUG_INFO("##--- > Board File: %s - Board Name: %s - Board Version: %s Board MCU: %s-%s", BOARD_FILE_NAME, BOARD_NAME, BOARD_VERSION, MCU_PART_NUM, MCU_CORE);
         DEBUG_INFO("##--- > SW Version %d.%d.%d \n\r", SW_VERSION_MAJOR, SW_VERSION_MINOR, SW_VERSION_BUGFX);
 
+        sleep(1000);
+        sleep(1000);
+        sleep(1000);
+        sleep(1000);
         retVal = initDeviceDrivers();
 
         middIOWrite(EN_OUT_POWER_LED, ENABLE);
