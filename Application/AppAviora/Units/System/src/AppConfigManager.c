@@ -38,77 +38,76 @@ RETURN_STATUS appConfInit(const char *confPath)
     U32 rleng = 0;
 
     g_devSerial = NULL;
-    FsFile *f = fsOpenFile((char *)DEV_CONF_FILE, FS_FILE_MODE_READ);
-    if (f != NULL)
+//    FsFile *f = fsOpenFile((char *)DEV_CONF_FILE, FS_FILE_MODE_READ);
+//    if (f != NULL)
+//    {
+//        (void)fsReadFile(f, confJsonBuff, sizeof(confJsonBuff), &rleng);
+//        fsCloseFile(f);
+//
+//        if (TRUE == ZDJson_GetStringValue(confJsonBuff, "avioraSerialNum", gs_devSerialStr, sizeof(gs_devSerialStr)))
+//        {
+//            g_devSerial = gs_devSerialStr;
+//
+//            DEBUG_WARNING("[W]-> From Device conf, Device Serial Number %s", g_devSerial);
+//            retVal = SUCCESS;
+//        }
+//        else
+//        {
+//            DEBUG_ERROR("[E]-> Device Serial Number could not be found in device conf");
+//            strcpy(gs_devSerialStr, DEVICE_SERIAL_NUMBER);
+//            g_devSerial = gs_devSerialStr;
+//            DEBUG_WARNING("[W]-> Device Serial Number is default %s", g_devSerial);
+//
+//            retVal = SUCCESS;
+//        }
+//    }
+//    else
     {
-        (void)fsReadFile(f, confJsonBuff, sizeof(confJsonBuff), &rleng);
-        fsCloseFile(f);
-
-        if (TRUE == ZDJson_GetStringValue(confJsonBuff, "avioraSerialNum", gs_devSerialStr, sizeof(gs_devSerialStr)))
-        {
-            g_devSerial = gs_devSerialStr;
-
-            DEBUG_WARNING("[W]-> From Device conf, Device Serial Number %s", g_devSerial);
-            retVal = SUCCESS;
-        }
-        else
-        {
-            DEBUG_ERROR("[E]-> Device Serial Number could not be found in device conf");
-            strcpy(gs_devSerialStr, "ZD2622HMETAL666");
-            g_devSerial = gs_devSerialStr;
-            DEBUG_WARNING("[W]-> Device Serial Number is default %s", g_devSerial);
-
-            retVal = SUCCESS;
-        }
-    }
-    else
-    {
-        DEBUG_WARNING("[W]-> %s does not exist, First starting !!", DEV_CONF_FILE);
+//        DEBUG_WARNING("[W]-> %s does not exist, First starting !!", DEV_CONF_FILE);
         strcpy(gs_devSerialStr, DEVICE_SERIAL_NUMBER);
         g_devSerial = gs_devSerialStr;
-        DEBUG_WARNING("[W]-> Device Serial Number: %s", g_devSerial);
         retVal = SUCCESS;
     }
 
 #ifdef __linux
     memset(confJsonBuff, 0 , sizeof(confJsonBuff));
-    if (NULL == g_devSerial)
+
+    FILE* file = fopen(confPath, "rb");
+    if (file)
     {
-        FILE* file = fopen(confPath, "rb");
-        if (file)
+        fread(confJsonBuff, 1, sizeof(confJsonBuff), file);
+        fclose(file);
+
+        if (TRUE == ZDJson_GetStringValue(confJsonBuff, "avioraSerialNum", gs_devSerialStr, sizeof(gs_devSerialStr)))
         {
-            fread(confJsonBuff, 1, sizeof(confJsonBuff), file);
-            fclose(file);
+            g_devSerial = gs_devSerialStr;
 
-            if (TRUE == ZDJson_GetStringValue(confJsonBuff, "avioraSerialNum", gs_devSerialStr, sizeof(gs_devSerialStr)))
+            DEBUG_WARNING("[W]-> From backend, Device Serial Number %s", g_devSerial);
+
+            FsFile *f = fsOpenFile((char *)DEV_CONF_FILE, FS_FILE_MODE_WRITE);
+            if (f != NULL)
             {
-                g_devSerial = gs_devSerialStr;
-
-                DEBUG_WARNING("[W]-> From backend, Device Serial Number %s", g_devSerial);
-
-                FsFile *f = fsOpenFile((char *)DEV_CONF_FILE, FS_FILE_MODE_WRITE);
-                if (f != NULL)
-                {
-                    sprintf(confJsonBuff, "{\"avioraSerialNum\":\"%s\"}", g_devSerial);
-                    fsWriteFile(f, confJsonBuff, strlen(confJsonBuff));
-                    fsCloseFile(f);
-                }
-
-                retVal = SUCCESS;
+                sprintf(confJsonBuff, "{\"avioraSerialNum\":\"%s\"}", g_devSerial);
+                fsWriteFile(f, confJsonBuff, strlen(confJsonBuff));
+                fsCloseFile(f);
             }
-            else
-            {
-                DEBUG_ERROR("[E]-> Device Serial Number could not be found in backend");
-                strcpy(gs_devSerialStr, "ZD2622HMETAL666");
-                g_devSerial = gs_devSerialStr;
-                DEBUG_ERROR("[E]-> Device Serial Number is default %s", g_devSerial);
 
-                retVal = SUCCESS;
-            }
+            retVal = SUCCESS;
+        }
+        else
+        {
+            DEBUG_ERROR("[E]-> Device Serial Number could not be found in backend");
+            strcpy(gs_devSerialStr, DEVICE_SERIAL_NUMBER);
+            g_devSerial = gs_devSerialStr;
+            DEBUG_ERROR("[E]-> Device Serial Number is default %s", g_devSerial);
+
+            retVal = SUCCESS;
         }
     }
 
 #endif
+
+    DEBUG_WARNING("[W]-> Device Serial Number: %s", g_devSerial);
 
     return retVal;
 }

@@ -91,12 +91,12 @@ static RETURN_STATUS openNewLogFile(LoggerService *svc)
     svc->logFile = svc->srvIFace.openFunc(svc->currentLogFile, FS_FILE_MODE_WRITE | FS_FILE_MODE_CREATE);
     if (NULL == svc->logFile)
     {
-        DEBUG_ERROR("->[E] %s failed to open log file %s", svc->serviceName, svc->currentLogFile);
+        DEBUG_ERROR("[E]-> %s failed to open log file %s", svc->serviceName, svc->currentLogFile);
         return FAILURE;
     }
 
     svc->currentFileSize = 0;
-    DEBUG_INFO("->[I] %s opened log file %s", svc->serviceName, svc->currentLogFile);
+    DEBUG_INFO("[I]-> %s opened log file %s", svc->serviceName, svc->currentLogFile);
 
     return SUCCESS;
 }
@@ -105,10 +105,10 @@ static void loggerWriterTask(void *arg)
 {
     LoggerService *svc = (LoggerService *)arg;    
 
-    DEBUG_INFO("->[I] %s Logger writer task waiting for eventsGroup", svc->serviceName);
+    DEBUG_INFO("[I]-> %s Logger writer task waiting for eventsGroup", svc->serviceName);
     if (-1 == zosEventGroupWait(gp_systemSetupEventGrp, LOGGER_WAIT_DEPENDENCY_FLAGS, INFINITE_DELAY, ZOS_EVENT_WAIT_ALL))
     {
-        DEBUG_ERROR("->[E] %s failed to wait for logger dependencies", svc->serviceName);
+        DEBUG_ERROR("[E]-> %s failed to wait for logger dependencies", svc->serviceName);
         //don't need to check queue if it is valid or not, because if task is running, queue should be valid.
         zosMsgQueueClose(svc->queue);
         svc->queue = OS_INVALID_QUEUE;  
@@ -124,7 +124,7 @@ static void loggerWriterTask(void *arg)
     
     LoggerQueueItem item;
 
-    DEBUG_INFO("->[I] %s Logger writer task started", svc->serviceName);
+    DEBUG_INFO("[I]-> %s Logger writer task started", svc->serviceName);
     appTskMngImOK(svc->writerTask);
 
     zosEventGroupSet(gp_systemSetupEventGrp, LOGGER_SERVICE_READY_FLAG);
@@ -164,7 +164,7 @@ static void loggerWriterTask(void *arg)
         zosDelayTask(1000);
     }
 
-    DEBUG_WARNING("->[W] %s Logger writer task stopped", svc->serviceName);
+    DEBUG_WARNING("[W]-> %s Logger writer task stopped", svc->serviceName);
     if (svc->logFile != NULL)
     {
         svc->srvIFace.closeFunc(svc->logFile);
@@ -249,12 +249,12 @@ RETURN_STATUS appLogRecRegister(logRecConf_t *logger, const char *srvName, S32 *
             //zosCreateMutex(&services[i].srvIFace.logMutex);
 
             *loggerID = services[i].loggerID;
-            DEBUG_INFO("->[I] %s registered with logger ID %d", srvName, services[i].loggerID);
+            DEBUG_INFO("[I]-> %s registered with logger ID %d", srvName, services[i].loggerID);
             return SUCCESS;
         }
     }
 
-    DEBUG_ERROR("->[E] %s registration failed", srvName);
+    DEBUG_ERROR("[E]-> %s registration failed", srvName);
     return FAILURE;
 }
 
@@ -277,7 +277,7 @@ RETURN_STATUS appLogRecUnregister(const char *srvName, S32 loggerID)
     */
     svc->taskRunning = FALSE;
 
-    DEBUG_WARNING("->[W] %s unregistered with logger ID %d", srvName, loggerID);
+    DEBUG_WARNING("[W]-> %s unregistered with logger ID %d", srvName, loggerID);
     return SUCCESS;
 }
 
