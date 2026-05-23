@@ -346,12 +346,13 @@ static RETURN_STATUS initSwUnit(void)
             return FAILURE;
         }
 
+        DEBUG_INFO("[I]-> Event Timer Init OK");
+
         if (FAILURE == appGlobalVarInit())
         {
             DEBUG_ERROR("[E]-> appGlobalVarInit init Error");
             return FAILURE;
         }
-
 
 //        ZOsTaskParameters tempParam;
 //        tempParam.priority  = ZOS_TASK_PRIORITY_LOW;
@@ -364,6 +365,8 @@ static RETURN_STATUS initSwUnit(void)
 //
 //        fs_flash_new_stm_demo();
 
+        DEBUG_INFO("[I]-> File System HW Init Started");
+
         /* init storage hardware and file system */
         error_t error = ERROR_FAILURE;
         FS_HARDWARE_INIT(error);
@@ -372,6 +375,9 @@ static RETURN_STATUS initSwUnit(void)
             DEBUG_ERROR("[E]-> FS Hardware Init Error");
             return FAILURE;
         }
+        DEBUG_INFO("[I]-> File System HW Init DONE");
+        DEBUG_INFO("[I]-> File system software initialization started. This may take some time.");
+
         /* init file system */
         error = fsInit();
         if(NO_ERROR != error)
