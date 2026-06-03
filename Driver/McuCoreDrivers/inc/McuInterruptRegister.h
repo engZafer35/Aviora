@@ -27,16 +27,16 @@
 /**
  * @brief   register for core interrupt
  * @param   callback func, interrupt type id
- * @return  if everything is OK, return SUCCES
- *           otherwise return FAILURE
+ * @return  if everything is OK, return RETURN_SUCCESS
+ *           otherwise return RETURN_FAILURE
  */
 RETURN_STATUS drvIntRegister(VICallback callbackFunc, EN_INTERRUPT_LIST intType);
 
 /**
  * @brief   unregister for core interrupt
  * @param   interrupt type id
- * @return  if everything is OK, return SUCCES
- *           otherwise return FAILURE
+ * @return  if everything is OK, return RETURN_SUCCESS
+ *           otherwise return RETURN_FAILURE
  */
 RETURN_STATUS drvIntUnregister(EN_INTERRUPT_LIST intType);
 

@@ -33,7 +33,7 @@ typedef enum HARDWARE_UNITS_
 /**
  * @brief   Feed wdt
  * @return  if everything is OK, return EN_SUCCES
- *          otherwise return FAILURE
+ *          otherwise return RETURN_FAILURE
  */
 RETURN_STATUS appFeedWdt(void);
 
@@ -45,7 +45,7 @@ void appDevMngHwRestart(void);
 /**
  * @brief   Restart application, soft reset
  * @return  if everything is OK, return EN_SUCCES
- *          otherwise return FAILURE
+ *          otherwise return RETURN_FAILURE
  */
 void appDevMngSwRestart(void);
 
@@ -60,7 +60,7 @@ RETURN_STATUS appDevMngInitHwUnits(void);
  * @brief   close a hardware unit.
  * @param   hardware unit id
  * @return  if everything is OK, return EN_SUCCES
- *          otherwise return FAILURE
+ *          otherwise return RETURN_FAILURE
  */
 RETURN_STATUS appDevMngCloseHw(HARDWARE_UNITS unit);
 
@@ -68,7 +68,7 @@ RETURN_STATUS appDevMngCloseHw(HARDWARE_UNITS unit);
  * @brief   start a hardware unit
  * @param   hardware unit
  * @return  if everything is OK, return EN_SUCCES
- *          otherwise return FAILURE
+ *          otherwise return RETURN_FAILURE
  */
 RETURN_STATUS appDevMngStartHw(HARDWARE_UNITS unit);
 
@@ -76,7 +76,7 @@ RETURN_STATUS appDevMngStartHw(HARDWARE_UNITS unit);
  * @brief   restart a hardware unit
  * @param   hardware unit
  * @return  if everything is OK, return EN_SUCCES
- *          otherwise return FAILURE
+ *          otherwise return RETURN_FAILURE
  */
 RETURN_STATUS appDevMngRestartHw(HARDWARE_UNITS unit);
 
