@@ -174,7 +174,6 @@ extern "C" {
 #error "Please select first the target STM32F4xx device used in your application (in stm32f4xx.h file)"
 #endif
 
-#include "Global_Definitions.h"
 /**
   * @}
   */
@@ -190,15 +189,15 @@ typedef enum
 
 typedef enum
 {
-  EN_DISABLE = 0U,
-  EN_ENABLE = !EN_DISABLE
+  DISABLE = 0U,
+  ENABLE = !DISABLE
 } FunctionalState;
 #define IS_FUNCTIONAL_STATE(STATE) (((STATE) == DISABLE) || ((STATE) == ENABLE))
 
 typedef enum
 {
-  EN_SUCCESS = 0U,
-  ERROR = !EN_SUCCESS
+  SUCCESS = 0U,
+  ERROR = !SUCCESS
 } ErrorStatus;
 
 /**
