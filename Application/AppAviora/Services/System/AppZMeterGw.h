@@ -23,15 +23,15 @@
 
 /**
  * \brief   init Z_Meter_Gw application
- * \return  if everything is OK, return EN_SUCCES
- *          otherwise return FAILURE
+ * \return  if everything is OK, return RETURN_SUCCESS
+ *          otherwise return RETURN_FAILURE
  */
 RETURN_STATUS appZMGwInit(void);
 
 /**
  * @brief   start Z_Meter_Gw application
- * @return  if everything is OK, return EN_SUCCES
- *          otherwise return FAILURE
+ * @return  if everything is OK, return RETURN_SUCCESS
+ *          otherwise return RETURN_FAILURE
  */
 RETURN_STATUS appZMGwStart(void);
 

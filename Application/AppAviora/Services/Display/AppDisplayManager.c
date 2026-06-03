@@ -61,7 +61,7 @@ static void displayTask(void * pvParameters)
 /***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS appDisplayInit(void)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     gs_currWind = startingWind;
     ZOsTaskParameters tempParam;
 
