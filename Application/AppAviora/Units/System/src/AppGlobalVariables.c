@@ -24,6 +24,6 @@ const char * g_devSerial;
 /***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS appGlobalVarInit(void)
 {
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 /******************************** End Of File *********************************/

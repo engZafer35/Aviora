@@ -45,7 +45,7 @@ typedef enum
  * @param password FTP password
  * @param remoteFilePath Remote file path on FTP server
  * @param localFilePath Local destination file path
- * @return SUCCESS if task started, otherwise FAILURE
+ * @return RETURN_SUCCESS if task started, otherwise RETURN_FAILURE
  */
 RETURN_STATUS AppSwUpdateInit(const char *serverIp,
                               U16 serverPort,

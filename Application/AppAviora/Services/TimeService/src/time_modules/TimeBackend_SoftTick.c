@@ -36,24 +36,24 @@ RETURN_STATUS appTimeSoftTickInit(void)
 {
     if (gs_inited)
     {
-        return SUCCESS;
+        return RETURN_SUCCESS;
     }
 
     gs_timerId = -1;
-    if (SUCCESS != middEventTimerRegister(&gs_timerId, softTickCb, WAIT_1_SEC, TRUE))
+    if (RETURN_SUCCESS != middEventTimerRegister(&gs_timerId, softTickCb, WAIT_1_SEC, TRUE))
     {
         DEBUG_ERROR("->[E] softTick register failed");
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
-    if (SUCCESS != middEventTimerStart(gs_timerId))
+    if (RETURN_SUCCESS != middEventTimerStart(gs_timerId))
     {
         DEBUG_ERROR("->[E] softTick start failed");
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     gs_inited = TRUE;
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 U32 appTimeSoftTickGetEpoch(void)
@@ -64,6 +64,6 @@ U32 appTimeSoftTickGetEpoch(void)
 RETURN_STATUS appTimeSoftTickSetEpoch(U32 epochUtc)
 {
     gs_epochUtc = epochUtc;
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 /******************************** End Of File *********************************/

@@ -79,7 +79,7 @@ static void timerCb(void)
 /***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS appTskMngInit(void)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     U32 i;
 
     //clear task list
@@ -123,7 +123,7 @@ OsTaskId appTskMngCreate(const char *name, OsTaskCode taskCode, void *arg, const
 
 RETURN_STATUS appTskMngDelete(OsTaskId *tid)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     U32 i;
 
     for (i = 0; i < MANAGE_MAX_TASK_NUMBER; i++)
@@ -138,7 +138,7 @@ RETURN_STATUS appTskMngDelete(OsTaskId *tid)
         	
             zosDeleteTask(tempTaskId);
 
-            retVal = SUCCESS;
+            retVal = RETURN_SUCCESS;
             break;
         }
     }
@@ -148,7 +148,7 @@ RETURN_STATUS appTskMngDelete(OsTaskId *tid)
 
 RETURN_STATUS appTskMngSuspend(OsTaskId tid)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     U32 i;
 
     for (i = 0; i < MANAGE_MAX_TASK_NUMBER; i++)
@@ -159,7 +159,7 @@ RETURN_STATUS appTskMngSuspend(OsTaskId tid)
         	zosSuspendTask(tid);
             gs_treads[i].isAlive = -1; //-1 suspend value
 
-            retVal = SUCCESS;
+            retVal = RETURN_SUCCESS;
             break;
         }
     }
@@ -202,7 +202,7 @@ void appTskMngResumeAll(void)
 
 RETURN_STATUS appTskMngResume(OsTaskId tid)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     U32 i;
 
     for (i = 0; i < MANAGE_MAX_TASK_NUMBER; i++)
@@ -214,7 +214,7 @@ RETURN_STATUS appTskMngResume(OsTaskId tid)
         	zosResumeTask(tid);
             gs_treads[i].isAlive = FALSE;
 
-            retVal = SUCCESS;
+            retVal = RETURN_SUCCESS;
             break;
         }
     }
@@ -224,7 +224,7 @@ RETURN_STATUS appTskMngResume(OsTaskId tid)
 
 RETURN_STATUS appTskMngImOK(OsTaskId tid)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     U32 i;
 
     for (i = 0; i < MANAGE_MAX_TASK_NUMBER; i++)
@@ -234,7 +234,7 @@ RETURN_STATUS appTskMngImOK(OsTaskId tid)
         {
             gs_treads[i].isAlive = TRUE;
 
-            retVal = SUCCESS;
+            retVal = RETURN_SUCCESS;
             break;
         }
     }

@@ -24,7 +24,7 @@
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
 /**
  * @brief Initialize software tick time backend (epoch in RAM + 1s timer tick)
- * @return SUCCESS if successful, FAILURE otherwise
+ * @return RETURN_SUCCESS if successful, RETURN_FAILURE otherwise
  */
 RETURN_STATUS appTimeSoftTickInit(void);
 
@@ -37,7 +37,7 @@ U32 appTimeSoftTickGetEpoch(void);
 /**
  * @brief Set current epoch time to software tick backend
  * @param epochUtc Epoch time in seconds to set
- * @return SUCCESS if successful, FAILURE otherwise
+ * @return RETURN_SUCCESS if successful, RETURN_FAILURE otherwise
  */
 RETURN_STATUS appTimeSoftTickSetEpoch(U32 epochUtc);
 

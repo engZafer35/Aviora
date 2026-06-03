@@ -157,10 +157,10 @@ static int createUdpSockets(void)
         // Bind the socket with the server address
         if (c_bind(g_UdpSocketFd, (const struct sockaddr *)&serverAddr, sizeof(struct sockaddr_in)) < 0 )
         {
-            retVal = FAILURE;
+            retVal = RETURN_FAILURE;
         }
 
-        if (SUCCESS == retVal)
+        if (RETURN_SUCCESS == retVal)
         {
             DEBUG_INFO("[I]-> UDP Server created !!!");
             DEBUG_INFO("[I]-> UDP Server IP: %s", APP_IPV4_HOST_ADDR);
@@ -169,7 +169,7 @@ static int createUdpSockets(void)
     }
     else
     {
-        retVal = FAILURE;
+        retVal = RETURN_FAILURE;
         DEBUG_ERROR("[E]-> UDP Socket could not be created");
     }
 

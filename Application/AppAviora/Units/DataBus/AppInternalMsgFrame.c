@@ -23,7 +23,7 @@
 RETURN_STATUS appIntMsgParseDevMsg(const U8 *rawMsg, U32 rawMsgLeng, DevInfoMsg *msg)
 {
     memcpy(msg, rawMsg, rawMsgLeng);
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 void appIntMsgCreateDevMsg(const DevInfoMsg *dev, U8 *buff, U32 *leng)
@@ -38,7 +38,7 @@ void appIntMsgCreateDevMsg(const DevInfoMsg *dev, U8 *buff, U32 *leng)
 RETURN_STATUS appIntMsgParseGsmMsg(const U8 *rawMsg, U32 rawMsgLeng, GsmMsg *msg)
 {
     memcpy(msg, rawMsg, rawMsgLeng);
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 void appIntMsgCreateGsmMsg(const GsmMsg *msg, U8 *buff, U32 *leng)
@@ -61,7 +61,7 @@ void appIntMsgCreateTaskMngMsg(const TaskMngMsg *msg, U8 *buff, U32 *leng)
 
 RETURN_STATUS appIntMsgParseTaskMngMsg(const U8 *rawMsg, U32 rawMsgLeng, TaskMngMsg *msg)
 {
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 /******************************** End Of File *********************************/

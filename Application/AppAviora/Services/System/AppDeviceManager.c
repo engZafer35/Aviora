@@ -27,7 +27,7 @@
  */
 static RETURN_STATUS initMcuCore(void)
 {
-    RETURN_STATUS retVal = SUCCESS;
+    RETURN_STATUS retVal = RETURN_SUCCESS;
 
     retVal |= middMCUClockInit(); //firstly init clock and system
     retVal |= middMCUGpioInit();
@@ -49,7 +49,7 @@ static RETURN_STATUS initMcuCore(void)
     DEBUG_INFO("User Email: %s", CUSTOMER_EMAIL);
 
     DEBUG_INFO("\r\n[I]-> ************** initMcuCore return: %d **************\r\n", retVal);
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 /*
@@ -57,7 +57,7 @@ static RETURN_STATUS initMcuCore(void)
  */
 static RETURN_STATUS initDeviceDrivers(void)
 {
-    RETURN_STATUS retVal = SUCCESS;
+    RETURN_STATUS retVal = RETURN_SUCCESS;
     DEBUG_VERBOSE("[I]-> Device Driver init Starting");
 
     /*
@@ -72,7 +72,7 @@ static RETURN_STATUS initDeviceDrivers(void)
 
 RETURN_STATUS appFeedWdt(void)
 {
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 #include <stdlib.h>
 void appDevMngHwRestart(void)
@@ -98,9 +98,9 @@ void appDevMngSwRestart(void)
 
 RETURN_STATUS appDevMngInitHwUnits(void)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
 
-    if (SUCCESS == initMcuCore())
+    if (RETURN_SUCCESS == initMcuCore())
     {
         //use fprintf to show system info for every time.
         DEBUG_INFO("##--- > Board File: %s - Board Name: %s - Board Version: %s Board MCU: %s-%s", BOARD_FILE_NAME, BOARD_NAME, BOARD_VERSION, MCU_PART_NUM, MCU_CORE);
@@ -120,7 +120,7 @@ RETURN_STATUS appDevMngInitHwUnits(void)
     }
     else
     {
-        DEBUG_ERROR("[E]-> MCU Core could not be initialized FAILURE !!!! ");
+        DEBUG_ERROR("[E]-> MCU Core could not be initialized RETURN_FAILURE !!!! ");
     }
 
     return retVal;
@@ -128,16 +128,16 @@ RETURN_STATUS appDevMngInitHwUnits(void)
 
 RETURN_STATUS appDevMngCloseHw(HARDWARE_UNITS unit)
 {
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 RETURN_STATUS appDevMngStartHw(HARDWARE_UNITS unit)
 {
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 RETURN_STATUS appDevMngRestartHw(HARDWARE_UNITS unit)
 {
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 /******************************** End Of File *********************************/

@@ -46,6 +46,11 @@ CORE_TIMER_IT_FUNCTION
         runCallback(TIMER_EVENT_IT_ID, 0);
     }
 
+    if (htim->Instance == TIM2)
+    {
+      HAL_IncTick();
+    }
+
     //dont need to clear IT func for stm32. Check for other MCU
 }
 
@@ -112,18 +117,18 @@ CORE_EXT_IT_FUNCTION
  * @brief register for core interrupt
  * @param callback func, interrupt type id
  * @return if everything is OK, return SUCCES
- *         otherwise return FAILURE
+ *         otherwise return RETURN_FAILURE
  */
 RETURN_STATUS drvIntRegister(VICallback callBackFunc, EN_INTERRUPT_LIST intType)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
 
     if (IS_SAFELY_PTR(callBackFunc) && IS_VALID_ID(intType))
     {
         if (IS_EMPTY_REGISTER(intType))
         {
             gInterruptCallbackList[intType] = callBackFunc;
-            retVal = SUCCESS;
+            retVal = RETURN_SUCCESS;
         }
     }
 
@@ -132,12 +137,12 @@ RETURN_STATUS drvIntRegister(VICallback callBackFunc, EN_INTERRUPT_LIST intType)
 
 RETURN_STATUS drvIntUnregister(EN_INTERRUPT_LIST intType)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
 
     if (IS_VALID_ID(intType))
     {
         gInterruptCallbackList[intType] = NULL;
-        retVal = SUCCESS;
+        retVal = RETURN_SUCCESS;
     }
 
     return retVal;

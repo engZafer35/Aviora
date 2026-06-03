@@ -107,7 +107,7 @@ int main (void)
 #if (CURRENT_BOARD == BOARD_LINUX_PC)
     setvbuf(stdout, NULL, _IONBF, 0);   // unbuffered
 #endif
-    if (SUCCESS == appZMGwInit())
+    if (RETURN_SUCCESS == appZMGwInit())
     {
         appZMGwStart(); //run baby run
 #if 0

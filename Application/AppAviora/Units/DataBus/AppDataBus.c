@@ -37,7 +37,7 @@ static struct
 /***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS appDBusInit(void)
 {
-    RETURN_STATUS retVal = SUCCESS;
+    RETURN_STATUS retVal = RETURN_SUCCESS;
     U32 i;
     for (i = 0; i < MAX_CLIENT_NUMBER; i++)
     {
@@ -49,7 +49,7 @@ RETURN_STATUS appDBusInit(void)
 
 RETURN_STATUS appDBusRegister(DBUS_TOPICS listenTopic, S32 *clientID)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     U32 i;
 
     for (i = 0; i < MAX_CLIENT_NUMBER; i++)
@@ -63,7 +63,7 @@ RETURN_STATUS appDBusRegister(DBUS_TOPICS listenTopic, S32 *clientID)
                 *clientID = i;
                 g_clients[i].listenTopic = listenTopic;
 
-                retVal = SUCCESS;
+                retVal = RETURN_SUCCESS;
             }
             break;
         }
@@ -74,7 +74,7 @@ RETURN_STATUS appDBusRegister(DBUS_TOPICS listenTopic, S32 *clientID)
 
 RETURN_STATUS appDBusUnregister(S32 clientID)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
 
     if (clientID < MAX_CLIENT_NUMBER)
     {
@@ -83,7 +83,7 @@ RETURN_STATUS appDBusUnregister(S32 clientID)
 
         if (QUEUE_SUCCESS == zosMsgQueueClose(g_clients[clientID].bus))
         {
-            retVal = SUCCESS;
+            retVal = RETURN_SUCCESS;
         }
     }
 
@@ -92,7 +92,7 @@ RETURN_STATUS appDBusUnregister(S32 clientID)
 
 RETURN_STATUS appDBusPublish(S32 clientID, DBUS_PACKET *packet)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     U32 i;
 
     if (clientID < MAX_CLIENT_NUMBER)
@@ -107,7 +107,7 @@ RETURN_STATUS appDBusPublish(S32 clientID, DBUS_PACKET *packet)
                 {
                     if (QUEUE_SUCCESS == zosMsgQueueSend(g_clients[i].bus, (const char *)packet, sizeof(DBUS_PACKET), TIME_OUT_10MS))
                     {
-                        retVal = SUCCESS; /* if the packet could be sent to any client, we can return success. we cannot guarantee for each client */
+                        retVal = RETURN_SUCCESS; /* if the packet could be sent to any client, we can return success. we cannot guarantee for each client */
                     }
                 }
             }
@@ -119,12 +119,12 @@ RETURN_STATUS appDBusPublish(S32 clientID, DBUS_PACKET *packet)
 
 RETURN_STATUS appDBusReceive(S32 clientID, DBUS_PACKET *packet, U32 timeOut)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     if (clientID < MAX_CLIENT_NUMBER)
     {
         if (0 < zosMsgQueueReceive(g_clients[clientID].bus, (char *)packet, sizeof(DBUS_PACKET), timeOut))
         {
-            retVal = SUCCESS;
+            retVal = RETURN_SUCCESS;
         }
     }
 
@@ -133,6 +133,6 @@ RETURN_STATUS appDBusReceive(S32 clientID, DBUS_PACKET *packet, U32 timeOut)
 
 RETURN_STATUS appDBusRequest(S32 myClientID, DBUS_TOPICS topic)
 {
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 /******************************** End Of File *********************************/
