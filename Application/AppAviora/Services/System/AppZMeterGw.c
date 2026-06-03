@@ -137,7 +137,7 @@ static void zmgTask(void * pvParameters)
     appTskMngImOK(gs_zmgTaskID);
     zosDelayTask(1000); //wait once before starting
 
-    //if dbus register returns FAILURE, system can continue to run, but it won't be able to publish device info
+    //if dbus register returns RETURN_FAILURE, system can continue to run, but it won't be able to publish device info
     //The most important thing is protocol sevice, sw update can fix the big bug
     appDBusRegister(EN_DBUS_TOPIC_GSM | EN_DBUS_TOPIC_ETH | EN_DBUS_TOPIC_TASK_MNG, &gs_zmgDbusID);
     
@@ -197,7 +197,7 @@ static void zmgTask(void * pvParameters)
             }
         }
 
-        if (SUCCESS == appDBusReceive(gs_zmgDbusID, &dbPacket, WAIT_1_SEC))
+        if (RETURN_SUCCESS == appDBusReceive(gs_zmgDbusID, &dbPacket, WAIT_1_SEC))
         {
             GsmMsg gsmMsg;
             U32 newMsg = FALSE;
@@ -244,14 +244,14 @@ static void zmgTask(void * pvParameters)
 static void startAppServices(void)
 {
     /* initialize time service, it doesn't have dependencies */
-    if (FAILURE == appTimeServiceInit("us.pool.ntp.org", 123))
+    if (RETURN_FAILURE == appTimeServiceInit("us.pool.ntp.org", 123))
     {
         DEBUG_ERROR("[E]-> Time Service init Error");
 
         /* time service failure is critical, but system can continue to run with wrong time,
          * so we don't return failure here
          */
-        //return FAILURE; 
+        //return RETURN_FAILURE; 
     }
     DEBUG_INFO("[I]-> Time Service initialized");
 
@@ -259,20 +259,20 @@ static void startAppServices(void)
     //      in future, timeservice return value could be checked 
     zosEventGroupSet(gp_systemSetupEventGrp, TIME_SERVICE_READY_FLAG);
     
-    if (FAILURE == appLogRecInit()) /** if log register returns FAILURE, system can continue to run. */
+    if (RETURN_FAILURE == appLogRecInit()) /** if log register returns RETURN_FAILURE, system can continue to run. */
     {
         DEBUG_ERROR("[E]-> Log Recorder Init ERROR ");
-        //return FAILURE; //system can continue to run without log recorder, so we don't return failure here
+        //return RETURN_FAILURE; //system can continue to run without log recorder, so we don't return failure here
     }
 
-    if (FAILURE == appLogStartLoggers())
+    if (RETURN_FAILURE == appLogStartLoggers())
     {
         DEBUG_ERROR("[E]-> Log Reg for sysLogger ERROR ");
-        //return FAILURE; //return FAILURE; //system can continue to run without log recorder, so we don't return failure here
+        //return RETURN_FAILURE; //return RETURN_FAILURE; //system can continue to run without log recorder, so we don't return failure here
     }
     zosDelayTask(200); //wait for log service to be ready before starting other services
 
-    if (FAILURE == appNetworkServiceStart())
+    if (RETURN_FAILURE == appNetworkServiceStart())
     {
         DEBUG_ERROR("[E]-> AppNetworkService_Start ERROR ");
         APP_LOG_REC(g_sysLoggerID, "Network Service start Error");
@@ -280,27 +280,27 @@ static void startAppServices(void)
     }
 
     /* initialize display after time service */
-    if (FAILURE == appDisplayInit())
+    if (RETURN_FAILURE == appDisplayInit())
     {
         DEBUG_ERROR("[E]-> Display init ERROR");
         APP_LOG_REC(g_sysLoggerID, "Display init Error");
-        //return FAILURE;  //system can continue to run without display service, so we don't return failure here
+        //return RETURN_FAILURE;  //system can continue to run without display service, so we don't return failure here
     }
 
     DEBUG_INFO("[I]-> Waiting for Network bring up");
     zosDelayTask(3000);
 
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     APP_INIT_SENSORS(retVal);
-    if (SUCCESS != retVal)
+    if (RETURN_SUCCESS != retVal)
     {
         DEBUG_ERROR("[E]-> Sensor init ERROR !!");
         APP_LOG_REC(g_sysLoggerID, "Sensor init Error");
-        //return FAILURE; //system can continue to run without sensor, so we don't return failure here
+        //return RETURN_FAILURE; //system can continue to run without sensor, so we don't return failure here
     }
 
     APP_INIT_PROTOCOLS(retVal, g_devSerial);
-    if (SUCCESS != retVal)
+    if (RETURN_SUCCESS != retVal)
     {
         DEBUG_ERROR("[E]-> Protocol init ERROR !!");
         APP_LOG_REC(g_sysLoggerID, "Protocol init Error");
@@ -316,7 +316,7 @@ static void startAppServices(void)
     {
         DEBUG_ERROR("[E]-> ZMG init ERROR !!");
         APP_LOG_REC(g_sysLoggerID, "ZMG init Error");
-        //retVal = FAILURE; //system can continue to run without zmgTask(system event handler), so we don't return failure here
+        //retVal = RETURN_FAILURE; //system can continue to run without zmgTask(system event handler), so we don't return failure here
     }
 
     zosDeleteTask(OS_SELF_TASK_ID);
@@ -333,25 +333,25 @@ static void startAppServices(void)
 
 static RETURN_STATUS initSwUnit(void)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
 
     /** !< Firstly initialize common used midd layer */
     retVal = middIOInit();
 //    retVal |= middSerialCommInit();
-    if (SUCCESS == retVal)
+    if (RETURN_SUCCESS == retVal)
     {
-        if (SUCCESS != middEventTimerInit())
+        if (RETURN_SUCCESS != middEventTimerInit())
         {
             DEBUG_ERROR("[E]-> middEventTimer init Error");
-            return FAILURE;
+            return RETURN_FAILURE;
         }
 
         DEBUG_INFO("[I]-> Event Timer Init OK");
 
-        if (FAILURE == appGlobalVarInit())
+        if (RETURN_FAILURE == appGlobalVarInit())
         {
             DEBUG_ERROR("[E]-> appGlobalVarInit init Error");
-            return FAILURE;
+            return RETURN_FAILURE;
         }
 
 //        ZOsTaskParameters tempParam;
@@ -373,7 +373,7 @@ static RETURN_STATUS initSwUnit(void)
         if(NO_ERROR != error)
         {
             DEBUG_ERROR("[E]-> FS Hardware Init Error");
-            return FAILURE;
+            return RETURN_FAILURE;
         }
         DEBUG_INFO("[I]-> File System HW Init DONE");
         DEBUG_INFO("[I]-> File system software initialization started. This may take some time.");
@@ -383,32 +383,32 @@ static RETURN_STATUS initSwUnit(void)
         if(NO_ERROR != error)
         {
             DEBUG_ERROR("[E]-> FS Init Error");
-            return FAILURE;
+            return RETURN_FAILURE;
         }
         DEBUG_INFO("[I]-> %s fs ready", FS_NAME);
 
         zosEventGroupSet(gp_systemSetupEventGrp, FILE_SYSTEM_READY_FLAG);
 
         /* initialize configurations after file system */
-        if (FAILURE == appConfInit("sessionConf.json"))
+        if (RETURN_FAILURE == appConfInit("sessionConf.json"))
         {
             DEBUG_ERROR("[E]-> Sytem Configuration init ERROR");
-            return FAILURE;
+            return RETURN_FAILURE;
         }
 
-        if (FAILURE == appDBusInit())
+        if (RETURN_FAILURE == appDBusInit())
         {
             DEBUG_ERROR("[E]-> appDBusInit ERROR ");
             APP_LOG_REC(g_sysLoggerID, "DBus init Error");
-            return FAILURE;
+            return RETURN_FAILURE;
         }
         
         zosEventGroupSet(gp_systemSetupEventGrp, DBUS_READY_FLAG);
 
-        if (FAILURE == appTskMngInit())
+        if (RETURN_FAILURE == appTskMngInit())
         {
             DEBUG_ERROR("[E]-> appTskMngInit init Error");
-            return FAILURE;
+            return RETURN_FAILURE;
         }
 
         zosEventGroupSet(gp_systemSetupEventGrp, TASK_MANAGER_READY_FLAG);
@@ -431,12 +431,12 @@ RETURN_STATUS appZMGwInit(void)
     if (NULL == gp_systemSetupEventGrp)
     {
         DEBUG_ERROR("[E]-> System Setup Event Group Creation Failed");
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     g_localEvents.events = FALSE; //clear all local events
 
-    if (SUCCESS == retVal)
+    if (RETURN_SUCCESS == retVal)
     {
         /*
          * init sw units which don't have dependency on each other, and dont use task/thread.
@@ -445,7 +445,7 @@ RETURN_STATUS appZMGwInit(void)
         retVal = initSwUnit();
     }
 
-    if (SUCCESS == retVal)
+    if (RETURN_SUCCESS == retVal)
     {
         middIOIntListen(EN_IN_COVER_ALERT, inputCover);
         middIOIntListen(EN_IN_BODY_ALERT,  inputBody);
@@ -464,7 +464,7 @@ RETURN_STATUS appZMGwInit(void)
         middIOIntListen(EN_IN_DI_6, inputDigital_6);
     }
 
-    if (SUCCESS != retVal)
+    if (RETURN_SUCCESS != retVal)
     {
         appDevMngHwRestart();
     }
@@ -483,6 +483,6 @@ RETURN_STATUS appZMGwStart(void)
     zosInitKernel();
     zosStartKernel();
 
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 /******************************** End Of File *********************************/

@@ -92,13 +92,13 @@ static RETURN_STATUS openNewLogFile(LoggerService *svc)
     if (NULL == svc->logFile)
     {
         DEBUG_ERROR("[E]-> %s failed to open log file %s", svc->serviceName, svc->currentLogFile);
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     svc->currentFileSize = 0;
     DEBUG_INFO("[I]-> %s opened log file %s", svc->serviceName, svc->currentLogFile);
 
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 static void loggerWriterTask(void *arg)
@@ -152,7 +152,7 @@ static void loggerWriterTask(void *arg)
                 int lineLen = snprintf(line, sizeof(line), "%s %s - %s\n", dateStr, timeStr, item.text);
                 if (lineLen > 0)
                 {
-                    if (SUCCESS == svc->srvIFace.writeFunc(svc->logFile, line, (size_t)lineLen))
+                    if (RETURN_SUCCESS == svc->srvIFace.writeFunc(svc->logFile, line, (size_t)lineLen))
                     {
                         svc->currentFileSize += (U32)lineLen;
                     }
@@ -197,14 +197,14 @@ RETURN_STATUS appLogRecInit(void)
         services[i].currentFileSize = 0;
         services[i].currentLogFile[0] = '\0';        
     }
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 RETURN_STATUS appLogRecRegister(logRecConf_t *logger, const char *srvName, S32 *loggerID)
 {
     if ((logger == NULL) || (srvName == NULL) || (loggerID == NULL))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     for (U32 i = 0; i < MAX_SERVICE_NUMBER; i++)
@@ -221,7 +221,7 @@ RETURN_STATUS appLogRecRegister(logRecConf_t *logger, const char *srvName, S32 *
             {
                 services[i].loggerID = -1;
                 services[i].serviceName[0] = '\0';
-                return FAILURE;
+                return RETURN_FAILURE;
             }
 
             services[i].taskRunning = TRUE;
@@ -240,7 +240,7 @@ RETURN_STATUS appLogRecRegister(logRecConf_t *logger, const char *srvName, S32 *
 //                services[i].queue = OS_INVALID_QUEUE;
 //                services[i].loggerID = -1;
 //                services[i].serviceName[0] = '\0';
-//                return FAILURE;
+//                return RETURN_FAILURE;
 //            }
 
             //dont need to create mutex here, because log file operations are done in the writer task, and there is no concurrent access to log file.
@@ -250,25 +250,25 @@ RETURN_STATUS appLogRecRegister(logRecConf_t *logger, const char *srvName, S32 *
 
             *loggerID = services[i].loggerID;
             DEBUG_INFO("[I]-> %s registered with logger ID %d", srvName, services[i].loggerID);
-            return SUCCESS;
+            return RETURN_SUCCESS;
         }
     }
 
     DEBUG_ERROR("[E]-> %s registration failed", srvName);
-    return FAILURE;
+    return RETURN_FAILURE;
 }
 
 RETURN_STATUS appLogRecUnregister(const char *srvName, S32 loggerID)
 {
     if ((loggerID < 0) || (loggerID >= MAX_SERVICE_NUMBER) || (srvName == NULL))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     LoggerService *svc = &services[loggerID];
     if (0 != strcmp(svc->serviceName, srvName))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     /*
@@ -278,20 +278,20 @@ RETURN_STATUS appLogRecUnregister(const char *srvName, S32 loggerID)
     svc->taskRunning = FALSE;
 
     DEBUG_WARNING("[W]-> %s unregistered with logger ID %d", srvName, loggerID);
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 RETURN_STATUS appLogRec(S32 loggerID, const char *logStr)
 {    
     if ((loggerID < 0) || (loggerID >= MAX_SERVICE_NUMBER) || (logStr == NULL))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     LoggerService *svc = &services[loggerID];
     if ((svc->loggerID != loggerID) || (OS_INVALID_QUEUE == svc->queue) || !svc->taskRunning)
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     LoggerQueueItem item;
@@ -300,10 +300,10 @@ RETURN_STATUS appLogRec(S32 loggerID, const char *logStr)
 
 //    if (QUEUE_SUCCESS != zosMsgQueueSend(svc->queue, (const char *)&item, sizeof(item), TIME_OUT_10MS))
 //    {
-//        return FAILURE;
+//        return RETURN_FAILURE;
 //    }
 
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 S32 appLogRecRead(S32 loggerID, char *str, U32 size)

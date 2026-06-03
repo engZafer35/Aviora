@@ -66,13 +66,13 @@ typedef enum
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
 /**
  * @brief Initialize the log recorder module
- * @return SUCCESS on success, FAILURE on failure
+ * @return RETURN_SUCCESS on success, RETURN_FAILURE on failure
  */
 RETURN_STATUS appLogRecInit(void);
 
 /**
  * @brief Start the logger services
- * @return SUCCESS on success, FAILURE on failure
+ * @return RETURN_SUCCESS on success, RETURN_FAILURE on failure
  */
 RETURN_STATUS appLogStartLoggers(void);
 
@@ -81,7 +81,7 @@ RETURN_STATUS appLogStartLoggers(void);
  * @param logger Logger interface structure
  * @param srvName Service name
  * @param loggerID Pointer to store the assigned logger ID
- * @return SUCCESS on success, FAILURE on failure
+ * @return RETURN_SUCCESS on success, RETURN_FAILURE on failure
  */
 RETURN_STATUS appLogRecRegister(logRecConf_t *logger, const char *srvName, S32 *loggerID);
 
@@ -89,7 +89,7 @@ RETURN_STATUS appLogRecRegister(logRecConf_t *logger, const char *srvName, S32 *
  * @brief Unregister a logger service
  * @param srvName Service name
  * @param loggerID Logger ID to unregister
- * @return SUCCESS on success, FAILURE on failure
+ * @return RETURN_SUCCESS on success, RETURN_FAILURE on failure
  */
 RETURN_STATUS appLogRecUnregister(const char *srvName, S32 loggerID);
 
@@ -97,7 +97,7 @@ RETURN_STATUS appLogRecUnregister(const char *srvName, S32 loggerID);
  * @brief Send log data to logger
  * @param loggerID Logger ID obtained from registration
  * @param logStr Log string to send
- * @return SUCCESS on success, FAILURE on failure
+ * @return RETURN_SUCCESS on success, RETURN_FAILURE on failure
  */
 RETURN_STATUS appLogRec(S32 loggerID, const char *logStr);
 

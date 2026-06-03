@@ -52,12 +52,12 @@ static U8 bin2bcd (U8 bin)
 /***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS drvM41T11Init(const RtcI2c_t *i2c)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
 
     if (IS_SAFELY_PTR(i2c))
     {
         gHwI2c = *i2c;
-        retVal = SUCCESS;
+        retVal = RETURN_SUCCESS;
     }
     return retVal;
 }
@@ -65,18 +65,18 @@ RETURN_STATUS drvM41T11Init(const RtcI2c_t *i2c)
  * @brief  get time
  * @param  M4T11_RtcStr_t pointer
  * @return if everything is OK, return SUCCES
- *         otherwise return FAILURE
+ *         otherwise return RETURN_FAILURE
  */
 RETURN_STATUS drvM41T11GetTime(RtcStr_t *getTime)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     U8 data[RTC_REG_CNT] = {0};
 
     if (0 != gHwI2c.devAddr)
     {
         if (IS_SAFELY_PTR(getTime))
         {
-            if (SUCCESS == gHwI2c.readI2C(gHwI2c.devAddr, RTC_SEC_ADDR, (U8 *)data, RTC_REG_CNT))
+            if (RETURN_SUCCESS == gHwI2c.readI2C(gHwI2c.devAddr, RTC_SEC_ADDR, (U8 *)data, RTC_REG_CNT))
             {
                 //if 7.bit(ST bit) is 1 RTC, clock not working !!
                 if (FALSE == (data[RTC_SEC_ADDR] & 0x80)) //
@@ -91,7 +91,7 @@ RETURN_STATUS drvM41T11GetTime(RtcStr_t *getTime)
                     //check CB bit. if it is 1 load 100 year. Because our system using CEB bit. For more details check datasheet
                     getTime->year = CONFIG_SYS_M41T11_BASE_YEAR + bcd2bin(data[RTC_YEARS_ADDR]) + ((data[RTC_HOUR_ADDR] & 0x40) ? 100 : 0);
 
-                    retVal = SUCCESS;
+                    retVal = RETURN_SUCCESS;
                 }
             }
         }
@@ -104,11 +104,11 @@ RETURN_STATUS drvM41T11GetTime(RtcStr_t *getTime)
  * @brief  set time
  * @param  M4T11_RtcStr_t pointer
  * @return if everything is OK, return SUCCES
- *         otherwise return FAILURE
+ *         otherwise return RETURN_FAILURE
  */
 RETURN_STATUS drvM41T11SetTime(const RtcStr_t *setTime)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     U8 data[RTC_REG_CNT] = {0};
 
     if (0 != gHwI2c.devAddr)
