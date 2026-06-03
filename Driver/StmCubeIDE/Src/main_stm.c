@@ -66,7 +66,7 @@ void MX_FREERTOS_Init(void);
   * @brief  The application entry point.
   * @retval int
   */
-int main_stm(void)
+int main_notused(void)
 {
 
   /* USER CODE BEGIN 1 */
@@ -178,7 +178,7 @@ void SystemClock_Config(void)
   * @param  htim : TIM handle
   * @retval None
   */
-void HAL_TIM_PeriodElapsedCallback_stm(TIM_HandleTypeDef *htim)
+void HAL_TIM_PeriodElapsedCallback_notused(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
 
