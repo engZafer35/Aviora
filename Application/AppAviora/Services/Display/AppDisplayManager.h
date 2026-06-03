@@ -27,7 +27,7 @@
 /**
  * @brief   Initialize the display manager
  * @return  if everything is OK, return EN_SUCCES
- *          otherwise return FAILURE
+ *          otherwise return RETURN_FAILURE
  */
 RETURN_STATUS appDisplayInit(void);
 

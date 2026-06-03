@@ -58,7 +58,7 @@ typedef struct _RtcStr_t
 * @brief  init M41T11
 * @param  hardware i2c, driver will copy i2c, user can delete own structure
 * @return if everything is OK, return SUCCES
-*         otherwise return FAILURE
+*         otherwise return RETURN_FAILURE
  */
 RETURN_STATUS drvM41T11Init(const RtcI2c_t *i2c);
 
@@ -66,7 +66,7 @@ RETURN_STATUS drvM41T11Init(const RtcI2c_t *i2c);
  * @brief  get time
  * @param  RtcStr_t pointer
  * @return if everything is OK, return SUCCES
- *         otherwise return FAILURE
+ *         otherwise return RETURN_FAILURE
  */
 RETURN_STATUS drvM41T11GetTime(RtcStr_t *getTime);
 
@@ -74,7 +74,7 @@ RETURN_STATUS drvM41T11GetTime(RtcStr_t *getTime);
  * @brief  set time
  * @param  RtcStr_t pointer
  * @return if everything is OK, return SUCCES
- *         otherwise return FAILURE
+ *         otherwise return RETURN_FAILURE
  */
 RETURN_STATUS drvM41T11SetTime(const RtcStr_t *setTime);
 
