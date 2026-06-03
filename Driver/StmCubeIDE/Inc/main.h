@@ -31,6 +31,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "McuSmallHelperFunc.h"
 
 /* USER CODE END Includes */
 
@@ -51,7 +52,7 @@ extern "C" {
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
-void SystemClock_Config(void);
+
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */
@@ -64,6 +65,8 @@ void SystemClock_Config(void);
 #define B1_Pin GPIO_PIN_0
 #define B1_GPIO_Port GPIOA
 #define B1_EXTI_IRQn EXTI0_IRQn
+#define ENC_RESET_Pin GPIO_PIN_4
+#define ENC_RESET_GPIO_Port GPIOA
 #define ENJ_CS_Pin GPIO_PIN_4
 #define ENJ_CS_GPIO_Port GPIOC
 #define ENJ_INT_Pin GPIO_PIN_5
@@ -80,9 +83,6 @@ void SystemClock_Config(void);
 #define NETWORK_STAT_LED_Pin GPIO_PIN_15
 #define NETWORK_STAT_LED_GPIO_Port GPIOD
 
-#define ENC_RESET_Pin GPIO_PIN_4
-#define ENC_RESET_Port GPIOA
-
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
@@ -92,3 +92,4 @@ void SystemClock_Config(void);
 #endif
 
 #endif /* __MAIN_H */
+
