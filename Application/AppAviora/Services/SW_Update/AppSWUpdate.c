@@ -202,13 +202,13 @@ RETURN_STATUS AppSwUpdateInit(const char *serverIp,
     if (OS_INVALID_TASK_ID != gs_swUpdateCtx.taskId)
     {
         // SW update task is already running
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     if ((serverIp == NULL) || (username == NULL) || (password == NULL) ||
         (remoteFilePath == NULL) || (localFilePath == NULL) || (serverPort == 0))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     if ((strlen(serverIp) >= SW_UPDATE_MAX_HOST) ||
@@ -217,7 +217,7 @@ RETURN_STATUS AppSwUpdateInit(const char *serverIp,
         (strlen(remoteFilePath) >= SW_UPDATE_MAX_PATH) ||
         (strlen(localFilePath) >= SW_UPDATE_MAX_PATH))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     memset(&gs_swUpdateCtx, 0, sizeof(gs_swUpdateCtx));
@@ -232,9 +232,9 @@ RETURN_STATUS AppSwUpdateInit(const char *serverIp,
     taskParam.priority  = ZOS_TASK_PRIORITY_LOW;
     taskParam.stackSize = SW_UPDATE_TASK_STACK;
 
-    if (SUCCESS != appDBusRegister(EN_DBUS_TOPIC_GSM | EN_DBUS_TOPIC_ETH | EN_DBUS_TOPIC_DEVICE, &gs_swUpdateDbusID))
+    if (RETURN_SUCCESS != appDBusRegister(EN_DBUS_TOPIC_GSM | EN_DBUS_TOPIC_ETH | EN_DBUS_TOPIC_DEVICE, &gs_swUpdateDbusID))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     gs_swUpdateCtx.taskId = appTskMngCreate(SW_UPDATE_TASK_NAME, (OsTaskCode)appSwUpdateTask, &gs_swUpdateCtx, &taskParam);
@@ -242,10 +242,10 @@ RETURN_STATUS AppSwUpdateInit(const char *serverIp,
     {
         appDBusUnregister(gs_swUpdateDbusID);
         gs_swUpdateDbusID = -1;
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 /******************************** End Of File *********************************/

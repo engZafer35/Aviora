@@ -34,7 +34,7 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
 {
     if (IS_NULL_PTR(outEpochUtc))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
 //    struct addrinfo hints;
@@ -51,7 +51,7 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
 //    {
 //        DEBUG_ERROR("->[E] NTP DNS failed (%s)", gs_ntpHost);
 //        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP DNS failed");
-//        return FAILURE;
+//        return RETURN_FAILURE;
 //    }
 //
 //    int sock = SOCKET(res->ai_family, res->ai_socktype, res->ai_protocol);
@@ -60,7 +60,7 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
 //        freeaddrinfo(res);
 //        DEBUG_ERROR("->[E] NTP socket failed");
 //        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP socket failed");
-//        return FAILURE;
+//        return RETURN_FAILURE;
 //    }
 //
 //    /* Set receive timeout (best-effort) */
@@ -82,7 +82,7 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
 //        freeaddrinfo(res);
 //        DEBUG_ERROR("->[E] NTP sendto failed");
 //        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP sendto failed");
-//        return FAILURE;
+//        return RETURN_FAILURE;
 //    }
 //
 //    struct sockaddr_storage from;
@@ -96,17 +96,17 @@ static RETURN_STATUS udpNtpQuery(U32 *outEpochUtc)
 //    {
 //        DEBUG_ERROR("->[E] NTP recv failed");
 //        APP_LOG_REC(g_sysLoggerID, "TimeSrv: NTP recv failed");
-//        return FAILURE;
+//        return RETURN_FAILURE;
 //    }
 //
 //    /* Transmit Timestamp seconds field at bytes 40..43 (big-endian) */
 //    U32 sec1900 = ((U32)pkt[40] << 24) | ((U32)pkt[41] << 16) | ((U32)pkt[42] << 8) | (U32)pkt[43];
 //    if (sec1900 < NTP_EPOCH_OFFSET)
 //    {
-//        return FAILURE;
+//        return RETURN_FAILURE;
 //    }
 //    *outEpochUtc = sec1900 - NTP_EPOCH_OFFSET;
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 /***************************** PUBLIC FUNCTIONS  ******************************/
@@ -114,14 +114,14 @@ RETURN_STATUS appTimeNtpSetServer(const char *host, U16 port)
 {
     if (IS_NULL_PTR(host) || host[0] == '\0')
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     strncpy(gs_ntpHost, host, sizeof(gs_ntpHost) - 1);
     gs_ntpHost[sizeof(gs_ntpHost) - 1] = '\0';
     gs_ntpPort = port;
 
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 U32 appTimeNtpGetEpochUtc(void)

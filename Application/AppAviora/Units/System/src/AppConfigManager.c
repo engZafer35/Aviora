@@ -33,7 +33,7 @@ static char gs_devSerialStr[16];
 /***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS appConfInit(const char *confPath)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     char confJsonBuff[256] = "";
     U32 rleng = 0;
 
@@ -49,7 +49,7 @@ RETURN_STATUS appConfInit(const char *confPath)
 //            g_devSerial = gs_devSerialStr;
 //
 //            DEBUG_WARNING("[W]-> From Device conf, Device Serial Number %s", g_devSerial);
-//            retVal = SUCCESS;
+//            retVal = RETURN_SUCCESS;
 //        }
 //        else
 //        {
@@ -58,7 +58,7 @@ RETURN_STATUS appConfInit(const char *confPath)
 //            g_devSerial = gs_devSerialStr;
 //            DEBUG_WARNING("[W]-> Device Serial Number is default %s", g_devSerial);
 //
-//            retVal = SUCCESS;
+//            retVal = RETURN_SUCCESS;
 //        }
 //    }
 //    else
@@ -66,7 +66,7 @@ RETURN_STATUS appConfInit(const char *confPath)
 //        DEBUG_WARNING("[W]-> %s does not exist, First starting !!", DEV_CONF_FILE);
         strcpy(gs_devSerialStr, DEVICE_SERIAL_NUMBER);
         g_devSerial = gs_devSerialStr;
-        retVal = SUCCESS;
+        retVal = RETURN_SUCCESS;
     }
 
 #ifdef __linux
@@ -92,7 +92,7 @@ RETURN_STATUS appConfInit(const char *confPath)
                 fsCloseFile(f);
             }
 
-            retVal = SUCCESS;
+            retVal = RETURN_SUCCESS;
         }
         else
         {
@@ -101,7 +101,7 @@ RETURN_STATUS appConfInit(const char *confPath)
             g_devSerial = gs_devSerialStr;
             DEBUG_ERROR("[E]-> Device Serial Number is default %s", g_devSerial);
 
-            retVal = SUCCESS;
+            retVal = RETURN_SUCCESS;
         }
     }
 

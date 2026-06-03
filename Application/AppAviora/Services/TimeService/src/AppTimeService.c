@@ -126,7 +126,7 @@ static RETURN_STATUS tmToEpoch(const struct tm *tmValue, U32 *outEpoch)
 {
     if (IS_NULL_PTR(tmValue) || IS_NULL_PTR(outEpoch))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     int year = tmValue->tm_year + 1900;
@@ -135,7 +135,7 @@ static RETURN_STATUS tmToEpoch(const struct tm *tmValue, U32 *outEpoch)
 
     if (year < 1970 || mon < 1 || mon > 12 || mday < 1 || mday > 31)
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     U32 days = 0;
@@ -155,7 +155,7 @@ static RETURN_STATUS tmToEpoch(const struct tm *tmValue, U32 *outEpoch)
              + (U32)tmValue->tm_sec;
 
     *outEpoch = secs;
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 static void rtcStrFromTm(const struct tm *tmValue, MiddRtcStr_t *outRtc)
@@ -175,7 +175,7 @@ static RETURN_STATUS tmFromRtcStr(const MiddRtcStr_t *rtc, struct tm *outTm)
 {
     if (IS_NULL_PTR(rtc) || IS_NULL_PTR(outTm))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     memset(outTm, 0, sizeof(*outTm));
@@ -191,7 +191,7 @@ static RETURN_STATUS tmFromRtcStr(const MiddRtcStr_t *rtc, struct tm *outTm)
         /* Convert to 0..6, best-effort */
         outTm->tm_wday = (rtc->wday == 7) ? 0 : rtc->wday;
     }
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 static RETURN_STATUS appTimeServiceRtcStrToEpoch(const MiddRtcStr_t *r, U32 *outEpoch)
@@ -201,22 +201,22 @@ static RETURN_STATUS appTimeServiceRtcStrToEpoch(const MiddRtcStr_t *r, U32 *out
 
     if (IS_NULL_PTR(r) || IS_NULL_PTR(outEpoch))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
-    if (SUCCESS != tmFromRtcStr(r, &tmLocal))
+    if (RETURN_SUCCESS != tmFromRtcStr(r, &tmLocal))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
-    if (SUCCESS != tmToEpoch(&tmLocal, &epochLocal))
+    if (RETURN_SUCCESS != tmToEpoch(&tmLocal, &epochLocal))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     S32 utc = (S32)epochLocal - tzOffsetSeconds();
     if (utc < 0) utc = 0;
 
     *outEpoch = (U32)utc;
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 static void appTimeServiceEpochToRtcStr(U32 epoch, MiddRtcStr_t *r)
@@ -244,7 +244,7 @@ static void ntpTimerCb(void)
     {
         DEBUG_INFO("->[I] NTP sync OK, epoch=%u", (U32)epoch);
         APP_LOG_REC(g_sysLoggerID, " NTP sync OK");
-        if (FAILURE == appTimeServiceAutogenUpdateRtcsFromEpoch((U32)epoch))
+        if (RETURN_FAILURE == appTimeServiceAutogenUpdateRtcsFromEpoch((U32)epoch))
         {
             DEBUG_ERROR("->[E] TimeSrv: Failed to update RTCs from NTP epoch");
             APP_LOG_REC(g_sysLoggerID, "TimeSrv: Failed to update RTCs from NTP epoch");
@@ -261,7 +261,7 @@ static RETURN_STATUS formatTm(const struct tm *t, char *buf, U32 bufSize, APP_TI
 {
     if (IS_NULL_PTR(t) || IS_NULL_PTR(buf) || bufSize < 20)
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     int year = t->tm_year + 1900;
@@ -279,14 +279,14 @@ static RETURN_STATUS formatTm(const struct tm *t, char *buf, U32 bufSize, APP_TI
                        day, mon, year, t->tm_hour, t->tm_min, t->tm_sec);
     }
     buf[bufSize - 1] = '\0';
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 static RETURN_STATUS parseDateTime(const char *str, APP_TIME_STRING_FORMAT fmt, struct tm *outTm)
 {
     if (IS_NULL_PTR(str) || IS_NULL_PTR(outTm))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     int y, mo, d, hh, mm, ss;
@@ -294,14 +294,14 @@ static RETURN_STATUS parseDateTime(const char *str, APP_TIME_STRING_FORMAT fmt, 
     {
         if (6 != sscanf(str, "%d.%d.%d %d:%d:%d", &y, &mo, &d, &hh, &mm, &ss))
         {
-            return FAILURE;
+            return RETURN_FAILURE;
         }
     }
     else
     {
         if (6 != sscanf(str, "%d.%d.%d %d:%d:%d", &d, &mo, &y, &hh, &mm, &ss))
         {
-            return FAILURE;
+            return RETURN_FAILURE;
         }
     }
 
@@ -312,38 +312,38 @@ static RETURN_STATUS parseDateTime(const char *str, APP_TIME_STRING_FORMAT fmt, 
     outTm->tm_hour = hh;
     outTm->tm_min  = mm;
     outTm->tm_sec  = ss;
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 /***************************** PUBLIC FUNCTIONS  ******************************/
 RETURN_STATUS appTimeServiceSetNtpServer(const char *host, U16 port)
 {
     if (IS_NULL_PTR(host) || (0 == host[0]))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
     return appTimeServiceAutogenSetNtpServer(host, port);
 }
 
 RETURN_STATUS appTimeServiceInit(const char *ntpHost, U16 ntpPort)
 {
-    RETURN_STATUS retVal = SUCCESS;
+    RETURN_STATUS retVal = RETURN_SUCCESS;
 
     memset(&gs_ts, 0, sizeof(gs_ts));
 
-    if (SUCCESS != appTimeServiceAutogenInit(ntpHost, ntpPort))
+    if (RETURN_SUCCESS != appTimeServiceAutogenInit(ntpHost, ntpPort))
     {
         DEBUG_ERROR("->[E] autogen init failed");        
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
 #if (APP_TIME_SERVICE_USE_NTP == 1)
     gs_ts.ntpTimerId = -1;
     {
         U32 periodMs = (U32)APP_TIME_SERVICE_NTP_UPDATE_PERIOD_MIN * WAIT_1_MIN;
-        if (SUCCESS != middEventTimerRegister(&gs_ts.ntpTimerId, ntpTimerCb, periodMs, TRUE))
+        if (RETURN_SUCCESS != middEventTimerRegister(&gs_ts.ntpTimerId, ntpTimerCb, periodMs, TRUE))
         {
             DEBUG_ERROR("->[E] TimeSrv: NTP timer register failed");
-            retVal = FAILURE;
+            retVal = RETURN_FAILURE;
         }
         else
         {
@@ -359,18 +359,18 @@ RETURN_STATUS appTimeServiceInit(const char *ntpHost, U16 ntpPort)
 
 RETURN_STATUS appTimeServiceSetTime(U32 epoch)
 {
-    RETURN_STATUS retVal = SUCCESS;
+    RETURN_STATUS retVal = RETURN_SUCCESS;
     
     if (!gs_ts.initialized)
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
-    if (FAILURE == appTimeServiceAutogenUpdateRtcsFromEpoch((U32)epoch))
+    if (RETURN_FAILURE == appTimeServiceAutogenUpdateRtcsFromEpoch((U32)epoch))
     {
         DEBUG_ERROR("->[E] User time update Failed");
         APP_LOG_REC(g_sysLoggerID, "TimeSrv: User time update Failed");
-        retVal = FAILURE;
+        retVal = RETURN_FAILURE;
     }
     else
     {
@@ -383,12 +383,12 @@ RETURN_STATUS appTimeServiceSetTime(U32 epoch)
 
 RETURN_STATUS appTimeServiceGetTime(struct tm *tmValue)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     U32 epoch;
 
     if (IS_NULL_PTR(tmValue))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
 
     epoch = appTimeServiceAutogenGetEpochFromPreferredSource();
@@ -413,20 +413,20 @@ RETURN_STATUS appTimeServiceEpochToTm(U32 epoch, struct tm *outTm)
 
     epochToTm((U32)localEpoch, outTm);
 
-    return SUCCESS;
+    return RETURN_SUCCESS;
 }
 
 RETURN_STATUS appTimeServiceTmToEpoch(const struct tm *tmValue, U32 *outEpoch)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     U32 localEpoch;
     
-    if (SUCCESS == tmToEpoch(tmValue, &localEpoch))
+    if (RETURN_SUCCESS == tmToEpoch(tmValue, &localEpoch))
     {
         S32 utc = (S32)localEpoch - tzOffsetSeconds();
         if (utc < 0) utc = 0;
         *outEpoch = (U32)utc;
-        retVal = SUCCESS;
+        retVal = RETURN_SUCCESS;
     }
 
     return retVal;
@@ -435,9 +435,9 @@ RETURN_STATUS appTimeServiceTmToEpoch(const struct tm *tmValue, U32 *outEpoch)
 RETURN_STATUS appTimeServiceFormatNow(char *buf, U32 bufSize, APP_TIME_STRING_FORMAT fmt)
 {
     struct tm t;
-    if (SUCCESS != appTimeServiceGetTime(&t))
+    if (RETURN_SUCCESS != appTimeServiceGetTime(&t))
     {
-        return FAILURE;
+        return RETURN_FAILURE;
     }
     return formatTm(&t, buf, bufSize, fmt);
 }
@@ -449,10 +449,10 @@ RETURN_STATUS appTimeServiceStringToTm(const char *str, APP_TIME_STRING_FORMAT f
 
 RETURN_STATUS appTimeServiceStringToEpoch(const char *str, APP_TIME_STRING_FORMAT fmt, U32 *outEpoch)
 {
-    RETURN_STATUS retVal = FAILURE;
+    RETURN_STATUS retVal = RETURN_FAILURE;
     struct tm t;
 
-    if (SUCCESS == parseDateTime(str, fmt, &t))
+    if (RETURN_SUCCESS == parseDateTime(str, fmt, &t))
     {
         retVal = appTimeServiceTmToEpoch(&t, outEpoch);
     }
