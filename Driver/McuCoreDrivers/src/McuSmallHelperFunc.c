@@ -1,8 +1,9 @@
 
 #include "Project_Conf.h"
+#include "MiddSerialComm.h"
 /* USER CODE BEGIN 1 */
 int _write(int file, char *ptr, int len)
 {
-    HAL_UART_Transmit(&huart2, (uint8_t*)ptr, len, HAL_MAX_DELAY);
+    middSerialCommSendData(EN_SERIAL_LINE_2, ptr, len, 0xFFFFFFFFU);
     return len;
 }

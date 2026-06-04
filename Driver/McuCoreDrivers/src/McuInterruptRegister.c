@@ -46,9 +46,9 @@ CORE_TIMER_IT_FUNCTION
         runCallback(TIMER_EVENT_IT_ID, 0);
     }
 
-    if (htim->Instance == TIM2)
+    if (TRUE == IS_HALTICK_TIMER_IT())
     {
-      HAL_IncTick();
+        RUN_HALL_TICK();
     }
 
     //dont need to clear IT func for stm32. Check for other MCU
