@@ -33,7 +33,7 @@
 /**
  * @brief m41t11 driver time structure
  */
-typedef struct _RtcStr_t
+typedef struct _RRtcStr_t
 {
     U8 sec;     /* Seconds parameter, from 00 to 59 */
     U8 min;     /* Minutes parameter, from 00 to 59 */
@@ -42,7 +42,7 @@ typedef struct _RtcStr_t
     U8 mday;    /* Date in a month, 1 to 31 */
     U8 mon;     /* Month in a year, 1 to 12 */
     U16 year;   /* Year parameter, 2000 to 3000 */
-}RtcStr_t;
+}M41T11_RtcStr_t;
 
  typedef struct _RtcI2c_t
  {
@@ -68,7 +68,7 @@ RETURN_STATUS drvM41T11Init(const RtcI2c_t *i2c);
  * @return if everything is OK, return SUCCES
  *         otherwise return RETURN_FAILURE
  */
-RETURN_STATUS drvM41T11GetTime(RtcStr_t *getTime);
+RETURN_STATUS drvM41T11GetTime(M41T11_RtcStr_t *getTime);
 
 /**
  * @brief  set time
@@ -76,7 +76,7 @@ RETURN_STATUS drvM41T11GetTime(RtcStr_t *getTime);
  * @return if everything is OK, return SUCCES
  *         otherwise return RETURN_FAILURE
  */
-RETURN_STATUS drvM41T11SetTime(const RtcStr_t *setTime);
+RETURN_STATUS drvM41T11SetTime(const M41T11_RtcStr_t *setTime);
 
 #endif /* __DRV_M41T11_RTC_H__ */
 

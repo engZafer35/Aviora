@@ -26,7 +26,7 @@
 /************************* GLOBAL FUNCTION DEFINITIONS ************************/
 /**
  * @brief   Initialize the display manager
- * @return  if everything is OK, return EN_SUCCES
+ * @return  if everything is OK, return RETURN_SUCCESS
  *          otherwise return RETURN_FAILURE
  */
 RETURN_STATUS appDisplayInit(void);
