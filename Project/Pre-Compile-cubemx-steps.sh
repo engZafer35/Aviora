@@ -4,7 +4,11 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-AVIORA_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+if [ -n "${AVIORA_ROOT:-}" ]; then
+  AVIORA_ROOT="$(cd "${AVIORA_ROOT}" && pwd)"
+else
+  AVIORA_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+fi
 
 MAIN_H="${AVIORA_ROOT}/Driver/StmCubeIDE/Inc/main.h"
 SRC_DIR="${AVIORA_ROOT}/Driver/StmCubeIDE/Src"

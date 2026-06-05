@@ -67,7 +67,7 @@ RETURN_STATUS drvM41T11Init(const RtcI2c_t *i2c)
  * @return if everything is OK, return SUCCES
  *         otherwise return RETURN_FAILURE
  */
-RETURN_STATUS drvM41T11GetTime(RtcStr_t *getTime)
+RETURN_STATUS drvM41T11GetTime(M41T11_RtcStr_t *getTime)
 {
     RETURN_STATUS retVal = RETURN_FAILURE;
     U8 data[RTC_REG_CNT] = {0};
@@ -106,7 +106,7 @@ RETURN_STATUS drvM41T11GetTime(RtcStr_t *getTime)
  * @return if everything is OK, return SUCCES
  *         otherwise return RETURN_FAILURE
  */
-RETURN_STATUS drvM41T11SetTime(const RtcStr_t *setTime)
+RETURN_STATUS drvM41T11SetTime(const M41T11_RtcStr_t *setTime)
 {
     RETURN_STATUS retVal = RETURN_FAILURE;
     U8 data[RTC_REG_CNT] = {0};
