@@ -113,11 +113,11 @@
       <section class="hero">
         <div class="hero-card">
           <h1>Protocol Layer Overview</h1>
-          <p class="overview-hero-lede"><span class="overview-pulse">Multi-protocol gateway</span> · one JSON profile · TCP and MQTT</p>
+          <p class="overview-hero-lede"><span class="overview-pulse">Multi-protocol Gateway</span> · One JSON Profile · TCP and MQTT</p>
           <div class="overview-hero-spotlight">
             <p style="margin:0 0 12px 0">
               The gateway firmware can load <strong>several protocol stacks at once</strong>—TCP-style sessions, MQTT toward a broker, TLV and other framing—without a separate image for every mix.
-              The customer file <strong><code>protocol_config.json</code></strong> is where that profile is declared: which blocks are enabled (<code>use: true</code>), how each one connects, and the rest of the fields the generator consumes.
+              The customer/project file <strong><code>protocol_config.json</code></strong> is where that profile is declared: which blocks are enabled (<code>use: true</code>), how each one connects, and the rest of the fields the generator consumes.
               Run <code>generate_protocol_config.py</code> and it emits the C headers (for example <code>INIT_PROTOCOLS</code> and related init expansion). <strong>Product-specific wiring stays in JSON and generated code</strong>, not in ad-hoc branches scattered through the sources.
             </p>
             <p style="margin:0">
@@ -145,7 +145,7 @@
               Like file system, logger, and time service, the protocol plane uses <strong>per-customer JSON + generated headers</strong>. The difference from a naive “pick A or B” model:
               <strong><code>protocol_config.json</code> can enable several protocol entries at once</strong> (<code>use: true</code> on RigelMq, Orion TLV, ZD, Metallix…). Each brings its own
               <code>protocolFunc</code> hooks and connection defaults; the script composes <code>INIT_PROTOCOLS</code> so init/start run in order. <strong>Multiple sensors</strong> are not an afterthought—each active protocol names a
-              <code>linkedSensorName</code>; the union drives <code>INIT_SENSORS</code>. One customer folder, one generator run, one firmware personality—spelled out in JSON.
+              <code>linkedSensorName</code>; the union drives <code>INIT_SENSORS</code>. One customer/project folder, one generator run, one firmware personality—spelled out in JSON.
             </p>
             <div class="proto-callout">
               <strong>Why this matters.</strong> A gateway can speak <strong>MQTT to the cloud</strong> and <strong>TCP TLV to a legacy head-end</strong> in the same binary—if your product needs both, you flip booleans and regenerate;
@@ -156,14 +156,14 @@
           <article class="card col-12">
             <h2>Customer <code>protocol_config.json</code> and <code>generate_protocol_config.py</code></h2>
             <p class="proto-mini">
-              Under <code>Customers/&lt;CustomerName&gt;/Protocol/</code>, each customer keeps a single <strong>protocol_config.json</strong> that declares <strong>which protocol blocks are on</strong> (one or many),
+              Under <code>Customers/&lt;CustomerName&gt;/Protocol/</code>, each customer/project keeps a single <strong>protocol_config.json</strong> that declares <strong>which protocol blocks are on</strong> (one or many),
               their connection defaults (MQTT or TCP), and the <strong>sensors</strong> referenced by <code>linkedSensorName</code>. The Python tool
               <code>Customers/generate_protocol_config.py</code> reads that JSON and emits C headers so the gateway gets composed <code>INIT_PROTOCOLS</code> / <code>INIT_SENSORS</code> macros—no manual stitching.
             </p>
 
             <h3 class="sub-h3">End-to-end flow</h3>
             <div class="diagram-wrap">
-              <div class="diagram-head">From JSON to firmware includes</div>
+              <div class="diagram-head">From JSON to Firmware Includes</div>
               <pre class="mermaid">flowchart LR
   subgraph IN["Input"]
     J[protocol_config.json]
@@ -189,7 +189,7 @@
 
             <h3 class="sub-h3">Selection logic (active protocol and sensors)</h3>
             <div class="diagram-wrap">
-              <div class="diagram-head">What the generator keeps</div>
+              <div class="diagram-head">What the Generator Keeps</div>
               <pre class="mermaid">flowchart TB
   P["protocol.use"]
   P --> AP["activeProtocol doc label"]
@@ -210,7 +210,7 @@
 <span class="ok">Wrote C:\...\Customers\Protocol_Config.h</span></pre>
             </div>
 
-            <p class="proto-mini">The shim <code>Customers/Protocol_Config.h</code> only includes the selected customer file, for example:</p>
+            <p class="proto-mini"><code>Customers/Protocol_Config.h</code> only includes the selected customer/project file, for example:</p>
             <pre class="code-block">#include "ZD_0101/Protocol/cus_protocol_config.h"</pre>
 
             <h3 class="sub-h3">Root fields (<code>protocol_config.json</code>)</h3>
@@ -351,7 +351,7 @@
           </article>
 
           <article class="card col-12">
-            <h2>Architecture — multi-protocol, one meter core</h2>
+            <h2>Architecture — Multi-Protocol, One Meter Core</h2>
             <p class="proto-mini">
               A build can load <strong>several protocol modules</strong> when JSON says so; each uses its transport (TCP and/or MQTT). All operational traffic still meets at
               <strong>AppMeterOperations</strong> for metering, directives, and jobs—parallel front doors, one house.
