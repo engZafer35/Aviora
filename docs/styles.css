@@ -517,7 +517,7 @@ pre:not(.mermaid) {
     flex-direction: column;
     align-items: stretch;
     padding: 8px 12px;
-    gap: 6px;
+    gap: 0;
   }
 
   .topbar-row {
@@ -541,75 +541,13 @@ pre:not(.mermaid) {
     white-space: nowrap;
   }
 
-  .nav {
-    margin-left: 0;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    gap: 6px;
-    padding: 2px 0 6px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
-  }
-
-  .nav::-webkit-scrollbar {
-    height: 3px;
-  }
-
-  .nav::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 999px;
-  }
-
-  .nav a {
-    flex-shrink: 0;
-    padding: 5px 11px;
-    font-size: 12px;
-    white-space: nowrap;
-  }
-
-  .code-block,
-  pre:not(.mermaid) {
-    font-size: 13px;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-}
-
-@media (max-width: 768px) and (min-width: 581px) {
-  .topbar-row {
-    grid-template-columns: 1fr;
-    justify-items: center;
-  }
-
-  .brand {
-    text-align: center;
-    max-width: 100%;
-  }
-}
-
-@media (max-width: 580px) {
-  .topbar-row {
-    grid-template-columns: minmax(0, 1fr) 40px;
-    justify-items: stretch;
-  }
-
   .nav-toggle {
     display: inline-flex;
   }
 
-  .topbar-inner {
-    gap: 0;
-  }
-
-  .brand {
-    font-size: 13px;
-    text-align: left;
-  }
-
   .nav {
     display: none;
+    margin-left: 0;
     flex-direction: column;
     flex-wrap: nowrap;
     overflow: visible;
@@ -638,6 +576,51 @@ pre:not(.mermaid) {
   .nav a.active {
     background: rgba(110, 168, 255, 0.15);
     border-color: var(--line);
+  }
+
+  .code-block,
+  pre:not(.mermaid) {
+    font-size: 13px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .topbar-inner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  .topbar-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px;
+    width: 100%;
+  }
+
+  .brand {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+  }
+
+  .nav {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    margin-top: 8px;
+    border-top: 1px solid var(--line);
+    overflow: visible;
+  }
+
+  .topbar.nav-open .nav {
+    display: flex;
   }
 }
 
