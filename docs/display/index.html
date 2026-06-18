@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>🛰️Aviora-Display</title>
   <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="../protocol/protocol-docs.css" />
 </head>
-<body>
-  <body class="protocol-docs">
-    <div class="topbar">
+<body class="protocol-docs">
+  <div class="topbar">
     <div class="topbar-inner">
       <div class="brand">🛰️Zafer Satılmış - Aviora</div>
       <nav class="nav">
@@ -19,8 +19,6 @@
         <a href="../network/index.html">Network</a>
         <a href="index.html" class="active">Display</a>
         <a href="../sw_update/index.html">SW Update</a>
-        <a href="../office/index.html">Office</a>
-        <a href="../office-3d/index.html">Office 3D</a>
       </nav>
     </div>
   </div>
@@ -33,40 +31,41 @@
       </nav>
     </aside>
     <div class="main-with-sidebar">
-  <section class="hero">
-    <div class="hero-card">
-      <h1>Display Manager</h1>
-      <p>
-        LED and LCD display support. Customer-specific drivers via JSON config and code generation.
-      </p>
-    </div>
-  </section>
+      <section class="hero">
+        <div class="hero-card">
+          <h1>Display Manager</h1>
+          <p>
+            LED and LCD display support. Customer-specific drivers via JSON config and code generation.
+          </p>
+        </div>
+      </section>
 
-  <main class="container">
-    <div class="grid">
-      <article class="card col-8">
-        <h2>Overview</h2>
-        <p>
-          Display Manager uses <code>display_config.json</code> to select type (led/lcd) and customer driver. Generator produces autogen wiring.
-        </p>
-        <ul>
-          <li>LED displays</li>
-          <li>LCD displays</li>
-        </ul>
-      </article>
+      <main class="container">
+        <div class="grid">
+          <article class="card col-8">
+            <h2>Overview</h2>
+            <p>
+              Display Manager uses <code>display_config.json</code> to select type (led/lcd) and customer driver. Generator produces autogen wiring.
+            </p>
+            <ul>
+              <li>LED displays</li>
+              <li>LCD displays</li>
+            </ul>
+          </article>
 
-      <article class="card col-4">
-        <h2>API</h2>
-        <p><code>AppDisplayInit()</code></p>
-        <p><code>AppDisplayStart()</code></p>
-      </article>
-    </div>
-  </main>
+          <article class="card col-4">
+            <h2>API</h2>
+            <p><code>AppDisplayInit()</code></p>
+            <p><code>AppDisplayStart()</code></p>
+          </article>
+        </div>
+      </main>
 
-  <footer>
-    <p><a href="../index.html">← Back to Aviora</a></p>
-  </footer>
+      <footer>
+        <p><a href="../index.html">← Back to Aviora</a></p>
+      </footer>
     </div>
   </div>
+  <script defer src="../nav-mobile.js"></script>
 </body>
 </html>

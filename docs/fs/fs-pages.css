@@ -6,3 +6,35 @@ body.fs-docs > footer.protocol-global-footer {
   margin-right: 0 !important;
   box-sizing: border-box;
 }
+
+/* FS pages use protocol-docs layout — match wide content + mobile padding */
+body.protocol-docs.fs-docs .hero,
+body.protocol-docs.fs-docs .container {
+  max-width: min(1820px, 100%);
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+
+body.protocol-docs.fs-docs .hero p {
+  max-width: none;
+}
+
+body.protocol-docs.fs-docs .card {
+  padding: 22px 26px;
+  border-radius: 16px;
+}
+
+@media (max-width: 900px) {
+  body.protocol-docs.fs-docs .card {
+    padding: 16px 14px;
+    border-radius: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  body.protocol-docs.fs-docs .hero,
+  body.protocol-docs.fs-docs .container {
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+  }
+}
