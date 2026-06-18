@@ -293,12 +293,27 @@ pre.mermaid {
 }
 
 @media (max-width: 960px) {
-  .sidebar {
+  body.timeservice-docs .sidebar {
     width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--line);
   }
-  .layout-with-sidebar {
+
+  body.timeservice-docs .layout-with-sidebar {
     flex-direction: column;
+  }
+
+  body.timeservice-docs .ts-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  body.timeservice-docs .ts-ntp-timeline {
+    height: 90px;
+    padding: 12px;
+    gap: 6px;
+  }
+
+  body.timeservice-docs .ts-ntp-labels {
+    font-size: 11px;
   }
 }

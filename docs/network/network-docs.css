@@ -45,6 +45,18 @@ body.protocol-docs.network-docs .sidebar-title {
   border-bottom: none;
 }
 
+@media (max-width: 640px) {
+  .network-table th,
+  .network-table td {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .network-table th {
+    font-size: 11px;
+  }
+}
+
 .network-table code {
   background: rgba(255, 255, 255, 0.06);
   padding: 2px 6px;

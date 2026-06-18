@@ -103,3 +103,37 @@
   color: #e74c3c;
   padding: 24px;
 }
+
+@media (max-width: 900px) {
+  .markdown-body {
+    padding: 18px 16px;
+    font-size: 16px;
+  }
+
+  .markdown-body h1 {
+    font-size: clamp(1.5em, 5vw, 1.85em);
+  }
+
+  .markdown-body h2 {
+    font-size: clamp(1.2em, 4vw, 1.4em);
+  }
+
+  .markdown-body pre {
+    font-size: 13px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .markdown-body table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (max-width: 480px) {
+  .markdown-body {
+    padding: 14px 12px;
+    font-size: 15px;
+  }
+}
