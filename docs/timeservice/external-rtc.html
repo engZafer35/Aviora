@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <title>External RTC — Time Service — Aviora</title>
   <link rel="stylesheet" href="../styles.css" />
   <link rel="stylesheet" href="../protocol/protocol-docs.css" />
@@ -15,8 +15,15 @@
 <body class="protocol-docs timeservice-docs">
   <div class="topbar">
     <div class="topbar-inner">
-      <div class="brand">🛰️Zafer Satılmış - Aviora</div>
-      <nav class="nav">
+      <div class="topbar-row">
+        <div class="brand">🛰️Zafer Satılmış - Aviora</div>
+        <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+          <span class="nav-toggle-bar"></span>
+        </button>
+      </div>
+      <nav class="nav" id="site-nav">
         <a href="../index.html">Aviora</a>
         <a href="../fs/index.html">File System</a>
         <a href="../protocol/index.html">Protocol</a>
@@ -115,6 +122,6 @@ flowchart LR
       <footer><p><a href="../index.html">← Back To Aviora</a></p></footer>
     </div>
   </div>
-  <script defer src="../nav-mobile.js"></script>
+  <script defer src="../nav-mobile.js?v=2"></script>
 </body>
 </html>
