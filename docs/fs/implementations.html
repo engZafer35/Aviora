@@ -44,7 +44,7 @@
     <div class="hero-card">
       <h1>File System Port Implementations</h1>
       <p>
-        FlashLink, FlashFS and littlefs integration — and the flexibility provided by <code>cells</code>, <code>geometry</code>, and <code>flashHwFunc</code>.
+        FlashLink, FlashFS and Littlefs integration — and the flexibility provided by <code>cells</code>, <code>geometry</code>, and <code>flashHwFunc</code>.
       </p>
     </div>
   </section>
@@ -115,7 +115,7 @@ all -> FS_HARDWARE_INIT()</pre>
         </div>
       </article>
 
-      <article class="card col-8">
+      <article class="card ">
         <h2>fs_littlefs_helper_func — Why It Exists</h2>
         <p>
           littlefs expects <strong>mutex lock/unlock</strong> callbacks for thread-safe access. These depend on the RTOS or bare-metal environment and are centralized in the <code>fs_littlefs_helper_func</code> module.
@@ -136,13 +136,6 @@ all -> FS_HARDWARE_INIT()</pre>
   E --> G["OsMutex/RTOS"]
   F --> G</pre>
         </div>
-      </article>
-
-      <article class="card col-4">
-        <h2>Integration Note</h2>
-        <p>
-          <code>StorageFlashPort_littlefs.c</code> may be a stub in the current repo. Product branches should replace it with real hardware I/O callbacks.
-        </p>
       </article>
     </div>
   </main>

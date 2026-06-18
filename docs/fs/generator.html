@@ -44,8 +44,10 @@
     <div class="hero-card">
       <h1>Generator Script — Detailed Explanation</h1>
       <p>
-        <code>Customers/generate_fs_port_config.py</code> converts customer JSON configuration into build-ready C headers and macros.
-        Invoked via command line; results appear in <code>cus_fs_port_config.h</code> and <code>FS_Port_Config.h</code>.
+        <code>Customers/generate_fs_port_config.py</code> converts customer/project 
+        specific JSON configuration into build-ready C headers and macros.
+        Invoked via command line; results appear in <code>cus_fs_port_config.h</code> 
+        and <code>FS_Port_Config.h</code>.
       </p>
     </div>
   </section>
@@ -85,9 +87,8 @@
       </article>
 
       <article class="card col-12">
-        <h2>Internal call graph</h2>
+        <h2>Internal Call Graph</h2>
         <div class="diagram-wrap">
-          <div class="diagram-head">Mermaid call graph</div>
           <pre class="mermaid">flowchart TD
   main["main()"] --> read["read fs_config.json"]
   read --> map["map activeFsName to USE macro"]

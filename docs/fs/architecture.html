@@ -44,8 +44,10 @@
     <div class="hero-card">
       <h1>Architecture Deep Dive</h1>
       <p>
-        How developer workflow is separated from customer customization.
-        Result: clean API at the application layer, controlled extension point at config and generation.
+        Application developers use the same fs* API for every project. Customer-specific settings 
+        such as the filesystem backend, flash geometry, and hardware callbacks are defined in JSON
+         and converted into generated headers. To support a new deployment, you update the
+         configuration and regenerate the files—application code stays unchanged.
       </p>
     </div>
   </section>
@@ -53,7 +55,7 @@
   <main class="container">
     <div class="grid">
       <article class="card col-6">
-        <h2>Developer perspective</h2>
+        <h2>Developer Perspective</h2>
         <p>
           A developer writes business logic once and keeps using the same file operations.
           No customer branch is required in app modules.
@@ -66,9 +68,10 @@
       </article>
 
       <article class="card col-6">
-        <h2>Customer perspective</h2>
+        <h2>Customer Perspective</h2>
         <p>
-          Each customer controls file system behavior in JSON. The customer can switch active backend and parameters without editing app source files.
+          Each customer/project controls file system behavior in JSON. The customer can switch active
+          backend and parameters without editing app source files.
         </p>
         <ul>
           <li>`activeFsName` selects backend</li>
@@ -78,9 +81,8 @@
       </article>
 
       <article class="card col-12">
-        <h2>Layer model</h2>
-        <div class="diagram-wrap">
-          <div class="diagram-head">Mermaid architecture layers</div>
+        <h2>Layer Overview</h2>
+        <div class="diagram-wrap">          
           <pre class="mermaid">flowchart TB
   APP[Application Services] --> API["Midd_FS/fs_port.h"]
   API --> GEN1["Customers/FS_Port_Config.h"]
@@ -132,13 +134,13 @@ App -> fs* operations</pre>
       <article class="card col-6">
         <h2>Operational benefit</h2>
         <ul>
-          <li>Lower regression risk during customer adaptation</li>
+          <li>Lower regression risk during customer/project adaptation</li>
           <li>Clear change scope in generated files</li>
           <li>Fast onboarding for new developers</li>
           <li>Safer long term maintenance</li>
         </ul>
         <p class="note">
-          The architecture is fit for product families where hardware and memory map may change per customer.
+          The architecture is fit for product families where hardware and memory map may change per customer/project.
         </p>
       </article>
     </div>
