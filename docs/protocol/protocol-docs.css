@@ -204,3 +204,42 @@ body.protocol-docs .protocol-footer-note {
     padding: 14px 10px;
   }
 }
+
+/* Doc tables: scroll inside cards on narrow screens */
+body.protocol-docs .proto-table,
+body.protocol-docs .ts-table,
+body.protocol-docs .network-table,
+body.protocol-docs .tag-table,
+body.protocol-docs .api-table,
+body.protocol-docs .api-tbl {
+  display: table;
+  width: 100%;
+  min-width: min(100%, 520px);
+}
+
+@media (max-width: 640px) {
+  body.protocol-docs .proto-table th,
+  body.protocol-docs .proto-table td,
+  body.protocol-docs .ts-table th,
+  body.protocol-docs .ts-table td,
+  body.protocol-docs .network-table th,
+  body.protocol-docs .network-table td,
+  body.protocol-docs .tag-table th,
+  body.protocol-docs .tag-table td,
+  body.protocol-docs .api-table th,
+  body.protocol-docs .api-table td,
+  body.protocol-docs .api-tbl th,
+  body.protocol-docs .api-tbl td {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  body.protocol-docs .proto-table th,
+  body.protocol-docs .ts-table th,
+  body.protocol-docs .network-table th,
+  body.protocol-docs .tag-table th,
+  body.protocol-docs .api-table th,
+  body.protocol-docs .api-tbl th {
+    font-size: 11px;
+  }
+}
