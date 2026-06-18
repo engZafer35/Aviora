@@ -66,7 +66,17 @@ a:hover{text-decoration:underline}
 }
 
 .topbar-row {
-  display: contents;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+@media (min-width: 769px) {
+  .topbar-row {
+    flex: 0 1 auto;
+  }
 }
 
 .nav-toggle {
@@ -75,15 +85,18 @@ a:hover{text-decoration:underline}
   justify-content: center;
   width: 40px;
   height: 40px;
+  min-width: 40px;
   padding: 0;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(12, 18, 36, 0.95);
   cursor: pointer;
+  flex: 0 0 40px;
   flex-direction: column;
   gap: 5px;
-  flex-shrink: 0;
   color: var(--text);
+  position: relative;
+  z-index: 12;
 }
 
 .nav-toggle-bar {
@@ -508,11 +521,12 @@ pre:not(.mermaid) {
   }
 
   .topbar-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px;
     width: 100%;
     align-items: center;
-    justify-content: space-between;
-    gap: 10px;
+    gap: 8px;
+    flex: none;
   }
 
   .brand {
@@ -520,8 +534,11 @@ pre:not(.mermaid) {
     text-align: left;
     letter-spacing: 0.2px;
     line-height: 1.3;
-    flex: 1;
     min-width: 0;
+    flex-shrink: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .nav {
@@ -562,16 +579,22 @@ pre:not(.mermaid) {
 
 @media (max-width: 768px) and (min-width: 581px) {
   .topbar-row {
-    justify-content: center;
+    grid-template-columns: 1fr;
+    justify-items: center;
   }
 
   .brand {
     text-align: center;
-    flex: none;
+    max-width: 100%;
   }
 }
 
 @media (max-width: 580px) {
+  .topbar-row {
+    grid-template-columns: minmax(0, 1fr) 40px;
+    justify-items: stretch;
+  }
+
   .nav-toggle {
     display: inline-flex;
   }
@@ -595,6 +618,7 @@ pre:not(.mermaid) {
     margin-top: 8px;
     border-top: 1px solid var(--line);
     -webkit-overflow-scrolling: touch;
+    width: 100%;
   }
 
   .topbar.nav-open .nav {
