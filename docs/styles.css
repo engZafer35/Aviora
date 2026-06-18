@@ -87,7 +87,7 @@ a.brand:hover{
 }
 
 .nav-toggle {
-  display: none;
+  display: none !important;
   align-items: center;
   justify-content: center;
   width: 40px;
@@ -550,7 +550,7 @@ pre:not(.mermaid) {
 
   .nav {
     margin-left: 0;
-    display: flex;
+    display: flex !important;
     flex-direction: row;
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -586,7 +586,7 @@ pre:not(.mermaid) {
   }
 }
 
-/* Hamburger only at 580px and below */
+/* Hamburger + dropdown nav: 580px and below only */
 @media (max-width: 580px) {
   .topbar-inner {
     gap: 0;
@@ -596,7 +596,6 @@ pre:not(.mermaid) {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 40px;
     justify-items: stretch;
-    justify-content: stretch;
   }
 
   .brand {
@@ -604,12 +603,12 @@ pre:not(.mermaid) {
     text-align: left;
   }
 
-  .nav-toggle {
-    display: inline-flex;
+  .topbar .nav-toggle {
+    display: inline-flex !important;
   }
 
   .nav {
-    display: none;
+    display: none !important;
     flex-direction: column;
     flex-wrap: nowrap;
     overflow: visible;
@@ -621,7 +620,7 @@ pre:not(.mermaid) {
   }
 
   .topbar.nav-open .nav {
-    display: flex;
+    display: flex !important;
   }
 
   .nav a {
@@ -640,10 +639,10 @@ pre:not(.mermaid) {
   }
 }
 
-/* Desktop: normal top nav, no hamburger */
-@media (min-width: 769px) {
-  .nav-toggle {
-    display: none;
+/* Desktop / tablet: normal nav, hamburger hidden */
+@media (min-width: 581px) {
+  .topbar .nav-toggle {
+    display: none !important;
   }
 
   .topbar-inner {
@@ -663,7 +662,7 @@ pre:not(.mermaid) {
   }
 
   .nav {
-    display: flex;
+    display: flex !important;
     flex-direction: row;
     flex-wrap: wrap;
     margin-left: auto;
@@ -675,15 +674,29 @@ pre:not(.mermaid) {
   }
 }
 
-/* Tablet: horizontal scroll nav, no hamburger */
+/* Tablet: stacked bar + horizontal scroll, no hamburger */
 @media (max-width: 768px) and (min-width: 581px) {
-  .nav-toggle {
-    display: none;
+  .topbar-inner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .topbar-row {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .brand {
+    text-align: center;
   }
 
   .nav {
-    display: flex;
+    display: flex !important;
     flex-direction: row;
+    flex-wrap: nowrap;
+    margin-left: 0;
+    overflow-x: auto;
   }
 }
 
