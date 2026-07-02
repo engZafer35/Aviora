@@ -54,7 +54,7 @@
         <div class="hero-card">
           <h1>Network Service — Customer-Driven Generation</h1>
           <p>
-            Ethernet and GSM (PPP) behaviour is declared per customer in <code>network_config.json</code> under
+            Ethernet and GSM(PPP) behaviour is declared per customer in <code>network_config.json</code> under
             <code>Customers/&lt;customer&gt;/Network/</code>. The Python tool
             <strong><code>Customers/generate_network_service.py</code></strong> reads that file and emits C headers and a small bridge so the application always compiles against one consistent profile—without hand-editing dozens of macros for each product.
           </p>
@@ -185,7 +185,11 @@ sequenceDiagram
           <article class="card col-12">
             <h2>Include Chain</h2>
             <p>
-              The application never includes a long path into <code>Customers/LinuxGcc/...</code> directly. It includes <code>NetworkService_Config.h</code>, which is regenerated to point at the active customer’s <code>Cus_Network_Config.h</code>. That header in turn pulls in the stack’s public API header and each interface manager header listed in JSON, so the compiler sees the same symbols the macros reference.
+              The application never includes a long path into <code>Customers/LinuxGcc/...</code> directly. 
+              It includes <code>NetworkService_Config.h</code>, which is regenerated to point at the active 
+              customer’s <code>Cus_Network_Config.h</code>. That header in turn pulls in the stack’s public
+               API header and each interface manager header listed in JSON, so the compiler sees the same
+               symbols the macros reference.
             </p>
             <div class="diagram-wrap">
               <pre class="mermaid">
