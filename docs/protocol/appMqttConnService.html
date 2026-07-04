@@ -158,8 +158,10 @@
         <div class="hero-card">
           <h1>MQTT Connection Service</h1>
           <p>
-            On the gateway, this layer manages MQTT broker session setup, subscriptions, handling of incoming publishes, and reconnection after loss, all through <strong>a single background task</strong>.
-            A thin CycloneTCP-based <em>connection manager</em> sits underneath; this service defines higher-level behavior with an RTOS task loop, request flags, and callbacks.
+            On the gateway, this layer manages MQTT broker session setup, subscriptions, handling of incoming publishes,
+            and reconnection after loss, all through <strong>a single background task</strong>.
+            A thin CycloneTCP-based <em>connection manager</em> sits underneath; this service defines higher-level behavior
+            with an RTOS task loop, request flags, and callbacks.
           </p>
           <div class="tag-row">
             <span class="tag">CycloneTCP MQTT</span>
@@ -176,10 +178,13 @@
           <article class="card col-12">
             <h2>Separation Of Roles And Responsibilities</h2>
             <p>
-              The <strong>connection manager</strong> is only responsible for a single broker session, <code>CONNECT</code> / <code>SUBSCRIBE</code> / <code>PUBLISH</code>, and the <code>process</code> path (RX + keep-alive) that must run every loop iteration; broker nickname or subscription table state is not kept there.
+              The <strong>connection manager</strong> is only responsible for a single broker session, 
+              <code>CONNECT</code> / <code>SUBSCRIBE</code> / <code>PUBLISH</code>, and the <code>process</code> path (RX + keep-alive) 
+              that must run every loop iteration; broker nickname or subscription table state is not kept there.
             </p>
             <p>
-              <strong>This service</strong> holds broker address, credentials, the topic list to subscribe to (limited slots), the incoming-message callback and optional link callback; all heavy work runs in a separate task on a fixed-period loop.
+              <strong>This service</strong> holds broker address, credentials, the topic list to subscribe to (limited slots),
+              the incoming-message callback and optional link callback; all heavy work runs in a separate task on a fixed-period loop.
             </p>
             <div class="diagram-wrap">
               <div class="diagram-head">Layers (Mermaid)</div>
