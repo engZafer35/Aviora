@@ -260,7 +260,9 @@
     "endDate": "2021-06-22 12:05:00"
   }
 }</pre>
-              <p>ACK/NACK same idea as readout. Payload is read from <code>_payload.txt</code>; the <code>id</code> field uses <code>load-profile-no-id</code>; content is still packed under the <code>readout</code> key in the implementation.</p>
+              <p>ACK/NACK same idea as readout. Payload is read from <code>_payload.txt</code>; 
+                the <code>id</code> field uses <code>load-profile-no-id</code>; content is still
+                 packed under the <code>readout</code> key in the implementation.</p>
             </div>
           </article>
 
@@ -273,7 +275,8 @@
   "function": "directiveList",
   "request": { "filter": { "id": "ReadoutDirective" } }
 }</pre>
-              <p><code>id: "*"</code> returns all directives; each in a separate message with <code>packetNum</code> / <code>packetStream</code>.</p>
+              <p><code>id: "*"</code> returns all directives; each in a separate message with
+                 <code>packetNum</code> / <code>packetStream</code>.</p>
             </div>
           </article>
 
