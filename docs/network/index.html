@@ -230,7 +230,9 @@ flowchart TB
           <article class="card col-12">
             <h2>Generated C Sketch</h2>
             <p>
-              The exact macro names depend on how many Ethernet and PPP links are active. With one of each, the <code>.c</code> file looks like the fragment below. With multiple links, prefixes become <code>ETH0_</code>, <code>ETH1_</code>, <code>PPP0_</code>, etc., matching the order in JSON.
+              The exact macro names depend on how many Ethernet and PPP links are active. With one of each,
+              the <code>.c</code> file looks like the fragment below. With multiple links, prefixes become 
+              <code>ETH0_</code>, <code>ETH1_</code>, <code>PPP0_</code>, etc., matching the order in JSON.
             </p>
             <p class="sub-h3">Typical <code>Cus_Network_Config.c</code> Body</p>
             <pre class="code-block"><code>RETURN_STATUS networkServiceInitTCPIPStack(void)
