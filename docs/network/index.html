@@ -161,7 +161,12 @@ flowchart LR
           <article class="card col-12">
             <h2>Runtime Sequence</h2>
             <p>
-              After linking, startup is linear. <code>appNetworkServiceStart()</code> first initializes the selected TCP/IP stack through the macro that points at your stack’s init function (for example <code>appCycloneTcpIpStackInit</code> or <code>appLinuxTcpIpStackInit</code>). The service then waits about one second so the stack can settle. Finally it calls <code>networkServiceStartInterfaces()</code>, which walks every active Ethernet manager start function, then every active PPP manager start function, combining status with bitwise OR so a partial failure is still visible in the return value.
+              After linking, startup is linear. <code>appNetworkServiceStart()</code> first initializes the selected
+               TCP/IP stack through the macro that points at your stack’s init function (for example 
+               <code>appCycloneTcpIpStackInit</code> or <code>appLinuxTcpIpStackInit</code>). The service 
+               then waits about one second so the stack can settle. Finally it calls <code>networkServiceStartInterfaces()</code>,
+               which walks every active Ethernet manager start function, then every active PPP manager start function, combining 
+               status with bitwise OR so a partial failure is still visible in the return value.
             </p>
             <div class="diagram-wrap">
               <pre class="mermaid">
